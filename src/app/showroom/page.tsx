@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import Navbar from '@/components/Navbar';
 import UltraModernCarCard from '@/components/UltraModernCarCard';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -51,8 +52,9 @@ export default function ShowroomPage() {
 
   return (
     <div className={`min-h-screen bg-black text-white ${isRTL ? 'font-arabic' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
+      <Navbar />
       {/* Header */}
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 pt-24">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
