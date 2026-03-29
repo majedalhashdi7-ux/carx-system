@@ -6,6 +6,7 @@ interface LanguageContextType {
   language: 'ar' | 'en';
   isRTL: boolean;
   setLanguage: (lang: 'ar' | 'en') => void;
+  toggleLanguage: () => void;
   t: (key: string) => string;
 }
 
@@ -36,7 +37,7 @@ const translations = {
     
     // Actions
     buy: 'شراء',
-    contact: 'تواصل',
+    contactAction: 'تواصل',
     details: 'التفاصيل',
     addToCart: 'أضف للسلة',
     addToFavorites: 'أضف للمفضلة',
@@ -82,7 +83,7 @@ const translations = {
     
     // Actions
     buy: 'Buy',
-    contact: 'Contact',
+    contactAction: 'Contact',
     details: 'Details',
     addToCart: 'Add to Cart',
     addToFavorites: 'Add to Favorites',
@@ -127,6 +128,11 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.lang = lang;
   };
 
+  const toggleLanguage = () => {
+    const newLang = language === 'ar' ? 'en' : 'ar';
+    handleSetLanguage(newLang);
+  };
+
   const t = (key: string): string => {
     return translations[language][key as keyof typeof translations['ar']] || key;
   };
@@ -137,6 +143,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         language,
         isRTL,
         setLanguage: handleSetLanguage,
+        toggleLanguage,
         t,
       }}
     >

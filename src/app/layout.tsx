@@ -4,6 +4,7 @@ import './globals.css';
 import { LanguageProvider } from '@/lib/LanguageContext';
 import { AuthProvider } from '@/lib/AuthContext';
 import { SettingsProvider } from '@/lib/SettingsContext';
+import { TenantProvider } from '@/lib/TenantContext';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -37,15 +38,17 @@ export default function RootLayout({
         <meta name="theme-color" content="#000000" />
       </head>
       <body className={`${inter.className} bg-black text-white antialiased`}>
-        <LanguageProvider>
-          <AuthProvider>
-            <SettingsProvider>
-              <div id="root">
-                {children}
-              </div>
-            </SettingsProvider>
-          </AuthProvider>
-        </LanguageProvider>
+        <TenantProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <SettingsProvider>
+                <div id="root">
+                  {children}
+                </div>
+              </SettingsProvider>
+            </AuthProvider>
+          </LanguageProvider>
+        </TenantProvider>
       </body>
     </html>
   );

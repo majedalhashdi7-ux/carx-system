@@ -1,25 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // CAR X System Configuration
-  experimental: {
-    appDir: true,
-  },
   
   // Image Configuration
   images: {
-    domains: [
-      'localhost',
-      'daood.okigo.net',
-      'carx-system.vercel.app',
-      'images.unsplash.com',
-      'ci.encar.com',
-      'img.encar.com',
-      'encar.com',
-    ],
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**.encar.com',
+        hostname: 'localhost',
+      },
+      {
+        protocol: 'https',
+        hostname: 'daood.okigo.net',
+      },
+      {
+        protocol: 'https',
+        hostname: 'carx-system.vercel.app',
       },
       {
         protocol: 'https',
@@ -27,10 +23,52 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'daood.okigo.net',
+        hostname: 'ci.encar.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'img.encar.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'encar.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'img1.encar.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'img2.encar.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'img3.encar.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'img4.encar.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'img5.encar.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'via.placeholder.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'picsum.photos',
+      },
+      {
+        protocol: 'https',
+        hostname: 'source.unsplash.com',
       }
     ],
     unoptimized: false,
+    minimumCacheTTL: 60,
+    formats: ['image/webp', 'image/avif'],
   },
 
   // Headers Configuration
@@ -74,17 +112,6 @@ const nextConfig = {
     SYSTEM_VERSION: '1.0.0',
   },
 
-  // Webpack Configuration
-  webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
-    // Custom webpack configuration for CAR X
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      '@': './src',
-    };
-
-    return config;
-  },
-
   // Output Configuration
   output: 'standalone',
   
@@ -105,9 +132,6 @@ const nextConfig = {
   
   // React Strict Mode
   reactStrictMode: true,
-  
-  // SWC Minify
-  swcMinify: true,
 };
 
 module.exports = nextConfig;

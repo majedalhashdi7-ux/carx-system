@@ -16,6 +16,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string, phone?: string) => Promise<boolean>;
   logout: () => void;
+  refreshUser: () => void;
   loading: boolean;
 }
 
@@ -78,6 +79,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const refreshUser = () => {
+    // Refresh user data from localStorage or API
+    const savedUser = localStorage.getItem('carx-user');
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (error) {
+        localStorage.removeItem('carx-user');
+        setUser(null);
+      }
+    }
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('carx-user');
@@ -91,6 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         register,
         logout,
+        refreshUser,
         loading,
       }}
     >

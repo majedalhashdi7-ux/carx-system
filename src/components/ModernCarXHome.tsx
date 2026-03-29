@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useTenant } from "@/lib/TenantContext";
-import { api } from "@/lib/api";
+import { api, mockData } from "@/lib/api";
 import AuthModals from "./AuthModals";
 
 export default function ModernCarXHome() {
@@ -28,19 +28,17 @@ export default function ModernCarXHome() {
 
     // جلب بيانات السيارات للشريط الإعلاني
     useEffect(() => {
-        api.cars.list({ limit: 12, status: 'available' })
-            .then(res => {
-                const cars = res?.data || res?.cars;
-                if (cars && Array.isArray(cars) && cars.length > 0) {
-                    const labels = cars.map((c: any) => {
-                        const make = (isRTL && c.makeAr) ? c.makeAr : c.make;
-                        const model = (isRTL && c.modelAr) ? c.modelAr : c.model;
-                        const priceStr = c.price ? ` (${c.price.toLocaleString()} ${isRTL ? 'ر.س' : 'SAR'})` : '';
-                        return `${make} ${model} ${c.year}${priceStr}`;
-                    });
-                    setMarqueeItems(labels);
-                }
-            }).catch(() => {});
+        // استخدام البيانات التجريبية
+        const cars = mockData.cars;
+        if (cars && Array.isArray(cars) && cars.length > 0) {
+            const labels = cars.map((c: any) => {
+                const make = (isRTL && c.makeAr) ? c.makeAr : c.make;
+                const model = (isRTL && c.modelAr) ? c.modelAr : c.model;
+                const priceStr = c.price ? ` (${c.price.toLocaleString()} ${isRTL ? 'ر.س' : 'SAR'})` : '';
+                return `${make} ${model} ${c.year}${priceStr}`;
+            });
+            setMarqueeItems(labels);
+        }
     }, [isRTL]);
 
     const displayItems = marqueeItems.length > 0 

@@ -25,7 +25,7 @@ export default function AuthModals({
     onSwitchToLogin
 }: AuthModalsProps) {
     const { isRTL } = useLanguage();
-    const { refreshUser } = useAuth();
+    const { login, register } = useAuth();
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -67,20 +67,9 @@ export default function AuthModals({
         setMessage(null);
 
         try {
-            const response = await api.auth.login({
-                email: loginData.email,
-                password: loginData.password
-            });
+            const success = await login(loginData.email, loginData.password);
 
-            if (response.success) {
-                // حفظ بيانات المستخدم
-                localStorage.setItem('hm_token', response.token);
-                localStorage.setItem('hm_user', JSON.stringify(response.user));
-                localStorage.setItem('hm_user_role', response.user.role);
-                
-                // تحديث السياق
-                refreshUser();
-                
+            if (success) {
                 setMessage({ type: 'success', text: isRTL ? 'تم تسجيل الدخول بنجاح!' : 'Login successful!' });
                 
                 setTimeout(() => {
@@ -88,7 +77,7 @@ export default function AuthModals({
                     setLoginData({ email: '', password: '' });
                 }, 1500);
             } else {
-                setMessage({ type: 'error', text: response.message || (isRTL ? 'خطأ في تسجيل الدخول' : 'Login failed') });
+                setMessage({ type: 'error', text: isRTL ? 'بيانات الدخول غير صحيحة' : 'Invalid credentials' });
             }
         } catch (error: any) {
             setMessage({ type: 'error', text: error.message || (isRTL ? 'خطأ في الاتصال' : 'Connection error') });
@@ -110,15 +99,14 @@ export default function AuthModals({
         }
 
         try {
-            const response = await api.auth.register({
-                name: registerData.name,
-                email: registerData.email,
-                phone: registerData.phone,
-                password: registerData.password,
-                city: registerData.city
-            });
+            const success = await register(
+                registerData.name,
+                registerData.email,
+                registerData.password,
+                registerData.phone
+            );
 
-            if (response.success) {
+            if (success) {
                 setMessage({ type: 'success', text: isRTL ? 'تم إنشاء الحساب بنجاح!' : 'Account created successfully!' });
                 
                 setTimeout(() => {
@@ -134,7 +122,7 @@ export default function AuthModals({
                     });
                 }, 1500);
             } else {
-                setMessage({ type: 'error', text: response.message || (isRTL ? 'خطأ في إنشاء الحساب' : 'Registration failed') });
+                setMessage({ type: 'error', text: isRTL ? 'فشل في إنشاء الحساب' : 'Registration failed' });
             }
         } catch (error: any) {
             setMessage({ type: 'error', text: error.message || (isRTL ? 'خطأ في الاتصال' : 'Connection error') });
