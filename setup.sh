@@ -1,49 +1,42 @@
 #!/bin/bash
 
 # CAR X System Setup Script
-# سكريبت إعداد نظام CAR X
+# This script sets up the CAR X system for development and production
 
-echo "🚀 بدء إعداد نظام CAR X..."
+echo "🚀 Setting up CAR X System..."
 
-# تثبيت المكتبات
-echo "📦 تثبيت المكتبات..."
+# Install dependencies
+echo "📦 Installing dependencies..."
 npm install
 
-# نسخ ملف البيئة
-echo "⚙️ إعداد متغيرات البيئة..."
-if [ ! -f .env ]; then
-    cp .env.example .env
-    echo "✅ تم إنشاء ملف .env"
-    echo "⚠️  يرجى تعديل متغيرات البيئة في ملف .env"
-else
-    echo "✅ ملف .env موجود مسبقاً"
+# Create .env.local if it doesn't exist
+if [ ! -f .env.local ]; then
+    echo "📝 Creating .env.local file..."
+    cp .env.example .env.local
+    echo "⚠️  Please update .env.local with your actual database credentials"
 fi
 
-# فحص Node.js version
-NODE_VERSION=$(node -v)
-echo "📋 إصدار Node.js: $NODE_VERSION"
+# Build the project
+echo "🔨 Building the project..."
+npm run build
 
-# فحص npm version  
-NPM_VERSION=$(npm -v)
-echo "📋 إصدار npm: $NPM_VERSION"
-
-# إنشاء مجلدات إضافية
-echo "📁 إنشاء المجلدات المطلوبة..."
-mkdir -p public/images
-mkdir -p public/icons
-mkdir -p src/types
-mkdir -p src/hooks
-mkdir -p src/utils
-
-echo "✅ تم إعداد نظام CAR X بنجاح!"
-echo ""
-echo "🔧 الخطوات التالية:"
-echo "1. عدّل ملف .env بالإعدادات الصحيحة"
-echo "2. شغّل الأمر: npm run dev"
-echo "3. افتح المتصفح على: http://localhost:3001"
-echo ""
-echo "📚 للمزيد من المعلومات، راجع:"
-echo "- README.md"
-echo "- DEPLOYMENT_GUIDE.md"
-echo ""
-echo "🎉 نظام CAR X جاهز للعمل!"
+# Check if build was successful
+if [ $? -eq 0 ]; then
+    echo "✅ Build successful!"
+    echo ""
+    echo "🎉 CAR X System is ready!"
+    echo ""
+    echo "📋 Next steps:"
+    echo "1. Update .env.local with your database credentials"
+    echo "2. Run 'npm run dev' to start development server"
+    echo "3. Visit http://localhost:3001 to see your site"
+    echo ""
+    echo "🌐 For production deployment:"
+    echo "1. Create GitHub repository: carx-system"
+    echo "2. Push code to GitHub"
+    echo "3. Deploy to Vercel"
+    echo "4. Connect domain: daood.okigo.net"
+else
+    echo "❌ Build failed. Please check the errors above."
+    exit 1
+fi
