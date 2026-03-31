@@ -1,18 +1,20 @@
 'use client';
 
+/**
+ * PerformanceOptimizedHome - الصفحة الرئيسية المحسنة للأداء
+ * تحسينات شاملة للأداء والسرعة وتجربة المستخدم
+ */
+
 import React, { useState, useEffect, useCallback, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useLanguage } from "@/lib/LanguageContext";
-import { 
-  Car, Gavel, Wrench, User, LogIn, UserPlus, Globe, 
-  MessageCircle, HelpCircle, Menu, X, Play, Pause, Volume2, VolumeX,
-  ArrowRight, Star, Zap, Shield, Award, Instagram, Facebook, Youtube
-} from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useTenant } from "@/lib/TenantContext";
-import { api, mockData } from "@/lib/api";
+import { api } from "@/lib/api";
+import { Car, Gavel, Wrench, User, LogIn, UserPlus, Globe, HelpCircle, Menu, X, Star, Zap, Shield, Award, Instagram, Facebook, Youtube, MessageCircle, ArrowRight } from "lucide-react";
 import AuthModals from "./AuthModals";
+import { LoadingSpinner } from "./LoadingSkeleton";
 
 // بطاقة القسم المحسنة للأداء
 const SectionCard = memo(({ section, index, isRTL }: { section: any; index: number; isRTL: boolean }) => {
@@ -125,7 +127,7 @@ const SocialLink = memo(({ icon, href, color, isRTL, index }: { icon: any; href:
     </motion.a>
 ));
 
-export default function ModernCarXHome() {
+export default function PerformanceOptimizedHome() {
     const { isRTL, toggleLanguage } = useLanguage();
     const { user, isLoggedIn } = useAuth();
     const { tenant } = useTenant();
@@ -338,34 +340,21 @@ export default function ModernCarXHome() {
 
             {/* ── فيديو الخلفية مع تحكم ── */}
             <section className="relative h-screen flex items-center justify-center overflow-hidden">
-                {/* خلفية بديلة متدرجة */}
-                <div 
-                    className="absolute inset-0 bg-cover bg-center bg-no-repeat" 
-                    style={{ 
-                        backgroundImage: 'url(/images/hero-bg.svg)',
-                        zIndex: 0
-                    }} 
-                />
-
                 {/* الفيديو */}
                 <video
                     autoPlay
                     loop
                     muted={videoMuted}
                     playsInline
-                    className="absolute inset-0 w-full h-full object-cover z-10"
+                    className="absolute inset-0 w-full h-full object-cover"
                     onPlay={() => setVideoPlaying(true)}
                     onPause={() => setVideoPlaying(false)}
-                    onError={(e) => {
-                        // إخفاء الفيديو عند الخطأ وإظهار الخلفية البديلة
-                        e.currentTarget.style.display = 'none';
-                    }}
                 >
                     <source src="/videos/CAR_X.mp4" type="video/mp4" />
                 </video>
 
                 {/* طبقة التعتيم */}
-                <div className="absolute inset-0 bg-black/60 z-20" />
+                <div className="absolute inset-0 bg-black/60" />
 
                 {/* جسيمات متحركة */}
                 <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -417,7 +406,7 @@ export default function ModernCarXHome() {
                 </div>
 
                 {/* المحتوى الرئيسي */}
-                <div className="relative z-30 text-center px-4 max-w-4xl mx-auto">
+                <div className="relative z-20 text-center px-4 max-w-4xl mx-auto">
                     <motion.div
                         initial={{ opacity: 0, y: 50 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -473,23 +462,34 @@ export default function ModernCarXHome() {
             </section>
 
             {/* ── الشريط الإعلاني تحت الفيديو ── */}
-            <section className="relative z-10 py-4 bg-gradient-to-r from-red-900/20 via-black to-red-900/20 border-y border-red-900/20">
+            <section className="relative z-10 py-8 bg-gradient-to-r from-red-900/20 via-black to-red-900/20 border-y border-red-900/20">
                 <div className="overflow-hidden">
                     <motion.div 
-                        className="flex whitespace-nowrap"
+                        className="flex animate-marquee whitespace-nowrap"
                         animate={{
-                            x: [0, -1920]
+                            x: [0, -50]
                         }}
                         transition={{
-                            duration: 40,
+                            duration: 30,
                             repeat: Infinity,
                             ease: "linear"
                         }}
                     >
                         {repeatedItems.map((text, i) => (
-                            <span key={i} className="inline-flex items-center gap-4 mx-6 shrink-0">
-                                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                                <span className="text-sm font-bold text-white/80 tracking-wide">
+                            <span key={i} className="inline-flex items-center gap-6 mx-8 shrink-0">
+                                <motion.span 
+                                    className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_12px_rgba(255,0,0,1)]"
+                                    animate={{
+                                        scale: [1, 1.5, 1],
+                                        opacity: [0.7, 1, 0.7]
+                                    }}
+                                    transition={{
+                                        duration: 1.5,
+                                        repeat: Infinity,
+                                        delay: i * 0.1
+                                    }}
+                                />
+                                <span className="text-lg font-black text-white/90 tracking-wider uppercase">
                                     {text}
                                 </span>
                             </span>
@@ -583,6 +583,20 @@ export default function ModernCarXHome() {
                     </p>
                 </div>
             </footer>
+
+            {/* ── CSS للحركات ── */}
+            <style>{`
+                @keyframes marquee {
+                    0% { transform: translateX(0); }
+                    100% { transform: translateX(-50%); }
+                }
+                .animate-marquee {
+                    animation: marquee 30s linear infinite;
+                }
+                .animate-marquee:hover {
+                    animation-play-state: paused;
+                }
+            `}</style>
 
             {/* ── Auth Modals ── */}
             <AuthModals

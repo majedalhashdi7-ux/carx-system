@@ -9,13 +9,12 @@ import React, { useState, useRef, useCallback } from "react";
 import { motion, useMotionValue, useTransform, useSpring, AnimatePresence } from "framer-motion";
 import { 
     Heart, Share2, Eye, Calendar, Gauge, Fuel, Settings, Star, ArrowRight, 
-    Home, Zap, Shield, Award, Camera, Play, Pause, Volume2, VolumeX,
+    Zap, Shield, Award, Camera, Play, Pause, Volume2, VolumeX,
     Sparkles, Crown, Diamond, Flame, Bolt, Target, Gem
 } from "lucide-react";
 import { useLanguage } from "@/lib/LanguageContext";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 
 interface UltraModernCarCardProps {
     car: {
@@ -53,7 +52,6 @@ export default function UltraModernCarCard({
     onViewDetails 
 }: UltraModernCarCardProps) {
     const { isRTL } = useLanguage();
-    const router = useRouter();
     const cardRef = useRef<HTMLDivElement>(null);
     
     // Motion values للتأثيرات ثلاثية الأبعاد المتقدمة
@@ -68,10 +66,6 @@ export default function UltraModernCarCard({
     const [imageError, setImageError] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
     const [showImageGallery, setShowImageGallery] = useState(false);
-
-    const handleBackToHome = () => {
-        router.push('/');
-    };
 
     const handleImageError = () => {
         setImageError(true);
@@ -266,21 +260,8 @@ export default function UltraModernCarCard({
                         </div>
                     )}
 
-                    {/* زر الرجوع للصفحة الرئيسية */}
-                    <div className="absolute top-4 end-4">
-                        <motion.button
-                            onClick={handleBackToHome}
-                            whileHover={{ scale: 1.1, rotate: 5 }}
-                            whileTap={{ scale: 0.9 }}
-                            className="w-12 h-12 rounded-2xl bg-black/70 backdrop-blur-md border border-white/20 hover:border-red-500/50 flex items-center justify-center text-white/80 hover:text-red-400 hover:bg-black/90 transition-all duration-300 group/back shadow-lg"
-                            title={isRTL ? 'العودة للصفحة الرئيسية' : 'Back to Home'}
-                        >
-                            <Home className="w-6 h-6 group-hover/back:scale-110 transition-transform" />
-                        </motion.button>
-                    </div>
-
                     {/* Action Buttons */}
-                    <div className="absolute top-20 end-4 flex flex-col gap-3 opacity-0 group-hover:opacity-100 transition-all duration-500">
+                    <div className="absolute top-4 end-4 flex flex-col gap-3 opacity-0 group-hover:opacity-100 transition-all duration-500">
                         <motion.button
                             onClick={() => setIsLiked(!isLiked)}
                             whileHover={{ scale: 1.1 }}
@@ -302,14 +283,16 @@ export default function UltraModernCarCard({
                             <Share2 className="w-5 h-5" />
                         </motion.button>
 
-                        <motion.button
-                            onClick={() => setShowImageGallery(true)}
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            className="w-12 h-12 rounded-2xl bg-black/70 backdrop-blur-md border border-white/20 hover:border-purple-400/50 flex items-center justify-center text-white/80 hover:text-purple-400 hover:bg-purple-500/20 transition-all duration-300 shadow-lg"
-                        >
-                            <Camera className="w-5 h-5" />
-                        </motion.button>
+                        {car.images && car.images.length > 1 && (
+                            <motion.button
+                                onClick={() => setShowImageGallery(true)}
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                className="w-12 h-12 rounded-2xl bg-black/70 backdrop-blur-md border border-white/20 hover:border-purple-400/50 flex items-center justify-center text-white/80 hover:text-purple-400 hover:bg-purple-500/20 transition-all duration-300 shadow-lg"
+                            >
+                                <Camera className="w-5 h-5" />
+                            </motion.button>
+                        )}
                     </div>
 
                     {/* Gradient Overlay */}

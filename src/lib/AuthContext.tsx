@@ -7,15 +7,15 @@ interface User {
   name: string;
   email: string;
   phone?: string;
-  role: 'admin' | 'user';
+  role: 'admin' | 'manager' | 'buyer';
 }
 
 interface AuthContextType {
   user: User | null;
   isLoggedIn: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (name: string, email: string, password: string, phone?: string) => Promise<boolean>;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (name: string, email: string, password: string, phone?: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
   refreshUser: () => void;
   loading: boolean;
 }
@@ -27,74 +27,92 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load user from localStorage
+    // Load user from localStorage (stored after successful login)
     const savedUser = localStorage.getItem('carx-user');
     if (savedUser) {
       try {
         setUser(JSON.parse(savedUser));
-      } catch (error) {
+      } catch {
         localStorage.removeItem('carx-user');
       }
     }
     setLoading(false);
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string) => {
     try {
-      // Mock login - replace with real API call
-      if (email === 'dawoodalhash@gmail.com' && password === 'daood@112233') {
-        const adminUser: User = {
-          id: 'admin-1',
-          name: 'داود الهاشمي',
-          email: 'dawoodalhash@gmail.com',
-          role: 'admin'
-        };
-        setUser(adminUser);
-        localStorage.setItem('carx-user', JSON.stringify(adminUser));
-        return true;
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        return { success: false, error: data.error || 'فشل تسجيل الدخول' };
       }
-      return false;
-    } catch (error) {
-      console.error('Login error:', error);
-      return false;
+
+      setUser(data.user);
+      localStorage.setItem('carx-user', JSON.stringify(data.user));
+      if (data.token) {
+        localStorage.setItem('carx-token', data.token);
+      }
+
+      return { success: true };
+    } catch {
+      return { success: false, error: 'حدث خطأ في الاتصال بالخادم' };
     }
   };
 
-  const register = async (name: string, email: string, password: string, phone?: string): Promise<boolean> => {
+  const register = async (name: string, email: string, password: string, phone?: string) => {
     try {
-      // Mock registration - replace with real API call
-      const newUser: User = {
-        id: `user-${Date.now()}`,
-        name,
-        email,
-        phone,
-        role: 'user'
-      };
-      setUser(newUser);
-      localStorage.setItem('carx-user', JSON.stringify(newUser));
-      return true;
-    } catch (error) {
-      console.error('Registration error:', error);
-      return false;
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, phone }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        return { success: false, error: data.error || 'فشل التسجيل' };
+      }
+
+      setUser(data.user);
+      localStorage.setItem('carx-user', JSON.stringify(data.user));
+      if (data.token) {
+        localStorage.setItem('carx-token', data.token);
+      }
+
+      return { success: true };
+    } catch {
+      return { success: false, error: 'حدث خطأ في الاتصال بالخادم' };
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // silent
+    } finally {
+      setUser(null);
+      localStorage.removeItem('carx-user');
+      localStorage.removeItem('carx-token');
     }
   };
 
   const refreshUser = () => {
-    // Refresh user data from localStorage or API
     const savedUser = localStorage.getItem('carx-user');
     if (savedUser) {
       try {
         setUser(JSON.parse(savedUser));
-      } catch (error) {
+      } catch {
         localStorage.removeItem('carx-user');
         setUser(null);
       }
     }
-  };
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('carx-user');
   };
 
   return (

@@ -1,7 +1,7 @@
 {
   "name": "carx-system",
-  "version": "1.0.0",
-  "description": "CAR X - نظام معارض ومزادات السيارات",
+  "version": "2.0.0",
+  "description": "CAR X - Showroom & Auctions System",
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001",
@@ -32,6 +32,8 @@
     "typescript": "^5.3.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "autoprefixer": "^10.4.0",
     "eslint": "^8.56.0",
     "eslint-config-next": "^14.1.0",
