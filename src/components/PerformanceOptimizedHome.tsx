@@ -11,8 +11,8 @@ import Link from "next/link";
 import { useLanguage } from "@/lib/LanguageContext";
 import { useAuth } from "@/lib/AuthContext";
 import { useTenant } from "@/lib/TenantContext";
-import { api } from "@/lib/api";
-import { Car, Gavel, Wrench, User, LogIn, UserPlus, Globe, HelpCircle, Menu, X, Star, Zap, Shield, Award, Instagram, Facebook, Youtube, MessageCircle, ArrowRight } from "lucide-react";
+import { api, mockData } from "@/lib/api";
+import { Car, Gavel, Wrench, User, LogIn, UserPlus, Globe, HelpCircle, Menu, X, Star, Zap, Shield, Award, Instagram, Facebook, Youtube, MessageCircle, ArrowRight, Play, Pause, Volume2, VolumeX } from "lucide-react";
 import AuthModals from "./AuthModals";
 import { LoadingSpinner } from "./LoadingSkeleton";
 
@@ -95,7 +95,7 @@ const FeatureItem = memo(({ feature, index, isRTL }: { feature: any; index: numb
 ));
 
 // أيقونة اجتماعية محسنة
-const SocialLink = memo(({ icon, href, color, isRTL, index }: { icon: any; href: string; color: string; isRTL: boolean; index: number }) => (
+const SocialLink = memo(({ icon: Icon, href, color, isRTL, index }: { icon: any; href: string; color: string; isRTL: boolean; index: number }) => (
     <motion.a
         key={index}
         href={href}
@@ -123,7 +123,7 @@ const SocialLink = memo(({ icon, href, color, isRTL, index }: { icon: any; href:
         }}
         className={`w-12 h-12 rounded-2xl bg-black/60 backdrop-blur-md border border-white/10 flex items-center justify-center ${color} transition-all duration-300 hover:bg-white/10`}
     >
-        <icon className="w-5 h-5" />
+        <Icon className="w-5 h-5" />
     </motion.a>
 ));
 
