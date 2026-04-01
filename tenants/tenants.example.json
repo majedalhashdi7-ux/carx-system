@@ -1,0 +1,156 @@
+{
+  "defaultTenant": "hmcar",
+  "tenants": {
+    
+    "hmcar": {
+      "id": "hmcar",
+      "name": "HM CAR",
+      "nameEn": "HM CAR",
+      "description": "منصة مزادات ومبيعات السيارات الفاخرة",
+      "descriptionEn": "Premium Car Auction & Sales Platform",
+      "domains": ["localhost:4002", "localhost:3000", "hmcar.vercel.app", "hmcar.xyz"],
+      "mongoUri": "ENV:MONGO_URI",
+      "logo": "/uploads/tenants/hmcar/logo.png",
+      "favicon": "/uploads/tenants/hmcar/favicon.ico",
+      "theme": {
+        "primaryColor": "#D4AF37",
+        "secondaryColor": "#1a1a2e",
+        "accentColor": "#e94560",
+        "backgroundColor": "#0f0f23",
+        "textColor": "#ffffff"
+      },
+      "contact": {
+        "whatsapp": "+967781007805",
+        "email": "info@hmcar.com",
+        "phone": "+967781007805"
+      },
+      "settings": {
+        "currency": "SAR",
+        "language": "ar",
+        "direction": "rtl"
+      },
+      "enabled": true
+    },
+    
+    "alwaha": {
+      "id": "alwaha",
+      "name": "معرض الواحة",
+      "nameEn": "Al Waha Cars",
+      "description": "معرض الواحة للسيارات المستعملة والجديدة",
+      "descriptionEn": "Al Waha New & Used Cars Showroom",
+      "domains": ["alwaha-cars.com", "www.alwaha-cars.com"],
+      "mongoUri": "mongodb+srv://alwaha_user:password@cluster.mongodb.net/alwaha_db?retryWrites=true&w=majority",
+      "logo": "/uploads/tenants/alwaha/logo.png",
+      "favicon": "/uploads/tenants/alwaha/favicon.ico",
+      "theme": {
+        "primaryColor": "#2ecc71",
+        "secondaryColor": "#27ae60",
+        "accentColor": "#3498db",
+        "backgroundColor": "#ecf0f1",
+        "textColor": "#2c3e50"
+      },
+      "contact": {
+        "whatsapp": "+966501234567",
+        "email": "info@alwaha-cars.com",
+        "phone": "+966501234567"
+      },
+      "settings": {
+        "currency": "SAR",
+        "language": "ar",
+        "direction": "rtl"
+      },
+      "enabled": true
+    },
+    
+    "luxury": {
+      "id": "luxury",
+      "name": "معرض الفخامة",
+      "nameEn": "Luxury Motors",
+      "description": "معرض السيارات الفاخرة والرياضية الحصرية",
+      "descriptionEn": "Exclusive Luxury & Sports Cars Showroom",
+      "domains": ["luxury-motors.com", "www.luxury-motors.com"],
+      "mongoUri": "mongodb+srv://luxury_user:password@cluster.mongodb.net/luxury_db?retryWrites=true&w=majority",
+      "logo": "/uploads/tenants/luxury/logo.png",
+      "favicon": "/uploads/tenants/luxury/favicon.ico",
+      "theme": {
+        "primaryColor": "#000000",
+        "secondaryColor": "#FFD700",
+        "accentColor": "#C0C0C0",
+        "backgroundColor": "#1a1a1a",
+        "textColor": "#ffffff"
+      },
+      "contact": {
+        "whatsapp": "+966507654321",
+        "email": "info@luxury-motors.com",
+        "phone": "+966507654321"
+      },
+      "settings": {
+        "currency": "SAR",
+        "language": "ar",
+        "direction": "rtl"
+      },
+      "enabled": true
+    },
+    
+    "stars": {
+      "id": "stars",
+      "name": "معرض النجوم",
+      "nameEn": "Stars Auto",
+      "description": "معرض النجوم للسيارات بأفضل الأسعار",
+      "descriptionEn": "Stars Auto - Best Prices Guaranteed",
+      "domains": ["stars-auto.com", "www.stars-auto.com"],
+      "mongoUri": "mongodb+srv://stars_user:password@cluster.mongodb.net/stars_db?retryWrites=true&w=majority",
+      "logo": "/uploads/tenants/stars/logo.png",
+      "favicon": "/uploads/tenants/stars/favicon.ico",
+      "theme": {
+        "primaryColor": "#3498db",
+        "secondaryColor": "#2980b9",
+        "accentColor": "#f39c12",
+        "backgroundColor": "#ffffff",
+        "textColor": "#2c3e50"
+      },
+      "contact": {
+        "whatsapp": "+966509876543",
+        "email": "info@stars-auto.com",
+        "phone": "+966509876543"
+      },
+      "settings": {
+        "currency": "SAR",
+        "language": "ar",
+        "direction": "rtl"
+      },
+      "enabled": true
+    },
+    
+    "عميل_جديد": {
+      "id": "معرف_فريد",
+      "name": "اسم المعرض بالعربي",
+      "nameEn": "Showroom Name in English",
+      "description": "وصف المعرض بالعربي",
+      "descriptionEn": "Showroom description in English",
+      "domains": ["domain.com", "www.domain.com"],
+      "mongoUri": "mongodb+srv://user:password@cluster.mongodb.net/database_name?retryWrites=true&w=majority",
+      "logo": "/uploads/tenants/معرف_فريد/logo.png",
+      "favicon": "/uploads/tenants/معرف_فريد/favicon.ico",
+      "theme": {
+        "primaryColor": "#اللون_الأساسي",
+        "secondaryColor": "#اللون_الثانوي",
+        "accentColor": "#لون_التمييز",
+        "backgroundColor": "#لون_الخلفية",
+        "textColor": "#لون_النص"
+      },
+      "contact": {
+        "whatsapp": "+966xxxxxxxxx",
+        "email": "info@domain.com",
+        "phone": "+966xxxxxxxxx"
+      },
+      "settings": {
+        "currency": "SAR",
+        "language": "ar",
+        "direction": "rtl"
+      },
+      "enabled": true
+    }
+    
+  }
+}

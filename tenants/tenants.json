@@ -1,0 +1,74 @@
+{
+  "defaultTenant": "hmcar",
+  "tenants": {
+    "hmcar": {
+      "id": "hmcar",
+      "name": "HM CAR",
+      "nameEn": "HM CAR",
+      "description": "منصة مزادات ومبيعات السيارات الفاخرة",
+      "descriptionEn": "Premium Car Auction & Sales Platform",
+      "domains": [
+        "localhost:3000",
+        "localhost:4002",
+        "hmcar.vercel.app",
+        "hmcar.xyz",
+        "www.hmcar.xyz",
+        "daood.okigo.net"
+      ],
+      "mongoUri": "ENV:MONGO_URI",
+      "logo": "/uploads/tenants/hmcar/logo.png",
+      "favicon": "/uploads/tenants/hmcar/favicon.ico",
+      "theme": {
+        "primaryColor": "#D4AF37",
+        "secondaryColor": "#1a1a2e",
+        "accentColor": "#e94560",
+        "backgroundColor": "#0f0f23",
+        "textColor": "#ffffff"
+      },
+      "contact": {
+        "whatsapp": "+967781007805",
+        "email": "info@hmcar.com",
+        "phone": "+967781007805"
+      },
+      "settings": {
+        "currency": "SAR",
+        "language": "ar",
+        "direction": "rtl"
+      },
+      "enabled": true
+    },
+    "carx": {
+      "id": "carx",
+      "name": "CAR X",
+      "nameEn": "CAR X",
+      "description": "معرض وأمزاد CAR X",
+      "descriptionEn": "CAR X Showroom & Auctions",
+      "domains": [
+        "localhost:3001",
+        "carx.localhost",
+        "carx-system.vercel.app"
+      ],
+      "mongoUri": "ENV:MONGO_URI_CARX",
+      "logo": "/uploads/tenants/carx/logo.png",
+      "favicon": "/uploads/tenants/carx/favicon.ico",
+      "theme": {
+        "primaryColor": "#000000",
+        "secondaryColor": "#ff0000",
+        "accentColor": "#cc0000",
+        "backgroundColor": "#111111",
+        "textColor": "#ffffff"
+      },
+      "contact": {
+        "whatsapp": "+967781007805",
+        "email": "info@carx-motors.com",
+        "phone": "+967781007805"
+      },
+      "settings": {
+        "currency": "SAR",
+        "language": "ar",
+        "direction": "rtl"
+      },
+      "enabled": true
+    }
+  }
+}

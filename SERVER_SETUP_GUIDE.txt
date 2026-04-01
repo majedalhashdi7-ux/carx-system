@@ -1,0 +1,273 @@
+# ════════════════════════════════════════════════════
+# دليل تشغيل نظام HM CAR على السيرفر
+# ════════════════════════════════════════════════════
+# هذا الملف يشرح كيفية تشغيل المشروع خطوة بخطوة
+# ════════════════════════════════════════════════════
+
+## المتطلبات الأساسية
+
+- Node.js 20 أو أحدث (22 مفضّل)
+- npm
+- PM2 (لتشغيل التطبيق بشكل دائم)
+- Nginx (كـ reverse proxy)
+- Linux (Ubuntu 22.04 مفضّل)
+
+────────────────────────────────────────────────────
+
+## الخطوة 1: تثبيت المتطلبات
+
+```bash
+# تحديث النظام
+sudo apt update && sudo apt upgrade -y
+
+# تثبيت Node.js 22
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# تثبيت PM2
+sudo npm install -g pm2
+
+# تثبيت Nginx
+sudo apt install -y nginx
+
+# تثبيت Certbot (لشهادة SSL مجانية)
+sudo apt install -y certbot python3-certbot-nginx
+
+# التأكد من التثبيت
+node -v    # يجب أن يظهر v22.x.x
+npm -v     # يجب أن يظهر رقم
+pm2 -v     # يجب أن يظهر رقم
+```
+
+────────────────────────────────────────────────────
+
+## الخطوة 2: رفع ملفات المشروع
+
+```bash
+# إنشاء مجلد المشروع
+sudo mkdir -p /var/www/hmcar
+sudo chown $USER:$USER /var/www/hmcar
+
+# انسخ ملفات المشروع (المضغوطة) إلى /var/www/hmcar
+# ثم فك الضغط
+cd /var/www/hmcar
+# unzip hmcar-project.zip   (أو tar -xzf hmcar-project.tar.gz)
+```
+
+────────────────────────────────────────────────────
+
+## الخطوة 3: إعداد ملف البيئة (.env)
+
+```bash
+cp .env.example .env
+nano .env
+```
+
+عدّل القيم التالية (القيم الحقيقية موجودة في ملف .env.secret المرفق):
+
+```env
+NODE_ENV=production
+PORT=4002
+MONGO_URI=القيمة_من_ملف_env_secret
+JWT_SECRET=القيمة_من_ملف_env_secret
+SESSION_SECRET=القيمة_من_ملف_env_secret
+CLOUDINARY_CLOUD_NAME=القيمة_من_ملف_env_secret
+CLOUDINARY_API_KEY=القيمة_من_ملف_env_secret
+CLOUDINARY_API_SECRET=القيمة_من_ملف_env_secret
+BASE_URL=https://YOUR_DOMAIN.com
+```
+
+────────────────────────────────────────────────────
+
+## الخطوة 4: تثبيت المكتبات
+
+```bash
+cd /var/www/hmcar
+
+# تثبيت مكتبات الباك إند
+npm install --production
+
+# تثبيت مكتبات الفرونت وبناء المشروع
+cd client-app
+npm install
+npm run build
+cd ..
+```
+
+────────────────────────────────────────────────────
+
+## الخطوة 5: إعداد الفرونت إند
+
+```bash
+nano client-app/.env.production
+```
+
+أضف:
+```env
+NEXT_PUBLIC_API_URL=https://YOUR_DOMAIN.com
+NEXT_PUBLIC_SOCKET_URL=https://YOUR_DOMAIN.com
+NODE_ENV=production
+```
+
+ثم أعد البناء:
+```bash
+cd client-app && npm run build && cd ..
+```
+
+────────────────────────────────────────────────────
+
+## الخطوة 6: تشغيل المشروع بـ PM2
+
+```bash
+cd /var/www/hmcar
+
+# تشغيل الباك إند (API + Socket.io)
+pm2 start server.js --name hmcar-api
+
+# تشغيل الفرونت إند (Next.js)
+cd client-app
+pm2 start node_modules/next/dist/bin/next --name hmcar-web -- start -p 3000
+cd ..
+
+# حفظ الإعدادات (يعيد التشغيل تلقائياً عند إعادة تشغيل السيرفر)
+pm2 save
+pm2 startup
+```
+
+للتأكد أنهم يعملون:
+```bash
+pm2 status
+# يجب أن تشوف hmcar-api و hmcar-web بحالة "online"
+
+# اختبار سريع
+curl http://localhost:4002/api/v2/tenant/info
+# يجب أن يرجع JSON فيه بيانات المعرض
+```
+
+────────────────────────────────────────────────────
+
+## الخطوة 7: إعداد Nginx
+
+```bash
+sudo nano /etc/nginx/sites-available/hmcar
+```
+
+انسخ هذا المحتوى:
+
+```nginx
+server {
+    listen 80;
+    server_name YOUR_DOMAIN.com www.YOUR_DOMAIN.com;
+
+    # رفع ملفات كبيرة (صور السيارات)
+    client_max_body_size 50M;
+
+    # API + Socket.io (الباك إند)
+    location /api/ {
+        proxy_pass http://127.0.0.1:4002;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        proxy_read_timeout 120s;
+    }
+
+    # Socket.io
+    location /socket.io/ {
+        proxy_pass http://127.0.0.1:4002;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_read_timeout 86400;
+    }
+
+    # الملفات المرفوعة (الصور)
+    location /uploads/ {
+        alias /var/www/hmcar/uploads/;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # الفرونت إند (Next.js)
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+تفعيل الموقع:
+```bash
+sudo ln -s /etc/nginx/sites-available/hmcar /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+────────────────────────────────────────────────────
+
+## الخطوة 8: شهادة SSL مجانية
+
+```bash
+sudo certbot --nginx -d YOUR_DOMAIN.com -d www.YOUR_DOMAIN.com
+# اتبع التعليمات واختر "Redirect HTTP to HTTPS"
+```
+
+────────────────────────────────────────────────────
+
+## الخطوة 9: إعدادات DNS (عند مزوّد الدومين)
+
+أضف هذه السجلات:
+| النوع | الاسم | القيمة |
+|-------|-------|--------|
+| A     | @     | IP_السيرفر |
+| A     | www   | IP_السيرفر |
+
+────────────────────────────────────────────────────
+
+## أوامر مفيدة
+
+```bash
+# مراقبة التطبيق
+pm2 monit
+
+# عرض السجلات
+pm2 logs hmcar-api
+pm2 logs hmcar-web
+
+# إعادة تشغيل
+pm2 restart hmcar-api
+pm2 restart hmcar-web
+
+# إيقاف
+pm2 stop all
+
+# تحديث المشروع بعد رفع ملفات جديدة
+cd /var/www/hmcar
+npm install --production
+cd client-app && npm install && npm run build && cd ..
+pm2 restart all
+```
+
+────────────────────────────────────────────────────
+
+## ⚠️ ملاحظات مهمة
+
+1. البيانات (قاعدة البيانات) على MongoDB Atlas سحابياً - لا تحتاج تثبيت MongoDB على السيرفر
+2. الصور على Cloudinary سحابياً - لا تحتاج تخزين محلي للصور
+3. ملف .env.secret يحتوي المفاتيح السرية - لا تشاركه مع أحد غير صديقك
+4. تأكد أن البورتات 80 و 443 و 4002 و 3000 مفتوحة في الفايروول

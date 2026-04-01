@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Engine Oil Filter",
+    "partNumber": "EOF-12345",
+    "brand": "Toyota",
+    "category": "engine",
+    "price": 25,
+    "stock": 50,
+    "condition": "new",
+    "description": "OEM Toyota oil filter"
+  },
+  {
+    "name": "Brake Pads Set",
+    "partNumber": "BPS-67890",
+    "brand": "Honda",
+    "category": "brakes",
+    "price": 85,
+    "stock": 30,
+    "condition": "new",
+    "description": "Front brake pads for Honda Accord"
+  },
+  {
+    "name": "Air Filter",
+    "partNumber": "AF-11111",
+    "brand": "BMW",
+    "category": "engine",
+    "price": 45,
+    "stock": 20,
+    "condition": "new",
+    "description": "High-performance air filter"
+  }
+]

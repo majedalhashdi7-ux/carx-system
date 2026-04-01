@@ -1,0 +1,89 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Backend Tests
+  backend-test:
+    runs-on: ubuntu-latest
+    
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      
+      - name: Install Backend Dependencies
+        run: npm ci
+      
+      - name: Run Backend Tests
+        run: npm test
+        env:
+          MONGODB_URI: mongodb://localhost:27017/car-auction-test
+          NODE_ENV: test
+          JWT_SECRET: test-secret
+          SESSION_SECRET: test-session
+
+  # Frontend Tests & Build
+  frontend-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: client-app/package-lock.json
+      
+      - name: Install Frontend Dependencies
+        working-directory: client-app
+        run: npm ci
+      
+      - name: Lint Frontend
+        working-directory: client-app
+        run: npm run lint
+
+      - name: Build Frontend
+        working-directory: client-app
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:4001
+
+  # Deploy to Production
+  deploy:
+    needs: [backend-test, frontend-test]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Deploy Frontend to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: client-app
+          vercel-args: '--prod'
+      
+      - name: Deploy Backend
+        run: |
+          echo "Backend deployment configured"
+          # Add your backend deployment commands here

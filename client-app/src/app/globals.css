@@ -1,0 +1,1722 @@
+/* [[ARABIC_HEADER]] هذا الملف (client-app/src/app/globals.css) جزء من مشروع HM CAR ويحتوي تعليقات عربية لضمان الوضوح. */
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  /* Cinematic Neon Colors */
+  --color-cinematic-neon-blue: #00f0ff;
+  --color-cinematic-neon-red: #ff3b30;
+  --color-cinematic-neon-gold: #c9a96e;
+  --color-cinematic-neon-green: #00ff88;
+  --color-cinematic-dark: #0a0a0a;
+  --color-cinematic-darker: #050505;
+}
+
+:root {
+  --background: #000000;
+  /* Deepest Black */
+  --foreground: #ffffff;
+  --card-bg: rgba(20, 20, 20, 0.4);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --accent-gold: #c9a96e;
+  --accent-gold-glow: rgba(201, 169, 110, 0.5);
+  --accent-red: #ff3b30;
+  --accent-blue: #007aff;
+  --glass-bg: rgba(255, 255, 255, 0.02);
+  --glass-border: rgba(255, 255, 255, 0.05);
+
+  /* Tenant Dynamic Colors - يتم تحديثها من TenantContext */
+  --color-primary: #D4AF37;
+  --color-secondary: #1a1a2e;
+  --color-accent: #e94560;
+  --color-background: #0f0f23;
+  --color-text: #ffffff;
+
+  /* Cinematic Animation Timing */
+  --ease-cinematic: cubic-bezier(0.19, 1, 0.22, 1);
+  --duration-slow: 1.2s;
+  --duration-medium: 0.8s;
+  --duration-fast: 0.4s;
+
+  /* Font Sizes */
+  --fs-display: clamp(3rem, 6vw, 6rem);
+}
+
+@layer base {
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-tajawal), sans-serif;
+    overflow-x: hidden;
+    scrollbar-gutter: stable; /* [[ARABIC_COMMENT]] يمنع اهتزاز الصفحة عند ظهور أو اختفاء شريط التمرير */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+  }
+
+  /* Fix select options being white-on-white by forcing dark background */
+  select option {
+    background-color: #0a0a0a;
+    color: #ffffff;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  /* Neon Text Utilities */
+  .text-glow-gold {
+    text-shadow: 0 0 15px var(--accent-gold-glow), 0 0 30px rgba(201, 169, 110, 0.2);
+  }
+
+  .text-glow-red {
+    text-shadow: 0 0 15px rgba(255, 59, 48, 0.5), 0 0 30px rgba(255, 59, 48, 0.2);
+  }
+
+  .text-glow-blue {
+    text-shadow: 0 0 15px rgba(0, 122, 255, 0.5), 0 0 30px rgba(0, 122, 255, 0.2);
+  }
+
+  .text-glow-white {
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.5), 0 0 30px rgba(255, 255, 255, 0.2);
+  }
+
+  /* Box Glow Utilities */
+  .box-glow-gold {
+    box-shadow: 0 0 30px var(--accent-gold-glow);
+  }
+}
+
+@layer components {
+
+  /* Global Glow Button */
+  .btn-glow {
+    position: relative;
+    transition: box-shadow 0.2s ease, background-color 0.2s ease, transform 0.1s ease;
+    outline: none;
+    will-change: box-shadow, transform;
+    isolation: isolate;
+  }
+
+  .btn-glow>* {
+    position: relative;
+    z-index: 1;
+  }
+
+  .btn-glow:hover {
+    transform: translateY(-1px);
+  }
+
+  .btn-glow:active {
+    transform: translateY(0);
+  }
+
+  .btn-glow::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    background: transparent;
+    z-index: -1;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    opacity: 0;
+  }
+
+  .btn-glow:active::after,
+  .btn-glow[aria-pressed="true"]::after {
+    background: rgba(0, 240, 255, 0.18);
+    filter: blur(10px);
+    opacity: 1;
+  }
+
+  /* Red glow variant for logout */
+  .btn-glow-red {
+    position: relative;
+    transition: box-shadow 0.2s ease, background-color 0.2s ease;
+  }
+
+  .btn-glow-red::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+    background: rgba(255, 59, 48, 0.15);
+    filter: blur(10px);
+    opacity: 0;
+    z-index: -1;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .btn-glow-red:hover::after {
+    opacity: 1;
+  }
+
+  /* Cinematic Glass Card */
+  .glass-card {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+    backdrop-filter: blur(6px) saturate(130%);
+    -webkit-backdrop-filter: blur(6px) saturate(130%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    transition: transform 0.4s var(--ease-cinematic), border-color 0.4s ease, box-shadow 0.4s ease;
+    will-change: transform;
+  }
+
+  .glass-card:hover {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border-color: rgba(201, 169, 110, 0.3);
+    transform: translateY(-5px) scale(1.01);
+    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(201, 169, 110, 0.1);
+  }
+
+  /* Cinematic Inputs */
+  .glass-input {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    color: white;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    transition: all 0.3s ease;
+  }
+
+  .glass-input:focus {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 20px rgba(201, 169, 110, 0.2);
+    outline: none;
+  }
+
+  /* Start Engine Button */
+  .btn-start-engine {
+    background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
+    border: 1px solid #333;
+    color: var(--accent-red);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.5s var(--ease-cinematic);
+    box-shadow: 0 0 10px rgba(255, 59, 48, 0.1);
+  }
+
+  .btn-start-engine:hover {
+    border-color: var(--accent-red);
+    color: #fff;
+    text-shadow: 0 0 10px rgba(255, 59, 48, 0.8);
+    box-shadow: 0 0 30px rgba(255, 59, 48, 0.4), inset 0 0 20px rgba(255, 59, 48, 0.2);
+    transform: scale(1.02);
+  }
+
+  .btn-start-engine::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 59, 48, 0.2) 0%, transparent 70%);
+    opacity: 0;
+    transform: scale(0.5);
+    transition: all 0.5s ease;
+  }
+
+  .btn-start-engine:hover::before {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  /* Luxury Button */
+  .btn-luxury {
+    background: linear-gradient(135deg, var(--accent-gold), #8a703f);
+    color: #000;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border: none;
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+    transition: all 0.5s var(--ease-cinematic);
+  }
+
+  .btn-luxury::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #fff 0%, transparent 100%);
+    opacity: 0.2;
+    z-index: -1;
+    transition: opacity 0.3s ease;
+  }
+
+  .btn-luxury:hover {
+    box-shadow: 0 0 30px var(--accent-gold-glow);
+    transform: translateY(-2px);
+  }
+
+  /* Responsive button legibility across devices */
+  :is(.btn-luxury, .btn-glow, .btn-glow-red, .btn-start-engine, .btn-gold) {
+    font-size: clamp(12px, 2.7vw, 16px) !important;
+    line-height: 1.2;
+    letter-spacing: 0.08em;
+  }
+
+  @media (max-width: 640px) {
+    :is(.btn-luxury, .btn-glow, .btn-glow-red, .btn-start-engine, .btn-gold) {
+      padding-left: clamp(14px, 5vw, 18px);
+      padding-right: clamp(14px, 5vw, 18px);
+      min-height: 48px;
+    }
+  }
+
+  /* Scanline Overlay */
+  .scanlines {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.1) 50%);
+    background-size: 100% 4px;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.1;
+  }
+}
+
+/* Animations */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes marquee-rtl {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(50%); }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-rtl {
+  animation: marquee-rtl 30s linear infinite;
+  will-change: transform;
+}
+
+.pause-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-gold);
+}
+
+/* ═══════════════════════════════════════════
+   MOBILE & RESPONSIVE FIXES - شامل لجميع الأجهزة
+   ═══════════════════════════════════════════ */
+
+/* Fix iOS Safari fixed background issue */
+@supports (-webkit-touch-callout: none) {
+
+  .video-bg-wrapper,
+  .fixed-bg {
+    position: absolute !important;
+    background-attachment: scroll !important;
+  }
+}
+
+/* منع الـ overflow الأفقي في كل الصفحات */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* تحسين الصور والفيديو */
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ═══ الموبايل الصغير (max 480px) ═══ */
+@media (max-width: 480px) {
+
+  /* إخفاء الفيديو على الموبايل لتوفير الداتا */
+  .video-bg {
+    display: none !important;
+  }
+
+  /* تصغير عناوين الهيرو */
+  h1 {
+    font-size: clamp(1.6rem, 8vw, 2.2rem) !important;
+    line-height: 1.1 !important;
+  }
+
+  h2 {
+    font-size: clamp(1.2rem, 6vw, 1.6rem) !important;
+  }
+
+  h3 {
+    font-size: clamp(1rem, 5vw, 1.3rem) !important;
+  }
+
+  p,
+  li {
+    font-size: clamp(0.8rem, 3.5vw, 0.95rem) !important;
+  }
+
+  /* تصغير padding الصفحات */
+  .main-content,
+  main {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* البطاقات على الموبايل */
+  .glass-card {
+    padding: 1rem !important;
+    border-radius: 1.25rem !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* الأزرار */
+  .btn-luxury,
+  .btn-start-engine,
+  .btn-glow {
+    padding: 0.7rem 1rem !important;
+    min-height: 44px !important;
+    font-size: 10px !important;
+    letter-spacing: 0.04em !important;
+  }
+
+  /* جداول الأدمن - scroll أفقي */
+  table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* النماذج على الموبايل - عمود واحد دائماً */
+  form .grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* النماذج المنبثقة */
+  .admin-modal {
+    margin: 0.5rem !important;
+    border-radius: 1.5rem !important;
+    max-height: 95vh !important;
+  }
+}
+
+/* ═══ الموبايل العادي (max 767px) ═══ */
+@media (max-width: 767px) {
+
+  /* إخفاء الفيديو */
+  .video-bg {
+    display: none !important;
+  }
+
+  /* خلفية بديلة للموبايل */
+  .video-bg-wrapper {
+    background-color: #050505;
+  }
+
+  /* الأزرار */
+  .btn-luxury,
+  .btn-start-engine,
+  .btn-glow {
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+    min-height: 44px !important;
+    font-size: 11px !important;
+    letter-spacing: 0.05em !important;
+  }
+
+  /* البطاقات */
+  .glass-card {
+    padding: 1.25rem !important;
+    border-radius: 1.5rem !important;
+    overflow: hidden;
+  }
+
+  /* تدوير الشبكات إلى عمود واحد */
+  .responsive-grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* جدول الأدمن */
+  .admin-table-wrapper,
+  .overflow-x-auto {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 1rem;
+  }
+
+  /* الـ header actions */
+  .admin-header-actions {
+    flex-direction: column !important;
+    gap: 0.5rem;
+  }
+
+  /* تصغير الـ padding على الصفحات */
+  .pt-32 {
+    padding-top: 6rem !important;
+  }
+
+  .pt-28 {
+    padding-top: 5.5rem !important;
+  }
+
+  .pt-24 {
+    padding-top: 5rem !important;
+  }
+
+  .pb-24 {
+    padding-bottom: 4rem !important;
+  }
+
+  /* تصغير عناوين الصفحات الكبيرة */
+  .text-7xl,
+  .text-8xl {
+    font-size: 2.8rem !important;
+    line-height: 1.1 !important;
+  }
+
+  .text-6xl {
+    font-size: 2.4rem !important;
+    line-height: 1.1 !important;
+  }
+
+  .text-5xl {
+    font-size: 2rem !important;
+  }
+
+  .text-4xl {
+    font-size: 1.7rem !important;
+  }
+
+  /* الـ modal على الموبايل */
+  [class*="max-w-4xl"],
+  [class*="max-w-5xl"],
+  [class*="max-w-6xl"],
+  [class*="max-w-7xl"] {
+    max-width: 100% !important;
+  }
+
+  /* تصغير الصور المصغرة في الأدمن */
+  .car-thumbnail {
+    width: 48px !important;
+    height: 48px !important;
+  }
+}
+
+/* ═══ التابلت (768px - 1024px) ═══ */
+@media (min-width: 768px) and (max-width: 1024px) {
+
+  /* الشبكات - عمودين */
+  .tablet-grid-2 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* الأشرطة الجانبية */
+  .admin-sidebar {
+    width: 80px;
+  }
+
+  .admin-sidebar span {
+    display: none;
+  }
+
+  /* تصغير عناوين البطاقات */
+  .text-7xl,
+  .text-8xl {
+    font-size: 3.5rem !important;
+  }
+
+  .text-6xl {
+    font-size: 3rem !important;
+  }
+}
+
+/* ═══ تحسينات عامة على كل الأجهزة ═══ */
+
+/* [[ARABIC_COMMENT]] منع طولان النص خارج حدود عنصره */
+* {
+  min-width: 0;
+}
+
+/* [[ARABIC_COMMENT]] تحسين اللمس على الموبايل */
+button,
+a,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* [[ARABIC_COMMENT]] منع الضغط المزدوج على iOS */
+input,
+button,
+select,
+textarea {
+  -webkit-appearance: none;
+  border-radius: 0;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  opacity: 0.4;
+}
+
+/* [[ARABIC_COMMENT]] RTL: منع اختلال الاتجاه في الـ flex على الموبايل */
+@media (max-width: 767px) {
+  [dir="rtl"] .mobile-col {
+    flex-direction: column;
+  }
+}
+
+/* [[ARABIC_COMMENT]] تحسين الـ modal على الموبايل - يبدأ من الأسفل */
+@media (max-width: 640px) {
+  .modal-mobile-bottom {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+
+  .modal-mobile-bottom>div {
+    border-radius: 2rem 2rem 0 0 !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+  }
+}
+
+/* [[ARABIC_COMMENT]] شبكة الأسعار - 3 أعمدة على الكبير، عمود على الموبايل */
+@media (max-width: 640px) {
+  .price-grid-3 {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+}
+
+/* [[ARABIC_COMMENT]] تحسين ظهور الجداول الأدمن على الموبايل */
+@media (max-width: 767px) {
+
+  .admin-table th:nth-child(3),
+  .admin-table th:nth-child(4),
+  .admin-table td:nth-child(3),
+  .admin-table td:nth-child(4) {
+    display: none;
+  }
+}
+
+/* [[ARABIC_COMMENT]] التمرير السلس على كل الأجهزة */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: #000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-gold);
+}
+
+/* [[ARABIC_COMMENT]] إخفاء الـ scrollbar على الموبايل */
+@media (max-width: 767px) {
+  ::-webkit-scrollbar {
+    display: none;
+  }
+
+  * {
+    scrollbar-width: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   COMPREHENSIVE RESPONSIVE DESIGN SYSTEM
+   نظام استجابة شامل لجميع الأجهزة
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Safe area للجوال (الشق والـ notch) ── */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+/* ── Prevent elastic scrolling on PWA ── */
+@media all and (display-mode: standalone) {
+  html, body {
+    /* تم إزالة القيود الصارمة للسماح بالتمرير الطبيعي (Scrolling) للأسفل والأعلى */
+    overscroll-behavior-y: auto; 
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  main, [role="main"] {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* PWA Exclusive Utilities */
+  .hide-in-app {
+    display: none !important;
+  }
+
+  .show-in-app {
+    display: flex !important; /* Default flex block for mobile UI elements */
+  }
+}
+
+/* Default state for browser users */
+@media screen and (display-mode: browser), screen and (display-mode: minimal-ui) {
+  .show-in-app {
+    display: none !important;
+  }
+}
+.show-in-app {
+    display: none !important;
+}
+
+/* ── Modals تفتح من الأسفل على الموبايل الصغير ── */
+@media (max-width: 640px) {
+
+  /* Modal يبدأ من أسفل الشاشة */
+  .fixed.inset-0.flex.items-center {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+
+  /* الـ modal نفسه */
+  .fixed.inset-0.flex.items-center>div>div,
+  .fixed.inset-0.flex.items-center>div>.motion-div {
+    border-radius: 1.5rem 1.5rem 0 0 !important;
+    max-height: 92vh !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Padding أسفل الـ modal بسبب iPhone home bar */
+  .modal-footer-safe {
+    padding-bottom: max(1.25rem, env(safe-area-inset-bottom)) !important;
+  }
+}
+
+/* ── جدول الأدمن - scroll أفقي ناعم ── */
+.admin-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+/* ── نص كبير يتناسب مع الشاشة ── */
+.hero-title {
+  font-size: clamp(1.8rem, 5vw, 5rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+/* ── الـ grid يكون عمودين على التابلت وعمود على الموبايل ── */
+@media (max-width: 640px) {
+  .sm\:grid-cols-2 {
+    grid-template-columns: repeat(1, 1fr) !important;
+  }
+
+  .sm\:grid-cols-3 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .sm\:grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .sm\:grid-cols-5 {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+}
+
+/* ── الـ Padding على صفحات الأدمن ── */
+@media (max-width: 640px) {
+  .admin-page-padding {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .admin-header-spacing {
+    padding-top: 1.5rem;
+  }
+}
+
+/* ── عناصر اللمس - حجم مناسب ── */
+@media (max-width: 767px) {
+
+  button:not([data-no-touch]),
+  a:not([data-no-touch]),
+  [role="button"]:not([data-no-touch]),
+  select,
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* استثناء الأزرار الصغيرة مثل أيقونات الحذب */
+  .icon-btn-sm {
+    min-height: 32px !important;
+    min-width: 32px !important;
+  }
+}
+
+/* ── الـ stats grid على الموبايل ── */
+@media (max-width: 480px) {
+  .stats-grid-5 {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+
+  .stats-grid-5> :last-child:nth-child(5) {
+    grid-column: span 3;
+  }
+}
+
+/* ── الـ flex buttons تكون column على الموبايل ── */
+@media (max-width: 480px) {
+  .mobile-stack {
+    flex-direction: column !important;
+    width: 100%;
+  }
+
+  .mobile-stack>* {
+    width: 100%;
+  }
+}
+
+/* ── الجداول على الصفحات ── */
+@media (max-width: 767px) {
+
+  /* صفحات الأدمن - الجدول يختفي ويظهر بدله بطاقات */
+  .desktop-table {
+    display: none !important;
+  }
+
+  .mobile-cards {
+    display: block !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .desktop-table {
+    display: block !important;
+  }
+
+  .mobile-cards {
+    display: none !important;
+  }
+}
+
+/* ── منع الـ overflow خارج الـ viewport ── */
+.overflow-safe {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* ── تعديل حجم النصوص للموبايل ── */
+@media (max-width: 480px) {
+  .text-responsive-xl {
+    font-size: clamp(1.4rem, 7vw, 2rem) !important;
+  }
+
+  .text-responsive-lg {
+    font-size: clamp(1.1rem, 5vw, 1.5rem) !important;
+  }
+
+  .text-responsive-base {
+    font-size: clamp(0.8rem, 3.5vw, 1rem) !important;
+  }
+}
+
+/* ── إصلاح الـ select elements على iOS ── */
+select {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  background-image: none;
+  cursor: pointer;
+}
+
+/* ── إصلاح الـ input على iOS - منع التكبير التلقائي ── */
+@media (max-width: 767px) {
+
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="search"],
+  select,
+  textarea {
+    font-size: 16px !important;
+    /* iOS يكبر الشاشة إذا كان الخط أقل من 16px */
+  }
+}
+
+/* ── RTL Responsive تحسينات ── */
+[dir="rtl"] .rtl-flip {
+  transform: scaleX(-1);
+}
+
+[dir="rtl"] .rtl-text-left {
+  text-align: right !important;
+}
+
+/* ── Animation تعطيل على الأجهزة الضعيفة ── */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── تحسين إحصائيات الأدمن على الموبايل ── */
+@media (max-width: 640px) {
+  .admin-stat-card {
+    padding: 0.75rem !important;
+  }
+
+  .admin-stat-number {
+    font-size: 1.5rem !important;
+  }
+
+  .admin-stat-label {
+    font-size: 0.6rem !important;
+  }
+}
+
+/* ── حل مشكلة البطاقات تتجاوز الشاشة ── */
+@media (max-width: 767px) {
+
+  .glass-card,
+  .rounded-2xl,
+  .rounded-3xl {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+}
+
+/* ── Navbar height compensation ── */
+.navbar-offset {
+  padding-top: calc(4.5rem + env(safe-area-inset-top));
+}
+
+@media (max-width: 767px) {
+  .navbar-offset {
+    padding-top: calc(3.5rem + env(safe-area-inset-top));
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ✈️  COCKPIT ADMIN DESIGN SYSTEM — HM CAR
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── CSS Variables ── */
+:root {
+  --cockpit-orange: #F97316;
+  --cockpit-orange-dim: rgba(249, 115, 22, 0.15);
+  --cockpit-orange-glow: rgba(249, 115, 22, 0.4);
+  --cockpit-bg: #070711;
+  --cockpit-surface: rgba(255, 255, 255, 0.025);
+  --cockpit-border: rgba(249, 115, 22, 0.12);
+  --cockpit-border-hover: rgba(249, 115, 22, 0.35);
+  --cockpit-text-muted: rgba(255, 255, 255, 0.3);
+}
+
+/* ── Cockpit Font for Numbers ── */
+
+.cockpit-num {
+  font-family: 'Orbitron', 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+}
+
+.cockpit-mono {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  letter-spacing: 0.03em;
+}
+
+/* ── Cards ── */
+.ck-card {
+  background: linear-gradient(135deg,
+      rgba(249, 115, 22, 0.04) 0%,
+      rgba(255, 255, 255, 0.015) 50%,
+      rgba(249, 115, 22, 0.02) 100%);
+  border: 1px solid var(--cockpit-border);
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.ck-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.4), transparent);
+}
+
+.ck-card:hover {
+  border-color: var(--cockpit-border-hover);
+  box-shadow:
+    0 0 40px rgba(249, 115, 22, 0.06),
+    inset 0 0 40px rgba(249, 115, 22, 0.02);
+}
+
+/* ── Stat Cards ── */
+.ck-stat {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(249, 115, 22, 0.1);
+  border-radius: 20px;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.ck-stat::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cockpit-orange), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.ck-stat:hover::after {
+  opacity: 1;
+}
+
+.ck-stat:hover {
+  border-color: rgba(249, 115, 22, 0.3);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(249, 115, 22, 0.1);
+}
+
+.ck-stat-num {
+  font-family: 'Orbitron', 'JetBrains Mono', monospace;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 900;
+  color: #fff;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-shadow: 0 0 30px rgba(249, 115, 22, 0.3);
+}
+
+/* ── Buttons ── */
+.ck-btn-primary {
+  background: linear-gradient(135deg, #F97316 0%, #EA580C 100%);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 0.65rem 1.4rem;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.25s ease;
+  box-shadow: 0 0 20px rgba(249, 115, 22, 0.3);
+}
+
+.ck-btn-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.ck-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 35px rgba(249, 115, 22, 0.5);
+}
+
+.ck-btn-primary:hover::before {
+  opacity: 1;
+}
+
+.ck-btn-primary:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.ck-btn-ghost {
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 0.65rem 1.4rem;
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.ck-btn-ghost:hover {
+  background: rgba(249, 115, 22, 0.08);
+  border-color: rgba(249, 115, 22, 0.3);
+  color: #F97316;
+}
+
+.ck-btn-danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: rgba(239, 68, 68, 0.8);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 10px;
+  padding: 0.5rem 1rem;
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ck-btn-danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #ef4444;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+}
+
+/* ── Inputs ── */
+.ck-input {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  color: #fff;
+  padding: 0.7rem 1rem;
+  font-size: 0.875rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+}
+
+.ck-input::placeholder {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.ck-input:focus {
+  outline: none;
+  border-color: rgba(249, 115, 22, 0.4);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.08), 0 0 15px rgba(249, 115, 22, 0.1);
+}
+
+.ck-select {
+  background: rgba(10, 10, 20, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  color: #fff;
+  padding: 0.7rem 1rem;
+  font-size: 0.875rem;
+  transition: border-color 0.2s;
+  width: 100%;
+  cursor: pointer;
+}
+
+.ck-select:focus {
+  outline: none;
+  border-color: rgba(249, 115, 22, 0.4);
+}
+
+/* ── Tables ── */
+.ck-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ck-table th {
+  background: rgba(249, 115, 22, 0.05);
+  color: rgba(249, 115, 22, 0.8);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 0.85rem 1rem;
+  text-align: right;
+  border-bottom: 1px solid rgba(249, 115, 22, 0.12);
+}
+
+.ck-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.875rem;
+  transition: background 0.15s;
+}
+
+.ck-table tr:hover td {
+  background: rgba(249, 115, 22, 0.04);
+}
+
+/* ── Status Badges ── */
+.ck-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ck-badge-active {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.ck-badge-pending {
+  background: rgba(249, 115, 22, 0.1);
+  color: #F97316;
+  border: 1px solid rgba(249, 115, 22, 0.2);
+}
+
+.ck-badge-inactive {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ck-badge-danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.ck-badge-info {
+  background: rgba(59, 130, 246, 0.1);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+/* Live dot on badge */
+.ck-badge-live::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: ck-pulse 1.5s infinite;
+}
+
+/* ── Section Headers ── */
+.ck-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.ck-section-title::before {
+  content: '';
+  display: block;
+  width: 3px;
+  height: 18px;
+  background: var(--cockpit-orange);
+  border-radius: 2px;
+  box-shadow: 0 0 10px var(--cockpit-orange-glow);
+}
+
+/* ── Page Header HUD ── */
+.ck-page-header {
+  position: relative;
+  padding: 2rem 0 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.ck-page-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.4), transparent 60%);
+}
+
+.ck-page-title {
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.6) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.ck-page-subtitle {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: rgba(249, 115, 22, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  margin-top: 0.4rem;
+}
+
+/* ── Breadcrumb ── */
+.ck-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: rgba(255, 255, 255, 0.25);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+}
+
+.ck-breadcrumb a:hover {
+  color: rgba(249, 115, 22, 0.8);
+}
+
+.ck-breadcrumb-sep {
+  color: rgba(249, 115, 22, 0.3);
+}
+
+/* ── Radar/Loading Spinner ── */
+.ck-radar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid rgba(249, 115, 22, 0.15);
+  border-top-color: var(--cockpit-orange);
+  animation: ck-spin 0.8s linear infinite;
+  position: relative;
+}
+
+.ck-radar::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  border: 1px solid rgba(249, 115, 22, 0.1);
+  border-top-color: rgba(249, 115, 22, 0.4);
+  animation: ck-spin 1.2s linear infinite reverse;
+}
+
+/* ── Modal ── */
+.ck-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 7, 17, 0.85);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+
+.ck-modal {
+  background: linear-gradient(135deg, rgba(15, 15, 30, 0.98), rgba(10, 10, 20, 0.99));
+  border: 1px solid rgba(249, 115, 22, 0.2);
+  border-radius: 24px;
+  max-width: 640px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow:
+    0 0 80px rgba(249, 115, 22, 0.08),
+    0 40px 80px rgba(0, 0, 0, 0.8);
+}
+
+.ck-modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cockpit-orange), transparent);
+  border-radius: 24px 24px 0 0;
+}
+
+/* ── Filter Tabs ── */
+.ck-tab-group {
+  display: flex;
+  gap: 0.35rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 0.3rem;
+}
+
+.ck-tab {
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  background: transparent;
+}
+
+.ck-tab:hover {
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.ck-tab-active {
+  background: rgba(249, 115, 22, 0.15);
+  color: #F97316;
+  box-shadow: 0 0 15px rgba(249, 115, 22, 0.15);
+}
+
+/* ── Gauge / Progress ── */
+.ck-gauge-track {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.ck-gauge-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #EA580C, #F97316, #FB923C);
+  position: relative;
+  transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ck-gauge-fill::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  background: rgba(255, 255, 255, 0.4);
+  filter: blur(4px);
+  border-radius: 50%;
+}
+
+/* ── Cockpit Orange Glow Text ── */
+.ck-glow-text {
+  color: var(--cockpit-orange);
+  text-shadow: 0 0 15px var(--cockpit-orange-glow);
+}
+
+/* ── Empty State ── */
+.ck-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: rgba(255, 255, 255, 0.15);
+  text-align: center;
+  gap: 1rem;
+}
+
+.ck-empty-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(249, 115, 22, 0.06);
+  border: 1px solid rgba(249, 115, 22, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(249, 115, 22, 0.3);
+}
+
+/* ── Scan Line (decorative) ── */
+.ck-scanline {
+  position: relative;
+  overflow: hidden;
+}
+
+.ck-scanline::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.3), transparent);
+  animation: ck-scan 4s linear infinite;
+}
+
+/* ── Hover Card Effect ── */
+.ck-hover-lift {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.ck-hover-lift:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 16px 50px rgba(249, 115, 22, 0.1);
+}
+
+/* ── Ripple Button ── */
+.ck-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ck-ripple::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(249, 115, 22, 0.3);
+  width: 0;
+  height: 0;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: ck-ripple 0.5s ease-out;
+}
+
+.ck-ripple:active::after {
+  animation: ck-ripple 0.4s ease-out;
+}
+
+/* ── Keyframes ── */
+@keyframes ck-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
+}
+
+@keyframes ck-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ck-scan {
+  0% {
+    top: 0%;
+  }
+
+  100% {
+    top: 100%;
+  }
+}
+
+@keyframes ck-ripple {
+  0% {
+    width: 0;
+    height: 0;
+    opacity: 0.8;
+  }
+
+  100% {
+    width: 200%;
+    height: 200%;
+    opacity: 0;
+    padding-bottom: 200%;
+  }
+}
+
+@keyframes ck-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ck-counter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.ck-fade-up {
+  animation: ck-fade-up 0.45s ease forwards;
+}
+
+/* Stagger delay helpers */
+.ck-delay-1 {
+  animation-delay: 0.05s;
+}
+
+.ck-delay-2 {
+  animation-delay: 0.1s;
+}
+
+.ck-delay-3 {
+  animation-delay: 0.15s;
+}
+
+.ck-delay-4 {
+  animation-delay: 0.2s;
+}
+
+/* ── Scrollbar (admin dark) ── */
+.ck-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.ck-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ck-scroll::-webkit-scrollbar-thumb {
+  background: rgba(249, 115, 22, 0.2);
+  border-radius: 4px;
+}
+
+.ck-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(249, 115, 22, 0.4);
+}
+
+/* ── Cockpit tooltip ── */
+[data-cockpit-tip] {
+  position: relative;
+}
+
+[data-cockpit-tip]::after {
+  content: attr(data-cockpit-tip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 15, 30, 0.95);
+  border: 1px solid rgba(249, 115, 22, 0.2);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.65rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.05em;
+}
+
+[data-cockpit-tip]:hover::after {
+  opacity: 1;
+}
+
+/* ════════════════════════════════════════════════════════════════ */

@@ -1,0 +1,1 @@
+const mongoose = require('mongoose'); require('dotenv').config({ path: '.env.production.vercel' }); const Brand = require('./models/Brand'); mongoose.connect(process.env.MONGO_URI).then(async() => { const b = await Brand.find({models: {$ne: []}}); console.log(JSON.stringify(b.map(x=>({name: x.name, fm: x.forSpareParts, m: x.models.length})), null, 2)); process.exit(0); });

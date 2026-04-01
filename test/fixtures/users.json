@@ -1,0 +1,23 @@
+[
+  {
+    "name": "Test Client",
+    "email": "client@test.com",
+    "password": "password123",
+    "phone": "+1234567890",
+    "role": "client"
+  },
+  {
+    "name": "Test Admin",
+    "email": "admin@test.com",
+    "password": "admin123",
+    "phone": "+1234567891",
+    "role": "admin"
+  },
+  {
+    "name": "Test Dealer",
+    "email": "dealer@test.com",
+    "password": "dealer123",
+    "phone": "+1234567892",
+    "role": "dealer"
+  }
+]
