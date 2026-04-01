@@ -5,10 +5,17 @@ import { User } from '@/lib/models';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'carx-fallback-secret';
+const JWT_SECRET = process.env.NEXTAUTH_SECRET;
 
 export async function POST(request: NextRequest) {
   try {
+    if (!JWT_SECRET) {
+      return NextResponse.json(
+        { success: false, error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+
     await connectDB();
 
     const { email, password } = await request.json();
