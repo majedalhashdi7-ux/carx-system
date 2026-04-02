@@ -7,7 +7,8 @@ import { useLanguage } from "@/lib/LanguageContext";
 import { 
   Car, Gavel, Wrench, User, LogIn, UserPlus, Globe, 
   MessageCircle, HelpCircle, Menu, X, Play, Pause, Volume2, VolumeX,
-  ArrowRight, Star, Zap, Shield, Award, Instagram, Facebook, Youtube
+  ArrowRight, Star, Zap, Shield, Award, Instagram, Facebook, Youtube,
+  Phone, MapPin
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useTenant } from "@/lib/TenantContext";
