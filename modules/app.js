@@ -115,9 +115,30 @@ class App {
 
     this.app.get('/', (req, res) => {
       res.json({
-        message: 'مرحباً بك في واجهة برمجة تطبيقات HM CAR V2',
+        name: 'HM CAR Multi-Tenant API',
+        version: '2.0.0',
         status: 'Online',
-        documentation: '/api/v2/docs'
+        message: 'مرحباً بك في واجهة برمجة تطبيقات HM CAR',
+        clients: [
+          {
+            id: 'hmcar',
+            name: 'HM CAR',
+            url: 'https://hmcar-client-app.vercel.app',
+            description: 'منصة مزادات ومبيعات السيارات الفاخرة'
+          },
+          {
+            id: 'carx',
+            name: 'CAR X',
+            url: 'https://carx-system.vercel.app',
+            description: 'معرض وأمزاد CAR X'
+          }
+        ],
+        endpoints: {
+          api: '/api/v2',
+          health: '/health',
+          docs: '/api/v2/docs'
+        },
+        timestamp: new Date().toISOString()
       });
     });
 
