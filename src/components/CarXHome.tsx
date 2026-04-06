@@ -5,7 +5,8 @@ import { motion, useMotionValue, useTransform, useSpring, AnimatePresence } from
 import Link from 'next/link';
 import {
   Car, Wrench, Gavel, ArrowRight, Star, Shield, Zap, Award,
-  Phone, MessageCircle, MapPin, ChevronDown, Play, Users, TrendingUp, Globe
+  Phone, MessageCircle, MapPin, ChevronDown, Users, TrendingUp, Globe,
+  CheckCircle, Flame, Sparkles, ChevronRight
 } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -97,216 +98,253 @@ function Particles() {
   );
 }
 
+/* ─── Marquee ─── */
+function Marquee({ items }: { items: string[] }) {
+  return (
+    <div className="overflow-hidden whitespace-nowrap py-4">
+      <motion.div
+        animate={{ x: ['0%', '-50%'] }}
+        transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
+        className="inline-flex gap-12 items-center"
+      >
+        {[...items, ...items].map((item, i) => (
+          <span key={i} className="text-white/20 font-black text-lg tracking-widest uppercase flex items-center gap-4">
+            {item}
+            <span className="w-1.5 h-1.5 bg-red-600 rounded-full inline-block" />
+          </span>
+        ))}
+      </motion.div>
+    </div>
+  );
+}
+
 /* ─── Main Component ─── */
 export default function CarXHome() {
   const { isRTL } = useLanguage();
-  const [activeSection, setActiveSection] = useState(0);
 
-  const sections = [
+  const brands = ['Hyundai', 'Kia', 'Genesis', 'Ssangyong', 'Samsung', 'Chevrolet', 'Toyota', 'Honda'];
+
+  const stats = [
+    { value: 1200, suffix: '+', label: isRTL ? 'سيارة متوفرة' : 'Cars Available', icon: Car, color: 'from-red-600/20 to-red-900/10', border: 'border-red-600/20' },
+    { value: 500, suffix: '+', label: isRTL ? 'عميل راضٍ' : 'Happy Clients', icon: Users, color: 'from-blue-600/20 to-blue-900/10', border: 'border-blue-600/20' },
+    { value: 15, suffix: '', label: isRTL ? 'سنة خبرة' : 'Years Experience', icon: Award, color: 'from-amber-600/20 to-amber-900/10', border: 'border-amber-600/20' },
+    { value: 30, suffix: '+', label: isRTL ? 'دولة نصدر إليها' : 'Export Countries', icon: Globe, color: 'from-emerald-600/20 to-emerald-900/10', border: 'border-emerald-600/20' },
+  ];
+
+  const services = [
     {
       href: '/showroom',
       icon: Car,
-      title: isRTL ? 'معرض السيارات' : 'Showroom',
-      desc: isRTL ? 'أفضل السيارات الكورية بأسعار منافسة' : 'Premium Korean cars at competitive prices',
-      gradient: 'from-red-900/80 via-red-800/60 to-black',
-      glow: 'rgba(220,38,38,0.4)',
-      tag: isRTL ? 'سيارات للبيع' : 'Cars for Sale',
+      title: isRTL ? 'معرض السيارات' : 'Car Showroom',
+      desc: isRTL ? 'أفضل السيارات الكورية بأسعار منافسة ومواصفات موثقة' : 'Premium Korean cars at competitive prices',
+      accent: '#dc2626',
+      glow: 'rgba(220,38,38,0.25)',
+      tag: isRTL ? 'سيارات للبيع' : 'For Sale',
+      items: isRTL ? ['هيونداي', 'كيا', 'جينيسيس'] : ['Hyundai', 'Kia', 'Genesis'],
     },
     {
       href: '/parts',
       icon: Wrench,
       title: isRTL ? 'قطع الغيار' : 'Spare Parts',
-      desc: isRTL ? 'قطع أصلية مضمونة لجميع الموديلات' : 'Genuine parts for all models',
-      gradient: 'from-blue-900/80 via-blue-800/60 to-black',
-      glow: 'rgba(59,130,246,0.4)',
-      tag: isRTL ? 'أصلية 100%' : '100% Genuine',
+      desc: isRTL ? 'قطع أصلية مضمونة لجميع الموديلات الكورية' : 'Genuine parts for all Korean models',
+      accent: '#3b82f6',
+      glow: 'rgba(59,130,246,0.25)',
+      tag: isRTL ? 'أصلية 100%' : '100% Original',
+      items: isRTL ? ['فلاتر', 'مكابح', 'إطارات'] : ['Filters', 'Brakes', 'Tires'],
     },
     {
-      href: '#auctions',
-      icon: Gavel,
-      title: isRTL ? 'المزادات' : 'Auctions',
-      desc: isRTL ? 'مزادات حصرية على سيارات نادرة' : 'Exclusive auctions on rare vehicles',
-      gradient: 'from-amber-900/80 via-amber-800/60 to-black',
-      glow: 'rgba(245,158,11,0.4)',
-      tag: isRTL ? 'مزادات حية' : 'Live Auctions',
+      href: '/brands',
+      icon: Award,
+      title: isRTL ? 'الوكالات المعتمدة' : 'Certified Brands',
+      desc: isRTL ? 'وكالات موثوقة لأشهر ماركات السيارات الكورية' : 'Trusted dealers for top Korean brands',
+      accent: '#f59e0b',
+      glow: 'rgba(245,158,11,0.25)',
+      tag: isRTL ? 'موثوق' : 'Trusted',
+      items: isRTL ? ['معتمدة', 'مرخصة', 'موثقة'] : ['Certified', 'Licensed', 'Verified'],
     },
-  ];
-
-  const stats = [
-    { value: 1200, suffix: '+', label: isRTL ? 'سيارة متوفرة' : 'Cars Available', icon: Car },
-    { value: 500, suffix: '+', label: isRTL ? 'عميل راضٍ' : 'Happy Clients', icon: Users },
-    { value: 15, suffix: '', label: isRTL ? 'سنة خبرة' : 'Years Experience', icon: Award },
-    { value: 30, suffix: '+', label: isRTL ? 'دولة نصدر إليها' : 'Export Countries', icon: Globe },
   ];
 
   const features = [
-    { icon: Shield, title: isRTL ? 'ضمان الجودة' : 'Quality Guarantee', desc: isRTL ? 'فحص شامل لكل سيارة' : 'Full inspection on every car' },
-    { icon: Zap, title: isRTL ? 'شحن سريع' : 'Fast Shipping', desc: isRTL ? 'تسليم لجميع دول العالم' : 'Delivery to all countries' },
-    { icon: TrendingUp, title: isRTL ? 'أفضل الأسعار' : 'Best Prices', desc: isRTL ? 'أسعار تنافسية مضمونة' : 'Guaranteed competitive prices' },
-    { icon: Star, title: isRTL ? 'خدمة 24/7' : 'Support 24/7', desc: isRTL ? 'دعم فني على مدار الساعة' : 'Round-the-clock technical support' },
+    { icon: Shield, title: isRTL ? 'ضمان الجودة' : 'Quality Guarantee', desc: isRTL ? 'فحص شامل لكل سيارة قبل الشحن' : 'Full inspection before shipping', color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20' },
+    { icon: Zap, title: isRTL ? 'شحن سريع' : 'Fast Shipping', desc: isRTL ? 'تسليم لجميع دول العالم' : 'Delivery worldwide', color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20' },
+    { icon: TrendingUp, title: isRTL ? 'أفضل الأسعار' : 'Best Prices', desc: isRTL ? 'أسعار تنافسية مضمونة' : 'Guaranteed competitive prices', color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
+    { icon: Star, title: isRTL ? 'دعم 24/7' : 'Support 24/7', desc: isRTL ? 'دعم فني على مدار الساعة' : 'Round-the-clock support', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' },
   ];
 
   const testimonials = [
-    { name: 'أحمد محمد', stars: 5, text: isRTL ? 'تجربة رائعة، السيارة وصلت بحالة ممتازة وبسعر لا يصدق!' : 'Amazing experience, car arrived in perfect condition!' },
-    { name: 'سارة علي', stars: 5, text: isRTL ? 'أفضل معرض للسيارات الكورية، خدمة ممتازة وأسعار منافسة' : 'Best Korean car dealer, excellent service!' },
-    { name: 'خالد عبدالله', stars: 4, text: isRTL ? 'شحن سريع وسيارة مطابقة للوصف تماماً' : 'Fast shipping and car exactly as described' },
+    { name: 'أحمد محمد', role: isRTL ? 'مستورد سيارات - السعودية' : 'Car Importer - KSA', stars: 5, text: isRTL ? 'تجربة رائعة، السيارة وصلت بحالة ممتازة وبسعر لا يصدق! أنصح الجميع بالتعامل مع CAR X' : 'Amazing experience, car arrived in perfect condition at an incredible price!' },
+    { name: 'سارة علي', role: isRTL ? 'تاجر سيارات - الإمارات' : 'Car Dealer - UAE', stars: 5, text: isRTL ? 'أفضل معرض للسيارات الكورية، خدمة ممتازة وأسعار منافسة جداً. تعاملت معهم أكثر من مرة' : 'Best Korean car dealer, excellent service and very competitive prices.' },
+    { name: 'خالد عبدالله', role: isRTL ? 'مشترٍ فردي - الكويت' : 'Private Buyer - Kuwait', stars: 5, text: isRTL ? 'شحن سريع وسيارة مطابقة للوصف تماماً. فريق محترف وخدمة عملاء ممتازة' : 'Fast shipping, car exactly as described. Professional team.' },
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-x-hidden">
+    <div className="min-h-screen bg-[#050505] text-white overflow-x-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
 
       {/* ════ HERO ════ */}
-      <section className="relative h-screen flex items-center justify-center overflow-hidden">
-        {/* Background */}
-        <div className="absolute inset-0" style={{
-          background: 'radial-gradient(ellipse 80% 60% at 50% 40%, rgba(180,0,0,0.25) 0%, transparent 70%), radial-gradient(ellipse at 80% 80%, rgba(80,0,0,0.2) 0%, transparent 50%), #000',
-        }} />
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
 
-        {/* Grid overlay */}
-        <div className="absolute inset-0 opacity-[0.07]" style={{
-          backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
-          backgroundSize: '80px 80px',
-        }} />
+        {/* Glowing orbs */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full opacity-20"
+            style={{ background: 'radial-gradient(circle, #dc2626 0%, transparent 70%)', filter: 'blur(80px)' }} />
+          <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full opacity-10"
+            style={{ background: 'radial-gradient(circle, #7f1d1d 0%, transparent 70%)', filter: 'blur(60px)' }} />
+          <div className="absolute top-0 left-0 w-[300px] h-[300px] rounded-full opacity-10"
+            style={{ background: 'radial-gradient(circle, #1e3a5f 0%, transparent 70%)', filter: 'blur(60px)' }} />
+        </div>
 
-        {/* Diagonal red line decorations */}
+        {/* Grid */}
+        <div className="absolute inset-0 opacity-[0.04]"
+          style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+
+        {/* Vertical lines */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-px h-full bg-gradient-to-b from-transparent via-red-600/30 to-transparent" />
-          <div className="absolute top-0 right-1/4 w-px h-full bg-gradient-to-b from-transparent via-red-600/20 to-transparent" />
-          <div className="absolute top-1/3 left-0 w-full h-px bg-gradient-to-r from-transparent via-red-600/20 to-transparent" />
+          {[1/5, 2/5, 3/5, 4/5].map((pos, i) => (
+            <div key={i} className="absolute top-0 bottom-0 w-px"
+              style={{ left: `${pos * 100}%`, background: `linear-gradient(180deg, transparent 0%, rgba(220,38,38,${0.1 + i * 0.03}) 50%, transparent 100%)` }} />
+          ))}
         </div>
 
         <Particles />
 
-        {/* 3D floating geometric shapes */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <motion.div
-            animate={{ rotateX: [0, 360], rotateY: [0, 180] }}
-            transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-            className="absolute top-20 right-20 w-32 h-32 opacity-10"
-            style={{ transformStyle: 'preserve-3d', perspective: 800 }}
-          >
-            <div className="w-full h-full border-2 border-red-500 rounded-2xl" />
-          </motion.div>
-          <motion.div
-            animate={{ rotateZ: [0, 360], scale: [1, 1.2, 1] }}
-            transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
-            className="absolute bottom-32 left-16 w-20 h-20 opacity-10 border-2 border-red-400 rounded-full"
-          />
-          <motion.div
-            animate={{ rotateY: [0, 360] }}
-            transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
-            className="absolute top-1/2 left-8 w-12 h-12 opacity-10 border border-white rotate-45"
-          />
-        </div>
-
         {/* Hero Content */}
-        <div className="relative z-10 max-w-7xl mx-auto px-6 text-center">
-          {/* Badge */}
+        <div className="relative z-10 max-w-6xl mx-auto px-6 text-center">
+
+          {/* Top badge */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="inline-flex items-center gap-2 mb-8 px-4 py-2 rounded-full border border-red-500/40 bg-red-500/10 backdrop-blur-sm"
+            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: 0.2, type: 'spring' }}
+            className="inline-flex items-center gap-3 mb-10 px-5 py-2.5 rounded-full border border-red-500/30 bg-red-500/[0.08] backdrop-blur-sm"
           >
-            <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-            <span className="text-red-400 text-sm font-medium tracking-wider uppercase">
-              {isRTL ? 'تصدير سيارات كورية عالمياً' : 'Global Korean Car Exports'}
+            <Flame className="w-4 h-4 text-red-400" />
+            <span className="text-red-300 text-sm font-semibold tracking-wide">
+              {isRTL ? '🇰🇷 تصدير سيارات كورية عالمياً' : '🇰🇷 Global Korean Car Exports'}
             </span>
+            <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
           </motion.div>
 
-          {/* Title */}
-          <motion.h1
-            initial={{ opacity: 0, y: 40 }}
+          {/* Main Title */}
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.8 }}
-            className="text-6xl md:text-8xl lg:text-9xl font-black mb-6 leading-none tracking-tighter"
+            transition={{ delay: 0.3, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
           >
-            <span className="block text-white">CAR</span>
-            <span
-              className="block"
-              style={{
-                background: 'linear-gradient(135deg, #dc2626 0%, #ff4444 40%, #ff6600 100%)',
+            <h1 className="text-7xl md:text-9xl lg:text-[11rem] font-black leading-none tracking-tighter mb-4">
+              <span className="block text-white" style={{ textShadow: '0 0 80px rgba(255,255,255,0.05)' }}>CAR</span>
+              <span className="block relative" style={{
+                background: 'linear-gradient(135deg, #ff2020 0%, #ff5f5f 40%, #ff8c00 80%, #ffd700 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
-                filter: 'drop-shadow(0 0 30px rgba(220,38,38,0.5))',
-              }}
-            >
-              XPERT
-            </span>
-          </motion.h1>
+                filter: 'drop-shadow(0 0 40px rgba(220,38,38,0.6))',
+              }}>
+                XPERT
+              </span>
+            </h1>
+          </motion.div>
+
+          {/* Divider line */}
+          <motion.div
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ delay: 0.7, duration: 0.8 }}
+            className="w-32 h-px mx-auto mb-8 bg-gradient-to-r from-transparent via-red-500 to-transparent"
+          />
 
           {/* Subtitle */}
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="text-xl md:text-2xl text-white/50 mb-10 max-w-2xl mx-auto leading-relaxed"
+            transition={{ delay: 0.55 }}
+            className="text-lg md:text-xl text-white/40 mb-12 max-w-xl mx-auto leading-relaxed font-light"
           >
             {isRTL
-              ? 'نظام متكامل لتصدير السيارات الكورية وقطع الغيار إلى جميع دول العالم'
-              : 'Complete system for Korean car & parts exports worldwide'}
+              ? 'نظام متكامل لاستيراد وتصدير السيارات الكورية وقطع الغيار إلى جميع دول العالم'
+              : 'Complete platform for Korean car & parts imports/exports worldwide'}
           </motion.p>
 
-          {/* CTA Buttons */}
+          {/* CTA */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
+            transition={{ delay: 0.7 }}
             className="flex flex-col sm:flex-row gap-4 justify-center items-center"
           >
             <Link href="/showroom">
-              <motion.div
-                whileHover={{ scale: 1.05, y: -3 }}
-                whileTap={{ scale: 0.95 }}
-                className="group flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-white text-lg cursor-pointer"
+              <motion.button
+                whileHover={{ scale: 1.04, y: -2 }}
+                whileTap={{ scale: 0.96 }}
+                className="group relative flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-white text-base overflow-hidden"
                 style={{
-                  background: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)',
-                  boxShadow: '0 8px 30px rgba(220,38,38,0.5), inset 0 1px 0 rgba(255,255,255,0.15)',
+                  background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                  boxShadow: '0 8px 40px rgba(220,38,38,0.45), inset 0 1px 0 rgba(255,255,255,0.15)',
                 }}
               >
-                <Car className="w-5 h-5" />
-                <span>{isRTL ? 'تصفح المعرض' : 'Browse Showroom'}</span>
-                <ArrowRight className={`w-4 h-4 group-hover:translate-x-1 transition-transform ${isRTL ? 'rotate-180' : ''}`} />
-              </motion.div>
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                <Car className="w-5 h-5 relative" />
+                <span className="relative">{isRTL ? 'تصفح المعرض' : 'Browse Showroom'}</span>
+                <ChevronRight className={`w-4 h-4 relative group-hover:translate-x-1 transition-transform ${isRTL ? 'rotate-180' : ''}`} />
+              </motion.button>
             </Link>
             <Link href="/parts">
-              <motion.div
-                whileHover={{ scale: 1.05, y: -3 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-white text-lg border border-white/20 backdrop-blur-sm cursor-pointer hover:border-white/40 transition-all"
-                style={{ background: 'rgba(255,255,255,0.05)' }}
+              <motion.button
+                whileHover={{ scale: 1.04, y: -2, borderColor: 'rgba(255,255,255,0.4)' }}
+                whileTap={{ scale: 0.96 }}
+                className="flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-white/80 text-base border border-white/15 backdrop-blur-sm hover:text-white transition-all"
+                style={{ background: 'rgba(255,255,255,0.04)' }}
               >
                 <Wrench className="w-5 h-5" />
                 <span>{isRTL ? 'قطع الغيار' : 'Spare Parts'}</span>
-              </motion.div>
+              </motion.button>
             </Link>
           </motion.div>
 
-          {/* Scroll indicator */}
+          {/* Trust indicators */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 1.2 }}
-            className="absolute bottom-8 left-1/2 -translate-x-1/2"
+            transition={{ delay: 1 }}
+            className="flex flex-wrap justify-center gap-6 mt-14 text-sm text-white/30"
           >
-            <motion.div
-              animate={{ y: [0, 10, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="flex flex-col items-center gap-2 text-white/30"
-            >
-              <span className="text-xs uppercase tracking-widest">{isRTL ? 'اكتشف' : 'Explore'}</span>
-              <ChevronDown className="w-5 h-5" />
-            </motion.div>
+            {[
+              { icon: CheckCircle, text: isRTL ? 'شحن مضمون' : 'Guaranteed Shipping' },
+              { icon: Shield, text: isRTL ? 'سيارات معاينة' : 'Inspected Cars' },
+              { icon: Sparkles, text: isRTL ? 'أسعار شفافة' : 'Transparent Prices' },
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <item.icon className="w-4 h-4 text-red-500/60" />
+                <span>{item.text}</span>
+              </div>
+            ))}
           </motion.div>
         </div>
+
+        {/* Scroll hint */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.5 }}
+          className="absolute bottom-10 left-1/2 -translate-x-1/2"
+        >
+          <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 2, repeat: Infinity }}
+            className="flex flex-col items-center gap-1.5 text-white/20 cursor-default">
+            <span className="text-[10px] uppercase tracking-[0.3em]">{isRTL ? 'اكتشف' : 'Scroll'}</span>
+            <ChevronDown className="w-4 h-4" />
+          </motion.div>
+        </motion.div>
       </section>
 
+      {/* ════ MARQUEE ════ */}
+      <div className="border-y border-white/[0.06] bg-white/[0.015]">
+        <Marquee items={brands} />
+      </div>
+
       {/* ════ STATS ════ */}
-      <section className="py-16 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-red-950/20 via-black to-red-950/20" />
-        <div className="relative max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+      <section className="py-20 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-red-950/[0.07] to-transparent" />
+        <div className="relative max-w-6xl mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {stats.map((stat, i) => (
               <motion.div
                 key={i}
@@ -314,86 +352,85 @@ export default function CarXHome() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="text-center group"
+                whileHover={{ y: -4, scale: 1.02 }}
+                className={`relative p-6 rounded-2xl border bg-gradient-to-br ${stat.color} ${stat.border} backdrop-blur-sm overflow-hidden group`}
               >
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-red-600/10 border border-red-600/20 mb-4 group-hover:bg-red-600/20 transition-all">
-                  <stat.icon className="w-6 h-6 text-red-400" />
-                </div>
-                <div className="text-4xl font-black text-white mb-1">
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                  style={{ background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.04) 0%, transparent 70%)' }} />
+                <stat.icon className="w-7 h-7 text-white/30 mb-4" />
+                <div className="text-4xl font-black text-white mb-1 tabular-nums">
                   <Counter to={stat.value} suffix={stat.suffix} />
                 </div>
-                <p className="text-white/50 text-sm">{stat.label}</p>
+                <p className="text-white/40 text-sm font-medium">{stat.label}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ════ SECTIONS (3D Cards) ════ */}
+      {/* ════ SERVICES ════ */}
       <section className="py-24 relative">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-6xl mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="mb-14"
           >
-            <span className="text-red-500 text-sm font-bold uppercase tracking-widest mb-3 block">
-              {isRTL ? 'خدماتنا' : 'Our Services'}
-            </span>
-            <h2 className="text-4xl md:text-5xl font-black text-white">
-              {isRTL ? 'اختر ما تحتاجه' : 'Choose What You Need'}
+            <p className="text-red-500 text-xs font-bold uppercase tracking-[0.2em] mb-3">
+              {isRTL ? '— خدماتنا' : '— Our Services'}
+            </p>
+            <h2 className="text-4xl md:text-5xl font-black text-white leading-tight">
+              {isRTL ? 'كل ما تحتاجه في مكان واحد' : 'Everything You Need'}
             </h2>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {sections.map((section, i) => (
+          <div className="grid md:grid-cols-3 gap-5">
+            {services.map((s, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 50 }}
+                initial={{ opacity: 0, y: 40 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.15 }}
+                transition={{ delay: i * 0.12 }}
               >
-                <Card3D className="h-full">
-                  <Link href={section.href}>
-                    <div
-                      className={`relative h-72 rounded-3xl overflow-hidden bg-gradient-to-br ${section.gradient} border border-white/10 cursor-pointer group`}
-                      style={{ boxShadow: `0 20px 60px ${section.glow}` }}
+                <Card3D>
+                  <Link href={s.href} className="block group">
+                    <div className="relative rounded-3xl border border-white/[0.08] bg-white/[0.02] overflow-hidden p-7 h-full transition-all duration-500 group-hover:border-white/[0.15]"
+                      style={{ boxShadow: `0 0 0 0 ${s.glow}`, transition: 'box-shadow 0.4s ease' }}
+                      onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 20px 60px ${s.glow}`)}
+                      onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 0 0 0 transparent')}
                     >
-                      {/* Shine effect */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      {/* Top glow line */}
+                      <div className="absolute top-0 left-0 right-0 h-[1px] opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                        style={{ background: `linear-gradient(90deg, transparent, ${s.accent}, transparent)` }} />
 
-                      {/* Top badge */}
-                      <div className="absolute top-4 right-4">
-                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-white/10 border border-white/20 backdrop-blur-sm text-white">
-                          {section.tag}
+                      {/* Icon + badge */}
+                      <div className="flex items-start justify-between mb-6">
+                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center border border-white/10"
+                          style={{ background: `${s.accent}15` }}>
+                          <s.icon className="w-7 h-7" style={{ color: s.accent }} />
+                        </div>
+                        <span className="text-xs font-bold px-3 py-1 rounded-full border border-white/10 bg-white/5 text-white/50">
+                          {s.tag}
                         </span>
                       </div>
 
-                      {/* Icon */}
-                      <div
-                        className="absolute top-4 left-4 w-14 h-14 rounded-2xl flex items-center justify-center"
-                        style={{ background: `${section.glow.replace('0.4', '0.3')}`, backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)' }}
-                      >
-                        <section.icon className="w-7 h-7 text-white" />
+                      <h3 className="text-xl font-black text-white mb-2">{s.title}</h3>
+                      <p className="text-white/40 text-sm leading-relaxed mb-6">{s.desc}</p>
+
+                      {/* Mini tags */}
+                      <div className="flex gap-2 flex-wrap mb-6">
+                        {s.items.map((item, j) => (
+                          <span key={j} className="text-xs px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-white/40">{item}</span>
+                        ))}
                       </div>
 
-                      {/* 3D depth layer */}
-                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-500" style={{ transform: 'translateZ(20px)', boxShadow: `inset 0 0 60px ${section.glow}` }} />
-
-                      {/* Content */}
-                      <div className="absolute bottom-0 left-0 right-0 p-6">
-                        <h3 className="text-2xl font-black text-white mb-2">{section.title}</h3>
-                        <p className="text-white/60 text-sm mb-4">{section.desc}</p>
-                        <div className="flex items-center gap-2 text-white/80 group-hover:text-white transition-colors">
-                          <span className="text-sm font-bold">{isRTL ? 'استكشف الآن' : 'Explore Now'}</span>
-                          <ArrowRight className={`w-4 h-4 group-hover:translate-x-1 transition-transform ${isRTL ? 'rotate-180' : ''}`} />
-                        </div>
+                      <div className="flex items-center gap-2 font-bold text-sm transition-all duration-300 group-hover:gap-3"
+                        style={{ color: s.accent }}>
+                        <span>{isRTL ? 'استكشف' : 'Explore'}</span>
+                        <ChevronRight className={`w-4 h-4 ${isRTL ? 'rotate-180' : ''}`} />
                       </div>
-
-                      {/* Bottom glow line */}
-                      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-700" />
                     </div>
                   </Link>
                 </Card3D>
@@ -405,86 +442,106 @@ export default function CarXHome() {
 
       {/* ════ FEATURES ════ */}
       <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, rgba(30,0,0,0.8) 0%, #000 70%)' }} />
-        <div className="relative max-w-7xl mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <span className="text-red-500 text-sm font-bold uppercase tracking-widest mb-3 block">
-              {isRTL ? 'لماذا نحن' : 'Why Us'}
-            </span>
-            <h2 className="text-4xl md:text-5xl font-black text-white">
-              {isRTL ? 'ميزاتنا التنافسية' : 'Our Competitive Edge'}
-            </h2>
-          </motion.div>
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 60% 50% at 50% 50%, rgba(15,0,0,0.9) 0%, transparent 100%)' }} />
+        <div className="relative max-w-6xl mx-auto px-6">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: isRTL ? 40 : -40 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <p className="text-red-500 text-xs font-bold uppercase tracking-[0.2em] mb-3">
+                {isRTL ? '— لماذا نحن' : '— Why Choose Us'}
+              </p>
+              <h2 className="text-4xl md:text-5xl font-black text-white mb-6 leading-tight">
+                {isRTL ? 'ميزات تجعلنا\nالخيار الأفضل' : 'Features That Make\nUs #1'}
+              </h2>
+              <p className="text-white/40 leading-relaxed mb-8">
+                {isRTL
+                  ? 'نقدم تجربة استيراد متكاملة مع ضمان الجودة وأفضل الأسعار وخدمة عملاء احترافية'
+                  : 'We offer a complete import experience with quality guarantee, best prices, and professional customer service.'}
+              </p>
+              <Link href="/showroom">
+                <motion.button
+                  whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
+                  className="flex items-center gap-2 text-sm font-bold text-white/60 hover:text-white transition-colors border border-white/10 hover:border-white/30 px-5 py-2.5 rounded-xl"
+                >
+                  {isRTL ? 'شاهد السيارات' : 'View Cars'}
+                  <ChevronRight className={`w-4 h-4 ${isRTL ? 'rotate-180' : ''}`} />
+                </motion.button>
+              </Link>
+            </motion.div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((f, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                whileHover={{ y: -8 }}
-                className="relative p-6 rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-sm group cursor-default"
-                style={{ boxShadow: '0 0 0 0 rgba(220,38,38,0)' }}
-              >
-                <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ boxShadow: '0 0 30px rgba(220,38,38,0.15)', border: '1px solid rgba(220,38,38,0.3)' }} />
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-600/20 to-red-900/20 border border-red-600/30 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <f.icon className="w-6 h-6 text-red-400" />
-                </div>
-                <h3 className="text-white font-bold text-lg mb-2">{f.title}</h3>
-                <p className="text-white/50 text-sm leading-relaxed">{f.desc}</p>
-              </motion.div>
-            ))}
+            <div className="grid grid-cols-2 gap-4">
+              {features.map((f, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  whileHover={{ y: -4 }}
+                  className={`p-5 rounded-2xl border ${f.bg} group`}
+                >
+                  <div className={`w-10 h-10 rounded-xl ${f.bg} border flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+                    <f.icon className={`w-5 h-5 ${f.color}`} />
+                  </div>
+                  <h3 className="text-white font-bold text-sm mb-1">{f.title}</h3>
+                  <p className="text-white/40 text-xs leading-relaxed">{f.desc}</p>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* ════ TESTIMONIALS ════ */}
       <section className="py-24 relative">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-6xl mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-14"
           >
-            <span className="text-red-500 text-sm font-bold uppercase tracking-widest mb-3 block">
-              {isRTL ? 'آراء العملاء' : 'Testimonials'}
-            </span>
+            <p className="text-red-500 text-xs font-bold uppercase tracking-[0.2em] mb-3">
+              {isRTL ? '— آراء العملاء' : '— Testimonials'}
+            </p>
             <h2 className="text-4xl md:text-5xl font-black text-white">
-              {isRTL ? 'ماذا يقول عملاؤنا' : 'What Our Clients Say'}
+              {isRTL ? 'ماذا يقول عملاؤنا' : 'What Clients Say'}
             </h2>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-5">
             {testimonials.map((t, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
                 whileHover={{ y: -5 }}
-                className="p-6 rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-sm relative overflow-hidden"
+                className="relative p-6 rounded-2xl border border-white/[0.07] bg-white/[0.02] overflow-hidden group"
               >
-                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-500/50 to-transparent" />
+                <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-red-500/40 to-transparent" />
+                <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-0 group-hover:opacity-5 transition-opacity duration-700"
+                  style={{ background: 'radial-gradient(circle, #dc2626 0%, transparent 70%)' }} />
+
                 <div className="flex gap-1 mb-4">
                   {Array.from({ length: 5 }).map((_, j) => (
-                    <Star key={j} className={`w-4 h-4 ${j < t.stars ? 'text-amber-400 fill-amber-400' : 'text-white/20'}`} />
+                    <Star key={j} className={`w-3.5 h-3.5 ${j < t.stars ? 'text-amber-400 fill-amber-400' : 'text-white/10'}`} />
                   ))}
                 </div>
-                <p className="text-white/70 text-sm leading-relaxed mb-4">"{t.text}"</p>
+                <p className="text-white/60 text-sm leading-relaxed mb-5 italic">"{t.text}"</p>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-600 to-red-900 flex items-center justify-center text-white text-xs font-bold">
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-black flex-shrink-0"
+                    style={{ background: 'linear-gradient(135deg, #dc2626, #7f1d1d)' }}>
                     {t.name.charAt(0)}
                   </div>
-                  <span className="text-white font-medium text-sm">{t.name}</span>
+                  <div>
+                    <p className="text-white font-bold text-sm">{t.name}</p>
+                    <p className="text-white/30 text-xs">{t.role}</p>
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -492,86 +549,104 @@ export default function CarXHome() {
         </div>
       </section>
 
-      {/* ════ CONTACT CTA ════ */}
-      <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0" style={{
-          background: 'linear-gradient(135deg, rgba(120,0,0,0.3) 0%, rgba(0,0,0,0.8) 50%, rgba(80,0,0,0.2) 100%)',
-        }} />
-        <div className="absolute inset-0 opacity-5" style={{
-          backgroundImage: 'linear-gradient(rgba(255,0,0,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,0,0,0.5) 1px, transparent 1px)',
-          backgroundSize: '40px 40px',
-        }} />
+      {/* ════ CTA BANNER ════ */}
+      <section className="py-6 mx-6 mb-6">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="relative rounded-3xl overflow-hidden"
+          style={{ background: 'linear-gradient(135deg, #1a0000 0%, #2d0505 40%, #0a0a0a 100%)' }}
+        >
+          {/* inner grid */}
+          <div className="absolute inset-0 opacity-[0.06]"
+            style={{ backgroundImage: 'linear-gradient(rgba(255,80,80,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,80,80,1) 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
+          {/* Glow */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-40 opacity-30"
+            style={{ background: 'radial-gradient(ellipse, #dc2626 0%, transparent 70%)', filter: 'blur(40px)' }} />
 
-        <div className="relative max-w-4xl mx-auto px-6 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-4xl md:text-6xl font-black text-white mb-6">
-              {isRTL ? 'تواصل معنا اليوم' : 'Contact Us Today'}
-            </h2>
-            <p className="text-white/50 text-xl mb-10">
-              {isRTL ? 'نحن هنا لمساعدتك في الحصول على أفضل صفقة' : "We're here to help you get the best deal"}
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <a href="tel:+967781007805">
-                <motion.div
-                  whileHover={{ scale: 1.05, y: -3 }}
-                  className="flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-white cursor-pointer"
-                  style={{ background: 'linear-gradient(135deg, #dc2626, #991b1b)', boxShadow: '0 8px 30px rgba(220,38,38,0.4)' }}
-                >
-                  <Phone className="w-5 h-5" />
-                  <span>+967 781 007 805</span>
-                </motion.div>
-              </a>
-              <a href="https://wa.me/967781007805" target="_blank" rel="noopener noreferrer">
-                <motion.div
-                  whileHover={{ scale: 1.05, y: -3 }}
-                  className="flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-white border border-white/20 cursor-pointer hover:border-green-500/50 hover:bg-green-500/10 transition-all"
-                >
-                  <MessageCircle className="w-5 h-5 text-green-400" />
-                  <span>WhatsApp</span>
-                </motion.div>
-              </a>
-            </div>
-
-            <div className="flex items-center justify-center gap-2 text-white/40">
-              <MapPin className="w-4 h-4" />
-              <span>{isRTL ? 'صنعاء، اليمن' : "Sana'a, Yemen"}</span>
-            </div>
-          </motion.div>
-        </div>
+          <div className="relative px-10 py-14 text-center">
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+              <p className="text-red-400/60 text-xs font-bold uppercase tracking-[0.25em] mb-4">
+                {isRTL ? 'تواصل معنا' : 'Get In Touch'}
+              </p>
+              <h2 className="text-4xl md:text-6xl font-black text-white mb-4 leading-tight">
+                {isRTL ? 'جاهزون لمساعدتك' : 'Ready To Help You'}
+              </h2>
+              <p className="text-white/35 text-lg mb-10 max-w-lg mx-auto">
+                {isRTL ? 'تواصل مع فريقنا للحصول على أفضل عروض السيارات الكورية' : "Contact our team for the best Korean car deals"}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="tel:+967781007805">
+                  <motion.button whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.96 }}
+                    className="flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-white"
+                    style={{ background: 'linear-gradient(135deg, #dc2626, #991b1b)', boxShadow: '0 8px 30px rgba(220,38,38,0.4)' }}>
+                    <Phone className="w-5 h-5" />
+                    <span>+967 781 007 805</span>
+                  </motion.button>
+                </a>
+                <a href="https://wa.me/967781007805" target="_blank" rel="noopener noreferrer">
+                  <motion.button whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.96 }}
+                    className="flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-white border border-white/15 hover:border-green-500/40 hover:bg-green-500/8 transition-all">
+                    <MessageCircle className="w-5 h-5 text-green-400" />
+                    <span>WhatsApp</span>
+                  </motion.button>
+                </a>
+              </div>
+              <p className="flex items-center justify-center gap-2 mt-8 text-white/20 text-sm">
+                <MapPin className="w-4 h-4" />
+                {isRTL ? "صنعاء، اليمن" : "Sana'a, Yemen"}
+              </p>
+            </motion.div>
+          </div>
+        </motion.div>
       </section>
 
       {/* ════ FOOTER ════ */}
-      <footer className="border-t border-white/10 py-10">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-800 rounded-lg flex items-center justify-center">
-                <Zap className="w-4 h-4 text-white" fill="white" />
+      <footer className="border-t border-white/[0.06] py-12 mt-4">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="flex flex-col md:flex-row items-start justify-between gap-10 mb-10">
+            <div className="max-w-xs">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-9 h-9 bg-gradient-to-br from-red-500 to-red-800 rounded-xl flex items-center justify-center shadow-lg shadow-red-900/30">
+                  <Zap className="w-4 h-4 text-white" fill="white" />
+                </div>
+                <span className="text-2xl font-black"><span className="text-white">CAR</span><span className="text-red-500"> X</span></span>
               </div>
-              <span className="text-xl font-black"><span className="text-white">CAR</span><span className="text-red-500"> X</span></span>
+              <p className="text-white/30 text-sm leading-relaxed">
+                {isRTL ? 'منصتك الأولى لاستيراد السيارات الكورية وقطع الغيار' : 'Your #1 platform for Korean car imports & parts'}
+              </p>
             </div>
 
-            <div className="flex gap-6 text-sm text-white/40">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 text-sm">
               {[
-                { href: '/showroom', label: isRTL ? 'المعرض' : 'Showroom' },
-                { href: '/parts', label: isRTL ? 'قطع الغيار' : 'Parts' },
-                { href: '/brands', label: isRTL ? 'الماركات' : 'Brands' },
-                { href: '/login', label: isRTL ? 'تسجيل الدخول' : 'Login' },
-              ].map((link) => (
-                <Link key={link.href} href={link.href} className="hover:text-white transition-colors">
-                  {link.label}
-                </Link>
+                { heading: isRTL ? 'الصفحات' : 'Pages', links: [{ href: '/showroom', label: isRTL ? 'المعرض' : 'Showroom' }, { href: '/parts', label: isRTL ? 'قطع الغيار' : 'Parts' }, { href: '/brands', label: isRTL ? 'الماركات' : 'Brands' }] },
+                { heading: isRTL ? 'الحساب' : 'Account', links: [{ href: '/login', label: isRTL ? 'تسجيل الدخول' : 'Login' }, { href: '/login', label: isRTL ? 'إنشاء حساب' : 'Register' }] },
+                { heading: isRTL ? 'تواصل' : 'Contact', links: [{ href: 'tel:+967781007805', label: '+967 781 007 805' }, { href: 'https://wa.me/967781007805', label: 'WhatsApp' }] },
+              ].map((col, i) => (
+                <div key={i}>
+                  <p className="text-white/50 font-bold mb-3 text-xs uppercase tracking-wider">{col.heading}</p>
+                  <ul className="space-y-2">
+                    {col.links.map((l, j) => (
+                      <li key={j}>
+                        <Link href={l.href} className="text-white/25 hover:text-white/70 transition-colors">{l.label}</Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               ))}
             </div>
+          </div>
 
-            <p className="text-white/30 text-sm">
+          <div className="border-t border-white/[0.05] pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-white/20 text-xs">
               © {new Date().getFullYear()} CAR X. {isRTL ? 'جميع الحقوق محفوظة' : 'All rights reserved'}
             </p>
+            <div className="flex items-center gap-1 text-white/15 text-xs">
+              <span>{isRTL ? 'صنع بـ' : 'Built with'}</span>
+              <span className="text-red-600">♥</span>
+              <span>{isRTL ? 'لخدمتك' : 'for you'}</span>
+            </div>
           </div>
         </div>
       </footer>
