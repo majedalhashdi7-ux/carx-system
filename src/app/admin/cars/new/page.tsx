@@ -129,11 +129,43 @@ export default function NewCarPage() {
 
   return (
     <div className="min-h-screen bg-black text-white" dir="rtl">
-      <div className="p-8 max-w-4xl mx-auto">
+      {/* Sidebar */}
+      <div className="fixed right-0 top-0 bottom-0 w-64 bg-zinc-950 border-l border-white/10 z-40 flex flex-col">
+        <div className="p-6 border-b border-white/10">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center">
+              <span className="text-white font-black text-xl">X</span>
+            </div>
+            <div><p className="font-black text-white">CAR X</p><p className="text-xs text-gray-500">لوحة الإدارة</p></div>
+          </Link>
+        </div>
+        <nav className="flex-1 p-4 space-y-1">
+          {[
+            { href: '/admin', label: 'الإحصائيات' },
+            { href: '/admin/cars', label: 'السيارات', active: true },
+            { href: '/admin/parts', label: 'قطع الغيار' },
+            { href: '/admin/brands', label: 'الوكالات' },
+            { href: '/admin/users', label: 'المستخدمون' },
+            { href: '/admin/settings', label: 'الإعدادات' },
+          ].map((item) => (
+            <Link key={item.href} href={item.href}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm ${item.active ? 'bg-red-600/20 text-white border border-red-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+        <div className="p-4 border-t border-white/10">
+          <Link href="/" className="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors">
+            <ArrowRight className="w-3 h-3" /> العودة للموقع
+          </Link>
+        </div>
+      </div>
+
+      <div className="mr-64 p-8">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <Link href="/admin/cars" className="text-gray-400 hover:text-white transition-colors">
-            <ArrowRight className="w-6 h-6" />
+            <ArrowRight className="w-5 h-5" />
           </Link>
           <div>
             <h1 className="text-3xl font-black">إضافة سيارة جديدة</h1>
