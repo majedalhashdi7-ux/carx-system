@@ -5,12 +5,13 @@ import { SparePart } from '@/lib/models';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     await connectDB();
 
-    const part = await SparePart.findOne({ _id: params.id, isActive: true }).lean();
+    const part = await SparePart.findOne({ _id: id, isActive: true }).lean();
 
     if (!part) {
       return NextResponse.json(
@@ -21,7 +22,7 @@ export async function GET(
 
     // Related parts (same carMake)
     const related = await SparePart.find({
-      _id: { $ne: params.id },
+      _id: { $ne: id },
       carMake: (part as any).carMake,
       isActive: true,
       inStock: true,

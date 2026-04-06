@@ -5,12 +5,13 @@ import { Car } from '@/lib/models';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     await connectDB();
 
-    const car = await Car.findOne({ _id: params.id, isActive: true }).lean();
+    const car = await Car.findOne({ _id: id, isActive: true }).lean();
 
     if (!car) {
       return NextResponse.json(
@@ -20,11 +21,11 @@ export async function GET(
     }
 
     // Increment view count
-    await Car.findByIdAndUpdate(params.id, { $inc: { views: 1 } });
+    await Car.findByIdAndUpdate(id, { $inc: { views: 1 } });
 
     // Get related cars (same make)
     const related = await Car.find({
-      _id: { $ne: params.id },
+      _id: { $ne: id },
       make: (car as any).make,
       isActive: true,
     })

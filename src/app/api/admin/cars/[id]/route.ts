@@ -19,24 +19,26 @@ function verifyAdmin(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = verifyAdmin(request);
   if (!admin) return NextResponse.json({ success: false, error: 'غير مصرح' }, { status: 401 });
 
+  const { id } = await params;
   await connectDB();
-  const car = await Car.findById(params.id).lean();
+  const car = await Car.findById(id).lean();
   if (!car) return NextResponse.json({ success: false, error: 'غير موجود' }, { status: 404 });
   return NextResponse.json({ success: true, data: car });
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = verifyAdmin(request);
   if (!admin) return NextResponse.json({ success: false, error: 'غير مصرح' }, { status: 401 });
 
   try {
+    const { id } = await params;
     await connectDB();
     const body = await request.json();
-    const car = await Car.findByIdAndUpdate(params.id, body, { new: true });
+    const car = await Car.findByIdAndUpdate(id, body, { new: true });
     if (!car) return NextResponse.json({ success: false, error: 'غير موجود' }, { status: 404 });
     return NextResponse.json({ success: true, data: car });
   } catch (error: any) {
@@ -44,12 +46,13 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = verifyAdmin(request);
   if (!admin) return NextResponse.json({ success: false, error: 'غير مصرح' }, { status: 401 });
 
+  const { id } = await params;
   await connectDB();
-  const car = await Car.findByIdAndDelete(params.id);
+  const car = await Car.findByIdAndDelete(id);
   if (!car) return NextResponse.json({ success: false, error: 'غير موجود' }, { status: 404 });
   return NextResponse.json({ success: true, message: 'تم الحذف بنجاح' });
 }
