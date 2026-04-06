@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { LanguageProvider } from '@/lib/LanguageContext';
@@ -13,7 +13,6 @@ export const metadata: Metadata = {
   description: 'نظام CAR X لمعارض ومزادات السيارات - تصميم حديث وتجربة مذهلة',
   keywords: 'سيارات, مزادات, معارض, CAR X, daood.okigo.net',
   authors: [{ name: 'CAR X Team' }],
-  viewport: 'width=device-width, initial-scale=1',
   robots: 'index, follow',
   openGraph: {
     title: 'CAR X - معارض ومزادات السيارات',
@@ -23,6 +22,11 @@ export const metadata: Metadata = {
     locale: 'ar_SA',
     type: 'website',
   },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({
