@@ -5,6 +5,7 @@ import { LanguageProvider } from '@/lib/LanguageContext';
 import { AuthProvider } from '@/lib/AuthContext';
 import { SettingsProvider } from '@/lib/SettingsContext';
 import { TenantProvider } from '@/lib/TenantContext';
+import PageTransition from '@/components/PageTransition';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -47,7 +48,7 @@ export default function RootLayout({
             <AuthProvider>
               <SettingsProvider>
                 <div id="root">
-                  {children}
+                  <PageTransition>{children}</PageTransition>
                 </div>
               </SettingsProvider>
             </AuthProvider>

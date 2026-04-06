@@ -148,20 +148,16 @@ export default function CarDetailPage() {
     <div className="min-h-screen bg-black text-white" dir="rtl">
       <Navbar />
 
-      <div className="container mx-auto px-4 pt-20 pb-12">
-        {/* أزرار الرجوع */}
-        <div className="mb-6">
-          <BackButton href="/showroom" label="رجوع للمعرض" showHome={true} />
-        </div>
-
-        {/* Breadcrumb */}
-        <div className="mb-6">
-          <Breadcrumb 
-            items={[
-              { label: 'المعرض', href: '/showroom' },
-              { label: car.title }
-            ]} 
-          />
+      <div className="max-w-7xl mx-auto px-6 pt-24 pb-12">
+        {/* Back nav */}
+        <div className="flex items-center gap-3 mb-8">
+          <Link href="/showroom"
+            className="flex items-center gap-2 text-white/50 hover:text-white transition-colors text-sm group">
+            <ArrowRight className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            <span>المعرض</span>
+          </Link>
+          <span className="text-white/20">/</span>
+          <span className="text-white/70 text-sm truncate max-w-xs">{car.title}</span>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

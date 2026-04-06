@@ -6,8 +6,6 @@ import { Search, Building2 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Navbar from '@/components/Navbar';
-import BackButton from '@/components/BackButton';
-import Breadcrumb from '@/components/Breadcrumb';
 import { useLanguage } from '@/lib/LanguageContext';
 
 interface Brand {
@@ -63,41 +61,39 @@ export default function BrandsPage() {
       <Navbar />
 
       {/* Header */}
-      <div className="pt-20 pb-8 bg-gradient-to-b from-zinc-950 to-black border-b border-white/5">
-        <div className="container mx-auto px-4">
-          {/* أزرار الرجوع */}
-          <div className="mb-6">
-            <BackButton showHome={true} />
-          </div>
+      <div className="relative pt-24 pb-10 overflow-hidden">
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 70% 50% at 50% 0%, rgba(120,40,0,0.2) 0%, transparent 70%), #000' }} />
+        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
 
-          <div className="mb-6">
-            <Breadcrumb items={[{ label: 'الوكالات المعتمدة' }]} />
-          </div>
-
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
-            <h1 className="text-4xl md:text-6xl font-black mb-3">
+        <div className="relative max-w-7xl mx-auto px-6">
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 text-sm font-medium mb-5">
+              <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
+              {filtered.length} وكالة معتمدة
+            </span>
+            <h1 className="text-5xl md:text-7xl font-black mb-4 leading-none">
               <span className="text-white">الوكالات </span>
-              <span className="bg-gradient-to-r from-red-500 to-red-700 bg-clip-text text-transparent">المعتمدة</span>
+              <span style={{ background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>المعتمدة</span>
             </h1>
-            <p className="text-gray-400">{filtered.length} وكالة معتمدة وموثوقة</p>
+            <p className="text-white/40 text-lg">وكالات موثوقة لأفضل ماركات السيارات</p>
           </motion.div>
 
           {/* Search */}
           <div className="relative max-w-md mx-auto">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
             <input
               type="text"
               placeholder="ابحث عن وكالة..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-xl pr-10 pl-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-red-500 transition-colors"
+              className="w-full bg-white/[0.05] border border-white/10 rounded-2xl pr-10 pl-4 py-3.5 text-white placeholder-white/30 focus:outline-none focus:border-amber-500/50 focus:bg-white/[0.08] transition-all"
             />
           </div>
         </div>
       </div>
 
       {/* Brands Grid */}
-      <div className="container mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-10">
         {loading && (
           <div className="flex justify-center py-20">
             <div className="w-12 h-12 border-4 border-white/10 border-t-red-500 rounded-full animate-spin" />
@@ -119,17 +115,18 @@ export default function BrandsPage() {
         )}
 
         {!loading && !error && filtered.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
             {filtered.map((brand, index) => (
               <motion.div
                 key={brand._id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
+                whileHover={{ y: -6 }}
               >
                 <Link
                   href={`/showroom?make=${encodeURIComponent(brand.name)}`}
-                  className="group block bg-white/5 border border-white/10 hover:border-red-500/50 rounded-2xl p-6 text-center transition-all hover:bg-white/8 hover:-translate-y-1 hover:shadow-xl hover:shadow-red-900/20"
+                  className="group block bg-white/[0.03] border border-white/10 hover:border-amber-500/40 rounded-2xl p-6 text-center transition-all hover:bg-white/[0.06] hover:shadow-xl hover:shadow-amber-900/20"
                 >
                   {/* Logo */}
                   <div className="w-20 h-20 mx-auto mb-4 rounded-full overflow-hidden bg-white/10 flex items-center justify-center">
