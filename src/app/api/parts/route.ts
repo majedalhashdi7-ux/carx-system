@@ -2,6 +2,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import { SparePart } from '@/lib/models';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'carx-fallback-secret';
+
+function verifyToken(request: NextRequest) {
+  const token = request.cookies.get('carx-token')?.value ||
+    request.headers.get('authorization')?.replace('Bearer ', '');
+  if (!token) return null;
+  try {
+    return jwt.verify(token, JWT_SECRET) as { role: string; id: string };
+  } catch {
+    return null;
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -60,5 +74,28 @@ export async function GET(request: NextRequest) {
       { success: false, error: error.message },
       { status: 500 }
     );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  const user = verifyToken(request);
+  if (!user || !['admin', 'manager'].includes(user.role)) {
+    return NextResponse.json({ success: false, error: 'غير مصرح' }, { status: 401 });
+  }
+  try {
+    await connectDB();
+    const body = await request.json();
+    if (!body.nameAr && !body.name) {
+      return NextResponse.json({ success: false, error: 'اسم القطعة مطلوب' }, { status: 400 });
+    }
+    const part = await SparePart.create({
+      ...body,
+      price: body.priceSar || body.price || 0,
+      isActive: true,
+      inStock: (body.stockQty ?? 1) > 0,
+    });
+    return NextResponse.json({ success: true, data: part }, { status: 201 });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
