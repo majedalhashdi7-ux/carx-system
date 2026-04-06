@@ -112,19 +112,21 @@ export default function AdminPage() {
         </div>
 
         {/* Nav Links */}
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 p-4 space-y-1">
           {[
-            { href: '/admin', icon: BarChart3, label: 'الإحصائيات' },
+            { href: '/admin', icon: BarChart3, label: 'الإحصائيات', active: true },
             { href: '/admin/cars', icon: Car, label: 'إدارة السيارات' },
             { href: '/admin/parts', icon: Package, label: 'قطع الغيار' },
             { href: '/admin/brands', icon: Building2, label: 'الوكالات' },
             { href: '/admin/users', icon: Users, label: 'المستخدمون' },
             { href: '/admin/settings', icon: Settings, label: 'الإعدادات' },
-          ].map(({ href, icon: Icon, label }) => (
+          ].map(({ href, icon: Icon, label, active }) => (
             <Link
               key={href}
               href={href}
-              className="flex items-center gap-3 text-gray-400 hover:text-white hover:bg-white/5 px-4 py-3 rounded-xl transition-all"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm ${
+                active ? 'bg-red-600/20 text-white border border-red-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
             >
               <Icon className="w-5 h-5" />
               <span>{label}</span>
