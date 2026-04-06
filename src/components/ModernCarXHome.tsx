@@ -337,36 +337,29 @@ export default function ModernCarXHome() {
                 ))}
             </div>
 
-            {/* ── فيديو الخلفية مع تحكم ── */}
+            {/* ── قسم الهيرو ── */}
             <section className="relative h-screen flex items-center justify-center overflow-hidden">
-                {/* خلفية بديلة متدرجة */}
+                {/* خلفية gradient احترافية */}
                 <div 
-                    className="absolute inset-0 bg-cover bg-center bg-no-repeat" 
+                    className="absolute inset-0"
                     style={{ 
-                        backgroundImage: 'url(/images/hero-bg.svg)',
+                        background: 'radial-gradient(ellipse at 60% 50%, rgba(180,0,0,0.35) 0%, rgba(0,0,0,0) 70%), radial-gradient(ellipse at 20% 80%, rgba(100,0,0,0.2) 0%, rgba(0,0,0,0) 60%), linear-gradient(135deg, #0a0a0a 0%, #1a0000 50%, #0a0a0a 100%)',
                         zIndex: 0
                     }} 
                 />
 
-                {/* الفيديو */}
-                <video
-                    autoPlay
-                    loop
-                    muted={videoMuted}
-                    playsInline
-                    className="absolute inset-0 w-full h-full object-cover z-10"
-                    onPlay={() => setVideoPlaying(true)}
-                    onPause={() => setVideoPlaying(false)}
-                    onError={(e) => {
-                        // إخفاء الفيديو عند الخطأ وإظهار الخلفية البديلة
-                        e.currentTarget.style.display = 'none';
+                {/* شبكة ديكورية */}
+                <div 
+                    className="absolute inset-0 opacity-10"
+                    style={{
+                        backgroundImage: 'linear-gradient(rgba(255,0,0,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,0,0,0.3) 1px, transparent 1px)',
+                        backgroundSize: '60px 60px',
+                        zIndex: 1
                     }}
-                >
-                    <source src="/videos/CAR_X.mp4" type="video/mp4" />
-                </video>
+                />
 
                 {/* طبقة التعتيم */}
-                <div className="absolute inset-0 bg-black/60 z-20" />
+                <div className="absolute inset-0 bg-black/20 z-20" />
 
                 {/* جسيمات متحركة */}
                 <div className="absolute inset-0 overflow-hidden pointer-events-none">
