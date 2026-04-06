@@ -109,20 +109,17 @@ const translations = {
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState<'ar' | 'en'>('ar');
-  const isRTL = language === 'ar';
+  const isRTL = true;
 
   useEffect(() => {
-    // Load language from localStorage
-    const savedLanguage = localStorage.getItem('carx-language') as 'ar' | 'en';
-    if (savedLanguage && (savedLanguage === 'ar' || savedLanguage === 'en')) {
-      setLanguage(savedLanguage);
-    }
+    document.documentElement.dir = 'rtl';
+    document.documentElement.lang = 'ar';
+    localStorage.setItem('carx-language', 'ar');
   }, []);
 
   const handleSetLanguage = (lang: 'ar' | 'en') => {
     setLanguage(lang);
     localStorage.setItem('carx-language', lang);
-    
     // Update document direction
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = lang;
