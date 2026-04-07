@@ -4,6 +4,7 @@ const nextConfig = {
   
   images: {
     remotePatterns: [
+      { protocol: 'http', hostname: 'localhost' },
       { protocol: 'https', hostname: 'localhost' },
       { protocol: 'https', hostname: 'daood.okigo.net' },
       { protocol: 'https', hostname: 'carx-system.vercel.app' },

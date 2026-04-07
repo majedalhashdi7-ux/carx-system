@@ -4,12 +4,13 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Car, Package, Building2, Users, TrendingUp, Eye,
-  Plus, Settings, LogOut, BarChart3, Shield, ArrowLeft
+  Plus, BarChart3, Shield
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
+import AdminSidebar from '@/components/admin/AdminSidebar';
 
 interface Stats {
   totalCars: number;
@@ -48,7 +49,7 @@ const StatCard = ({ icon: Icon, label, value, color }: {
 
 export default function AdminPage() {
   const router = useRouter();
-  const { user, isLoggedIn, loading, logout } = useAuth();
+  const { user, isLoggedIn, loading } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [recentCars, setRecentCars] = useState<RecentCar[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
@@ -81,11 +82,6 @@ export default function AdminPage() {
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
-    router.push('/login');
-  };
-
   if (loading || loadingStats) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -96,70 +92,10 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-black text-white" dir="rtl">
-      {/* Sidebar */}
-      <div className="fixed right-0 top-0 bottom-0 w-64 bg-zinc-950 border-l border-white/10 z-40 flex flex-col">
-        {/* Logo */}
-        <div className="p-6 border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center">
-              <span className="text-white font-black text-xl">X</span>
-            </div>
-            <div>
-              <p className="font-black text-white">CAR X</p>
-              <p className="text-xs text-gray-500">لوحة الإدارة</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Nav Links */}
-        <nav className="flex-1 p-4 space-y-1">
-          {[
-            { href: '/admin', icon: BarChart3, label: 'الإحصائيات', active: true },
-            { href: '/admin/cars', icon: Car, label: 'إدارة السيارات' },
-            { href: '/admin/parts', icon: Package, label: 'قطع الغيار' },
-            { href: '/admin/brands', icon: Building2, label: 'الوكالات' },
-            { href: '/admin/users', icon: Users, label: 'المستخدمون' },
-            { href: '/admin/settings', icon: Settings, label: 'الإعدادات' },
-          ].map(({ href, icon: Icon, label, active }) => (
-            <Link
-              key={href}
-              href={href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm ${
-                active ? 'bg-red-600/20 text-white border border-red-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <Icon className="w-5 h-5" />
-              <span>{label}</span>
-            </Link>
-          ))}
-        </nav>
-
-        {/* User info + Logout */}
-        <div className="p-4 border-t border-white/10">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 bg-red-600 rounded-full flex items-center justify-center font-bold">
-              {user?.name?.[0] || 'A'}
-            </div>
-            <div className="min-w-0">
-              <p className="font-bold text-sm truncate">{user?.name}</p>
-              <p className="text-xs text-gray-500">{user?.role === 'admin' ? 'مشرف' : 'مدير'}</p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Link href="/" className="flex items-center gap-1 text-xs text-gray-500 hover:text-white transition-colors">
-              <ArrowLeft className="w-3 h-3" />
-              الموقع
-            </Link>
-            <button onClick={handleLogout} className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-400 transition-colors mr-auto">
-              <LogOut className="w-3 h-3" />
-              خروج
-            </button>
-          </div>
-        </div>
-      </div>
+      <AdminSidebar />
 
       {/* Main Content */}
-      <div className="mr-64 p-8">
+      <div className="lg:mr-64 pt-16 lg:pt-0 p-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-black">لوحة التحكم</h1>

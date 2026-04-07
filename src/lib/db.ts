@@ -1,12 +1,6 @@
 // CAR X - اتصال قاعدة البيانات carx_production
 import mongoose from 'mongoose';
 
-const MONGO_URI = process.env.MONGO_URI || '';
-
-if (!MONGO_URI) {
-  throw new Error('MONGO_URI is not defined in environment variables');
-}
-
 interface CachedConnection {
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;
@@ -21,6 +15,12 @@ const cached: CachedConnection = global.mongooseCarX || { conn: null, promise: n
 global.mongooseCarX = cached;
 
 export async function connectDB(): Promise<typeof mongoose> {
+  const MONGO_URI = process.env.MONGO_URI || '';
+
+  if (!MONGO_URI) {
+    throw new Error('MONGO_URI is not defined in environment variables');
+  }
+
   if (cached.conn) {
     return cached.conn;
   }

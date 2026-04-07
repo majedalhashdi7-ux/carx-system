@@ -5,7 +5,7 @@ import { User } from '@/lib/models';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET;
+const JWT_SECRET = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET || 'carx-default-secret-change-in-production';
 
 export async function POST(request: NextRequest) {
   try {

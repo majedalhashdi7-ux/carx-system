@@ -6,6 +6,7 @@ import { ArrowRight, Save, Plus, Trash2, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
+import AdminSidebar from '@/components/admin/AdminSidebar';
 
 interface CarForm {
   title: string; make: string; model: string; year: string;
@@ -19,14 +20,6 @@ interface CarForm {
 const fieldClass = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-red-500 transition-colors";
 const labelClass = "block text-sm text-gray-400 mb-1.5";
 
-const SIDEBAR = [
-  { href: '/admin', label: 'الإحصائيات' },
-  { href: '/admin/cars', label: 'السيارات', active: true },
-  { href: '/admin/parts', label: 'قطع الغيار' },
-  { href: '/admin/brands', label: 'الوكالات' },
-  { href: '/admin/users', label: 'المستخدمون' },
-  { href: '/admin/settings', label: 'الإعدادات' },
-];
 
 export default function EditCarPage() {
   const router = useRouter();
@@ -151,33 +144,10 @@ export default function EditCarPage() {
 
   return (
     <div className="min-h-screen bg-black text-white" dir="rtl">
-      {/* Sidebar */}
-      <div className="fixed right-0 top-0 bottom-0 w-64 bg-zinc-950 border-l border-white/10 z-40 flex flex-col">
-        <div className="p-6 border-b border-white/10">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center">
-              <span className="text-white font-black text-xl">X</span>
-            </div>
-            <div><p className="font-black text-white">CAR X</p><p className="text-xs text-gray-500">لوحة الإدارة</p></div>
-          </Link>
-        </div>
-        <nav className="flex-1 p-4 space-y-1">
-          {SIDEBAR.map((item) => (
-            <Link key={item.href} href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm ${item.active ? 'bg-red-600/20 text-white border border-red-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="p-4 border-t border-white/10">
-          <Link href="/" className="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors">
-            <ArrowRight className="w-3 h-3" /> العودة للموقع
-          </Link>
-        </div>
-      </div>
+      <AdminSidebar />
 
       {/* Main */}
-      <div className="mr-64 p-8">
+      <div className="lg:mr-64 pt-16 lg:pt-0 p-8">
         <div className="flex items-center gap-4 mb-8">
           <Link href="/admin/cars" className="text-gray-400 hover:text-white transition-colors">
             <ArrowRight className="w-5 h-5" />

@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
+import AdminSidebar from '@/components/admin/AdminSidebar';
 
 interface Car {
   _id: string;
@@ -90,54 +91,10 @@ export default function AdminCarsPage() {
 
   return (
     <div className="min-h-screen bg-black text-white" dir="rtl">
-      {/* Sidebar */}
-      <div className="fixed right-0 top-0 bottom-0 w-64 bg-zinc-950 border-l border-white/10 z-40 flex flex-col">
-        <div className="p-6 border-b border-white/10">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center">
-              <span className="text-white font-black text-xl">X</span>
-            </div>
-            <div>
-              <p className="font-black text-white">CAR X</p>
-              <p className="text-xs text-gray-500">لوحة الإدارة</p>
-            </div>
-          </Link>
-        </div>
-        <nav className="flex-1 p-4 space-y-1">
-          {[
-            { href: '/admin', label: 'الإحصائيات' },
-            { href: '/admin/cars', label: 'السيارات', active: true },
-            { href: '/admin/parts', label: 'قطع الغيار' },
-            { href: '/admin/brands', label: 'الوكالات' },
-            { href: '/admin/users', label: 'المستخدمون' },
-            { href: '/admin/settings', label: 'الإعدادات' },
-          ].map((item) => (
-            <Link key={item.href} href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm ${
-                item.active ? 'bg-red-600/20 text-white border border-red-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'
-              }`}>
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="p-4 border-t border-white/10">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center font-bold text-sm">
-              {user?.name?.[0] || 'A'}
-            </div>
-            <div className="min-w-0">
-              <p className="font-bold text-sm truncate">{user?.name}</p>
-              <p className="text-xs text-gray-500">{user?.role === 'admin' ? 'مشرف' : 'مدير'}</p>
-            </div>
-          </div>
-          <Link href="/" className="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors">
-            ← العودة للموقع
-          </Link>
-        </div>
-      </div>
+      <AdminSidebar />
 
       {/* Main */}
-      <div className="mr-64 p-8">
+      <div className="lg:mr-64 pt-16 lg:pt-0 p-8">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-black">إدارة السيارات</h1>
@@ -165,7 +122,7 @@ export default function AdminCarsPage() {
               className="w-full bg-white/5 border border-white/10 rounded-xl pr-10 pl-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-red-500"
             />
           </div>
-          <button onClick={fetchCars} className="bg-white/5 border border-white/10 hover:bg-white/10 px-4 py-3 rounded-xl transition-colors">
+          <button onClick={fetchCars} title="تحديث" className="bg-white/5 border border-white/10 hover:bg-white/10 px-4 py-3 rounded-xl transition-colors">
             <RefreshCw className="w-5 h-5" />
           </button>
         </div>
@@ -247,6 +204,7 @@ export default function AdminCarsPage() {
                         <button
                           onClick={() => handleDelete(car._id)}
                           disabled={deleting === car._id}
+                          title="حذف"
                           className="text-red-400 hover:text-red-300 disabled:opacity-50 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />

@@ -2,19 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Settings, Save, ArrowRight, CheckCircle } from 'lucide-react';
-import Link from 'next/link';
+import { Settings, Save, CheckCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
-
-const SIDEBAR_ITEMS = [
-  { href: '/admin', label: 'الإحصائيات' },
-  { href: '/admin/cars', label: 'السيارات' },
-  { href: '/admin/parts', label: 'قطع الغيار' },
-  { href: '/admin/brands', label: 'الوكالات' },
-  { href: '/admin/users', label: 'المستخدمون' },
-  { href: '/admin/settings', label: 'الإعدادات', active: true },
-];
+import AdminSidebar from '@/components/admin/AdminSidebar';
 
 export default function AdminSettingsPage() {
   const router = useRouter();
@@ -51,35 +42,9 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="min-h-screen bg-black text-white" dir="rtl">
-      <div className="fixed right-0 top-0 bottom-0 w-64 bg-zinc-950 border-l border-white/10 z-40 flex flex-col">
-        <div className="p-6 border-b border-white/10">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center">
-              <span className="text-white font-black text-xl">X</span>
-            </div>
-            <div>
-              <p className="font-black text-white">CAR X</p>
-              <p className="text-xs text-gray-500">لوحة الإدارة</p>
-            </div>
-          </Link>
-        </div>
-        <nav className="flex-1 p-4 space-y-1">
-          {SIDEBAR_ITEMS.map((item) => (
-            <Link key={item.href} href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm ${item.active ? 'bg-red-600/20 text-white border border-red-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="p-4 border-t border-white/10">
-          <Link href="/" className="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors">
-            <ArrowRight className="w-3 h-3" />
-            العودة للموقع
-          </Link>
-        </div>
-      </div>
+      <AdminSidebar />
 
-      <div className="mr-64 p-8">
+      <div className="lg:mr-64 pt-16 lg:pt-0 p-8">
         <div className="mb-8">
           <h1 className="text-3xl font-black">الإعدادات</h1>
           <p className="text-gray-400 mt-1">ضبط إعدادات الموقع</p>
@@ -118,7 +83,7 @@ export default function AdminSettingsPage() {
 
             <div>
               <label className="block text-sm text-gray-400 mb-1.5">العملة الافتراضية</label>
-              <select value={form.currency} onChange={(e) => setForm(prev => ({ ...prev, currency: e.target.value }))}
+              <select title="العملة الافتراضية" value={form.currency} onChange={(e) => setForm(prev => ({ ...prev, currency: e.target.value }))}
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors">
                 <option value="SAR" className="bg-zinc-900">ريال سعودي (SAR)</option>
                 <option value="USD" className="bg-zinc-900">دولار أمريكي (USD)</option>
@@ -128,7 +93,7 @@ export default function AdminSettingsPage() {
 
             <div>
               <label className="block text-sm text-gray-400 mb-1.5">اللغة الافتراضية</label>
-              <select value={form.language} onChange={(e) => setForm(prev => ({ ...prev, language: e.target.value }))}
+              <select title="اللغة الافتراضية" value={form.language} onChange={(e) => setForm(prev => ({ ...prev, language: e.target.value }))}
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors">
                 <option value="ar" className="bg-zinc-900">العربية</option>
                 <option value="en" className="bg-zinc-900">English</option>
