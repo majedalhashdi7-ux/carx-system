@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, SlidersHorizontal, X, ChevronDown, Car as CarIcon, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
@@ -71,6 +71,9 @@ export default function ShowroomPage() {
   const [makes, setMakes] = useState<string[]>([]);
   const [pagination, setPagination] = useState({ page: 1, total: 0, pages: 1 });
   const [page, setPage] = useState(1);
+  
+  // Debounce for search
+  const debounceRef = useRef<NodeJS.Timeout>();
 
   const fetchCars = useCallback(async (currentFilters: Filters, currentPage: number) => {
     setLoading(true);
@@ -112,9 +115,24 @@ export default function ShowroomPage() {
     fetchCars(filters, page);
   }, [page, fetchCars]);
 
-  const handleSearch = () => {
+  // Debounced search handler
+  const handleSearchChange = (value: string) => {
+    setFilters(prev => ({ ...prev, search: value }));
+    
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    
+    debounceRef.current = setTimeout(() => {
+      setPage(1);
+      fetchCars({ ...filters, search: value }, 1);
+    }, 300);
+  };
+
+  // Auto-apply filters when changed
+  const handleFilterChange = (key: keyof Filters, value: string) => {
+    const newFilters = { ...filters, [key]: value };
+    setFilters(newFilters);
     setPage(1);
-    fetchCars(filters, 1);
+    fetchCars(newFilters, 1);
   };
 
   const handleReset = () => {
@@ -167,20 +185,10 @@ export default function ShowroomPage() {
                 type="text"
                 placeholder="ابحث عن ماركة، موديل..."
                 value={filters.search}
-                onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="w-full bg-white/[0.05] border border-white/10 rounded-2xl pr-10 pl-4 py-3.5 text-white placeholder-white/30 focus:outline-none focus:border-red-500/60 focus:bg-white/[0.08] transition-all"
               />
             </div>
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={handleSearch}
-              className="text-white px-6 py-3 rounded-2xl font-bold transition-all"
-              style={{ background: 'linear-gradient(135deg, #dc2626, #991b1b)', boxShadow: '0 4px 20px rgba(220,38,38,0.35)' }}
-            >
-              بحث
-            </motion.button>
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`relative flex items-center gap-2 px-4 py-3 rounded-xl border transition-colors ${
@@ -215,7 +223,8 @@ export default function ShowroomPage() {
                       <label className="block text-xs text-gray-400 mb-1">الماركة</label>
                       <select
                         value={filters.make}
-                        onChange={(e) => setFilters(prev => ({ ...prev, make: e.target.value }))}
+                        onChange={(e) => handleFilterChange('make', e.target.value)}
+                        title="اختر الماركة"
                         className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
                       >
                         <option value="">الكل</option>
@@ -230,7 +239,7 @@ export default function ShowroomPage() {
                         type="number"
                         placeholder="2018"
                         value={filters.minYear}
-                        onChange={(e) => setFilters(prev => ({ ...prev, minYear: e.target.value }))}
+                        onChange={(e) => handleFilterChange('minYear', e.target.value)}
                         className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
                       />
                     </div>
@@ -240,7 +249,7 @@ export default function ShowroomPage() {
                         type="number"
                         placeholder="2024"
                         value={filters.maxYear}
-                        onChange={(e) => setFilters(prev => ({ ...prev, maxYear: e.target.value }))}
+                        onChange={(e) => handleFilterChange('maxYear', e.target.value)}
                         className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
                       />
                     </div>
@@ -252,7 +261,7 @@ export default function ShowroomPage() {
                         type="number"
                         placeholder="0"
                         value={filters.minPrice}
-                        onChange={(e) => setFilters(prev => ({ ...prev, minPrice: e.target.value }))}
+                        onChange={(e) => handleFilterChange('minPrice', e.target.value)}
                         className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
                       />
                     </div>
@@ -262,7 +271,7 @@ export default function ShowroomPage() {
                         type="number"
                         placeholder="500000"
                         value={filters.maxPrice}
-                        onChange={(e) => setFilters(prev => ({ ...prev, maxPrice: e.target.value }))}
+                        onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
                         className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
                       />
                     </div>
@@ -272,7 +281,8 @@ export default function ShowroomPage() {
                       <label className="block text-xs text-gray-400 mb-1">نوع الوقود</label>
                       <select
                         value={filters.fuelType}
-                        onChange={(e) => setFilters(prev => ({ ...prev, fuelType: e.target.value }))}
+                        onChange={(e) => handleFilterChange('fuelType', e.target.value)}
+                        title="اختر نوع الوقود"
                         className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
                       >
                         <option value="">الكل</option>
@@ -288,12 +298,29 @@ export default function ShowroomPage() {
                       <label className="block text-xs text-gray-400 mb-1">ناقل الحركة</label>
                       <select
                         value={filters.transmission}
-                        onChange={(e) => setFilters(prev => ({ ...prev, transmission: e.target.value }))}
+                        onChange={(e) => handleFilterChange('transmission', e.target.value)}
+                        title="اختر ناقل الحركة"
                         className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
                       >
                         <option value="">الكل</option>
                         <option value="Automatic">أوتوماتيك</option>
                         <option value="Manual">يدوي</option>
+                      </select>
+                    </div>
+
+                    {/* Condition */}
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">الحالة</label>
+                      <select
+                        value={filters.condition}
+                        onChange={(e) => handleFilterChange('condition', e.target.value)}
+                        title="اختر حالة السيارة"
+                        className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+                      >
+                        <option value="">الكل</option>
+                        <option value="excellent">ممتازة</option>
+                        <option value="good">جيدة</option>
+                        <option value="fair">متوسطة</option>
                       </select>
                     </div>
 
@@ -304,8 +331,10 @@ export default function ShowroomPage() {
                         value={`${filters.sortBy}-${filters.sortOrder}`}
                         onChange={(e) => {
                           const [sortBy, sortOrder] = e.target.value.split('-');
-                          setFilters(prev => ({ ...prev, sortBy, sortOrder }));
+                          handleFilterChange('sortBy', sortBy);
+                          handleFilterChange('sortOrder', sortOrder);
                         }}
+                        title="اختر ترتيب العرض"
                         className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
                       >
                         <option value="createdAt-desc">الأحدث أولاً</option>
