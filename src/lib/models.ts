@@ -102,6 +102,7 @@ const userSchema = new mongoose.Schema({
   name: { type: String, trim: true, required: true },
   email: { type: String, unique: true, required: true, lowercase: true, sparse: true, trim: true },
   phone: { type: String, unique: true, required: false, sparse: true },
+  city: { type: String, trim: true, default: '' },
   password: { type: String, required: false },
   role: { type: String, enum: ['buyer', 'admin', 'manager'], default: 'buyer' },
   status: { type: String, enum: ['active', 'suspended', 'pending'], default: 'active' },

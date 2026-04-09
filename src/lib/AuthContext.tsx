@@ -13,8 +13,8 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isLoggedIn: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (name: string, email: string, password: string, phone?: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<boolean>;
+  register: (name: string, email: string, password: string, phone?: string, city?: string) => Promise<boolean>;
   logout: () => Promise<void>;
   refreshUser: () => void;
   loading: boolean;
@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
 
       if (!data.success) {
-        return { success: false, error: data.error || 'فشل تسجيل الدخول' };
+        throw new Error(data.error || 'فشل تسجيل الدخول');
       }
 
       setUser(data.user);
@@ -59,24 +59,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem('carx-token', data.token);
       }
 
-      return { success: true };
-    } catch {
-      return { success: false, error: 'حدث خطأ في الاتصال بالخادم' };
+      return true;
+    } catch (error: any) {
+      console.error('Login error:', error.message);
+      return false;
     }
   };
 
-  const register = async (name: string, email: string, password: string, phone?: string) => {
+  const register = async (name: string, email: string, password: string, phone?: string, city?: string): Promise<boolean> => {
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, phone }),
+        body: JSON.stringify({ name, email, password, phone, city }),
       });
 
       const data = await res.json();
 
       if (!data.success) {
-        return { success: false, error: data.error || 'فشل التسجيل' };
+        throw new Error(data.error || 'فشل التسجيل');
       }
 
       setUser(data.user);
@@ -85,9 +86,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem('carx-token', data.token);
       }
 
-      return { success: true };
-    } catch {
-      return { success: false, error: 'حدث خطأ في الاتصال بالخادم' };
+      return true;
+    } catch (error: any) {
+      console.error('Register error:', error.message);
+      return false;
     }
   };
 

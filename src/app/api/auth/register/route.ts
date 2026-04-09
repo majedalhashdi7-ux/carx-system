@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
   try {
     await connectDB();
 
-    const { name, email, password, phone } = await request.json();
+    const { name, email, password, phone, city } = await request.json();
 
     // Validation
     if (!name || !email || !password) {
@@ -46,6 +46,7 @@ export async function POST(request: NextRequest) {
       email: email.toLowerCase().trim(),
       password: hashedPassword,
       phone: phone?.trim() || undefined,
+      city: city?.trim() || undefined,
       role: 'buyer',
       status: 'active',
     });
@@ -69,6 +70,7 @@ export async function POST(request: NextRequest) {
         name: user.name,
         email: user.email,
         phone: user.phone,
+        city: user.city,
         role: user.role,
       },
       token,

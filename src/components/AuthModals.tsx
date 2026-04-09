@@ -103,7 +103,8 @@ export default function AuthModals({
                 registerData.name,
                 registerData.email,
                 registerData.password,
-                registerData.phone
+                registerData.phone,
+                registerData.city
             );
 
             if (success) {
