@@ -276,6 +276,17 @@ export default function UltraModernCarCard({
                         </motion.button>
                         
                         <motion.button
+                            onClick={() => {
+                                if (navigator.share) {
+                                    navigator.share({
+                                        title: car.title,
+                                        text: `${car.title} - ${displayPrice}`,
+                                        url: window.location.href
+                                    });
+                                } else {
+                                    navigator.clipboard.writeText(window.location.href);
+                                }
+                            }}
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             className="w-12 h-12 rounded-2xl bg-black/70 backdrop-blur-md border border-white/20 hover:border-blue-400/50 flex items-center justify-center text-white/80 hover:text-blue-400 hover:bg-blue-500/20 transition-all duration-300 shadow-lg"
