@@ -356,7 +356,7 @@ export default function ShowroomPage() {
                       إعادة ضبط
                     </button>
                     <button
-                      onClick={() => { handleSearch(); setShowFilters(false); }}
+                      onClick={() => { fetchCars(filters, 1); setShowFilters(false); }}
                       className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg text-sm font-bold transition-colors"
                     >
                       تطبيق الفلاتر
