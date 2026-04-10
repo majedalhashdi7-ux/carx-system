@@ -38,20 +38,20 @@ export default function AuthPage() {
 
     try {
       if (mode === 'login') {
-        const result = await login(form.email, form.password);
-        if (result.success) {
+        const success = await login(form.email, form.password);
+        if (success) {
           setSuccess('تم تسجيل الدخول بنجاح! جاري التحويل...');
           setTimeout(() => router.push('/'), 1000);
         } else {
-          setError(result.error || 'فشل تسجيل الدخول');
+          setError('فشل تسجيل الدخول - تحقق من البيانات');
         }
       } else {
-        const result = await register(form.name, form.email, form.password, form.phone);
-        if (result.success) {
+        const success = await register(form.name, form.email, form.password, form.phone);
+        if (success) {
           setSuccess('تم إنشاء الحساب بنجاح! جاري التحويل...');
           setTimeout(() => router.push('/'), 1000);
         } else {
-          setError(result.error || 'فشل التسجيل');
+          setError('فشل التسجيل - قد يكون البريد مسجلاً مسبقاً');
         }
       }
     } finally {
