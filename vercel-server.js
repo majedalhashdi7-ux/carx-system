@@ -120,7 +120,20 @@ function createCorsMiddleware() {
  * التحقق من وجود MONGO_URI للمعرض الافتراضي
  */
 function hasValidMongoUri() {
-  return !!(process.env.MONGO_URI || process.env.MONGODB_URI);
+  const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
+  
+  if (!mongoUri) {
+    console.error('❌ MONGO_URI is not defined in environment');
+    console.error('Available env vars:', Object.keys(process.env).filter(k => k.includes('MONGO') || k.includes('DB')));
+    return false;
+  }
+  
+  if (!mongoUri.startsWith('mongodb')) {
+    console.error('❌ MONGO_URI is invalid:', mongoUri.substring(0, 20));
+    return false;
+  }
+  
+  return true;
 }
 
 /**
@@ -160,12 +173,24 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(204).end();
 
   try {
+    // Debug: log all environment variables related to database
+    console.log('=== Environment Debug ===');
+    console.log('NODE_ENV:', process.env.NODE_ENV);
+    console.log('VERCEL:', !!process.env.VERCEL);
+    console.log('MONGO_URI:', process.env.MONGO_URI ? 'SET (length: ' + process.env.MONGO_URI.length + ')' : 'NOT SET');
+    console.log('MONGODB_URI:', process.env.MONGODB_URI ? 'SET' : 'NOT SET');
+    console.log('==========================');
+    
     // التحقق من وجود متغيرات البيئة الأساسية
     if (!hasValidMongoUri()) {
       return res.status(500).json({ 
         success: false, 
-        message: 'MONGO_URI is not set', 
-        code: 'MISSING_ENV' 
+        message: 'MONGO_URI is not set or invalid', 
+        code: 'MISSING_ENV',
+        debug: {
+          nodeEnv: process.env.NODE_ENV,
+          hasVercel: !!process.env.VERCEL
+        }
       });
     }
 
