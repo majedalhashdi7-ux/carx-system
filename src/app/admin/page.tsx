@@ -66,9 +66,8 @@ export default function AdminPage() {
 
   const fetchStats = async () => {
     try {
-      const token = localStorage.getItem('carx-token');
       const res = await fetch('/api/admin/stats', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       });
       const data = await res.json();
       if (data.success) {

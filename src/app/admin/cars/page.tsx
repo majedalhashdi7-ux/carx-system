@@ -47,12 +47,11 @@ export default function AdminCarsPage() {
   const fetchCars = async () => {
     setLoadingCars(true);
     try {
-      const token = localStorage.getItem('carx-token');
       const params = new URLSearchParams({ page: page.toString(), limit: '20' });
       if (search) params.set('search', search);
 
       const res = await fetch(`/api/admin/cars?${params}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       });
       const data = await res.json();
       if (data.success) {
@@ -65,10 +64,10 @@ export default function AdminCarsPage() {
   };
 
   const handleToggleActive = async (car: Car) => {
-    const token = localStorage.getItem('carx-token');
     await fetch(`/api/admin/cars/${car._id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ isActive: !car.isActive }),
     });
     fetchCars();
@@ -78,10 +77,9 @@ export default function AdminCarsPage() {
     if (!confirm('هل أنت متأكد من حذف هذه السيارة؟')) return;
     setDeleting(id);
     try {
-      const token = localStorage.getItem('carx-token');
       await fetch(`/api/admin/cars/${id}`, {
         method: 'DELETE',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       });
       fetchCars();
     } finally {

@@ -27,16 +27,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load user from localStorage (stored after successful login)
-    const savedUser = localStorage.getItem('carx-user');
-    if (savedUser) {
+    // Check auth status on load - uses HttpOnly cookie
+    const checkAuth = async () => {
       try {
-        setUser(JSON.parse(savedUser));
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
+        if (data.success && data.user) {
+          setUser(data.user);
+        }
       } catch {
-        localStorage.removeItem('carx-user');
+        // Not authenticated
+      } finally {
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    };
+
+    checkAuth();
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -54,10 +60,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setUser(data.user);
-      localStorage.setItem('carx-user', JSON.stringify(data.user));
-      if (data.token) {
-        localStorage.setItem('carx-token', data.token);
-      }
 
       return true;
     } catch (error: any) {
@@ -81,10 +83,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setUser(data.user);
-      localStorage.setItem('carx-user', JSON.stringify(data.user));
-      if (data.token) {
-        localStorage.setItem('carx-token', data.token);
-      }
 
       return true;
     } catch (error: any) {
@@ -95,13 +93,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     } catch {
       // silent
     } finally {
       setUser(null);
-      localStorage.removeItem('carx-user');
-      localStorage.removeItem('carx-token');
     }
   };
 

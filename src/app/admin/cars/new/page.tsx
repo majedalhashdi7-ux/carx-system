@@ -95,7 +95,6 @@ export default function NewCarPage() {
     setSaving(true);
     setError('');
     try {
-      const token = localStorage.getItem('carx-token');
       const body = {
         ...form,
         year: parseInt(form.year) || undefined,
@@ -109,7 +108,8 @@ export default function NewCarPage() {
 
       const res = await fetch('/api/admin/cars', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(body),
       });
       const data = await res.json();

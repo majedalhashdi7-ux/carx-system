@@ -103,12 +103,13 @@ const userSchema = new mongoose.Schema({
   email: { type: String, unique: true, required: true, lowercase: true, sparse: true, trim: true },
   phone: { type: String, unique: true, required: false, sparse: true },
   city: { type: String, trim: true, default: '' },
-  password: { type: String, required: false },
+  password: { type: String, required: false, select: false },
   role: { type: String, enum: ['buyer', 'admin', 'manager'], default: 'buyer' },
   status: { type: String, enum: ['active', 'suspended', 'pending'], default: 'active' },
   lastLoginAt: { type: Date, default: null },
   loginAttempts: { type: Number, default: 0 },
   lockUntil: { type: Date, default: null },
+  tokenVersion: { type: Number, default: 0 },
 }, { timestamps: true });
 
 // ============== Register models safely (avoid OverwriteModelError) ==============
