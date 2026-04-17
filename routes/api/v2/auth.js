@@ -113,7 +113,162 @@ router.post('/register', authLimiter, async (req, res) => {
   }
 });
 
-// Auto Register/Login endpoint for clients
+// Client Login with Email - نظام الدخول الجديد للعملاء بالإيميل
+router.post('/client-login', authLimiter, async (req, res) => {
+  try {
+    const { email, password, deviceId, rememberMe } = req.body;
+    const User = getModel(req, 'User');
+    const AuditLog = getModel(req, 'AuditLog');
+
+    if (!email || !password) {
+      return sendResponse(res, validationErrorResponse(null, 'الإيميل وكلمة المرور مطلوبان'));
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    console.log(`[AUTH] Client login attempt for email: '${normalizedEmail}'`);
+
+    // البحث عن المستخدم بالإيميل
+    let user = await User.findOne({ email: normalizedEmail }).select('+password');
+
+    // إذا لم يجد المستخدم، نرجع خطأ (لا يتم إنشاء حساب تلقائياً)
+    if (!user) {
+      console.warn(`[AUTH] User not found with email: ${normalizedEmail}`);
+      return sendResponse(res, unauthorizedResponse('لم يتم العثور على حساب بهذا الإيميل'));
+    }
+
+    // التحقق من أن المستخدم عميل (buyer)
+    if (user.role !== 'buyer') {
+      return sendResponse(res, forbiddenResponse('هذا الحساب ليس حساب عميل'));
+    }
+
+    // التحقق من حالة الحساب
+    if (user.status !== 'active') {
+      return sendResponse(res, forbiddenResponse('الحساب معلق أو محظور'));
+    }
+
+    // التحقق من كلمة المرور
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      console.warn(`[AUTH] Wrong password for: ${normalizedEmail}`);
+      return sendResponse(res, unauthorizedResponse('كلمة المرور غير صحيحة'));
+    }
+
+    // توليد التوكن
+    const token = jwt.sign(
+      {
+        userId: user._id,
+        email: user.email,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: rememberMe ? '30d' : '7d' }
+    );
+
+    // تحديث وقت الدخول
+    user.lastLoginAt = new Date();
+    await user.save();
+
+    // تسجيل الدخول في AuditLog
+    AuditLog.logUserAction(user, 'LOGIN', 'User', 'Client login with email', { email: normalizedEmail, result: 'SUCCESS' }).catch(() => { });
+
+    console.log(`[AUTH] ✅ Client login success: ${normalizedEmail}`);
+
+    return res.json({
+      success: true,
+      message: 'تم تسجيل الدخول بنجاح',
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role
+      }
+    });
+
+  } catch (error) {
+    console.error('Client login error:', error);
+    return sendResponse(res, serverErrorResponse('حدث خطأ أثناء تسجيل الدخول', error));
+  }
+});
+
+// Client Registration - تسجيل حساب جديد للعملاء
+router.post('/client-register', authLimiter, async (req, res) => {
+  try {
+    const { email, password, confirmPassword, name, phone } = req.body;
+    const User = getModel(req, 'User');
+    const AuditLog = getModel(req, 'AuditLog');
+
+    // التحقق من البيانات المطلوبة
+    if (!email || !password || !confirmPassword) {
+      return sendResponse(res, validationErrorResponse(null, 'الإيميل وكلمة المرور وتأكيد كلمة المرور مطلوبة'));
+    }
+
+    if (password !== confirmPassword) {
+      return sendResponse(res, validationErrorResponse(null, 'كلمات المرور غير متطابقة'));
+    }
+
+    if (password.length < 6) {
+      return sendResponse(res, validationErrorResponse(null, 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'));
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // التحقق من وجود حساب بنفس الإيميل
+    const existingUser = await User.findOne({ email: normalizedEmail });
+    if (existingUser) {
+      return sendResponse(res, conflictResponse('يوجد حساب مسجل بهذا الإيميل'));
+    }
+
+    // إنشاء حساب جديد
+    const newUser = new User({
+      email: normalizedEmail,
+      password: password,
+      name: name || normalizedEmail.split('@')[0],
+      phone: phone || '',
+      role: 'buyer',
+      status: 'active',
+      createdVia: 'client-registration'
+    });
+
+    await newUser.save();
+
+    // توليد التوكن
+    const token = jwt.sign(
+      {
+        userId: newUser._id,
+        email: newUser.email,
+        role: newUser.role,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    // تسجيل في AuditLog
+    AuditLog.logUserAction(newUser, 'REGISTER', 'User', 'New client registration', { email: normalizedEmail }).catch(() => { });
+
+    console.log(`[AUTH] ✅ New client registered: ${normalizedEmail}`);
+
+    return res.status(201).json({
+      success: true,
+      message: 'تم إنشاء الحساب بنجاح',
+      token,
+      user: {
+        _id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        phone: newUser.phone,
+        role: newUser.role
+      }
+    });
+
+  } catch (error) {
+    console.error('Client registration error:', error);
+    return sendResponse(res, serverErrorResponse('حدث خطأ أثناء إنشاء الحساب', error));
+  }
+});
+
+// Auto Register/Login endpoint for clients (النظام القديم - للتوافق)
 // إذا لم يكن المستخدم موجوداً، يتم إنشاؤه تلقائياً
 router.post('/auto-login', authLimiter, async (req, res) => {
   try {
