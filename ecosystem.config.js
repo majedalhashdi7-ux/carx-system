@@ -28,20 +28,24 @@ module.exports = {
   ],
   deploy: {
     production: {
-      user: 'deployer',
-      host: ['your-server.com'],
+      user: 'YOUR_SERVER_USER',
+      host: ['YOUR_SERVER_IP'],
       ref: 'origin/main',
-      repo: 'git@github.com:yourusername/car-auction.git',
+      repo: 'YOUR_GIT_REPO_URL',
       path: '/var/www/car-auction',
       'post-deploy': 'npm ci --production && npm run optimize:db && pm2 reload ecosystem.config.js --env production',
       'pre-setup': 'mkdir -p /var/www/car-auction',
-      ssh_options: 'StrictHostKeyChecking=no'
+      ssh_options: 'StrictHostKeyChecking=no',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 4001
+      }
     },
     staging: {
-      user: 'deployer',
-      host: ['staging-server.com'],
+      user: 'YOUR_STAGING_USER',
+      host: ['YOUR_STAGING_IP'],
       ref: 'origin/develop',
-      repo: 'git@github.com:yourusername/car-auction.git',
+      repo: 'YOUR_GIT_REPO_URL',
       path: '/var/www/car-auction-staging',
       'post-deploy': 'npm ci && pm2 reload ecosystem.config.js --env staging',
       env: {
