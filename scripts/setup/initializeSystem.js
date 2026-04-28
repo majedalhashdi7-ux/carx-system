@@ -30,14 +30,15 @@ async function initializeSystem() {
     console.log('✅ Settings initialized');
 
     // التحقق من وجود Super Admin (باستخدام findOneAndUpdate للأسرع)
+    const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || process.env.DEFAULT_ADMIN_PASSWORD;
     const superAdmin = await User.findOneAndUpdate(
       { role: 'super_admin' },
-      { 
+      {
         $setOnInsert: {
           name: 'مدير النظام',
           email: 'superadmin@localhost.com',
           phone: '+966500000002',
-          password: 'Admin@123',
+          password: superAdminPassword || 'Admin@123',
           role: 'super_admin',
           permissions: getDefaultPermissions('super_admin'),
           status: 'active'
@@ -45,11 +46,11 @@ async function initializeSystem() {
       },
       { upsert: true, new: true }
     );
-    
+
     if (superAdmin.isNew) {
       console.log('✅ Default Super Admin created:');
       console.log('   Email: superadmin@localhost.com');
-      console.log('   Password: Admin@123');
+      console.log('   Password: [من متغيرات البيئة]');
       console.log('   Phone: +966500000002');
     } else {
       console.log('✅ Super Admin already exists');

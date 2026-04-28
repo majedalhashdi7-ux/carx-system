@@ -1,29 +1,56 @@
 // [[ARABIC_HEADER]] خدمة تهيئة البيانات الأساسية (SeedService)
 // تضمن وجود الأدمن الرئيسي والإعدادات الافتراضية عند تشغيل الموقع لأول مرة
+// 
+// ⚠️ متوافقة مع Multi-Tenant: تقبل models كمعامل أو تستخدم النماذج الافتراضية
 
 const mongoose = require('mongoose');
-const User = require('../models/User');
-const SiteSettings = require('../models/SiteSettings');
-const Car = require('../models/Car');
-const Auction = require('../models/Auction');
+
+// النماذج الافتراضية للاستخدام عند عدم توفير models (للتشغيل الأولي)
+let defaultModels = null;
+
+function getDefaultModels() {
+    if (!defaultModels) {
+        defaultModels = {
+            User: require('../models/User'),
+            SiteSettings: require('../models/SiteSettings'),
+            Car: require('../models/Car'),
+            Auction: require('../models/Auction')
+        };
+    }
+    return defaultModels;
+}
 
 class SeedService {
     /**
      * تشغيل كافة عمليات التهيئة
+     * @param {Object} models - نماذج المعرض (tenantModels) - اختياري للتشغيل الأولي
+     * @param {string} tenantId - معرف المعرض للتسجيل
      */
-    async runAll() {
-        console.log('🌱 Starting database seeding...');
-        await this.seedProductionAdmin();
-        await this.seedDefaultSettings();
-        await this.seedRealData();
-        console.log('✅ Database seeding complete.');
+    async runAll(models = null, tenantId = 'default') {
+        console.log(`🌱 Starting database seeding for tenant: ${tenantId}...`);
+        const modelsToUse = models || getDefaultModels();
+        
+        await this.seedProductionAdmin(modelsToUse, tenantId);
+        await this.seedDefaultSettings(modelsToUse, tenantId);
+        await this.seedRealData(modelsToUse, tenantId);
+        console.log(`✅ Database seeding complete for tenant: ${tenantId}.`);
     }
 
     /**
      * تهيئة حساب المشرف الرئيسي
+     * @param {Object} models - نماذج المعرض
+     * @param {string} tenantId - معرف المعرض
      */
-    async seedProductionAdmin() {
+    async seedProductionAdmin(models = null, tenantId = 'default') {
         try {
+            const modelsToUse = models || getDefaultModels();
+            const { User } = modelsToUse;
+            
+            if (!User) {
+                console.warn(`⚠️ User model not available for tenant ${tenantId}`);
+                return;
+            }
+            
             const adminEmail = process.env.PROD_ADMIN_EMAIL || 'admin@hmcar.com';
             const adminExists = await User.findOne({
                 $or: [{ email: adminEmail }, { username: 'admin' }]
@@ -44,21 +71,31 @@ class SeedService {
                     permissions: ['super_admin', 'manage_users', 'manage_settings', 'manage_cars', 'manage_parts', 'manage_auctions', 'view_analytics', 'manage_content', 'manage_footer', 'manage_whatsapp', 'manage_concierge']
                 });
                 await admin.save();
-                console.log(`👤 Admin created successfully: ${adminEmail}`);
+                console.log(`👤 Admin created successfully for ${tenantId}: ${adminEmail}`);
             } else if (adminExists.status === 'suspended') {
                 await User.updateOne({ _id: adminExists._id }, { $set: { status: 'active' } });
-                console.log('👤 Admin status restored to active');
+                console.log(`👤 Admin status restored to active for ${tenantId}`);
             }
         } catch (e) {
-            console.error('❌ Admin seed error:', e.message);
+            console.error(`❌ Admin seed error for ${tenantId}:`, e.message);
         }
     }
 
     /**
      * تهيئة الإعدادات الافتراضية للموقع
+     * @param {Object} models - نماذج المعرض
+     * @param {string} tenantId - معرف المعرض
      */
-    async seedDefaultSettings() {
+    async seedDefaultSettings(models = null, tenantId = 'default') {
         try {
+            const modelsToUse = models || getDefaultModels();
+            const { SiteSettings } = modelsToUse;
+            
+            if (!SiteSettings) {
+                console.warn(`⚠️ SiteSettings model not available for tenant ${tenantId}`);
+                return;
+            }
+            
             const existing = await SiteSettings.findOne({ key: 'main' });
             if (!existing || !existing.features || existing.features.length === 0) {
                 const defaultFeatures = [
@@ -92,21 +129,34 @@ class SeedService {
                     },
                     { upsert: true, new: true }
                 );
-                console.log('⚙️ Default site settings initialized');
+                console.log(`⚙️ Default site settings initialized for ${tenantId}`);
             }
         } catch (e) {
-            console.error('❌ Settings seed error:', e.message);
+            console.error(`❌ Settings seed error for ${tenantId}:`, e.message);
         }
     }
 
     /**
      * إضافة بيانات تجريبية (سيارات ومزادات)
+     * @param {Object} models - نماذج المعرض
+     * @param {string} tenantId - معرف المعرض
      */
-    async seedRealData() {
+    async seedRealData(models = null, tenantId = 'default') {
         if (process.env.NODE_ENV === 'production' && process.env.ENABLE_DEV_ADMIN !== 'true') return;
         try {
+            const modelsToUse = models || getDefaultModels();
+            const { Car, Auction } = modelsToUse;
+            
+            if (!Car) {
+                console.warn(`⚠️ Car model not available for tenant ${tenantId}`);
+                return;
+            }
+            
             const count = await Car.countDocuments();
-            if (count > 0) return;
+            if (count > 0) {
+                console.log(`🚙 Cars already exist for ${tenantId}, skipping demo data`);
+                return;
+            }
 
             const cars = [
                 {
@@ -144,21 +194,24 @@ class SeedService {
             ];
 
             const createdCars = await Car.create(cars);
-            const porsche = createdCars.find(c => c.model === '911');
-            if (porsche) {
-                await Auction.create({
-                    car: porsche._id,
-                    startingPrice: 850000,
-                    currentPrice: 850000,
-                    startsAt: new Date(),
-                    endsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-                    status: 'running',
-                    currency: 'SAR'
-                });
+            
+            if (Auction) {
+                const porsche = createdCars.find(c => c.model === '911');
+                if (porsche) {
+                    await Auction.create({
+                        car: porsche._id,
+                        startingPrice: 850000,
+                        currentPrice: 850000,
+                        startsAt: new Date(),
+                        endsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                        status: 'running',
+                        currency: 'SAR'
+                    });
+                }
             }
-            console.log('🚙 Sample cars and auctions seeded');
+            console.log(`🚙 Sample cars and auctions seeded for ${tenantId}`);
         } catch (e) {
-            console.error('❌ Data seed error:', e.message);
+            console.error(`❌ Data seed error for ${tenantId}:`, e.message);
         }
     }
 }

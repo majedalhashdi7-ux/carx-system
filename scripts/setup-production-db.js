@@ -7,8 +7,11 @@ async function setupProductionDatabase() {
     console.log('🚀 Starting production database setup...\n');
 
     // استخدام MongoDB Atlas الإنتاجية مباشرة
-    const mongoUri = 'mongodb+srv://hmcar_user:Ee20RIQEfgoxNkAx@cluster0.tirfqnb.mongodb.net/car-auction?retryWrites=true&w=majority&appName=Cluster0';
-    
+    const mongoUri = process.env.MONGO_URI_PRODUCTION || process.env.MONGO_URI;
+    if (!mongoUri) {
+        throw new Error('❌ MONGO_URI_PRODUCTION أو MONGO_URI مطلوب في متغيرات البيئة');
+    }
+
     console.log('📡 Connecting to MongoDB Atlas (Production)...');
     console.log(`URI: ${mongoUri.replace(/:([^:@]{4})[^:@]*@/, ':****@')}\n`);
 

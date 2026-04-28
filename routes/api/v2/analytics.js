@@ -10,7 +10,7 @@ router.get('/', requireAuthAPI, requireAdmin, async (req, res) => {
   try {
     // [[ARABIC_COMMENT]] period اختياري: all | week | month | year
     const period = String(req.query.period || 'all');
-    const stats = await AnalyticsService.getSummary(period);
+    const stats = await AnalyticsService.getSummary(req.tenantModels, period);
     res.json({ success: true, stats });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -20,7 +20,7 @@ router.get('/', requireAuthAPI, requireAdmin, async (req, res) => {
 // GET /api/v2/analytics/activities - أحدث الأنشطة
 router.get('/activities', requireAuthAPI, requireAdmin, async (req, res) => {
   try {
-    const activities = await AnalyticsService.getRecentActivities(req.query.limit || 10);
+    const activities = await AnalyticsService.getRecentActivities(req.tenantModels, req.query.limit || 10);
     res.json({ success: true, activities });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -32,7 +32,7 @@ router.get('/detailed', requireAuthAPI, requireAdmin, async (req, res) => {
   try {
     // [[ARABIC_COMMENT]] period يحدد نافذة البيانات في الرسم/أفضل المبيعات
     const period = String(req.query.period || 'all');
-    const detailed = await AnalyticsService.getMonthlyStats(period);
+    const detailed = await AnalyticsService.getMonthlyStats(req.tenantModels, period);
     res.json({ success: true, detailed });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

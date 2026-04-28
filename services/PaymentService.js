@@ -1,11 +1,11 @@
 // [[ARABIC_HEADER]] هذا الملف (services/PaymentService.js) جزء من مشروع HM CAR ويحتوي تعليقات عربية لضمان الوضوح.
 
-const Payment = require('../models/Payment');
-const Order = require('../models/Order');
-const UserNotification = require('../models/UserNotification');
-
+// ⚠️ متوافق مع Multi-Tenant: تقبل models كمعامل
 class PaymentService {
-  static async initiatePayment(orderId, paymentMethod, paymentDetails) {
+  static async initiatePayment(models, orderId, paymentMethod, paymentDetails) {
+    if (!models) throw new Error('models is required for initiatePayment');
+    const { Payment, Order } = models;
+    
     try {
       const order = await Order.findById(orderId).populate('user');
       if (!order) {
@@ -156,7 +156,10 @@ class PaymentService {
     };
   }
   
-  static async processRefund(paymentId, refundAmount, reason) {
+  static async processRefund(models, paymentId, refundAmount, reason) {
+    if (!models) throw new Error('models is required for processRefund');
+    const { Payment, Order } = models;
+    
     try {
       const payment = await Payment.processRefund(paymentId, refundAmount, reason);
       
@@ -178,7 +181,7 @@ class PaymentService {
           await Order.findByIdAndUpdate(payment.order, { status: 'refunded' });
         }
         
-        await this.sendRefundConfirmation(payment.user, payment, refundAmount);
+        await this.sendRefundConfirmation(models, payment.user, payment, refundAmount);
       }
       
       return payment;
@@ -200,7 +203,10 @@ class PaymentService {
     };
   }
   
-  static async createInstallmentPlan(paymentId, totalInstallments, installmentAmount) {
+  static async createInstallmentPlan(models, paymentId, totalInstallments, installmentAmount) {
+    if (!models) throw new Error('models is required for createInstallmentPlan');
+    const { Payment } = models;
+    
     try {
       const payment = await Payment.findById(paymentId);
       if (!payment) {
@@ -224,7 +230,10 @@ class PaymentService {
     }
   }
   
-  static async processInstallmentPayment(paymentId, amount) {
+  static async processInstallmentPayment(models, paymentId, amount) {
+    if (!models) throw new Error('models is required for processInstallmentPayment');
+    const { Payment } = models;
+    
     try {
       const payment = await Payment.findById(paymentId);
       if (!payment) {
@@ -234,7 +243,7 @@ class PaymentService {
       await payment.processInstallment(amount);
       
       // Send installment confirmation
-      await this.sendInstallmentConfirmation(payment.user, payment, amount);
+      await this.sendInstallmentConfirmation(models, payment.user, payment, amount);
       
       return payment;
     } catch (error) {
@@ -243,7 +252,10 @@ class PaymentService {
     }
   }
   
-  static async getPaymentStatus(paymentId) {
+  static async getPaymentStatus(models, paymentId) {
+    if (!models) throw new Error('models is required for getPaymentStatus');
+    const { Payment } = models;
+    
     try {
       const payment = await Payment.findById(paymentId)
         .populate('order')
@@ -323,8 +335,9 @@ class PaymentService {
     await order.save();
   }
   
-  static async sendPaymentConfirmation(userId, order, payment) {
-    await UserNotification.createNotification({
+  static async sendPaymentConfirmation(models, userId, order, payment) {
+    if (!models || !models.UserNotification) return;
+    await models.UserNotification.createNotification({
       user: userId,
       title: 'تأكيد الدفع',
       message: `تم استلام دفعك بنجاح لطلب #${order.orderNumber} بمبلغ ${payment.amount} ${payment.currency}`,
@@ -336,8 +349,9 @@ class PaymentService {
     });
   }
   
-  static async sendRefundConfirmation(userId, payment, refundAmount) {
-    await UserNotification.createNotification({
+  static async sendRefundConfirmation(models, userId, payment, refundAmount) {
+    if (!models || !models.UserNotification) return;
+    await models.UserNotification.createNotification({
       user: userId,
       title: 'تأكيد الاسترداد',
       message: `تم استرداد مبلغ ${refundAmount} ${payment.currency} بنجاح`,
@@ -349,8 +363,9 @@ class PaymentService {
     });
   }
   
-  static async sendInstallmentConfirmation(userId, payment, amount) {
-    await UserNotification.createNotification({
+  static async sendInstallmentConfirmation(models, userId, payment, amount) {
+    if (!models || !models.UserNotification) return;
+    await models.UserNotification.createNotification({
       user: userId,
       title: 'تأكيد القسط',
       message: `تم استلام القسط الشهري بمبلغ ${amount} ${payment.currency}`,

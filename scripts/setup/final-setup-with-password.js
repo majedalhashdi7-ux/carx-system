@@ -9,7 +9,10 @@ const fs = require('fs');
 console.log('🚀 الإعداد النهائي مع كلمة السر الحقيقية...\n');
 
 // كلمة السر الحقيقية
-const realPassword = 'jyT24fgC7TXfyKEt';
+const realPassword = process.env.MONGODB_PASSWORD || process.env.MONGO_PASSWORD;
+if (!realPassword) {
+    throw new Error('❌ MONGODB_PASSWORD أو MONGO_PASSWORD مطلوب في متغيرات البيئة');
+}
 const baseConnectionString = 'mongodb+srv://car-auction:' + realPassword + '@cluster0.1bqjdzp.mongodb.net/?appName=Cluster0';
 
 // تحديث جميع ملفات البيئة بكلمة السر الحقيقية
@@ -191,7 +194,7 @@ function createFinalSummary() {
 
 ### 🔐 قاعدة البيانات:
 - **الحساب**: car-auction
-- **كلمة السر**: jyT24fgC7TXfyKEt
+- **كلمة السر**: [من متغيرات البيئة]
 - **الخادم**: cluster0.1bqjdzp.mongodb.net
 - **الحالة**: ✅ متصلة وجاهزة
 

@@ -2,15 +2,13 @@
 
 const express = require('express');
 const router = express.Router();
-const ConciergeRequest = require('../../../models/ConciergeRequest');
-const UserNotification = require('../../../models/UserNotification');
-const User = require('../../../models/User');
 const { requireAuthAPI, requireAdmin } = require('../../../middleware/auth');
 const { addTenantFilter, getTenantId } = require('../../../tenants/tenant-model-helper');
 
 // ── GET /api/v2/concierge/stats ── إحصائيات الطلبات (الأدمن)
 router.get('/stats', requireAuthAPI, requireAdmin, async (req, res) => {
     try {
+        const { ConciergeRequest } = req.tenantModels;
         const [total, newCount, inProgress, completed, cancelled, byCar, byParts] = await Promise.all([
             ConciergeRequest.countDocuments(addTenantFilter(req, {})),
             ConciergeRequest.countDocuments(addTenantFilter(req, { status: 'new' })),
@@ -62,6 +60,7 @@ router.post('/', async (req, res) => {
         }
 
         // حفظ الطلب
+        const { ConciergeRequest, User, UserNotification } = req.tenantModels;
         const request = await ConciergeRequest.create({
             type, name, phone,
             user: req.body.user || null, // [[ARABIC_COMMENT]] ربط المستخدم إذا توفر
@@ -78,6 +77,7 @@ router.post('/', async (req, res) => {
         // ── إشعار الأدمن ──
         // جلب جميع المستخدمين الأدمن
         try {
+            const { User, UserNotification } = req.tenantModels;
             const admins = await User.find(addTenantFilter(req, { role: { $in: ['admin', 'super_admin', 'superadmin'] } })).select('_id').lean();
             if (admins.length > 0) {
                 const typeLabel = type === 'car' ? 'طلب سيارة' : 'طلب قطعة غيار';
@@ -129,6 +129,7 @@ router.post('/', async (req, res) => {
 // ── GET /api/v2/concierge ── جلب كل الطلبات (الأدمن فقط)
 router.get('/', requireAuthAPI, requireAdmin, async (req, res) => {
     try {
+        const { ConciergeRequest } = req.tenantModels;
         const { type, status, source, page = 1, limit = 20 } = req.query;
 
         const filter = {};
@@ -165,6 +166,7 @@ router.get('/', requireAuthAPI, requireAdmin, async (req, res) => {
 // ── GET /api/v2/concierge/:id ── جلب طلب واحد
 router.get('/:id', requireAuthAPI, requireAdmin, async (req, res) => {
     try {
+        const { ConciergeRequest } = req.tenantModels;
         const request = await ConciergeRequest.findOne(addTenantFilter(req, { _id: req.params.id })).lean();
         if (!request) {
             return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
@@ -178,6 +180,7 @@ router.get('/:id', requireAuthAPI, requireAdmin, async (req, res) => {
 // ── PATCH /api/v2/concierge/:id/status ── تحديث حالة الطلب (الأدمن)
 router.patch('/:id/status', requireAuthAPI, requireAdmin, async (req, res) => {
     try {
+        const { ConciergeRequest } = req.tenantModels;
         const { status, adminNotes, auctionDate } = req.body;
         const validStatuses = ['new', 'in_progress', 'completed', 'cancelled'];
 
@@ -202,7 +205,7 @@ router.patch('/:id/status', requireAuthAPI, requireAdmin, async (req, res) => {
         // [[ARABIC_COMMENT]] إرسال إشعار للعميل إذا تم قبول الطلب (تغيير الحالة لـ in_progress)
         if (status === 'in_progress' && request.user) {
             try {
-                const UserNotification = require('../../../models/UserNotification');
+                const { UserNotification } = req.tenantModels;
                 const dateStr = auctionDate ? ` في موعد: ${new Date(auctionDate).toLocaleString('ar-YE')}` : '';
                 await UserNotification.createNotification({
                     user: request.user,
@@ -225,6 +228,7 @@ router.patch('/:id/status', requireAuthAPI, requireAdmin, async (req, res) => {
 // ── DELETE /api/v2/concierge/:id ── حذف طلب (الأدمن)
 router.delete('/:id', requireAuthAPI, requireAdmin, async (req, res) => {
     try {
+        const { ConciergeRequest } = req.tenantModels;
         await ConciergeRequest.findOneAndDelete(addTenantFilter(req, { _id: req.params.id }));
         res.json({ success: true, message: 'تم حذف الطلب' });
     } catch (error) {

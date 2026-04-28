@@ -1,10 +1,7 @@
 // [[ARABIC_HEADER]] هذا الملف (routes/api/v2/live-auction-requests.js) مسؤول عن إدارة طلبات الشراء المباشرة من المزاد (Proxy Bidding).
 const express = require('express');
 const router = express.Router();
-const LiveAuctionRequest = require('../../../models/LiveAuctionRequest');
-const Invoice = require('../../../models/Invoice');
-const AdvancedNotification = require('../../../models/AdvancedNotification');
-const { requireAuthAPI } = require('../../../middleware/auth'); // Optionally require if guest can bid
+const { requireAuthAPI } = require('../../../middleware/auth');
 
 // ==========================================
 // [[ARABIC_COMMENT]] إضافة طلب مزايدة جديد
@@ -14,6 +11,8 @@ const { requireAuthAPI } = require('../../../middleware/auth'); // Optionally re
 router.post('/', async (req, res) => {
     try {
         const { session, sessionTitle, car, guestName, guestPhone, userId } = req.body;
+        
+        const { LiveAuctionRequest, Invoice, AdvancedNotification } = req.tenantModels;
         
         const newReq = new LiveAuctionRequest({
             session,
@@ -27,14 +26,16 @@ router.post('/', async (req, res) => {
         await newReq.save();
 
         // Notify Admins
-        await AdvancedNotification.broadcast({
+        if (AdvancedNotification) {
+            await AdvancedNotification.broadcast({
             type: 'AUCTION',
             title: 'طلب مزايدة مباشـر جديد! 🚀',
             message: `طلب مزايدة من ${guestName} على سيارة: ${car.title}`,
             actionUrl: `/admin/live-auctions/requests`,
             priority: 'URGENT',
             channels: ['IN_APP']
-        });
+            });
+        }
 
         res.status(201).json({ success: true, data: newReq });
     } catch (error) {
@@ -50,6 +51,8 @@ router.post('/', async (req, res) => {
 // ==========================================
 router.get('/', requireAuthAPI, async (req, res) => {
     try {
+        const { LiveAuctionRequest } = req.tenantModels;
+        
         let query = {};
         if (req.user.role !== 'super_admin' && req.user.role !== 'admin') {
             query.user = req.user._id; // Normal user only sees their own
@@ -77,6 +80,8 @@ router.put('/:id/status', requireAuthAPI, async (req, res) => {
             return res.status(403).json({ success: false, error: 'Access denied' });
         }
 
+        const { LiveAuctionRequest, Invoice, UserNotification } = req.tenantModels;
+        
         const { status, agreedMaxPrice, finalPurchasePrice, adminNotes } = req.body;
         const request = await LiveAuctionRequest.findById(req.params.id);
         
@@ -113,7 +118,7 @@ router.put('/:id/status', requireAuthAPI, async (req, res) => {
 
         await request.save();
 
-        if (request.user) {
+        if (request.user && UserNotification) {
             let notifTitle = 'تحديث المزايدة';
             let notifMsg = `تم تحديث حالة طلب المزايدة الخاصة بك على ${request.car.title}`;
             let prio = 'normal';
@@ -135,7 +140,6 @@ router.put('/:id/status', requireAuthAPI, async (req, res) => {
             }
             
             try {
-                const UserNotification = require('../../../models/UserNotification');
                 await UserNotification.createNotification({
                     user: request.user,
                     title: notifTitle,

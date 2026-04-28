@@ -67,10 +67,15 @@ async function activateAllFeatures() {
 async function createAdminAccount(db) {
     const usersCollection = db.collection('users');
 
+    const adminPassword = process.env.ADMIN_PASSWORD || process.env.DEFAULT_ADMIN_PASSWORD;
+    if (!adminPassword) {
+        throw new Error('❌ ADMIN_PASSWORD أو DEFAULT_ADMIN_PASSWORD مطلوب في متغيرات البيئة');
+    }
+
     const adminData = {
         name: 'Dawood Al Hash',
         email: 'dawoodalhash@gmail.com',
-        password: 'daood@112233',
+        password: adminPassword,
         role: 'admin',
         phone: '+967781007805',
         city: 'صنعاء',

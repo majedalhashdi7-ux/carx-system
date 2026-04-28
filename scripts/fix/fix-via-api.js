@@ -9,8 +9,11 @@ const https = require('https');
 const BASE_URL = 'https://hmcar.okigo.net';
 
 // ── بيانات الأدمن ──
-const ADMIN_EMAIL = 'admin@hmcar.com';
-const ADMIN_PASSWORD = 'HmCar@2026';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@hmcar.com';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+if (!ADMIN_PASSWORD) {
+    throw new Error('❌ ADMIN_PASSWORD مطلوب في متغيرات البيئة');
+}
 
 function request(method, path, body, token) {
     return new Promise((resolve, reject) => {

@@ -15,14 +15,14 @@ const deploymentInfo = {
         name: 'HM CAR',
         directory: 'client-app',
         envVars: {
-            'MONGO_URI': 'mongodb+srv://car-auction:jyT24fgC7TXfyKEt@cluster0.1bqjdzp.mongodb.net/?appName=Cluster0&retryWrites=true&w=majority',
-            'NEXTAUTH_SECRET': 'hmcar-secure-secret-2024-production-final',
-            'NEXTAUTH_URL': 'https://daood.okigo.net',
-            'ADMIN_EMAIL': 'dawoodalhash@gmail.com',
-            'ADMIN_PASSWORD': 'daood@112233',
-            'WHATSAPP_NUMBER': '+967781007805',
-            'USD_TO_SAR': '3.75',
-            'USD_TO_KRW': '1300',
+            'MONGO_URI': process.env.MONGO_URI || '',
+            'NEXTAUTH_SECRET': process.env.NEXTAUTH_SECRET || '',
+            'NEXTAUTH_URL': process.env.NEXTAUTH_URL || 'https://daood.okigo.net',
+            'ADMIN_EMAIL': process.env.ADMIN_EMAIL || 'dawoodalhash@gmail.com',
+            'ADMIN_PASSWORD': process.env.ADMIN_PASSWORD || '',
+            'WHATSAPP_NUMBER': process.env.WHATSAPP_NUMBER || '+967781007805',
+            'USD_TO_SAR': process.env.USD_TO_SAR || '3.75',
+            'USD_TO_KRW': process.env.USD_TO_KRW || '1300',
             'NODE_ENV': 'production'
         }
     },
@@ -30,14 +30,14 @@ const deploymentInfo = {
         name: 'CAR X',
         directory: 'carx-system',
         envVars: {
-            'MONGO_URI': 'mongodb+srv://car-auction:jyT24fgC7TXfyKEt@cluster0.1bqjdzp.mongodb.net/?appName=Cluster0&retryWrites=true&w=majority',
-            'NEXTAUTH_SECRET': 'carx-ultra-secure-secret-2024-production-final',
-            'NEXTAUTH_URL': 'https://daood.okigo.net',
-            'ADMIN_EMAIL': 'dawoodalhash@gmail.com',
-            'ADMIN_PASSWORD': 'daood@112233',
-            'WHATSAPP_NUMBER': '+967781007805',
-            'USD_TO_SAR': '3.75',
-            'USD_TO_KRW': '1300',
+            'MONGO_URI': process.env.MONGO_URI || '',
+            'NEXTAUTH_SECRET': process.env.NEXTAUTH_SECRET || '',
+            'NEXTAUTH_URL': process.env.NEXTAUTH_URL || 'https://daood.okigo.net',
+            'ADMIN_EMAIL': process.env.ADMIN_EMAIL || 'dawoodalhash@gmail.com',
+            'ADMIN_PASSWORD': process.env.ADMIN_PASSWORD || '',
+            'WHATSAPP_NUMBER': process.env.WHATSAPP_NUMBER || '+967781007805',
+            'USD_TO_SAR': process.env.USD_TO_SAR || '3.75',
+            'USD_TO_KRW': process.env.USD_TO_KRW || '1300',
             'NODE_ENV': 'production'
         }
     }
@@ -126,10 +126,10 @@ function createDeploymentReport(results) {
 
 ### حساب الإدارة:
 - **الإيميل**: dawoodalhash@gmail.com
-- **كلمة السر**: daood@112233
+- **كلمة السر**: ${process.env.ADMIN_PASSWORD || 'غير متوفر'}
 
 ### قاعدة البيانات:
-- **Connection String**: mongodb+srv://car-auction:jyT24fgC7TXfyKEt@cluster0.1bqjdzp.mongodb.net/
+- **Connection String**: ${process.env.MONGO_URI || 'غير متوفر'}
 
 ## 📞 معلومات الاتصال:
 - **واتساب**: +967781007805

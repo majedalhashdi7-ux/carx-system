@@ -2,14 +2,12 @@
 
 const express = require('express');
 const router = express.Router();
-const UserNotification = require('../../../models/UserNotification');
-const AdvancedNotification = require('../../../models/AdvancedNotification');
-const PushSubscription = require('../../../models/PushSubscription');
 const { requireAuthAPI } = require('../../../middleware/auth');
 
 // جلب جميع الإشعارات للمستخدم الحالي
 router.get('/', requireAuthAPI, async (req, res) => {
   try {
+    const { UserNotification } = req.tenantModels;
     const notifications = await UserNotification.find({ user: req.user.userId }).sort({ createdAt: -1 }).limit(100);
     const data = notifications.map(n => ({
         id: n._id,
@@ -29,6 +27,7 @@ router.get('/', requireAuthAPI, async (req, res) => {
 // تعيين الإشعارات كمقروءة (جميع)
 router.post('/read', requireAuthAPI, async (req, res) => {
   try {
+    const { UserNotification } = req.tenantModels;
     await UserNotification.updateMany(
       { user: req.user.userId, read: false },
       { $set: { read: true, readAt: new Date() } }
@@ -42,6 +41,7 @@ router.post('/read', requireAuthAPI, async (req, res) => {
 // تعيين إشعار واحد كمقروء (بمعرف محدد)
 router.patch('/:id/read', requireAuthAPI, async (req, res) => {
   try {
+    const { UserNotification } = req.tenantModels;
     await UserNotification.findOneAndUpdate(
       { _id: req.params.id, user: req.user.userId },
       { $set: { read: true, readAt: new Date() } }
@@ -55,6 +55,7 @@ router.patch('/:id/read', requireAuthAPI, async (req, res) => {
 // حذف إشعار واحد
 router.delete('/:id', requireAuthAPI, async (req, res) => {
   try {
+    const { UserNotification } = req.tenantModels;
     await UserNotification.findOneAndDelete({ _id: req.params.id, user: req.user.userId });
     res.json({ success: true });
   } catch (error) {
@@ -67,6 +68,7 @@ router.delete('/:id', requireAuthAPI, async (req, res) => {
 router.post('/send', requireAuthAPI, async (req, res) => {
   try {
     const { title, message, type, actionUrl } = req.body;
+    const { UserNotification } = req.tenantModels;
     await UserNotification.createNotification({
       user: req.user.userId,
       title,
@@ -88,8 +90,8 @@ router.post('/broadcast', requireAuthAPI, async (req, res) => {
     }
 
     const { title, message, url } = req.body;
+    const { User, UserNotification } = req.tenantModels;
     
-    const User = require('../../../models/User');
     const users = await User.find({}).select('_id');
 
     // إرسال الإشعار لجميع المستخدمين بشكل غير متزامن
@@ -123,6 +125,7 @@ router.post('/push/subscribe', requireAuthAPI, async (req, res) => {
     }
 
     // [[ARABIC_COMMENT]] تحديث أو إنشاء اشتراك جديد لهذا الجهاز
+    const { PushSubscription } = req.tenantModels;
     await PushSubscription.findOneAndUpdate(
       { user: req.user.userId, 'subscription.endpoint': subscription.endpoint },
       { 
@@ -145,6 +148,7 @@ router.post('/push/subscribe', requireAuthAPI, async (req, res) => {
 router.post('/push/unsubscribe', requireAuthAPI, async (req, res) => {
   try {
     const { endpoint } = req.body;
+    const { PushSubscription } = req.tenantModels;
     await PushSubscription.deleteOne({ user: req.user.userId, 'subscription.endpoint': endpoint });
     res.json({ success: true, message: 'Push subscription removed' });
   } catch (error) {

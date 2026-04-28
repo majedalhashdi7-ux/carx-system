@@ -2,9 +2,6 @@
 
 const express = require('express');
 const router = express.Router();
-const Auction = require('../../../models/Auction');
-const Car = require('../../../models/Car');
-const SiteSettings = require('../../../models/SiteSettings');
 const { requireAuthAPI } = require('../../../middleware/auth');
 const { addTenantFilter, getTenantId } = require('../../../tenants/tenant-model-helper');
 const { 
@@ -34,13 +31,14 @@ function toBaseAmount(amount, multiplier) {
 // GET /api/v2/auctions - قائمة المزادات
 router.get('/', async (req, res) => {
     try {
+        const { Auction, SiteSettings } = req.tenantModels;
         const { status, limit = 10 } = req.query;
         const query = {};
         if (status && status !== 'all') {
             query.status = status;
         }
 
-        const settings = await SiteSettings.getSettings().catch(() => null);
+        const settings = SiteSettings ? await SiteSettings.getSettings().catch(() => null) : null;
         const auctionMultiplier = normalizeMultiplier(settings?.currencySettings?.auctionMultiplier || 1);
 
         const now = new Date();
@@ -104,6 +102,8 @@ router.get('/', async (req, res) => {
 // GET /api/v2/auctions/:id - جلب مزاد محدد
 router.get('/:id', async (req, res) => {
     try {
+        const { Auction, SiteSettings } = req.tenantModels;
+        
         const auction = await Auction.findOne(addTenantFilter(req, { _id: req.params.id }))
             .populate('car')
             .populate('highestBidder', 'name')
@@ -113,7 +113,7 @@ router.get('/:id', async (req, res) => {
             return sendResponse(res, notFoundResponse('Auction'));
         }
 
-        const settings = await SiteSettings.getSettings().catch(() => null);
+        const settings = SiteSettings ? await SiteSettings.getSettings().catch(() => null) : null;
         const auctionMultiplier = normalizeMultiplier(settings?.currencySettings?.auctionMultiplier || 1);
 
         res.json({
@@ -154,6 +154,7 @@ router.get('/:id', async (req, res) => {
 // POST /api/v2/auctions - إنشاء مزاد جديد (Auth required)
 router.post('/', requireAuthAPI, async (req, res) => {
     try {
+        const { Auction, Car, SiteSettings } = req.tenantModels;
         const { carId, startPrice, startsAt, endsAt } = req.body;
 
         if (!carId || !startPrice || !startsAt || !endsAt) {
@@ -166,7 +167,7 @@ router.post('/', requireAuthAPI, async (req, res) => {
             return sendResponse(res, notFoundResponse('Car'));
         }
 
-        const settings = await SiteSettings.getSettings().catch(() => null);
+        const settings = SiteSettings ? await SiteSettings.getSettings().catch(() => null) : null;
         const auctionMultiplier = normalizeMultiplier(settings?.currencySettings?.auctionMultiplier || 1);
         const baseStartPrice = toBaseAmount(startPrice, auctionMultiplier);
 
@@ -196,6 +197,7 @@ router.post('/', requireAuthAPI, async (req, res) => {
 // PUT /api/v2/auctions/:id - تحديث مزاد (Auth required)
 router.put('/:id', requireAuthAPI, async (req, res) => {
     try {
+        const { Auction } = req.tenantModels;
         const { status, endsAt } = req.body;
         const auction = await Auction.findOne(addTenantFilter(req, { _id: req.params.id }));
 
@@ -222,6 +224,7 @@ router.put('/:id', requireAuthAPI, async (req, res) => {
 // DELETE /api/v2/auctions/:id - حذف مزاد (Auth required)
 router.delete('/:id', requireAuthAPI, async (req, res) => {
     try {
+        const { Auction } = req.tenantModels;
         const auction = await Auction.findOneAndDelete(addTenantFilter(req, { _id: req.params.id }));
         if (!auction) {
             return sendResponse(res, notFoundResponse('Auction'));
@@ -236,6 +239,7 @@ router.delete('/:id', requireAuthAPI, async (req, res) => {
 // POST /api/v2/auctions/:id/bid - المزايدة (Auth required)
 router.post('/:id/bid', requireAuthAPI, async (req, res) => {
     try {
+        const { Auction, SiteSettings } = req.tenantModels;
         const { amount } = req.body;
         const auction = await Auction.findOne(addTenantFilter(req, { _id: req.params.id }));
 
@@ -247,7 +251,7 @@ router.post('/:id/bid', requireAuthAPI, async (req, res) => {
             return sendResponse(res, errorResponse('Auction is not active', 'AUCTION_NOT_ACTIVE', 400));
         }
 
-        const settings = await SiteSettings.getSettings().catch(() => null);
+        const settings = SiteSettings ? await SiteSettings.getSettings().catch(() : null) : null;
         const auctionMultiplier = normalizeMultiplier(settings?.currencySettings?.auctionMultiplier || 1);
         const currentHighest = auction.currentPrice || auction.startingPrice;
         const baseAmount = toBaseAmount(amount, auctionMultiplier);

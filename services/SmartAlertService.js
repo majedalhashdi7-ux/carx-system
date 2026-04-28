@@ -11,20 +11,22 @@
  * - تجنب إرسال إشعارات مكررة لنفس السيارة
  */
 
-const SmartAlert = require('../models/SmartAlert');
-const UserNotification = require('../models/UserNotification');
-const NotificationService = require('./NotificationService');
-
+// ⚠️ متوافق مع Multi-Tenant: تقبل models كمعامل
 class SmartAlertService {
 
     /**
      * يُستدعى هذا الدالة عند إضافة سيارة جديدة أو تحديثها
      * تتحقق من جميع التنبيهات الذكية النشطة وترسل إشعارات للمطابقة
      *
+     * @param {Object} models - نماذج المعرض
      * @param {Object} car - وثيقة السيارة من MongoDB
      */
-    static async checkNewCar(car) {
+    static async checkNewCar(models, car) {
+        if (!models) throw new Error('models is required for checkNewCar');
+        
         try {
+            const { SmartAlert } = models;
+            
             // جلب جميع التنبيهات النشطة التي لم تُرسل لها إشعارات عن هذه السيارة
             const alerts = await SmartAlert.find({
                 isActive: true,
@@ -47,7 +49,7 @@ class SmartAlertService {
 
             // إرسال الإشعارات بشكل متوازٍ
             await Promise.allSettled(
-                matchingAlerts.map(alert => this._triggerAlert(alert, car))
+                matchingAlerts.map(alert => this._triggerAlert(models, alert, car))
             );
 
         } catch (err) {
@@ -117,11 +119,16 @@ class SmartAlertService {
 
     /**
      * تفعيل تنبيه واحد وإرسال الإشعار للمستخدم
+     * @param {Object} models - نماذج المعرض
      * @param {Object} alert - وثيقة التنبيه
      * @param {Object} car - وثيقة السيارة
      */
-    static async _triggerAlert(alert, car) {
+    static async _triggerAlert(models, alert, car) {
+        if (!models) throw new Error('models is required for _triggerAlert');
+        
         try {
+            const { SmartAlert, UserNotification } = models;
+            
             // بناء نص الإشعار
             const carTitle = car.title || `${car.make || ''} ${car.model || ''} ${car.year || ''}`.trim();
             const price = car.priceSar
@@ -149,10 +156,12 @@ class SmartAlertService {
             };
 
             // إنشاء الإشعار في قاعدة البيانات
-            await UserNotification.create({
-                user: alert.user,
-                ...template
-            });
+            if (UserNotification) {
+                await UserNotification.create({
+                    user: alert.user,
+                    ...template
+                });
+            }
 
             // إرسال عبر WebSocket (إشعار فوري)
             if (alert.channels && alert.channels.inApp) {
@@ -171,14 +180,16 @@ class SmartAlertService {
             }
 
             // تحديث سجل التنبيه
-            await SmartAlert.findByIdAndUpdate(alert._id, {
+            if (SmartAlert) {
+                await SmartAlert.findByIdAndUpdate(alert._id, {
                 $inc: { triggerCount: 1 },
                 $set: {
                     lastTriggeredAt: new Date(),
                     lastTriggeredCarId: car._id
                 },
                 $addToSet: { notifiedCarIds: car._id }
-            });
+                });
+            }
 
             console.log(`[SmartAlert] ✅ أُرسل إشعار للمستخدم ${alert.user} عن تنبيه "${alert.name}"`);
 
@@ -189,11 +200,15 @@ class SmartAlertService {
 
     /**
      * إنشاء تنبيه ذكي جديد للمستخدم
+     * @param {Object} models - نماذج المعرض
      * @param {String} userId - معرف المستخدم
      * @param {Object} data - بيانات التنبيه
      * @returns {Object} التنبيه المُنشأ
      */
-    static async createAlert(userId, data) {
+    static async createAlert(models, userId, data) {
+        if (!models) throw new Error('models is required for createAlert');
+        const { SmartAlert } = models;
+        
         // التحقق من الحد الأقصى (10 تنبيهات)
         const count = await SmartAlert.countForUser(userId);
         if (count >= 10) {
@@ -228,12 +243,16 @@ class SmartAlertService {
 
     /**
      * تحديث تنبيه موجود
+     * @param {Object} models - نماذج المعرض
      * @param {String} alertId - معرف التنبيه
      * @param {String} userId - معرف المستخدم (للتحقق من الملكية)
      * @param {Object} data - البيانات المحدّثة
      * @returns {Object} التنبيه المحدّث
      */
-    static async updateAlert(alertId, userId, data) {
+    static async updateAlert(models, alertId, userId, data) {
+        if (!models) throw new Error('models is required for updateAlert');
+        const { SmartAlert } = models;
+        
         const alert = await SmartAlert.findOne({ _id: alertId, user: userId });
         if (!alert) throw new Error('التنبيه غير موجود أو ليس لديك صلاحية');
 
@@ -268,10 +287,14 @@ class SmartAlertService {
 
     /**
      * حذف تنبيه
+     * @param {Object} models - نماذج المعرض
      * @param {String} alertId
      * @param {String} userId
      */
-    static async deleteAlert(alertId, userId) {
+    static async deleteAlert(models, alertId, userId) {
+        if (!models) throw new Error('models is required for deleteAlert');
+        const { SmartAlert } = models;
+        
         const result = await SmartAlert.findOneAndDelete({ _id: alertId, user: userId });
         if (!result) throw new Error('التنبيه غير موجود أو ليس لديك صلاحية');
         return result;
@@ -279,10 +302,14 @@ class SmartAlertService {
 
     /**
      * جلب جميع تنبيهات المستخدم
+     * @param {Object} models - نماذج المعرض
      * @param {String} userId
      * @returns {Array}
      */
-    static async getUserAlerts(userId) {
+    static async getUserAlerts(models, userId) {
+        if (!models) throw new Error('models is required for getUserAlerts');
+        const { SmartAlert } = models;
+        
         return await SmartAlert.find({ user: userId })
             .sort({ createdAt: -1 })
             .lean();
@@ -290,9 +317,13 @@ class SmartAlertService {
 
     /**
      * إحصائيات التنبيهات للمستخدم
+     * @param {Object} models - نماذج المعرض
      * @param {String} userId
      */
-    static async getUserStats(userId) {
+    static async getUserStats(models, userId) {
+        if (!models) throw new Error('models is required for getUserStats');
+        const { SmartAlert } = models;
+        
         const alerts = await SmartAlert.find({ user: userId }).lean();
         return {
             total: alerts.length,

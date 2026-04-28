@@ -20,12 +20,9 @@
  * - إدارة قوالب الإشعارات
  * - إشعارات جماعية متقدمة
  */
-const UserNotification = require('../models/UserNotification');
-const UserNotificationPreference = require('../models/UserNotificationPreference');
-const PushSubscription = require('../models/PushSubscription');
+// ⚠️ متوافق مع Multi-Tenant: تقبل models كمعامل
 const WebSocketService = require('./WebSocketService');
-const EmailService = require('./EmailService'); // Assuming you have an EmailService
-const mongoose = require('mongoose');
+const EmailService = require('./EmailService');
 const webpush = require('web-push');
 
 /**
@@ -44,20 +41,28 @@ class NotificationService {
 
     /**
      * Creates a notification in the database.
+     * @param {Object} models - نماذج المعرض (UserNotification)
      * @param {Object} notificationData - The data for the notification.
      * @returns {Promise<Document>} The created notification document.
      */
-    static async createNotification(notificationData) {
-        return await UserNotification.create(notificationData);
+    static async createNotification(models, notificationData) {
+        if (!models || !models.UserNotification) {
+            throw new Error('UserNotification model is required');
+        }
+        return await models.UserNotification.create(notificationData);
     }
 
     /**
      * Sends a notification to a user based on their preferences.
+     * @param {Object} models - نماذج المعرض
      * @param {String} userId - The ID of the user.
      * @param {String} notificationType - The type of notification (e.g., 'outbid', 'newMessage').
      * @param {Object} template - The notification content template.
      */
-    static async sendNotification(userId, notificationType, template) {
+    static async sendNotification(models, userId, notificationType, template) {
+        if (!models) throw new Error('models is required for sendNotification');
+        
+        const { UserNotification, UserNotificationPreference, PushSubscription } = models;
         const preferences = await UserNotificationPreference.findOne({ user: userId });
 
         // Default preferences if none are set
@@ -70,7 +75,7 @@ class NotificationService {
         const userPrefs = preferences || defaultPrefs;
 
         if (userPrefs[notificationType]) {
-            const notification = await this.createNotification({
+            const notification = await this.createNotification(models, {
                 user: userId,
                 ...template
             });
@@ -102,7 +107,8 @@ class NotificationService {
         }
     }
 
-    static async sendAuctionNotification(userId, auction, type, data = {}) {
+    static async sendAuctionNotification(models, userId, auction, type, data = {}) {
+        if (!models) throw new Error('models is required for sendAuctionNotification');
         const templates = {
             'outbid': {
                 title: 'لقد تمت المزايدة عليك!',
@@ -144,10 +150,11 @@ class NotificationService {
         const template = templates[type];
         if (!template) return;
 
-        await this.sendNotification(userId, type, template);
+        await this.sendNotification(models, userId, type, template);
     }
 
-    static async sendMessageNotification(userId, message) {
+    static async sendMessageNotification(models, userId, message) {
+        if (!models) throw new Error('models is required for sendMessageNotification');
         const template = {
             title: 'رسالة جديدة',
             message: `لديك رسالة جديدة من ${message.sender.name}.`,
@@ -157,10 +164,11 @@ class NotificationService {
             actionUrl: `/messages/conversation/${message.conversation}`,
             metadata: { senderId: message.sender._id }
         };
-        await this.sendNotification(userId, 'newMessage', template);
+        await this.sendNotification(models, userId, 'newMessage', template);
     }
     
-    static async sendSystemUpdate(userId, title, message, data = {}) {
+    static async sendSystemUpdate(models, userId, title, message, data = {}) {
+        if (!models) throw new Error('models is required for sendSystemUpdate');
         const template = {
             title: title,
             message: message,
@@ -169,10 +177,11 @@ class NotificationService {
             actionUrl: data.actionUrl,
             actionText: data.actionText,
         };
-        await this.sendNotification(userId, 'systemUpdates', template);
+        await this.sendNotification(models, userId, 'systemUpdates', template);
     }
 
-    static async sendPromotionalUpdate(userId, title, message, data = {}) {
+    static async sendPromotionalUpdate(models, userId, title, message, data = {}) {
+        if (!models) throw new Error('models is required for sendPromotionalUpdate');
         const template = {
             title: title,
             message: message,
@@ -181,16 +190,20 @@ class NotificationService {
             actionUrl: data.actionUrl,
             actionText: data.actionText,
         };
-        await this.sendNotification(userId, 'promotions', template);
+        await this.sendNotification(models, userId, 'promotions', template);
     }
 
     /**
      * Sends a notification to multiple users.
+     * @param {Object} models - نماذج المعرض
      * @param {Array<String>} userIds - An array of user IDs.
      * @param {Object} template - The notification content template.
      * @param {String} notificationType - The type of notification.
      */
-    static async sendBulkNotification(userIds, template, notificationType) {
+    static async sendBulkNotification(models, userIds, template, notificationType) {
+        if (!models) throw new Error('models is required for sendBulkNotification');
+        
+        const { UserNotification, UserNotificationPreference } = models;
         const preferences = await UserNotificationPreference.find({ user: { $in: userIds } });
         const prefMap = new Map(preferences.map(p => [p.user.toString(), p]));
 
@@ -212,7 +225,7 @@ class NotificationService {
             }
         }
 
-        if (notificationsToCreate.length > 0) {
+        if (notificationsToCreate.length > 0 && UserNotification) {
             await UserNotification.insertMany(notificationsToCreate);
         }
 
@@ -235,8 +248,15 @@ class NotificationService {
      * @param {String} userId 
      * @param {Object} payload 
      */
-    static async sendPushToUser(userId, payload) {
+    static async sendPushToUser(models, userId, payload) {
+        if (!models) throw new Error('models is required for sendPushToUser');
+        
         try {
+            const { PushSubscription } = models;
+            if (!PushSubscription) {
+                console.warn('PushSubscription model not available');
+                return;
+            }
             const subscriptions = await PushSubscription.find({ user: userId });
             
             if (!subscriptions || subscriptions.length === 0) return;

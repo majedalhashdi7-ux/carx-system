@@ -9,8 +9,12 @@ const fs = require('fs');
 console.log('🔧 إعداد قاعدتي بيانات منفصلتين...\n');
 
 // Connection Strings منفصلة
-const hmcarConnectionString = 'mongodb+srv://car-auction:jyT24fgC7TXfyKEt@cluster0.1bqjdzp.mongodb.net/hmcar_production?retryWrites=true&w=majority';
-const carxConnectionString = 'mongodb+srv://car-auction:jyT24fgC7TXfyKEt@cluster0.1bqjdzp.mongodb.net/carx_production?retryWrites=true&w=majority';
+const mongoPassword = process.env.MONGODB_PASSWORD || process.env.MONGO_PASSWORD;
+if (!mongoPassword) {
+    throw new Error('❌ MONGODB_PASSWORD أو MONGO_PASSWORD مطلوب في متغيرات البيئة');
+}
+const hmcarConnectionString = `mongodb+srv://car-auction:${mongoPassword}@cluster0.1bqjdzp.mongodb.net/hmcar_production?retryWrites=true&w=majority`;
+const carxConnectionString = `mongodb+srv://car-auction:${mongoPassword}@cluster0.1bqjdzp.mongodb.net/carx_production?retryWrites=true&w=majority`;
 
 // تحديث ملفات البيئة بقواعد بيانات منفصلة
 function updateWithSeparateDatabases() {
@@ -115,7 +119,7 @@ function createSeparateDatabasesGuide() {
 Database Name: hmcar_production
 Connection String: ${hmcarConnectionString}
 User: car-auction
-Password: jyT24fgC7TXfyKEt
+Password: [من متغيرات البيئة]
 \`\`\`
 
 **المجموعات (Collections):**
@@ -123,7 +127,6 @@ Password: jyT24fgC7TXfyKEt
 - parts (قطع غيار HM CAR)
 - brands (وكالات HM CAR)
 - users (مستخدمو HM CAR)
-- auctions (مزادات HM CAR)
 - orders (طلبات HM CAR)
 
 ---
@@ -133,7 +136,7 @@ Password: jyT24fgC7TXfyKEt
 Database Name: carx_production
 Connection String: ${carxConnectionString}
 User: car-auction
-Password: jyT24fgC7TXfyKEt
+Password: [من متغيرات البيئة]
 \`\`\`
 
 **المجموعات (Collections):**

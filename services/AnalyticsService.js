@@ -1,12 +1,12 @@
 // [[ARABIC_HEADER]] هذا الملف (services/AnalyticsService.js) جزء من مشروع HM CAR ويحتوي تعليقات عربية لضمان الوضوح.
 
-const User = require('../models/User');
-const Auction = require('../models/Auction');
-const Car = require('../models/Car');
-const Bid = require('../models/Bid');
-const Order = require('../models/Order');
-
-const AuditLog = require('../models/AuditLog');
+/**
+ * خدمة التحليلات - متوافقة مع Multi-Tenant
+ * 
+ * جميع الدوال الآن تستقبل models كمعامل أول
+ * مثال الاستخدام:
+ *   await AnalyticsService.getSummary(req.tenantModels, period)
+ */
 
 class AnalyticsService {
   // [[ARABIC_COMMENT]] تحديد بداية النطاق الزمني حسب الفترة المطلوبة في التقارير
@@ -27,7 +27,11 @@ class AnalyticsService {
     return null;
   }
 
-  static async getSummary(period = 'all') {
+  static async getSummary(models, period = 'all') {
+    if (!models) throw new Error('models is required for AnalyticsService.getSummary');
+    
+    const { User, Car, Auction, Bid, Order, Brand, SparePart, Contact } = models;
+    
     const now = new Date();
     const last24 = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const periodStart = this.getPeriodStart(period, 0);
@@ -67,9 +71,9 @@ class AnalyticsService {
         ]);
         return (res[0] && res[0].avg) ? Number(res[0].avg.toFixed(2)) : 0;
       })(),
-      require('../models/Brand').countDocuments(),
-      require('../models/SparePart').countDocuments(),
-      require('../models/Contact').countDocuments({ status: 'new' })
+      Brand ? Brand.countDocuments() : Promise.resolve(0),
+      SparePart ? SparePart.countDocuments() : Promise.resolve(0),
+      Contact ? Contact.countDocuments({ status: 'new' }) : Promise.resolve(0)
     ]);
 
     // [[ARABIC_COMMENT]] إحصاء آخر 7 أيام (ثابت للـ KPI السريع)،
@@ -189,7 +193,10 @@ class AnalyticsService {
     };
   }
 
-  static async getRecentActivities(limit = 10) {
+  static async getRecentActivities(models, limit = 10) {
+    if (!models || !models.AuditLog) return [];
+    const { AuditLog } = models;
+    
     return await AuditLog.find()
       .sort({ createdAt: -1 })
       .limit(limit)
@@ -197,7 +204,10 @@ class AnalyticsService {
       .lean();
   }
 
-  static async getMonthlyStats(period = 'all') {
+  static async getMonthlyStats(models, period = 'all') {
+    if (!models) throw new Error('models is required for AnalyticsService.getMonthlyStats');
+    const { Order, Car } = models;
+    
     // [[ARABIC_COMMENT]] في حالة all نعرض آخر 6 أشهر،
     // أما باقي الفترات فنستخدم بداية الفترة نفسها.
     const periodStart = this.getPeriodStart(period, period === 'all' ? 6 : 0) || this.getPeriodStart('all', 6);
@@ -247,7 +257,7 @@ class AnalyticsService {
       { $sort: { "_id.year": 1, "_id.month": 1 } }
     ]);
 
-    const monthlyCars = await Car.aggregate([
+    const monthlyCars = Car ? await Car.aggregate([
       {
         $match: {
           createdAt: { $gte: periodStart },
@@ -264,7 +274,7 @@ class AnalyticsService {
         }
       },
       { $sort: { "_id.year": 1, "_id.month": 1 } }
-    ]);
+    ]) : [];
 
     // [[ARABIC_COMMENT]] أعلى العناصر مبيعاً (Top Cars) من الطلبات المؤكدة/المشحونة/المكتملة
     // الفكرة: نفك عناصر الطلبات (items) ثم نجمع الكمية والإيراد لكل titleSnapshot

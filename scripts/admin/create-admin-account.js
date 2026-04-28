@@ -28,10 +28,15 @@ async function createAdminAccount() {
         const usersCollection = db.collection('users');
 
         // بيانات الأدمن المطلوبة
+        const adminPassword = process.env.ADMIN_PASSWORD || process.env.DEFAULT_ADMIN_PASSWORD;
+        if (!adminPassword) {
+            throw new Error('❌ ADMIN_PASSWORD أو DEFAULT_ADMIN_PASSWORD مطلوب في متغيرات البيئة');
+        }
+
         const adminData = {
             name: 'Dawood Al Hash',
             email: 'dawoodalhash@gmail.com',
-            password: 'daood@112233',
+            password: adminPassword,
             role: 'admin',
             phone: '+967781007805',
             city: 'صنعاء',
@@ -92,7 +97,7 @@ async function createAdminAccount() {
         console.log('\n📋 تفاصيل حساب الأدمن:');
         console.log('👤 الاسم:', adminData.name);
         console.log('📧 الإيميل:', adminData.email);
-        console.log('🔑 كلمة المرور:', 'daood@112233');
+        console.log('🔑 كلمة المرور: [من متغيرات البيئة]');
         console.log('👑 الدور:', adminData.role);
         console.log('📱 الهاتف:', adminData.phone);
         console.log('🏙️  المدينة:', adminData.city);

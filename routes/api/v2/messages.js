@@ -2,20 +2,17 @@
 
 const express = require('express');
 const router = express.Router();
-const Message = require('../../../models/Message');
-const User = require('../../../models/User');
 const { requireAuthAPI } = require('../../../middleware/auth');
 
 // ===== جلب ID خدمة العملاء (الأدمن الأول) =====
 // تم تعديل المنطق ليعطي الأولوية لـ super_admin أو أي أدمن متاح
-async function getSupportAgentId() {
+async function getSupportAgentId(tenantModels) {
+    const { User } = tenantModels;
     const admin = await User.findOne({
         role: { $in: ['admin', 'super_admin', 'manager'] }
     }).sort({ role: 1 }).select('_id name'); // الفرز يجعل super_admin يظهر أولاً
     return admin;
 }
-
-const UserNotification = require('../../../models/UserNotification');
 
 // ===== التواصل مع خدمة العملاء (للعملاء) =====
 router.post('/support', requireAuthAPI, async (req, res) => {
@@ -30,8 +27,10 @@ router.post('/support', requireAuthAPI, async (req, res) => {
             return res.status(400).json({ success: false, error: 'الرسالة طويلة جداً (الحد الأقصى 2000 حرف)' });
         }
 
+        const { Message, User, UserNotification } = req.tenantModels;
+        
         // جلب الأدمن المتاح حالياً لاستلام الرسالة
-        const support = await getSupportAgentId();
+        const support = await getSupportAgentId(req.tenantModels);
         if (!support) {
             return res.status(503).json({ success: false, error: 'خدمة العملاء غير متاحة حالياً' });
         }
@@ -46,13 +45,15 @@ router.post('/support', requireAuthAPI, async (req, res) => {
         // Notify Admins
         try {
             const senderUser = await User.findById(senderId).select('name');
-            await UserNotification.createNotification({
+            if (UserNotification) {
+                await UserNotification.createNotification({
                 user: support._id,
                 title: 'رسالة عميل جديدة',
                 message: `وصلتك رسالة جديدة من العميل ${senderUser?.name || 'مجهول'}`,
                 type: 'alert',
                 actionUrl: '/admin/comms'
-            });
+                });
+            }
         } catch (notifErr) {
             console.error('Failed to notify admin:', notifErr);
         }
@@ -78,8 +79,10 @@ router.get('/support', requireAuthAPI, async (req, res) => {
     try {
         const userId = req.user.userId || req.user._id || req.user.id;
 
+        const { Message } = req.tenantModels;
+        
         // جلب الأدمن (يمكن للعميل رؤية رسائل أي أدمن رد عليه)
-        const support = await getSupportAgentId();
+        const support = await getSupportAgentId(req.tenantModels);
 
         const messages = await Message.find({
             $or: [
@@ -119,6 +122,8 @@ router.get('/conversations', requireAuthAPI, async (req, res) => {
         const currentUserId = req.user.userId || req.user._id || req.user.id;
         const isAdmin = ['admin', 'super_admin', 'manager'].includes(req.user.role);
 
+        const { Message, User } = req.tenantModels;
+        
         // [ARABIC_COMMENT] تحسين منطق جلب المحادثات للأدمن:
         const adminUsers = await User.find({ role: { $in: ['admin', 'super_admin', 'manager'] } }).select('_id');
         const adminIds = adminUsers.map(u => u._id.toString());
@@ -199,6 +204,7 @@ router.get('/conversation/:userId', requireAuthAPI, async (req, res) => {
         const limit = parseInt(req.query.limit) || 50;
         const skip = (page - 1) * limit;
 
+        const { Message } = req.tenantModels;
         const messages = await Message.find({
             $or: [
                 { sender: currentUserId, receiver: userId },
@@ -245,6 +251,8 @@ router.post('/', requireAuthAPI, async (req, res) => {
             return res.status(400).json({ success: false, error: 'الرسالة طويلة جداً' });
         }
 
+        const { Message, User } = req.tenantModels;
+        
         // التحقق من وجود المستلم
         const receiver = await User.findById(receiverId);
         if (!receiver) {
@@ -279,6 +287,7 @@ router.patch('/:id/read', requireAuthAPI, async (req, res) => {
         const userId = req.user.userId || req.user._id || req.user.id;
         const { id } = req.params;
 
+        const { Message } = req.tenantModels;
         const message = await Message.findOneAndUpdate(
             { _id: id, receiver: userId },
             { read: true },
@@ -305,6 +314,7 @@ router.delete('/:id', requireAuthAPI, async (req, res) => {
         const userId = req.user.userId || req.user._id || req.user.id;
         const { id } = req.params;
 
+        const { Message } = req.tenantModels;
         const message = await Message.findOneAndDelete({
             _id: id,
             sender: userId
@@ -329,6 +339,7 @@ router.get('/unread-count', requireAuthAPI, async (req, res) => {
     try {
         const userId = req.user.userId || req.user._id || req.user.id;
 
+        const { Message } = req.tenantModels;
         const count = await Message.countDocuments({
             receiver: userId,
             read: false

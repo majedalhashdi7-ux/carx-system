@@ -2,14 +2,14 @@
 
 const express = require('express');
 const router = express.Router();
-const Brand = require('../../../models/Brand');
-const AuditLog = require('../../../models/AuditLog');
 const { requireAuthAPI, requirePermissionAPI } = require('../../../middleware/auth');
 const { cacheResponse, invalidateCache } = require('../../../middleware/cache');
 
 // Reset dummy brands and parts (Admin only) - يتطلب تأكيد صريح
 router.post('/reset-default-hmcar', requireAuthAPI, requirePermissionAPI('manage_brands'), async (req, res) => {
   try {
+    const { Brand, AuditLog, SparePart } = req.tenantModels;
+    
     // [[ARABIC_COMMENT]] يتطلب إرسال confirm=true لمنع الحذف بالخطأ
     if (req.body.confirm !== true) {
       return res.status(400).json({
@@ -17,18 +17,18 @@ router.post('/reset-default-hmcar', requireAuthAPI, requirePermissionAPI('manage
         message: 'هذا الإجراء سيحذف جميع الوكالات وقطع الغيار. أرسل confirm: true للتأكيد.'
       });
     }
-
-    const SparePart = require('../../../models/SparePart');
     
     // [[ARABIC_COMMENT]] تسجيل العملية في AuditLog قبل الحذف
     const partsCount = await SparePart.countDocuments({});
     const brandsCount = await Brand.countDocuments({});
-    await AuditLog.create({
+    if (AuditLog) {
+      await AuditLog.create({
       action: 'reset_brands_and_parts',
       userId: req.user?.userId || req.user?._id,
       details: `حذف جماعي: ${brandsCount} وكالة + ${partsCount} قطعة غيار`,
       severity: 'critical'
-    }).catch(() => {});
+      }).catch(() => {});
+    }
 
     await SparePart.deleteMany({});
     await Brand.deleteMany({});
@@ -58,9 +58,10 @@ router.post('/reset-default-hmcar', requireAuthAPI, requirePermissionAPI('manage
 // يضبط forCars=false لأي وكالة تحتوي على قطع غيار مستوردة لكي لا تختلط بوكالات السيارات
 router.post('/fix-spare-brands', requireAuthAPI, requirePermissionAPI('manage_brands'), async (req, res) => {
   try {
-    const SparePart = require('../../../models/SparePart');
+    const { Brand, SparePart } = req.tenantModels;
+    
     // جلب أسماء الوكالات التي لها قطع غيار مستوردة
-    const spareMakes = await SparePart.distinct('carMake');
+    const spareMakes = SparePart ? await SparePart.distinct('carMake') : [];
     let fixedCount = 0;
     
     for (const make of spareMakes) {
@@ -86,6 +87,7 @@ router.post('/fix-spare-brands', requireAuthAPI, requirePermissionAPI('manage_br
 // List brands
 router.get('/', cacheResponse(3600), async (req, res) => {
   try {
+    const { Brand } = req.tenantModels;
     const { category, targetShowroom, includeInactive } = req.query;
     let query = includeInactive === 'true' ? {} : { isActive: true };
     
@@ -139,6 +141,7 @@ router.get('/', cacheResponse(3600), async (req, res) => {
 // Create brand (Admin only)
 router.post('/', requireAuthAPI, requirePermissionAPI('manage_brands'), invalidateCache('/api/v2/brands*'), async (req, res) => {
   try {
+    const { Brand, AuditLog } = req.tenantModels;
     const { name, logoUrl, category, location, phone, whatsapp, description, description_ar, models, targetShowroom, isActive } = req.body || {};
     const payload = {
       name,
@@ -157,7 +160,7 @@ router.post('/', requireAuthAPI, requirePermissionAPI('manage_brands'), invalida
     const brand = await Brand.create(payload);
 
     // Log brand creation
-    await AuditLog.logUserAction(
+    if (AuditLog) await AuditLog.logUserAction(
       req.user.userId,
       'CREATE',
       'Brand',
@@ -180,6 +183,7 @@ router.post('/', requireAuthAPI, requirePermissionAPI('manage_brands'), invalida
 // Update brand (Admin only)
 router.put('/:id', requireAuthAPI, requirePermissionAPI('manage_brands'), invalidateCache('/api/v2/brands*'), async (req, res) => {
   try {
+    const { Brand, AuditLog } = req.tenantModels;
     const { name, logoUrl, category, location, phone, whatsapp, description, description_ar, models, targetShowroom, isActive } = req.body || {};
     if (category === 'parts' || category === 'both') {
       return res.status(403).json({
@@ -207,7 +211,7 @@ router.put('/:id', requireAuthAPI, requirePermissionAPI('manage_brands'), invali
     };
     const brand = await Brand.findByIdAndUpdate(req.params.id, payload, { new: true });
 
-    if (brand) {
+    if (brand && AuditLog) {
       // Log brand update
       await AuditLog.logUserAction(
         req.user.userId,
@@ -234,9 +238,10 @@ router.put('/:id', requireAuthAPI, requirePermissionAPI('manage_brands'), invali
 // Delete brand (Admin only)
 router.delete('/:id', requireAuthAPI, requirePermissionAPI('manage_brands'), invalidateCache('/api/v2/brands*'), async (req, res) => {
   try {
+    const { Brand, AuditLog } = req.tenantModels;
     const brand = await Brand.findByIdAndDelete(req.params.id);
 
-    if (brand) {
+    if (brand && AuditLog) {
       // Log brand deletion
       await AuditLog.logUserAction(
         req.user.userId,
