@@ -2,6 +2,11 @@
 const nextConfig = {
   // CAR X System Configuration
   
+  // Fix multiple lockfiles warning
+  turbopack: {
+    root: __dirname,
+  },
+  
   images: {
     remotePatterns: [
       { protocol: 'http', hostname: 'localhost' },

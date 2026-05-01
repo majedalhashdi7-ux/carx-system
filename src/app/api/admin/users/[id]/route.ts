@@ -3,9 +3,12 @@ import connectDB from '@/lib/db';
 import { User } from '@/lib/models';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'carx-fallback-secret';
-
 function verifyToken(request: NextRequest) {
+  const JWT_SECRET = process.env.NEXTAUTH_SECRET;
+  if (!JWT_SECRET) {
+    console.error('❌ NEXTAUTH_SECRET مطلوب في متغيرات البيئة');
+    return null;
+  }
   const token = request.cookies.get('carx-token')?.value ||
     request.headers.get('authorization')?.replace('Bearer ', '');
   if (!token) return null;

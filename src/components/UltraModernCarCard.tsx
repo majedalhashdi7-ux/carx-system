@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useRef, useCallback } from "react";
+import { Car } from "../types/index";
 import { motion, useMotionValue, useTransform, useSpring, AnimatePresence } from "framer-motion";
 import { 
     Heart, Share2, Eye, Calendar, Gauge, Fuel, Settings, Star, ArrowRight, 

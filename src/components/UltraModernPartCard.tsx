@@ -8,6 +8,7 @@
 import React, { useState, useCallback } from 'react';
 import Image from 'next/image';
 import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion';
+import { CartItem } from '../types/index';
 import { 
     Heart, ShoppingCart, Check, Wrench, Package, DollarSign, Coins, FileText, 
     ArrowRight, Home, Zap, Shield, Award, Star, Crown, Gem, Sparkles, 

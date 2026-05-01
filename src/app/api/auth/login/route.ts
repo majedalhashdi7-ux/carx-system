@@ -5,8 +5,6 @@ import { User } from '@/lib/models';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET;
-
 // Login attempts rate limiting
 const loginAttempts = new Map<string, { count: number, timestamp: number }>();
 const MAX_LOGIN_ATTEMPTS = 5;
@@ -14,6 +12,7 @@ const LOGIN_BLOCK_TIME = 15 * 60 * 1000; // 15 minutes
 
 export async function POST(request: NextRequest) {
   try {
+    const JWT_SECRET = process.env.NEXTAUTH_SECRET;
     if (!JWT_SECRET) {
       return NextResponse.json(
         { success: false, error: 'Server configuration error' },

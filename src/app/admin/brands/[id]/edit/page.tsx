@@ -70,10 +70,10 @@ export default function EditBrandPage() {
     setSaving(true);
     setError('');
     try {
-      const token = localStorage.getItem('carx-token');
       const res = await fetch(`/api/brands/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(form),
       });
       const data = await res.json();

@@ -34,11 +34,10 @@ export default function AdminPartsPage() {
 
   const fetchParts = useCallback(async () => {
     try {
-      const token = localStorage.getItem('carx-token');
       const params = new URLSearchParams({ page: page.toString(), limit: '20' });
       if (search) params.set('search', search);
       const res = await fetch(`/api/parts?${params}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       });
       const data = await res.json();
       if (data.success) {
@@ -65,10 +64,9 @@ export default function AdminPartsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('هل تريد حذف هذه القطعة؟')) return;
     try {
-      const token = localStorage.getItem('carx-token');
       await fetch(`/api/parts/${id}`, {
         method: 'DELETE',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       });
       fetchParts();
     } catch (e) {

@@ -57,10 +57,10 @@ export default function NewBrandPage() {
     setSaving(true);
     setError('');
     try {
-      const token = localStorage.getItem('carx-token');
       const res = await fetch('/api/brands', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ ...form, isActive: true }),
       });
       const data = await res.json();

@@ -67,7 +67,6 @@ export default function NewPartPage() {
     setSaving(true);
     setError('');
     try {
-      const token = localStorage.getItem('carx-token');
       const body = {
         ...form,
         price: parseFloat(form.price) || 0,
@@ -80,7 +79,8 @@ export default function NewPartPage() {
       };
       const res = await fetch('/api/parts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(body),
       });
       const data = await res.json();

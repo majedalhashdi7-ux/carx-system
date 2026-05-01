@@ -15,7 +15,7 @@ const cached: CachedConnection = global.mongooseCarX || { conn: null, promise: n
 global.mongooseCarX = cached;
 
 export async function connectDB(): Promise<typeof mongoose> {
-  const MONGO_URI = process.env.MONGO_URI || '';
+  const MONGO_URI = process.env.MONGO_URI || process.env.MONGO_URI_CARX || '';
 
   if (!MONGO_URI) {
     throw new Error('MONGO_URI is not defined in environment variables');
@@ -37,7 +37,6 @@ export async function connectDB(): Promise<typeof mongoose> {
     };
 
     cached.promise = mongoose.connect(MONGO_URI, opts).then((m) => {
-      console.log('✅ CAR X DB connected: carx_production');
       return m;
     });
   }

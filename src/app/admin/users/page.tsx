@@ -25,9 +25,8 @@ export default function AdminUsersPage() {
 
   const fetchUsers = useCallback(async () => {
     try {
-      const token = localStorage.getItem('carx-token');
       const res = await fetch('/api/admin/users', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       });
       const data = await res.json();
       if (data.success) setUsers(data.data || []);
@@ -51,10 +50,9 @@ export default function AdminUsersPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('هل تريد حذف هذا المستخدم؟')) return;
     try {
-      const token = localStorage.getItem('carx-token');
       await fetch(`/api/admin/users/${id}`, {
         method: 'DELETE',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       });
       fetchUsers();
     } catch (e) {

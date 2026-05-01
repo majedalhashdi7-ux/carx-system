@@ -39,9 +39,8 @@ export default function EditPartPage() {
 
   const fetchPart = async () => {
     try {
-      const token = localStorage.getItem('carx-token');
       const res = await fetch(`/api/parts/${id}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       });
       const data = await res.json();
       if (data.success) {
@@ -89,7 +88,6 @@ export default function EditPartPage() {
     setSaving(true);
     setError('');
     try {
-      const token = localStorage.getItem('carx-token');
       const body = {
         ...form,
         price: parseFloat(form.priceSar || form.price) || 0,
@@ -101,7 +99,8 @@ export default function EditPartPage() {
       };
       const res = await fetch(`/api/parts/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(body),
       });
       const data = await res.json();

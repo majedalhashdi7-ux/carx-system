@@ -3,10 +3,9 @@ import connectDB from '@/lib/db';
 import { User } from '@/lib/models';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET;
-
 export async function GET(request: NextRequest) {
   try {
+    const JWT_SECRET = process.env.NEXTAUTH_SECRET;
     if (!JWT_SECRET) {
       return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 });
     }

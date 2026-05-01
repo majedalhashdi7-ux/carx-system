@@ -73,7 +73,7 @@ export default function ShowroomPage() {
   const [page, setPage] = useState(1);
   
   // Debounce for search
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchCars = useCallback(async (currentFilters: Filters, currentPage: number) => {
     setLoading(true);

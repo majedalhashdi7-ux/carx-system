@@ -59,10 +59,9 @@ export default function AdminBrandsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('هل تريد حذف هذه الوكالة؟')) return;
     try {
-      const token = localStorage.getItem('carx-token');
       await fetch(`/api/brands/${id}`, {
         method: 'DELETE',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       });
       fetchBrands();
     } catch (e) {

@@ -4,10 +4,9 @@ import jwt from 'jsonwebtoken';
 import connectDB from '@/lib/db';
 import { User } from '@/lib/models';
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET;
-
 export async function POST(request: NextRequest) {
   try {
+    const JWT_SECRET = process.env.NEXTAUTH_SECRET;
     const token = request.cookies.get('carx-token')?.value;
     
     if (token && JWT_SECRET) {

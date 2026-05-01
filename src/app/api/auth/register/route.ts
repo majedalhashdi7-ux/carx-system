@@ -5,7 +5,6 @@ import { User } from '@/lib/models';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'carx-fallback-secret';
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,6 +51,14 @@ export async function POST(request: NextRequest) {
     });
 
     // Generate token
+    const JWT_SECRET = process.env.NEXTAUTH_SECRET;
+    if (!JWT_SECRET) {
+      return NextResponse.json(
+        { success: false, error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+
     const token = jwt.sign(
       {
         id: user._id.toString(),
@@ -86,7 +93,7 @@ export async function POST(request: NextRequest) {
     });
 
     return response;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Register API Error:', error);
     return NextResponse.json(
       { success: false, error: 'حدث خطأ في الخادم' },
