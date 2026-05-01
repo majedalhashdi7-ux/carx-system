@@ -66,7 +66,6 @@ export default function CinematicVideoBackground({
         .then(() => setVideoReady(true))
         .catch(() => {
           // في حال فشل التشغيل التلقائي (بسبب قيود المتصفح)
-          console.log("Video autoplay prevented");
         });
     };
 

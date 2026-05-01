@@ -26,7 +26,6 @@ export default function PWAInstaller() {
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js', { scope: '/' })
-                    .then(r => console.log('[HM CAR SW]', r.scope))
                     .catch(e => console.error('[HM CAR SW]', e));
             });
         }

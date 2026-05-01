@@ -22,7 +22,7 @@ const CART_KEY = 'hm_cart';
 function getFavorites(): string[] {
     try { return JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]'); } catch { return []; }
 }
-function getCart(): any[] {
+function getCart(): CartItem[] {
     try { return JSON.parse(localStorage.getItem(CART_KEY) || '[]'); } catch { return []; }
 }
 function dispatchCartUpdate() {
@@ -47,7 +47,7 @@ export default function PartCard({ part, index = 0, onClick, onLoginRequired }: 
 
     const [imgError, setImgError] = useState(false);
     const [isFav, setIsFav] = useState(() => getFavorites().includes(cardKey));
-    const [inCart, setInCart] = useState(() => getCart().some((i: any) => i.id === cardKey));
+    const [inCart, setInCart] = useState(() => getCart().some((i: CartItem) => i.id === cardKey));
     const [cartAdded, setCartAdded] = useState(false);
 
     const toggleFav = useCallback((e: React.MouseEvent) => {

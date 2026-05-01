@@ -298,8 +298,6 @@ export const api = {
                     const imageFile = formData.get('image') as File;
                     
                     if (imageFile && imageFile.type.startsWith('image/')) {
-                        console.log(`Original image size: ${(imageFile.size / 1024 / 1024).toFixed(2)} MB`);
-                        
                         const options = {
                             maxSizeMB: 0.5,
                             maxWidthOrHeight: 1600,
@@ -307,8 +305,7 @@ export const api = {
                         };
                         
                         const compressedFile = await imageCompression(imageFile, options);
-                        console.log(`Compressed image size: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
-                        
+
                         // Replace the old large file with the extremely optimized compressed version
                         formData.set('image', compressedFile, compressedFile.name);
                     }

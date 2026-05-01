@@ -41,7 +41,6 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         });
 
         socketInstance.on('connect', () => {
-            console.log('✅ Connected to Real-time Server');
             setIsConnected(true);
 
             // إذا كان المستخدم مديراً (Admin)، ينضم لغرفة الإدارة لتلقي تنبيهات النظام والتحكم
@@ -51,14 +50,11 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         });
 
         socketInstance.on('disconnect', () => {
-            console.log('❌ Disconnected from Real-time Server');
             setIsConnected(false);
         });
 
         // الاستماع للإشعارات الجديدة القادمة من الخادم
-        socketInstance.on('new_notification', (data: any) => {
-            console.log('⚡ New Real-time Notification:', data);
-            
+        socketInstance.on('new_notification', (data: Notification) => {
             // [[ARABIC_COMMENT]] إرسال حدث مخصص لتشغيل مكون الـ Smart Island في الواجهة لعرض الإشعار للمستخدم
             window.dispatchEvent(new CustomEvent('hm_smart_alert', {
                 detail: {

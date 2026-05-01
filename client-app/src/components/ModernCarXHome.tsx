@@ -39,7 +39,7 @@ export default function ModernCarXHome() {
             .then(res => {
                 const cars = res?.data || res?.cars;
                 if (cars && Array.isArray(cars) && cars.length > 0) {
-                    const labels = cars.map((c: any) => {
+                    const labels = cars.map((c: Car) => {
                         const make = (isRTL && c.makeAr) ? c.makeAr : c.make;
                         const model = (isRTL && c.modelAr) ? c.modelAr : c.model;
                         const priceStr = c.price ? ` (${c.price.toLocaleString()} ${isRTL ? 'ر.س' : 'SAR'})` : '';

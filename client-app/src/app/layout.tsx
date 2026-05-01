@@ -175,7 +175,6 @@ export default async function RootLayout({
               }
             });
             if (sessionStorage.getItem('hm_crash_recovery')) {
-              console.log('[Self-Healing] Recovered from crash.');
               sessionStorage.removeItem('hm_crash_recovery');
             }
             
@@ -183,9 +182,7 @@ export default async function RootLayout({
             if ('serviceWorker' in navigator && typeof window !== 'undefined') {
               window.addEventListener('load', function() {
                 navigator.serviceWorker.register('/sw.js').then(function(registration) {
-                  console.log('[SW] Registered successfully:', registration.scope);
                 }).catch(function(error) {
-                  console.log('[SW] Registration failed:', error);
                 });
               });
             }
@@ -200,7 +197,6 @@ export default async function RootLayout({
               if (typeof window !== 'undefined') {
                 const observer = new PerformanceObserver((list) => {
                   list.getEntries().forEach((entry) => {
-                    console.log(\`%c[Performance] \${entry.name}: \${entry.startTime.toFixed(2)}ms\`, 'color: #c9a96e; font-weight: bold;');
                   });
                 });
                 observer.observe({ entryTypes: ['paint', 'largest-contentful-paint'] });

@@ -29,7 +29,6 @@ export default function PWAUpdater() {
         // [[ARABIC_COMMENT]] الاستماع لرسالة التحديث من Service Worker
         const handleMessage = (event: MessageEvent) => {
             if (event.data && event.data.type === 'SW_UPDATED') {
-                console.log('[HM CAR] New version detected via message:', event.data.version);
                 showUpdateAlert();
             }
         };
@@ -41,7 +40,6 @@ export default function PWAUpdater() {
             try {
                 const registration = await navigator.serviceWorker.getRegistration();
                 if (registration) {
-                    console.log('[HM CAR] Checking for app updates...');
                     await registration.update();
                     
                     // [[ARABIC_COMMENT]] في بعض المتصفحات، التحقق من التحول لحالة waiting يدوياً

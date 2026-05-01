@@ -18,7 +18,6 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('[SW] Precaching assets');
         return cache.addAll(PRECACHE_ASSETS);
       })
       .then(() => self.skipWaiting())
@@ -33,7 +32,6 @@ self.addEventListener('activate', (event) => {
         cacheNames
           .filter((name) => name !== CACHE_NAME)
           .map((name) => {
-            console.log('[SW] Deleting old cache:', name);
             return caches.delete(name);
           })
       );

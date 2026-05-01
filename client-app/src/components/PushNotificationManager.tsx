@@ -53,7 +53,6 @@ export default function PushNotificationManager() {
         });
 
         await sendSubscriptionToBackend(subscription);
-        console.log('[Push] User successfully subscribed');
       } catch (error) {
         console.error('[Push] Failed to subscribe user:', error);
       }

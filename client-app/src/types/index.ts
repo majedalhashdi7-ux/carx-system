@@ -195,6 +195,15 @@ export interface OrderItem {
   total: number;
 }
 
+export interface CartItem {
+  id: string;
+  type: 'car' | 'part';
+  quantity: number;
+  price: number;
+  name?: string;
+  image?: string;
+}
+
 // ─── Invoice Types ───
 export interface Invoice {
   id: string;

@@ -2,13 +2,13 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, Suspense, useCallback } from "react";
-import { 
-    MessageCircle, Mail, RefreshCw, 
-    Search, CheckCircle, 
+import {
+    MessageCircle, Mail, RefreshCw,
+    Search, CheckCircle,
     User, X, Send,
     CheckCheck, Circle, ArrowLeft,
     Bell, AlertCircle, CheckCircle2, Clock, Shield,
-    ShoppingCart, Users, Gavel
+    ShoppingCart, Users, Gavel, LucideIcon
 } from "lucide-react";
 
 import { useSearchParams } from 'next/navigation';
@@ -60,7 +60,7 @@ interface Notification {
     isRead: boolean;
 }
 
-const NOTIF_CONFIG: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
+const NOTIF_CONFIG: Record<string, { icon: LucideIcon; color: string; bg: string }> = {
     CRITICAL: { icon: Shield, color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20' },
     TRANSACTION: { icon: CheckCircle2, color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20' },
     SYSTEM: { icon: Clock, color: 'text-white/40', bg: 'bg-white/5 border-white/10' },

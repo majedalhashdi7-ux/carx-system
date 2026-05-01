@@ -16,7 +16,6 @@ export default function GoogleAnalytics() {
     const GA_ID = marketingPixels?.googleAnalyticsId || process.env.NEXT_PUBLIC_GA_ID;
     if (GA_ID && !initialized) {
       ReactGA.initialize(GA_ID);
-      console.log('✅ GA4 Initialized:', GA_ID);
       setInitialized(true);
     }
   }, [marketingPixels, initialized]);
