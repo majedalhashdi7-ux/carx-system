@@ -15,7 +15,7 @@ import { Suspense } from "react";
 import { cookies } from "next/headers";
 import AppShell from "@/components/AppShell";
 import SmartPrefetchProvider from "@/components/SmartPrefetchProvider";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import NetworkStatus from "@/components/NetworkStatus";
 
 // إعدادات نافذة العرض (Viewport) للجوال والحاسوب
