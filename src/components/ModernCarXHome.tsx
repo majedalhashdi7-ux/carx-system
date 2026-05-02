@@ -1,0 +1,909 @@
+'use client';
+
+import React, { useState, useEffect, useCallback, memo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
+import { useLanguage } from "@/lib/LanguageContext";
+import { 
+  Car, Gavel, Wrench, User, LogIn, UserPlus, Globe, 
+  MessageCircle, HelpCircle, Menu, X, Play, Pause, Volume2, VolumeX,
+  ArrowRight, Star, Zap, Shield, Award, Instagram, Facebook, Youtube,
+  Phone, MapPin
+} from "lucide-react";
+import { useAuth } from "@/lib/AuthContext";
+import { useTenant } from "@/lib/TenantContext";
+import { api, mockData } from "@/lib/api";
+import AuthModals from "./AuthModals";
+
+// بطاقة القسم المحسنة للأداء
+const SectionCard = memo(({ section, index, isRTL }: { section: any; index: number; isRTL: boolean }) => {
+    const Icon = section.icon;
+    
+    return (
+        <motion.div
+            key={index}
+            initial={{ opacity: 0, y: 60 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, delay: index * 0.2 }}
+            whileHover={{ y: -10, scale: 1.02 }}
+            className="group"
+        >
+            <Link href={section.href}>
+                <div className={`relative overflow-hidden h-80 rounded-3xl bg-gradient-to-br ${section.color} ${section.hoverColor} p-8 cursor-pointer transition-all duration-500 border border-white/10 hover:border-red-500/50 hover:shadow-2xl hover:shadow-red-500/20`}>
+                    
+                    {/* تأثير الإضاءة */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    
+                    {/* الأيقونة */}
+                    <div className="absolute top-8 end-8 w-16 h-16 rounded-2xl bg-black/40 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:bg-red-600/30 group-hover:border-red-400/50 transition-all duration-500 group-hover:scale-110">
+                        <Icon className="w-8 h-8 text-white group-hover:text-red-300 transition-colors duration-300" />
+                    </div>
+
+                    {/* خط متوهج */}
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-700" />
+
+                    {/* المحتوى */}
+                    <div className="relative z-10 h-full flex flex-col justify-end">
+                        <h3 className="text-3xl font-black text-white mb-4 uppercase tracking-tight group-hover:text-red-100 transition-colors duration-300">
+                            {section.title}
+                        </h3>
+                        <p className="text-white/70 text-sm leading-relaxed group-hover:text-white/90 transition-colors duration-300">
+                            {section.desc}
+                        </p>
+                        
+                        {/* سهم الانتقال */}
+                        <div className="mt-6 flex items-center gap-2 text-red-400 group-hover:text-red-300 transition-colors duration-300">
+                            <span className="text-sm font-bold uppercase tracking-wider">
+                                {isRTL ? 'استكشف' : 'Explore'}
+                            </span>
+                            <ArrowRight className={`w-4 h-4 group-hover:translate-x-1 transition-transform duration-300 ${isRTL ? 'rotate-180' : ''}`} />
+                        </div>
+                    </div>
+                </div>
+            </Link>
+        </motion.div>
+    );
+});
+
+// ميزة محسنة للأداء
+const FeatureItem = memo(({ feature, index, isRTL }: { feature: any; index: number; isRTL: boolean }) => (
+    <motion.div
+        key={index}
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ delay: index * 0.2 }}
+        whileHover={{ 
+            y: -10,
+            scale: 1.05,
+            boxShadow: "0 20px 40px rgba(255,0,0,0.1)"
+        }}
+        className="text-center p-8 rounded-3xl bg-white/5 backdrop-blur-md border border-white/10 hover:border-red-500/30 transition-all duration-500 hover:bg-white/10 group"
+    >
+        <motion.div 
+            className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center"
+            whileHover={{ rotate: 360 }}
+            transition={{ duration: 0.6 }}
+        >
+            <feature.icon className="w-8 h-8 text-white" />
+        </motion.div>
+        <h3 className="text-xl font-bold text-white mb-4 group-hover:text-red-100 transition-colors">{feature.title}</h3>
+        <p className="text-white/60 group-hover:text-white/80 transition-colors">{feature.desc}</p>
+    </motion.div>
+));
+
+// أيقونة اجتماعية محسنة
+const SocialLink = memo(({ icon: Icon, href, color, isRTL, index }: { icon: any; href: string; color: string; isRTL: boolean; index: number }) => (
+    <motion.a
+        key={index}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        initial={{ opacity: 0, x: isRTL ? 20 : -20 }}
+        animate={{ 
+            opacity: 1, 
+            x: 0,
+            y: [0, -5, 0]
+        }}
+        transition={{ 
+            delay: index * 0.1,
+            y: {
+                duration: 2,
+                repeat: Infinity,
+                delay: index * 0.3,
+                ease: "easeInOut"
+            }
+        }}
+        whileHover={{ 
+            scale: 1.2,
+            rotate: 5,
+            boxShadow: "0 0 25px rgba(255,0,0,0.5)"
+        }}
+        className={`w-12 h-12 rounded-2xl bg-black/60 backdrop-blur-md border border-white/10 flex items-center justify-center ${color} transition-all duration-300 hover:bg-white/10`}
+    >
+        <Icon className="w-5 h-5" />
+    </motion.a>
+));
+
+export default function ModernCarXHome() {
+    const { isRTL, toggleLanguage } = useLanguage();
+    const { user, isLoggedIn } = useAuth();
+    const { tenant } = useTenant();
+    const [marqueeItems, setMarqueeItems] = useState<string[]>([]);
+    const [showMobileMenu, setShowMobileMenu] = useState(false);
+    const [videoPlaying, setVideoPlaying] = useState(true);
+    const [videoMuted, setVideoMuted] = useState(true);
+    const [showLoginModal, setShowLoginModal] = useState(false);
+    const [showRegisterModal, setShowRegisterModal] = useState(false);
+
+    // جلب بيانات السيارات للشريط الإعلاني
+    useEffect(() => {
+        const cars = mockData.cars;
+        if (cars && Array.isArray(cars) && cars.length > 0) {
+            const labels = cars.map((c: any) => {
+                const make = (isRTL && c.makeAr) ? c.makeAr : c.make;
+                const model = (isRTL && c.modelAr) ? c.modelAr : c.model;
+                const priceStr = c.price ? ` (${c.price.toLocaleString()} ${isRTL ? 'ر.س' : 'SAR'})` : '';
+                return `${make} ${model} ${c.year}${priceStr}`;
+            });
+            setMarqueeItems(labels);
+        }
+    }, [isRTL]);
+
+    const displayItems = marqueeItems.length > 0 
+        ? marqueeItems 
+        : [isRTL ? 'CAR X — المعرض · المزاد · قطع الغيار' : 'CAR X — SHOWROOM · AUCTIONS · PARTS'];
+    
+    const repeatedItems = Array(20).fill(0).map((_, i) => displayItems[i % displayItems.length]);
+
+    // الأقسام الرئيسية
+    const mainSections = [
+        {
+            title: isRTL ? 'المعارض' : 'Showrooms',
+            desc: isRTL ? 'معرض CAR X المحلي ومعرض السيارات المستوردة' : 'Local CAR X & Imported Car Showrooms',
+            icon: Car,
+            href: '/showroom',
+            color: 'from-red-600 to-red-800',
+            hoverColor: 'hover:from-red-500 hover:to-red-700',
+        },
+        {
+            title: isRTL ? 'المزادات المباشرة' : 'Live Auctions',
+            desc: isRTL ? 'مزادات حصرية داخلية أو استيراد مزادات عالمية' : 'Exclusive auctions or import global auction links',
+            icon: Gavel,
+            href: '/auctions',
+            color: 'from-gray-700 to-gray-900',
+            hoverColor: 'hover:from-gray-600 hover:to-gray-800',
+        },
+        {
+            title: isRTL ? 'قطع الغيار' : 'Spare Parts',
+            desc: isRTL ? 'قطع غيار أصلية محلية وقطع مستوردة' : 'Genuine local & imported spare parts',
+            icon: Wrench,
+            href: '/parts',
+            color: 'from-gray-700 to-gray-900',
+            hoverColor: 'hover:from-gray-600 hover:to-gray-800',
+        }
+    ];
+
+    // روابط التواصل الاجتماعي
+    const socialLinks = [
+        { icon: Instagram, href: '#', color: 'text-pink-400 hover:text-pink-300' },
+        { icon: Facebook, href: '#', color: 'text-blue-400 hover:text-blue-300' },
+        { icon: Youtube, href: '#', color: 'text-red-400 hover:text-red-300' },
+        { icon: MessageCircle, href: `https://wa.me/${tenant?.contact?.whatsapp?.replace(/\D/g, '')}`, color: 'text-green-400 hover:text-green-300' },
+    ];
+
+    return (
+        <main className="relative min-h-screen overflow-x-hidden bg-black text-white" dir={isRTL ? "rtl" : "ltr"}>
+            
+            {/* ── Header ثابت مع الاسم وأزرار التسجيل ── */}
+            <header className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-red-600/20">
+                <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+                    
+                    {/* الشعار والاسم */}
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center">
+                            <Car className="w-6 h-6 text-white" />
+                        </div>
+                        <h1 className="text-2xl font-black text-white tracking-wider">
+                            {tenant?.name || 'CAR X'}
+                        </h1>
+                    </div>
+
+                    {/* أزرار التسجيل والدخول - Desktop */}
+                    <div className="hidden md:flex items-center gap-4">
+                        {/* زر اللغة */}
+                        <button
+                            onClick={toggleLanguage}
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all"
+                        >
+                            <Globe className="w-4 h-4" />
+                            <span className="text-sm font-bold">{isRTL ? 'EN' : 'عربي'}</span>
+                        </button>
+
+                        {/* خدمة العملاء */}
+                        <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all">
+                            <HelpCircle className="w-4 h-4" />
+                            <span className="text-sm font-bold">{isRTL ? 'خدمة العملاء' : 'Support'}</span>
+                        </button>
+
+                        {!isLoggedIn ? (
+                            <>
+                                <button
+                                    onClick={() => setShowLoginModal(true)}
+                                    className="flex items-center gap-2 px-6 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/30 transition-all"
+                                >
+                                    <LogIn className="w-4 h-4" />
+                                    <span className="text-sm font-bold">{isRTL ? 'تسجيل الدخول' : 'Login'}</span>
+                                </button>
+                                <button
+                                    onClick={() => setShowRegisterModal(true)}
+                                    className="flex items-center gap-2 px-6 py-2 rounded-xl bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 transition-all"
+                                >
+                                    <UserPlus className="w-4 h-4" />
+                                    <span className="text-sm font-bold">{isRTL ? 'حساب جديد' : 'Sign Up'}</span>
+                                </button>
+                            </>
+                        ) : (
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center">
+                                    <User className="w-4 h-4 text-white" />
+                                </div>
+                                <span className="text-sm font-bold">{user?.name}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* زر القائمة - Mobile */}
+                    <button
+                        onClick={() => setShowMobileMenu(!showMobileMenu)}
+                        className="md:hidden w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"
+                    >
+                        {showMobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                    </button>
+                </div>
+
+                {/* القائمة المنسدلة - Mobile */}
+                <AnimatePresence>
+                    {showMobileMenu && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="md:hidden bg-black/95 border-t border-red-600/20 px-4 py-6"
+                        >
+                            <div className="space-y-4">
+                                <button
+                                    onClick={toggleLanguage}
+                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10"
+                                >
+                                    <Globe className="w-5 h-5" />
+                                    <span>{isRTL ? 'English' : 'عربي'}</span>
+                                </button>
+                                
+                                <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10">
+                                    <HelpCircle className="w-5 h-5" />
+                                    <span>{isRTL ? 'خدمة العملاء' : 'Support'}</span>
+                                </button>
+
+                                {!isLoggedIn ? (
+                                    <>
+                                        <button
+                                            onClick={() => {
+                                                setShowLoginModal(true);
+                                                setShowMobileMenu(false);
+                                            }}
+                                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20"
+                                        >
+                                            <LogIn className="w-5 h-5" />
+                                            <span>{isRTL ? 'تسجيل الدخول' : 'Login'}</span>
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setShowRegisterModal(true);
+                                                setShowMobileMenu(false);
+                                            }}
+                                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-red-600 to-red-700"
+                                        >
+                                            <UserPlus className="w-5 h-5" />
+                                            <span>{isRTL ? 'حساب جديد' : 'Sign Up'}</span>
+                                        </button>
+                                    </>
+                                ) : (
+                                    <div className="flex items-center gap-3 px-4 py-3">
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center">
+                                            <User className="w-4 h-4 text-white" />
+                                        </div>
+                                        <span>{user?.name}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </header>
+
+            {/* ── أيقونات التواصل الاجتماعي الثابتة ── */}
+            <div className={`fixed top-1/2 -translate-y-1/2 z-40 flex flex-col gap-3 ${isRTL ? 'right-4' : 'left-4'}`}>
+                {socialLinks.map((social, idx) => (
+                    <SocialLink
+                        key={idx}
+                        icon={social.icon}
+                        href={social.href}
+                        color={social.color}
+                        isRTL={isRTL}
+                        index={idx}
+                    />
+                ))}
+            </div>
+
+            {/* ── قسم الهيرو ── */}
+            <section className="relative h-screen flex items-center justify-center overflow-hidden">
+                {/* خلفية gradient احترافية */}
+                <div 
+                    className="absolute inset-0"
+                    style={{ 
+                        background: 'radial-gradient(ellipse at 60% 50%, rgba(180,0,0,0.35) 0%, rgba(0,0,0,0) 70%), radial-gradient(ellipse at 20% 80%, rgba(100,0,0,0.2) 0%, rgba(0,0,0,0) 60%), linear-gradient(135deg, #0a0a0a 0%, #1a0000 50%, #0a0a0a 100%)',
+                        zIndex: 0
+                    }} 
+                />
+
+                {/* شبكة ديكورية */}
+                <div 
+                    className="absolute inset-0 opacity-10"
+                    style={{
+                        backgroundImage: 'linear-gradient(rgba(255,0,0,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,0,0,0.3) 1px, transparent 1px)',
+                        backgroundSize: '60px 60px',
+                        zIndex: 1
+                    }}
+                />
+
+                {/* طبقة التعتيم */}
+                <div className="absolute inset-0 bg-black/20 z-20" />
+
+                {/* جسيمات متحركة */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    {[...Array(15)].map((_, i) => (
+                        <motion.div
+                            key={i}
+                            className="absolute w-1 h-1 bg-red-400 rounded-full opacity-60"
+                            style={{
+                                left: `${Math.random() * 100}%`,
+                                top: `${Math.random() * 100}%`,
+                            }}
+                            animate={{
+                                y: [-20, -100],
+                                opacity: [0, 1, 0],
+                                scale: [0, 1, 0],
+                            }}
+                            transition={{
+                                duration: 3 + Math.random() * 2,
+                                repeat: Infinity,
+                                delay: Math.random() * 2,
+                            }}
+                        />
+                    ))}
+                </div>
+
+                {/* أزرار التحكم في الفيديو */}
+                <div className="absolute bottom-8 right-8 flex gap-3 z-30">
+                    <button
+                        onClick={() => {
+                            const video = document.querySelector('video');
+                            if (video) {
+                                if (videoPlaying) {
+                                    video.pause();
+                                } else {
+                                    video.play();
+                                }
+                            }
+                        }}
+                        className="w-12 h-12 rounded-2xl bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/10 transition-all"
+                    >
+                        {videoPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                    </button>
+                    <button
+                        onClick={() => setVideoMuted(!videoMuted)}
+                        className="w-12 h-12 rounded-2xl bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/10 transition-all"
+                    >
+                        {videoMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                    </button>
+                </div>
+
+                {/* المحتوى الرئيسي */}
+                <div className="relative z-30 text-center px-4 max-w-4xl mx-auto">
+                    <motion.div
+                        initial={{ opacity: 0, y: 50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 1 }}
+                    >
+                        <motion.h1 
+                            className="text-6xl md:text-8xl font-black text-white mb-6 tracking-wider drop-shadow-2xl"
+                            animate={{
+                                textShadow: [
+                                    "0 0 20px rgba(255,0,0,0.5)",
+                                    "0 0 40px rgba(255,0,0,0.8)",
+                                    "0 0 20px rgba(255,0,0,0.5)"
+                                ]
+                            }}
+                            transition={{
+                                duration: 2,
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                            }}
+                        >
+                            {tenant?.name || 'CAR X'}
+                        </motion.h1>
+                        <p className="text-xl md:text-2xl text-white/80 mb-8 font-light">
+                            {isRTL ? tenant?.description || 'منصة السيارات المتقدمة' : tenant?.descriptionEn || 'Advanced Car Platform'}
+                        </p>
+                        
+                        {/* أزرار الإجراءات */}
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                            {!isLoggedIn && (
+                                <motion.button
+                                    onClick={() => setShowRegisterModal(true)}
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    className="px-8 py-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 rounded-2xl font-bold text-lg flex items-center gap-3 transition-all shadow-2xl hover:shadow-red-500/25"
+                                >
+                                    <UserPlus className="w-5 h-5" />
+                                    {isRTL ? 'إنشاء حساب جديد' : 'Create New Account'}
+                                </motion.button>
+                            )}
+                            <Link href="/showroom">
+                                <motion.button 
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    className="px-8 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 hover:border-white/40 rounded-2xl font-bold text-lg flex items-center gap-3 transition-all"
+                                >
+                                    <ArrowRight className={`w-5 h-5 ${isRTL ? 'rotate-180' : ''}`} />
+                                    {isRTL ? 'استكشف المعرض' : 'Explore Showroom'}
+                                </motion.button>
+                            </Link>
+                        </div>
+                    </motion.div>
+                </div>
+            </section>
+
+            {/* ── الشريط الإعلاني تحت الفيديو ── */}
+            <section className="relative z-10 py-4 bg-gradient-to-r from-red-900/20 via-black to-red-900/20 border-y border-red-900/20">
+                <div className="overflow-hidden">
+                    <motion.div 
+                        className="flex whitespace-nowrap"
+                        animate={{
+                            x: [0, -1920]
+                        }}
+                        transition={{
+                            duration: 40,
+                            repeat: Infinity,
+                            ease: "linear"
+                        }}
+                    >
+                        {repeatedItems.map((text, i) => (
+                            <span key={i} className="inline-flex items-center gap-4 mx-6 shrink-0">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                <span className="text-sm font-bold text-white/80 tracking-wide">
+                                    {text}
+                                </span>
+                            </span>
+                        ))}
+                    </motion.div>
+                </div>
+            </section>
+
+            {/* ── الأقسام الرئيسية ── */}
+            <section className="relative z-10 py-20 px-4 bg-gradient-to-b from-black via-gray-900/50 to-black">
+                <div className="max-w-7xl mx-auto">
+                    
+                    {/* عنوان القسم */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 40 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.8 }}
+                        className="text-center mb-16"
+                    >
+                        <h2 className="text-4xl md:text-6xl font-black text-white uppercase tracking-wider mb-4">
+                            {isRTL ? 'اختر قسمك' : 'Choose Your Section'}
+                        </h2>
+                        <p className="text-white/60 text-lg">
+                            {isRTL ? 'كل ما تحتاجه في مكان واحد' : 'Everything you need in one place'}
+                        </p>
+                    </motion.div>
+
+                    {/* بطاقات الأقسام المحدثة */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {mainSections.map((section, idx) => (
+                            <SectionCard
+                                key={idx}
+                                section={section}
+                                index={idx}
+                                isRTL={isRTL}
+                            />
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* ── قسم الإحصائيات ── */}
+            <section className="relative z-10 py-16 px-4 bg-gradient-to-b from-black to-gray-900/50">
+                <div className="max-w-7xl mx-auto">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                        {[
+                            { number: '500+', label: isRTL ? 'سيارة متاحة' : 'Cars Available', icon: Car },
+                            { number: '1000+', label: isRTL ? 'عميل سعيد' : 'Happy Clients', icon: User },
+                            { number: '50+', label: isRTL ? 'وكالة معتمدة' : 'Certified Dealers', icon: Shield },
+                            { number: '24/7', label: isRTL ? 'دعم فني' : 'Support', icon: MessageCircle }
+                        ].map((stat, idx) => (
+                            <motion.div
+                                key={idx}
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                whileInView={{ opacity: 1, scale: 1 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: idx * 0.1 }}
+                                className="text-center p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-red-500/30 transition-all group"
+                            >
+                                <stat.icon className="w-10 h-10 text-red-500 mx-auto mb-3 group-hover:scale-110 transition-transform" />
+                                <motion.h3 
+                                    className="text-4xl font-black text-white mb-2"
+                                    initial={{ opacity: 0 }}
+                                    whileInView={{ opacity: 1 }}
+                                    viewport={{ once: true }}
+                                >
+                                    {stat.number}
+                                </motion.h3>
+                                <p className="text-gray-400 text-sm">{stat.label}</p>
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* ── قسم المميزات ── */}
+            <section className="relative z-10 py-20 px-4 bg-gradient-to-b from-gray-900/50 to-black">
+                <div className="max-w-7xl mx-auto">
+                    <motion.div
+                        initial={{ opacity: 0, y: 40 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="text-center mb-16"
+                    >
+                        <h2 className="text-4xl md:text-6xl font-black text-white uppercase tracking-wider mb-4">
+                            {isRTL ? 'لماذا CAR X؟' : 'Why CAR X?'}
+                        </h2>
+                        <p className="text-white/60 text-lg max-w-2xl mx-auto">
+                            {isRTL ? 'نقدم لك أفضل تجربة في عالم السيارات' : 'We provide you the best experience in the automotive world'}
+                        </p>
+                    </motion.div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {[
+                            {
+                                icon: Shield,
+                                title: isRTL ? 'موثوقية تامة' : 'Complete Trust',
+                                desc: isRTL ? 'فحص شامل لجميع السيارات من قبل خبراء معتمدين' : 'Comprehensive inspection by certified experts'
+                            },
+                            {
+                                icon: Zap,
+                                title: isRTL ? 'سرعة في الخدمة' : 'Fast Service',
+                                desc: isRTL ? 'معاملات سريعة وآمنة مع دعم فني على مدار الساعة' : 'Quick and secure transactions with 24/7 support'
+                            },
+                            {
+                                icon: Award,
+                                title: isRTL ? 'جودة عالية' : 'High Quality',
+                                desc: isRTL ? 'أفضل السيارات وقطع الغيار الأصلية بأسعار تنافسية' : 'Best cars and genuine parts at competitive prices'
+                            }
+                        ].map((feature, idx) => (
+                            <FeatureItem
+                                key={idx}
+                                feature={feature}
+                                index={idx}
+                                isRTL={isRTL}
+                            />
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* ── قسم آراء العملاء ── */}
+            <section className="relative z-10 py-20 px-4 bg-gradient-to-b from-black to-gray-900">
+                <div className="max-w-7xl mx-auto">
+                    <motion.div
+                        initial={{ opacity: 0, y: 40 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="text-center mb-16"
+                    >
+                        <h2 className="text-4xl md:text-6xl font-black text-white uppercase tracking-wider mb-4">
+                            {isRTL ? 'ماذا يقول عملاؤنا' : 'What Our Clients Say'}
+                        </h2>
+                        <p className="text-white/60 text-lg">
+                            {isRTL ? 'آراء حقيقية من عملاء راضين' : 'Real reviews from satisfied customers'}
+                        </p>
+                    </motion.div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {[
+                            {
+                                name: isRTL ? 'أحمد محمد' : 'Ahmed Mohammed',
+                                rating: 5,
+                                comment: isRTL ? 'تجربة رائعة! حصلت على سيارة أحلامي بسعر ممتاز وخدمة احترافية.' : 'Amazing experience! Got my dream car at a great price with professional service.',
+                                date: isRTL ? 'منذ أسبوع' : '1 week ago'
+                            },
+                            {
+                                name: isRTL ? 'سارة علي' : 'Sara Ali',
+                                rating: 5,
+                                comment: isRTL ? 'فريق محترف جداً، ساعدوني في اختيار السيارة المناسبة لاحتياجاتي.' : 'Very professional team, helped me choose the right car for my needs.',
+                                date: isRTL ? 'منذ أسبوعين' : '2 weeks ago'
+                            },
+                            {
+                                name: isRTL ? 'خالد عبدالله' : 'Khaled Abdullah',
+                                rating: 5,
+                                comment: isRTL ? 'أفضل معرض سيارات! أسعار منافسة وسيارات بحالة ممتازة.' : 'Best car showroom! Competitive prices and cars in excellent condition.',
+                                date: isRTL ? 'منذ شهر' : '1 month ago'
+                            }
+                        ].map((review, idx) => (
+                            <motion.div
+                                key={idx}
+                                initial={{ opacity: 0, y: 40 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: idx * 0.2 }}
+                                className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-red-500/30 transition-all"
+                            >
+                                {/* Stars */}
+                                <div className="flex gap-1 mb-4">
+                                    {[...Array(review.rating)].map((_, i) => (
+                                        <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                                    ))}
+                                </div>
+
+                                {/* Comment */}
+                                <p className="text-white/80 mb-4 leading-relaxed">"{review.comment}"</p>
+
+                                {/* Author */}
+                                <div className="flex items-center justify-between pt-4 border-t border-white/10">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center">
+                                            <User className="w-5 h-5 text-white" />
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-white text-sm">{review.name}</p>
+                                            <p className="text-gray-500 text-xs">{review.date}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* ── قسم اتصل بنا ── */}
+            <section className="relative z-10 py-20 px-4 bg-gradient-to-b from-gray-900 to-black">
+                <div className="max-w-7xl mx-auto">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                        {/* Left: Contact Info */}
+                        <motion.div
+                            initial={{ opacity: 0, x: -40 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                        >
+                            <h2 className="text-4xl md:text-5xl font-black text-white mb-6">
+                                {isRTL ? 'تواصل معنا' : 'Get In Touch'}
+                            </h2>
+                            <p className="text-white/60 text-lg mb-8">
+                                {isRTL ? 'نحن هنا لمساعدتك في العثور على سيارة أحلامك' : 'We are here to help you find your dream car'}
+                            </p>
+
+                            <div className="space-y-6">
+                                {/* Phone */}
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-xl bg-red-600/20 flex items-center justify-center">
+                                        <Phone className="w-6 h-6 text-red-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-gray-400 text-sm">{isRTL ? 'اتصل بنا' : 'Call Us'}</p>
+                                        <p className="text-white font-bold">{tenant?.contact?.phone || '+967 781 007 805'}</p>
+                                    </div>
+                                </div>
+
+                                {/* WhatsApp */}
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-xl bg-green-600/20 flex items-center justify-center">
+                                        <MessageCircle className="w-6 h-6 text-green-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-gray-400 text-sm">{isRTL ? 'واتساب' : 'WhatsApp'}</p>
+                                        <p className="text-white font-bold">{tenant?.contact?.whatsapp || '+967 781 007 805'}</p>
+                                    </div>
+                                </div>
+
+                                {/* Location */}
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-xl bg-blue-600/20 flex items-center justify-center">
+                                        <MapPin className="w-6 h-6 text-blue-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-gray-400 text-sm">{isRTL ? 'الموقع' : 'Location'}</p>
+                                        <p className="text-white font-bold">{isRTL ? 'صنعاء، اليمن' : 'Sana\'a, Yemen'}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Social Links */}
+                            <div className="mt-8 flex gap-4">
+                                {socialLinks.map((social, idx) => (
+                                    <a
+                                        key={idx}
+                                        href={social.href}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center ${social.color} hover:bg-white/10 transition-all`}
+                                    >
+                                        <social.icon className="w-5 h-5" />
+                                    </a>
+                                ))}
+                            </div>
+                        </motion.div>
+
+                        {/* Right: Contact Form */}
+                        <motion.div
+                            initial={{ opacity: 0, x: 40 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            className="bg-white/5 border border-white/10 rounded-2xl p-8"
+                        >
+                            <h3 className="text-2xl font-bold text-white mb-6">
+                                {isRTL ? 'أرسل لنا رسالة' : 'Send Us a Message'}
+                            </h3>
+                            <form className="space-y-4">
+                                <div>
+                                    <input
+                                        type="text"
+                                        placeholder={isRTL ? 'الاسم' : 'Name'}
+                                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-red-500 transition-colors"
+                                    />
+                                </div>
+                                <div>
+                                    <input
+                                        type="email"
+                                        placeholder={isRTL ? 'البريد الإلكتروني' : 'Email'}
+                                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-red-500 transition-colors"
+                                    />
+                                </div>
+                                <div>
+                                    <input
+                                        type="tel"
+                                        placeholder={isRTL ? 'رقم الهاتف' : 'Phone'}
+                                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-red-500 transition-colors"
+                                    />
+                                </div>
+                                <div>
+                                    <textarea
+                                        rows={4}
+                                        placeholder={isRTL ? 'رسالتك' : 'Your Message'}
+                                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-red-500 transition-colors resize-none"
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold py-4 rounded-xl transition-all"
+                                >
+                                    {isRTL ? 'إرسال الرسالة' : 'Send Message'}
+                                </button>
+                            </form>
+                        </motion.div>
+                    </div>
+                </div>
+            </section>
+
+            {/* ── Footer المحسّن ── */}
+            <footer className="relative z-10 bg-black border-t border-red-900/20">
+                <div className="max-w-7xl mx-auto px-4 py-12">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                        {/* Column 1: About */}
+                        <div>
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center">
+                                    <Car className="w-5 h-5 text-white" />
+                                </div>
+                                <h3 className="text-xl font-black text-white">{tenant?.name || 'CAR X'}</h3>
+                            </div>
+                            <p className="text-gray-400 text-sm leading-relaxed">
+                                {isRTL ? 'منصة متكاملة لبيع وشراء السيارات وقطع الغيار' : 'Complete platform for buying and selling cars and spare parts'}
+                            </p>
+                        </div>
+
+                        {/* Column 2: Quick Links */}
+                        <div>
+                            <h4 className="text-white font-bold mb-4">{isRTL ? 'روابط سريعة' : 'Quick Links'}</h4>
+                            <ul className="space-y-2">
+                                {[
+                                    { label: isRTL ? 'المعرض' : 'Showroom', href: '/showroom' },
+                                    { label: isRTL ? 'المزادات' : 'Auctions', href: '/auctions' },
+                                    { label: isRTL ? 'قطع الغيار' : 'Parts', href: '/parts' },
+                                    { label: isRTL ? 'الوكالات' : 'Brands', href: '/brands' }
+                                ].map((link, idx) => (
+                                    <li key={idx}>
+                                        <Link href={link.href} className="text-gray-400 hover:text-red-400 text-sm transition-colors">
+                                            {link.label}
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        {/* Column 3: Support */}
+                        <div>
+                            <h4 className="text-white font-bold mb-4">{isRTL ? 'الدعم' : 'Support'}</h4>
+                            <ul className="space-y-2">
+                                {[
+                                    { label: isRTL ? 'خدمة العملاء' : 'Customer Service' },
+                                    { label: isRTL ? 'الأسئلة الشائعة' : 'FAQ' },
+                                    { label: isRTL ? 'سياسة الخصوصية' : 'Privacy Policy' },
+                                    { label: isRTL ? 'الشروط والأحكام' : 'Terms & Conditions' }
+                                ].map((link, idx) => (
+                                    <li key={idx}>
+                                        <button className="text-gray-400 hover:text-red-400 text-sm transition-colors">
+                                            {link.label}
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        {/* Column 4: Newsletter */}
+                        <div>
+                            <h4 className="text-white font-bold mb-4">{isRTL ? 'النشرة الإخبارية' : 'Newsletter'}</h4>
+                            <p className="text-gray-400 text-sm mb-4">
+                                {isRTL ? 'اشترك للحصول على آخر العروض' : 'Subscribe for latest offers'}
+                            </p>
+                            <div className="flex gap-2">
+                                <input
+                                    type="email"
+                                    placeholder={isRTL ? 'بريدك الإلكتروني' : 'Your email'}
+                                    className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-red-500"
+                                />
+                                <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors">
+                                    <ArrowRight className={`w-4 h-4 ${isRTL ? 'rotate-180' : ''}`} />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Bottom Bar */}
+                    <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <p className="text-gray-400 text-sm">
+                            © 2026 {tenant?.name || 'CAR X'}. {isRTL ? 'جميع الحقوق محفوظة.' : 'All Rights Reserved.'}
+                        </p>
+                        <div className="flex gap-6">
+                            {socialLinks.map((social, idx) => (
+                                <a
+                                    key={idx}
+                                    href={social.href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`${social.color} hover:scale-110 transition-transform`}
+                                >
+                                    <social.icon className="w-5 h-5" />
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </footer>
+
+            {/* ── Auth Modals ── */}
+            <AuthModals
+                showLoginModal={showLoginModal}
+                showRegisterModal={showRegisterModal}
+                onCloseLogin={() => setShowLoginModal(false)}
+                onCloseRegister={() => setShowRegisterModal(false)}
+                onSwitchToRegister={() => setShowRegisterModal(true)}
+                onSwitchToLogin={() => setShowLoginModal(true)}
+            />
+        </main>
+    );
+}

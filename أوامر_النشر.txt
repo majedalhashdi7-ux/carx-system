@@ -1,0 +1,19 @@
+# أوامر النشر - انسخ والصق في Terminal
+
+# 1. اذهب إلى مجلد carx-system
+cd C:\car-auction\carx-system
+
+# 2. تحقق من التغييرات
+git status
+
+# 3. أضف جميع التغييرات
+git add .
+
+# 4. اعمل commit
+git commit -m "تحسين الصفحة الرئيسية - إضافة إحصائيات وآراء عملاء ونموذج اتصال"
+
+# 5. ارفع التغييرات
+git push
+
+# انتهى! انتظر 2-3 دقائق ثم افتح:
+# https://carx-system.vercel.app
