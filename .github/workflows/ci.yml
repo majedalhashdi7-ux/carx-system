@@ -59,31 +59,68 @@ jobs:
         working-directory: client-app
         run: npm run lint
 
-      - name: Build Frontend
-        working-directory: client-app
-        run: npm run build
-        env:
-          NEXT_PUBLIC_API_URL: http://localhost:4001
+       - name: Build Frontend
+         working-directory: client-app
+         run: npm run build
+         env:
+           NEXT_PUBLIC_API_URL: http://localhost:4001
+
+   # CAR X Tests & Build
+   carx-test:
+     runs-on: ubuntu-latest
+
+     steps:
+       - uses: actions/checkout@v4
+
+       - name: Setup Node.js
+         uses: actions/setup-node@v4
+         with:
+           node-version: '22'
+           cache: 'npm'
+           cache-dependency-path: carx-system/package-lock.json
+
+       - name: Install CAR X Dependencies
+         working-directory: carx-system
+         run: npm ci
+
+       - name: Lint CAR X
+         working-directory: carx-system
+         run: npm run lint
+
+       - name: Build CAR X
+         working-directory: carx-system
+         run: npm run build
+         env:
+           NEXT_PUBLIC_API_URL: http://localhost:4001
 
   # Deploy to Production
   deploy:
-    needs: [backend-test, frontend-test]
+    needs: [backend-test, frontend-test, carx-test]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     
     steps:
       - uses: actions/checkout@v4
       
-      - name: Deploy Frontend to Vercel
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: client-app
-          vercel-args: '--prod'
-      
-      - name: Deploy Backend
+       - name: Deploy HM CAR (client-app) to Vercel
+         uses: amondnet/vercel-action@v25
+         with:
+           vercel-token: ${{ secrets.VERCEL_TOKEN }}
+           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+           working-directory: client-app
+           vercel-args: '--prod'
+
+       - name: Deploy CAR X (carx-system) to Vercel
+         uses: amondnet/vercel-action@v25
+         with:
+           vercel-token: ${{ secrets.VERCEL_TOKEN }}
+           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID_CARX }}
+           working-directory: carx-system
+           vercel-args: '--prod'
+
+       - name: Deploy Backend
         run: |
           echo "Backend deployment configured"
           # Add your backend deployment commands here
