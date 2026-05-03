@@ -1,0 +1,29 @@
+# Ignore local node_modules and build artifacts
+node_modules
+client-app/node_modules
+client-app/.next
+.next
+
+# Ignore environment files and secrets
+.env
+.env.*
+*.env
+*.env.*
+
+# Ignore Git and deployment metadata
+.git
+.vercel
+.netlify
+
+# Ignore runtime artifacts and logs
+logs
+uploads
+database-data
+*.log
+npm-debug.log*
+coverage
+.nyc_output
+
+# Ignore local OS files
+.DS_Store
+Thumbs.db

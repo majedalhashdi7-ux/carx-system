@@ -113,15 +113,35 @@ class ServerConfig {
    * [[ARABIC_COMMENT]] يضمن السماح بالاتصال من الواجهة الأمامية فقط مع دعم Vercel تلقائياً
    */
   getCorsConfig() {
-    const allowed = (process.env.ALLOWED_ORIGINS || '').split(',').map(o => o.trim()).filter(Boolean);
-    
+    const allowed = new Set(
+      (process.env.ALLOWED_ORIGINS || '')
+        .split(',')
+        .map(o => o.trim())
+        .filter(Boolean)
+    );
+
     // إضافة النطاقات المعروفة للنظام تلقائياً
-    if (process.env.CLIENT_URL) allowed.push(process.env.CLIENT_URL.trim());
-    if (process.env.BASE_URL) allowed.push(process.env.BASE_URL.trim());
-    if (process.env.NEXT_PUBLIC_API_URL) allowed.push(process.env.NEXT_PUBLIC_API_URL.split('/api')[0]);
+    if (process.env.CLIENT_URL) allowed.add(process.env.CLIENT_URL.trim());
+    if (process.env.BASE_URL) allowed.add(process.env.BASE_URL.trim());
+    if (process.env.NEXT_PUBLIC_APP_URL) allowed.add(process.env.NEXT_PUBLIC_APP_URL.trim());
+    if (process.env.NEXT_PUBLIC_API_URL) allowed.add(process.env.NEXT_PUBLIC_API_URL.split('/api')[0].trim());
+
+    const allowedOrigins = Array.from(allowed);
 
     return {
-      origin: this.isDevelopment ? '*' : (allowed.length > 0 ? allowed : true),
+      origin: this.isDevelopment
+        ? '*'
+        : (origin, callback) => {
+            if (!origin) return callback(null, true);
+            if (allowedOrigins.length === 0) {
+              console.warn('⚠️ ALLOWED_ORIGINS ليست مكوّنة. سيتم رفض طلبات cross-origin في الإنتاج.');
+              return callback(new Error('CORS origin not configured'), false);
+            }
+            if (allowedOrigins.includes(origin)) {
+              return callback(null, true);
+            }
+            return callback(new Error('CORS origin not allowed'), false);
+          },
       credentials: true,
       optionsSuccessStatus: 200,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

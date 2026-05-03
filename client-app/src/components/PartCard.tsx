@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { useSettings } from '@/lib/SettingsContext';
-import type { PartCardProps } from '@/types';
+import type { PartCardProps, CartItem } from '@/types';
 import CurrencySwitcher from '@/components/CurrencySwitcher';
 
 const FAVORITES_KEY = 'hm_favorites';
@@ -67,7 +67,7 @@ export default function PartCard({ part, index = 0, onClick, onLoginRequired }: 
         if (!isLoggedIn) { onLoginRequired?.(); return; }
         if (inCart || stock === 0) return;
         const cart = getCart();
-        cart.push({ ...part, id: cardKey, type: 'part' });
+        cart.push({ ...part, id: cardKey, type: 'part', quantity: 1 });
         localStorage.setItem(CART_KEY, JSON.stringify(cart));
         dispatchCartUpdate();
         setInCart(true);

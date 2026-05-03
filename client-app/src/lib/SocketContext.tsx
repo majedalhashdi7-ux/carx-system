@@ -54,7 +54,14 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         });
 
         // الاستماع للإشعارات الجديدة القادمة من الخادم
-        socketInstance.on('new_notification', (data: Notification) => {
+        socketInstance.on('new_notification', (data: {
+            id?: string;
+            title?: string;
+            message?: string;
+            type?: string;
+            actionLabel?: string;
+            actionUrl?: string;
+        }) => {
             // [[ARABIC_COMMENT]] إرسال حدث مخصص لتشغيل مكون الـ Smart Island في الواجهة لعرض الإشعار للمستخدم
             window.dispatchEvent(new CustomEvent('hm_smart_alert', {
                 detail: {
@@ -63,7 +70,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
                     message: data.message || '',
                     type: data.type || 'info',
                     actionLabel: data.actionLabel,
-                    onAction: data.actionUrl ? () => window.location.href = data.actionUrl : undefined
+                    onAction: data.actionUrl ? () => { window.location.href = data.actionUrl!; } : undefined
                 }
             }));
         });

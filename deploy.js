@@ -67,6 +67,30 @@ function run(cmd, cwd, label) {
     }
 }
 
+function hasLocalBinary(cwd, binary) {
+    const binaryPath = path.join(cwd, 'node_modules', '.bin', binary);
+    return fs.existsSync(binaryPath);
+}
+
+function ensureDependenciesInstalled(cwd) {
+    const nodeModulesPath = path.join(cwd, 'node_modules');
+    const packageLockPath = path.join(cwd, 'package-lock.json');
+    const missingModules = !fs.existsSync(nodeModulesPath);
+    const missingBinaries = !hasLocalBinary(cwd, 'next');
+
+    if ((missingModules || missingBinaries) && fs.existsSync(packageLockPath)) {
+        log.info('لم يُكتشف node_modules الصحيح أو binary مفقود. سيتم تثبيت التبعيات باستخدام npm ci...');
+        return run('npm ci --no-audit --no-fund', cwd, 'npm ci');
+    }
+
+    if (missingModules && !fs.existsSync(packageLockPath)) {
+        log.info('لم يُكتشف node_modules و package-lock.json مفقود. سيتم تثبيت التبعيات باستخدام npm install...');
+        return run('npm install --no-audit --no-fund', cwd, 'npm install');
+    }
+
+    return true;
+}
+
 // ──────────────────────────────────────────────────────────────
 // [[ARABIC_COMMENT]] الدالة الرئيسية
 // ──────────────────────────────────────────────────────────────
@@ -83,9 +107,11 @@ async function main() {
 
     const requiredFiles = [
         'client-app/package.json',
-        'client-app/next.config.ts',
         'vercel.json',
     ];
+
+    const configFiles = ['client-app/next.config.js', 'client-app/next.config.ts'];
+    const hasNextConfig = configFiles.some(file => fs.existsSync(path.join(__dirname, file)));
 
     for (const file of requiredFiles) {
         const fullPath = path.join(__dirname, file);
@@ -95,6 +121,11 @@ async function main() {
             log.error(`مفقود: ${file}`);
             hasErrors = true;
         }
+    }
+
+    if (!hasNextConfig) {
+        log.error('مفقود: client-app/next.config.js أو client-app/next.config.ts');
+        hasErrors = true;
     }
 
     if (hasErrors) {
@@ -109,6 +140,11 @@ async function main() {
     // ─── الخطوة 3: بناء المشروع ──────────────────────────────
     log.step(3, 'بناء المشروع (next build)...');
     log.info('هذا يستغرق دقيقة واحدة تقريباً...');
+
+    if (!ensureDependenciesInstalled(clientDir)) {
+        log.error('فشل تثبيت التبعيات. أوقف النشر.');
+        process.exit(1);
+    }
 
     const buildOk = run('npm run build', clientDir, 'next build');
 
@@ -170,7 +206,15 @@ async function main() {
     }
 }
 
-main().catch((err) => {
-    log.error('خطأ غير متوقع: ' + err.message);
-    process.exit(1);
-});
+if (require.main === module) {
+    main().catch((err) => {
+        log.error('خطأ غير متوقع: ' + err.message);
+        process.exit(1);
+    });
+}
+
+module.exports = {
+    main,
+    run,
+    ensureDependenciesInstalled
+};

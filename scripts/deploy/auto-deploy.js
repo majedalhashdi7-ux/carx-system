@@ -6,6 +6,7 @@
 
 const { execSync } = require('child_process');
 const fs = require('fs');
+const path = require('path');
 
 console.log('🚀 بدء النشر التلقائي للنظامين...\n');
 
@@ -63,9 +64,63 @@ function checkVercelCLI() {
     }
 }
 
+function run(cmd, cwd, label) {
+    try {
+        execSync(cmd, { cwd, stdio: 'inherit', encoding: 'utf-8' });
+        return true;
+    } catch (err) {
+        console.error(`❌ فشل: ${label}`);
+        console.error(err.message);
+        return false;
+    }
+}
+
+function hasLocalBinary(directory, binary) {
+    const fullPath = path.resolve(directory);
+    const binaryPath = path.join(fullPath, 'node_modules', '.bin', binary);
+    return fs.existsSync(binaryPath);
+}
+
+// التحقق من وجود المجلد وأنه مشروع Node قابل للبناء
+function isProjectDirectory(directory) {
+    const fullPath = path.resolve(directory);
+    return fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory() && fs.existsSync(path.join(fullPath, 'package.json'));
+}
+
+// تثبيت التبعيات إذا كانت غير موجودة أو ناقصة
+function ensureDependenciesInstalled(directory) {
+    const fullPath = path.resolve(directory);
+    const nodeModulesPath = path.join(fullPath, 'node_modules');
+    const packageLockPath = path.join(fullPath, 'package-lock.json');
+    const missingModules = !fs.existsSync(nodeModulesPath);
+    const missingBinary = !hasLocalBinary(directory, 'next');
+
+    if ((missingModules || missingBinary) && fs.existsSync(packageLockPath)) {
+        console.log(`📦 تثبيت التبعيات في ${directory}...`);
+        return run('npm ci --no-audit --no-fund', fullPath, 'npm ci');
+    }
+
+    if (missingModules && !fs.existsSync(packageLockPath)) {
+        console.log(`📦 تثبيت التبعيات في ${directory} باستخدام npm install...`);
+        return run('npm install --no-audit --no-fund', fullPath, 'npm install');
+    }
+
+    return true;
+}
+
 // بناء المشروع
 function buildProject(directory, name) {
     console.log(`🔨 بناء ${name}...`);
+
+    if (!isProjectDirectory(directory)) {
+        console.log(`⚠️ تخطي ${name} لأن المجلد غير موجود أو لا يحتوي على package.json: ${directory}`);
+        return false;
+    }
+
+    if (!ensureDependenciesInstalled(directory)) {
+        return false;
+    }
+
     try {
         execSync('npm run build', { 
             cwd: directory, 

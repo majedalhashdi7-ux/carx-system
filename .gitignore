@@ -66,6 +66,9 @@ test-results/
 # Vercel
 .vercel/
 
+# Netlify build output
+.netlify/
+
 # Misc
 *.pem
 .qodo/

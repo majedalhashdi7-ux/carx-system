@@ -6,7 +6,7 @@ import { useRef } from 'react';
 import { Box } from '@react-three/drei';
 
 function RotatingCube() {
-  const meshRef = useRef<any>();
+  const meshRef = useRef<any>(null);
 
   useFrame((state, delta) => {
     if (meshRef.current) {

@@ -46,7 +46,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY package*.json ./
 
 # تثبيت الملحقات البرمجية (Production only)
-RUN npm install --omit=dev --no-audit --no-fund
+RUN npm ci --omit=dev --no-audit --no-fund
 
 # نسخ كود المشروع بالكامل
 COPY . .

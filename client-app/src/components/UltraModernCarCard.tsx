@@ -39,8 +39,8 @@ interface UltraModernCarCardProps {
     };
     index: number;
     formatPrice?: (price: number) => string;
-    onContact?: (car: Car) => void;
-    onViewDetails?: (car: Car) => void;
+    onContact?: (car: UltraModernCarCardProps['car']) => void;
+    onViewDetails?: (car: UltraModernCarCardProps['car']) => void;
 }
 
 export default function UltraModernCarCard({ 
