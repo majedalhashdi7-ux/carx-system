@@ -88,3 +88,4 @@ deployment*.log
 
 # Archive folder
 docs/archive/
+.vercel

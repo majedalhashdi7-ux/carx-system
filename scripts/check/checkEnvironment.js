@@ -4,7 +4,7 @@
 // ينفذ فحص شامل لبيئة المشروع
 
 require('dotenv').config();
-const environmentChecker = require('../helpers/environmentChecker');
+const environmentChecker = require('../../helpers/environmentChecker');
 
 async function runEnvironmentCheck() {
   console.log('🚀 بدء فحص بيئة المشروع...\n');
