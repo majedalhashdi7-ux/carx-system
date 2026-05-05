@@ -13,24 +13,14 @@
 
 const express = require('express');
 const router = express.Router();
-const ScraperService = require('../../../services/ScraperService');
-
-/**
- * وسيط التحقق من صلاحية الأدمن
- */
-function requireAdmin(req, res, next) {
-  if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'superadmin')) {
-    return res.status(403).json({ success: false, error: 'صلاحية الأدمن مطلوبة' });
-  }
-  next();
-}
+const { requireAuthAPI, requireAdmin } = require('../../../middleware/auth');
 
 /**
  * @route POST /api/v2/import/preview
  * @description معاينة البيانات من رابط قبل الحفظ
  * @access Admin
  */
-router.post('/preview', async (req, res, next) => {
+router.post('/preview', requireAuthAPI, requireAdmin, async (req, res, next) => {
   try {
     const { url, type } = req.body;
     
@@ -96,7 +86,7 @@ router.post('/preview', async (req, res, next) => {
  * @description حفظ البيانات المستوردة بعد المراجعة
  * @access Admin
  */
-router.post('/save', async (req, res, next) => {
+router.post('/save', requireAuthAPI, requireAdmin, async (req, res, next) => {
   try {
     const { data, type } = req.body;
     
@@ -161,7 +151,7 @@ router.post('/save', async (req, res, next) => {
  * @description استيراد مباشر (معاينة + حفظ في خطوة واحدة) - للتوافقية
  * @access Admin
  */
-router.post('/', async (req, res, next) => {
+router.post('/', requireAuthAPI, requireAdmin, async (req, res, next) => {
   try {
     const { url, type } = req.body;
     

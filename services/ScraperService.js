@@ -26,7 +26,7 @@ class ScraperService {
       const parsedUrl = new URL(url);
       
       // اختيار الاستراتيجية المناسبة حسب الموقع
-      if (parsedUrl.hostname.includes('encar.com')) {
+      if (parsedUrl.hostname.includes('encar.com') || parsedUrl.hostname.includes('encar.co.kr')) {
         return await this._scrapeEncar(url);
       }
       
@@ -35,10 +35,10 @@ class ScraperService {
       if (error.code === 'ERR_INVALID_URL') {
         return { success: false, error: 'الرابط غير صالح' };
       }
-      console.error('⚠️ خطأ في ScraperService:', error.message);
+      console.error('⚠️ [Scraper] Error:', error.message);
       return { 
         success: false, 
-        error: 'فشل استخراج البيانات من الرابط. تأكد من صحة الرابط.' 
+        error: `فشل استخراج البيانات: ${error.message}` 
       };
     }
   }
@@ -47,49 +47,54 @@ class ScraperService {
    * استخراج عام من أي موقع
    */
   async _scrapeGeneric(url) {
-    const { data } = await axios.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept-Language': 'ar,en-US;q=0.9,en;q=0.8,ko;q=0.7'
-      },
-      timeout: 15000,
-      maxRedirects: 5,
-    });
-    
-    const $ = cheerio.load(data);
-    
-    // استخراج العنوان (أفضلية OG > title > h1)
-    const title = $('meta[property="og:title"]').attr('content') || 
-                  $('title').text() || 
-                  $('h1').first().text() || '';
-                  
-    // استخراج الوصف
-    const description = $('meta[property="og:description"]').attr('content') || 
-                        $('meta[name="description"]').attr('content') || '';
-                        
-    // استخراج السعر (محاولة عامة)
-    let price = null;
-    $('[class*="price"], [id*="price"], [data-price]').each((i, el) => {
-      const text = $(el).text().trim();
-      const match = text.match(/[\d,]+/);
-      if (match && !price) {
-        price = parseInt(match[0].replace(/,/g, ''));
-      }
-    });
+    try {
+      const { data } = await axios.get(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept-Language': 'ar,en-US;q=0.9,en;q=0.8,ko;q=0.7'
+        },
+        timeout: 15000,
+        maxRedirects: 5,
+      });
+      
+      const $ = cheerio.load(data);
+      
+      // استخراج العنوان (أفضلية OG > title > h1)
+      const title = $('meta[property="og:title"]').attr('content') || 
+                    $('title').text() || 
+                    $('h1').first().text() || '';
+                    
+      // استخراج الوصف
+      const description = $('meta[property="og:description"]').attr('content') || 
+                          $('meta[name="description"]').attr('content') || '';
+                          
+      // استخراج السعر (محاولة عامة)
+      let price = null;
+      $('[class*="price"], [id*="price"], [data-price]').each((i, el) => {
+        const text = $(el).text().trim();
+        const match = text.match(/[\d,]+/);
+        if (match && !price) {
+          const val = parseInt(match[0].replace(/,/g, ''));
+          if (val > 0) price = val;
+        }
+      });
 
-    // استخراج الصور
-    const images = this._extractImages($, url);
+      // استخراج الصور
+      const images = this._extractImages($, url);
 
-    return {
-      success: true,
-      data: {
-        title: title.trim(),
-        description: description.trim(),
-        price,
-        images,
-        url
-      }
-    };
+      return {
+        success: true,
+        data: {
+          title: title.trim(),
+          description: description.trim(),
+          price,
+          images,
+          url
+        }
+      };
+    } catch (err) {
+       throw new Error(`تعذر الوصول للموقع: ${err.message}`);
+    }
   }
 
   /**
@@ -113,12 +118,16 @@ class ScraperService {
       
       const description = $('meta[property="og:description"]').attr('content') || '';
       
-      // استخراج السعر من Encar
+      // استخراج السعر من Encar (بالـ "مان وون" الكوري)
       let price = null;
       const priceText = $('.price .num').text() || $('[class*="price"]').first().text();
       if (priceText) {
         const match = priceText.match(/[\d,]+/);
-        if (match) price = parseInt(match[0].replace(/,/g, '')) * 10000; // 만원 -> 원
+        if (match) {
+           const rawPrice = parseInt(match[0].replace(/,/g, ''));
+           // تحويل من "مان وون" (10,000 وون) إلى وون كامل
+           price = rawPrice * 10000;
+        }
       }
 
       const images = this._extractImages($, url);
@@ -135,7 +144,7 @@ class ScraperService {
         }
       };
     } catch (error) {
-      // fallback للاستخراج العام
+      console.warn('[Scraper] Encar specialized scrape failed, falling back to generic...', error.message);
       return await this._scrapeGeneric(url);
     }
   }

@@ -6,14 +6,6 @@
  *
  * الوصف:
  * - إرسال إشعارات للمستخدمين عند أحداث معينة
-// [[ARABIC_HEADER]] هذا الملف (services/NotificationService.js) جزء من مشروع HM CAR ويحتوي تعليقات عربية لضمان الوضوح.
-
-/**
- * services/NotificationService.js
- * خدمة الإشعارات المتقدمة
- *
- * الوصف:
- * - إرسال إشعارات للمستخدمين عند أحداث معينة
  * - دعم أنواع مختلفة: مزادات، طلبات، رسائل، نظامية
  * - تخزين الإشعارات في قاعدة البيانات
  * - إشعارات مجدولة ومخصصة
@@ -27,23 +19,24 @@ const webpush = require('web-push');
 
 /**
  * إعداد مفاتيح VAPID لإرسال إشعارات PWA
+ * يتم سحبها من متغيرات البيئة لضمان الأمان
  */
-const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BNghi5tZPhPvYdmdEEPQPn6M5xuonh0cUsBRpdKjPsy1a9MusGgJuVFZcaE_-t38LfJmeHdIznWWQKfjuUviRVc';
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || '_D1JtL9AQ1gBn_Daa6NMh12gXLsQ9e0fD683tUmDvUM';
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:info@hmcar.com';
 
-webpush.setVapidDetails(
-  'mailto:info@hmcar.com',
-  VAPID_PUBLIC_KEY,
-  VAPID_PRIVATE_KEY
-);
+if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    VAPID_SUBJECT,
+    VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY
+  );
+}
 
 class NotificationService {
 
     /**
-     * Creates a notification in the database.
-     * @param {Object} models - نماذج المعرض (UserNotification)
-     * @param {Object} notificationData - The data for the notification.
-     * @returns {Promise<Document>} The created notification document.
+     * إنشاء إشعار في قاعدة البيانات
      */
     static async createNotification(models, notificationData) {
         if (!models || !models.UserNotification) {
@@ -53,60 +46,62 @@ class NotificationService {
     }
 
     /**
-     * Sends a notification to a user based on their preferences.
-     * @param {Object} models - نماذج المعرض
-     * @param {String} userId - The ID of the user.
-     * @param {String} notificationType - The type of notification (e.g., 'outbid', 'newMessage').
-     * @param {Object} template - The notification content template.
+     * إرسال إشعار لمستخدم بناءً على تفضيلاته
      */
     static async sendNotification(models, userId, notificationType, template) {
         if (!models) throw new Error('models is required for sendNotification');
         
-        const { UserNotification, UserNotificationPreference, PushSubscription } = models;
+        const { UserNotificationPreference } = models;
         const preferences = await UserNotificationPreference.findOne({ user: userId });
 
-        // Default preferences if none are set
+        // التفضيلات الافتراضية
         const defaultPrefs = {
             [notificationType]: true,
-            emailNotifications: { [notificationType]: false },
+            emailNotifications: { [notificationType]: true },
             pushNotifications: { [notificationType]: true },
         };
 
         const userPrefs = preferences || defaultPrefs;
 
-        if (userPrefs[notificationType]) {
+        // التحقق مما إذا كان المستخدم يريد هذا النوع من الإشعارات
+        if (userPrefs[notificationType] !== false) {
             const notification = await this.createNotification(models, {
                 user: userId,
-                ...template
+                ...template,
+                status: 'unread'
             });
 
-            // Send via Push (WebSocket)
-            if (userPrefs.pushNotifications && userPrefs.pushNotifications[notificationType]) {
-                WebSocketService.sendToUser(userId, {
-                    id: notification._id,
-                    title: template.title,
-                    message: template.message,
-                    type: template.type,
-                    data: template.metadata,
-                    actionUrl: template.actionUrl
-                });
+            // 1. الإرسال عبر WebSocket (فوري داخل الموقع)
+            WebSocketService.sendToUser(userId, {
+                id: notification._id,
+                title: template.title,
+                message: template.message,
+                type: template.type,
+                data: template.metadata,
+                actionUrl: template.actionUrl
+            });
 
-                // [[ARABIC_COMMENT]] إرسال إشعار PWA (Web Push) ليظهر خارج التطبيق
-                this.sendPushToUser(userId, {
+            // 2. الإرسال عبر Web Push (خارج الموقع - PWA)
+            if (userPrefs.pushNotifications && userPrefs.pushNotifications[notificationType] !== false) {
+                this.sendPushToUser(models, userId, {
                     title: template.title,
                     body: template.message,
                     url: template.actionUrl || '/'
                 }).catch(err => console.error('WebPush Error:', err.message));
             }
 
-            // Send via Email
-            if (userPrefs.emailNotifications && userPrefs.emailNotifications[notificationType]) {
-                // await EmailService.sendNotificationEmail(userId, template);
-                console.log(`Simulating sending email for ${notificationType} to user ${userId}`);
+            // 3. الإرسال عبر البريد الإلكتروني
+            if (userPrefs.emailNotifications && userPrefs.emailNotifications[notificationType] === true) {
+                EmailService.sendNotificationEmail(userId, template).catch(err => {
+                    console.warn('⚠️ Email notification failed:', err.message);
+                });
             }
         }
     }
 
+    /**
+     * إشعارات المزادات
+     */
     static async sendAuctionNotification(models, userId, auction, type, data = {}) {
         if (!models) throw new Error('models is required for sendAuctionNotification');
         const templates = {
@@ -153,6 +148,9 @@ class NotificationService {
         await this.sendNotification(models, userId, type, template);
     }
 
+    /**
+     * إشعارات الرسائل
+     */
     static async sendMessageNotification(models, userId, message) {
         if (!models) throw new Error('models is required for sendMessageNotification');
         const template = {
@@ -167,6 +165,9 @@ class NotificationService {
         await this.sendNotification(models, userId, 'newMessage', template);
     }
     
+    /**
+     * تحديثات النظام
+     */
     static async sendSystemUpdate(models, userId, title, message, data = {}) {
         if (!models) throw new Error('models is required for sendSystemUpdate');
         const template = {
@@ -180,25 +181,8 @@ class NotificationService {
         await this.sendNotification(models, userId, 'systemUpdates', template);
     }
 
-    static async sendPromotionalUpdate(models, userId, title, message, data = {}) {
-        if (!models) throw new Error('models is required for sendPromotionalUpdate');
-        const template = {
-            title: title,
-            message: message,
-            type: 'promotion',
-            priority: 'low',
-            actionUrl: data.actionUrl,
-            actionText: data.actionText,
-        };
-        await this.sendNotification(models, userId, 'promotions', template);
-    }
-
     /**
-     * Sends a notification to multiple users.
-     * @param {Object} models - نماذج المعرض
-     * @param {Array<String>} userIds - An array of user IDs.
-     * @param {Object} template - The notification content template.
-     * @param {String} notificationType - The type of notification.
+     * إرسال إشعار جماعي
      */
     static async sendBulkNotification(models, userIds, template, notificationType) {
         if (!models) throw new Error('models is required for sendBulkNotification');
@@ -209,18 +193,14 @@ class NotificationService {
 
         const notificationsToCreate = [];
         const usersToNotifyByPush = [];
-        const usersToNotifyByEmail = [];
 
         for (const userId of userIds) {
             const userPrefs = prefMap.get(userId) || {};
-            if (userPrefs[notificationType] !== false) { // Default to true
+            if (userPrefs[notificationType] !== false) {
                 notificationsToCreate.push({ user: userId, ...template });
 
                 if (userPrefs.pushNotifications && userPrefs.pushNotifications[notificationType] !== false) {
                     usersToNotifyByPush.push(userId);
-                }
-                if (userPrefs.emailNotifications && userPrefs.emailNotifications[notificationType] === true) {
-                    usersToNotifyByEmail.push(userId);
                 }
             }
         }
@@ -229,36 +209,36 @@ class NotificationService {
             await UserNotification.insertMany(notificationsToCreate);
         }
 
-        // Send push notifications via WebSocket
         if (usersToNotifyByPush.length > 0) {
             WebSocketService.sendToUsers(usersToNotifyByPush, {
                 title: template.title,
                 message: template.message,
                 type: template.type
             });
+            
+            // إرسال Push لجميع المستخدمين في المجموعة (اختياري حسب استهلاك الموارد)
+            for (const userId of usersToNotifyByPush) {
+                this.sendPushToUser(models, userId, {
+                    title: template.title,
+                    body: template.message,
+                    url: template.actionUrl || '/'
+                }).catch(() => {});
+            }
         }
-        
-        // Send email notifications
-        // for (const userId of usersToNotifyByEmail) {
-        //     await EmailService.sendNotificationEmail(userId, template);
-        // }
     }
+
     /**
      * إرسال إشعار Web Push حقيقي لجميع أجهزة المستخدم المسجلة
-     * @param {String} userId 
-     * @param {Object} payload 
      */
     static async sendPushToUser(models, userId, payload) {
         if (!models) throw new Error('models is required for sendPushToUser');
+        if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) return;
         
         try {
             const { PushSubscription } = models;
-            if (!PushSubscription) {
-                console.warn('PushSubscription model not available');
-                return;
-            }
-            const subscriptions = await PushSubscription.find({ user: userId });
+            if (!PushSubscription) return;
             
+            const subscriptions = await PushSubscription.find({ user: userId });
             if (!subscriptions || subscriptions.length === 0) return;
 
             const notificationPayload = JSON.stringify({
@@ -272,9 +252,7 @@ class NotificationService {
             const pushPromises = subscriptions.map(sub => {
                 return webpush.sendNotification(sub.subscription, notificationPayload)
                     .catch(async (err) => {
-                        // إذا انتهت صلاحية الاشتراك أو أصبح غير صالح، نحذفه من القاعدة
                         if (err.statusCode === 404 || err.statusCode === 410) {
-                            console.log(`[WebPush] Removing expired subscription for user ${userId}`);
                             await PushSubscription.findByIdAndDelete(sub._id);
                         }
                     });

@@ -30,16 +30,16 @@ export const viewport: Viewport = {
 
 // البيانات الوصفية (SEO Metadata) لتحسين ظهور الموقع في محركات البحث ومشاركات التواصل الاجتماعي
 export const metadata: Metadata = {
-  metadataBase: new URL('https://hmcar.okigo.net'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://hmcar.okigo.net'),
   title: {
-    template: '%s | HM CAR',
-    default: 'HM CAR | Premium Korean Auto Export & Parts',
+    template: '%s | CAR X',
+    default: 'CAR X | Premium Auto Solutions & Global Export',
   },
-  description: "اتش ام كار - منصتك الأولى لتصدير السيارات الكورية الفاخرة وقطع الغيار الأصلية. جودة كورية، شحن دولي، ومزادات حصرية.",
-  keywords: "car export, korean cars, luxury vehicles, spare parts, auto auction, سيارات كورية, قطع غيار, مزاد سيارات, تصدير من كوريا, HM CAR",
-  authors: [{ name: 'HM CAR Team', url: 'https://hmcar.com' }],
-  creator: 'HM CAR',
-  publisher: 'HM CAR Export',
+  description: "CAR X - منصتك المتكاملة لتجارة السيارات وقطع الغيار العالمية. مزادات مباشرة، فحص فني، وشحن دولي سريع.",
+  keywords: "car export, luxury cars, spare parts, auto auction, سيارات كورية, قطع غيار, مزاد سيارات, تصدير, CAR X, HM CAR",
+  authors: [{ name: 'CAR X Team' }],
+  creator: 'CAR X',
+  publisher: 'CAR X System',
   formatDetection: {
     email: false,
     address: false,
@@ -47,21 +47,10 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: '/',
-    languages: {
-      'ar-SA': '/ar',
-      'en-US': '/en',
-    },
   },
   robots: {
     index: true,
     follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
   },
   icons: {
     icon: [
@@ -74,22 +63,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "HM CAR",
-  },
-  openGraph: {
-    title: "HM CAR | Premium Korean Auto Export",
-    description: "تصدير السيارات الفاخرة وقطع الغيار من كوريا إلى العالم - أفضل الأسعار وجودة مضمونة",
-    url: 'https://hmcar.okigo.net',
-    siteName: "HM CAR",
-    locale: 'ar_SA',
-    type: "website",
-    images: [{ url: "/icons/icon-512x512.png", width: 512, height: 512, alt: 'HM CAR Export' }],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: "HM CAR | Premium Korean Auto Export",
-    description: "تصدير السيارات الفاخرة وقطع الغيار من كوريا إلى العالم",
-    images: ["/icons/icon-512x512.png"],
+    title: "CAR X",
   },
 };
 
@@ -158,8 +132,15 @@ export default async function RootLayout({
         <script dangerouslySetInnerHTML={{
           __html: `
             window.addEventListener('error', function(e) {
-              if (e.message && (e.message.indexOf('Maximum update depth exceeded') > -1 || e.message.indexOf('Minified React error #185') > -1 || e.message.indexOf('Minified React error #321') > -1)) {
-                console.warn('[Self-Healing] Fatal React loop detected. Clearing Service Workers & cache...');
+              const messages = [
+                'Maximum update depth exceeded',
+                'Minified React error #185',
+                'Minified React error #321',
+                'Minified React error #418',
+                'Minified React error #423'
+              ];
+              if (e.message && messages.some(msg => e.message.indexOf(msg) > -1)) {
+                console.warn('[Self-Healing] Fatal React loop or Hydration error detected. Clearing Service Workers & cache...');
                 if ('serviceWorker' in navigator) {
                   navigator.serviceWorker.getRegistrations().then(function(regs) {
                     for(var i = 0; i < regs.length; i++) { regs[i].unregister(); }
@@ -170,12 +151,12 @@ export default async function RootLayout({
                     for(var i = 0; i < names.length; i++) { caches.delete(names[i]); }
                   });
                 }
-                sessionStorage.setItem('hm_crash_recovery', '1');
+                sessionStorage.setItem('carx_crash_recovery', '1');
                 setTimeout(function() { window.location.reload(true); }, 500);
               }
             });
-            if (sessionStorage.getItem('hm_crash_recovery')) {
-              sessionStorage.removeItem('hm_crash_recovery');
+            if (sessionStorage.getItem('carx_crash_recovery')) {
+              sessionStorage.removeItem('carx_crash_recovery');
             }
             
             // تسجيل Service Worker للعمل Offline
