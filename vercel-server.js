@@ -10,6 +10,7 @@
 
 const { getAllTenants } = require('./tenants/tenant-resolver');
 const { getConnectionsStatus } = require('./tenants/tenant-db-manager');
+const { generalLimiter, authLimiter, strictLimiter } = require('./middleware/rateLimiter');
 
 // ── ثوابت ──
 const IS_VERCEL = !!(process.env.VERCEL || process.env.VERCEL_ENV);
@@ -122,22 +123,18 @@ function hasValidMongoUri() {
   let mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
   
   if (!mongoUri) {
-    console.error('❌ MONGO_URI is not defined in environment');
+    console.error('❌ MONGO_URI is not defined in environment variables');
     return false;
   }
   
-  // تنظيف الرابط من الأقواس المزدوجة والمسافات الناتجة عن سطر الأوامر في ويندوز
+  // Clean URI from quotes and whitespace
   mongoUri = mongoUri.replace(/^"|"$/g, '').trim();
   
-  // تحديث المتغير في بيئة التشغيل لتعمل باقي المكاتب بشكل صحيح
+  // Update in process.env for other modules
   process.env.MONGO_URI = mongoUri;
+  process.env.MONGODB_URI = mongoUri;
   
-  if (!mongoUri.startsWith('mongodb')) {
-    console.error('❌ MONGO_URI is invalid:', mongoUri.substring(0, 20));
-    return false;
-  }
-  
-  return true;
+  return mongoUri.startsWith('mongodb');
 }
 
 // ── Handler الرئيسي ──
@@ -156,18 +153,26 @@ module.exports = async (req, res) => {
       });
     }
 
-    // استخدام App class من modules/app.js
-    // ملاحظة: tenantMiddleware داخل setupMiddleware() سيتولى:
-    // 1. resolveTenant(req) لتحديد المعرض
-    // 2. getConnection(tenant.id, tenant.mongoUri) للاتصال بقاعدة البيانات
-    // 3. تخزين req.tenant و req.tenantModels
+    // Use App class from modules/app.js
     const App = require('./modules/app');
     const appInstance = new App({
       isServerless: true,
       corsConfig: createCorsMiddleware()
     });
+    
     const expressApp = appInstance.getExpressApp();
     
+    // Diagnostic direct route
+    expressApp.get('/api/v2/ping-status', (req, res) => {
+      res.json({
+        success: true,
+        message: 'Vercel Server is Live',
+        time: new Date().toISOString(),
+        env: process.env.NODE_ENV,
+        hasMongo: !!process.env.MONGO_URI
+      });
+    });
+
     return expressApp(req, res);
 
   } catch (fatalError) {

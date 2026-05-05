@@ -136,14 +136,21 @@ class App {
       this.app.use(['/api/v2/auth/register', '/api/auth/register', '/v2/auth/register'], authLimiter);
       // Upload rate limiting
       this.app.use(['/api/v2/upload', '/api/upload', '/v2/upload'], uploadLimiter);
-      // المسار الرئيسي v2
+      // Log all requests for debugging (optional, can be noisy)
+      this.app.use((req, res, next) => {
+        if (req.url.startsWith('/api')) {
+          console.log(`[API REQUEST] ${req.method} ${req.url}`);
+        }
+        next();
+      });
+
+      // Route Registration
+      // We prioritize /api/v2 to avoid generic /api matching first incorrectly
       this.app.use('/api/v2', apiV2Router);
-      // مسار مختصر للتطوير المحلي
-      this.app.use('/v2', apiV2Router);
-      // /api هنا يعمل كـ alias لـ /api/v2 لأن الـ client يستدعي /api/v2/...
-      // وـ Vercel يوجه /api/* كله لهذا السيرفر
       this.app.use('/api', apiV2Router);
-      logger.info('✅ تم تحميل جميع مسارات API v2 بنجاح');
+      this.app.use('/v2', apiV2Router);
+
+      logger.info('✅ API routes registered');
     } catch (error) {
       logger.error('❌ خطأ في تحميل مسارات API v2:', error);
       console.error('API routes load error:', error.message, error.stack);
@@ -155,7 +162,12 @@ class App {
     this.app.use((req, res, next) => {
       res.status(404).json({
         success: false,
-        message: 'عذراً، المسار المطلوب غير موجود',
+        message: 'عذراً، المسار المطلوب غير موجود في النظام',
+        debug: {
+          method: req.method,
+          url: req.url,
+          path: req.path
+        },
         code: 'NOT_FOUND'
       });
     });
