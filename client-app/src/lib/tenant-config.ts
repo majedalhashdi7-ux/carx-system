@@ -17,6 +17,7 @@ export const TENANT_DOMAIN_MAP: Record<string, string> = {
   'localhost:3000': 'hmcar',
   'localhost:4002': 'hmcar',
   'hmcar.vercel.app': 'hmcar',
+  'hmcar-system-two.vercel.app': 'hmcar',
   'hmcar.xyz': 'hmcar',
   'www.hmcar.xyz': 'hmcar',
   'daood.okigo.net': 'hmcar',
@@ -25,6 +26,7 @@ export const TENANT_DOMAIN_MAP: Record<string, string> = {
   'localhost:3001': 'carx',
   'carx.localhost': 'carx',
   'carx-system.vercel.app': 'carx',
+  'carx-system-five.vercel.app': 'carx',
   'carx-system-psi.vercel.app': 'carx',
 };
 
@@ -40,6 +42,7 @@ export const TENANT_CONFIGS: Record<string, TenantData> = {
       'localhost:3000',
       'localhost:4002',
       'hmcar.vercel.app',
+      'hmcar-system-two.vercel.app',
       'hmcar.xyz',
       'www.hmcar.xyz',
       'daood.okigo.net',
@@ -74,6 +77,7 @@ export const TENANT_CONFIGS: Record<string, TenantData> = {
       'localhost:3001',
       'carx.localhost',
       'carx-system.vercel.app',
+      'carx-system-five.vercel.app',
       'carx-system-psi.vercel.app',
     ],
     logo: '/uploads/tenants/carx/logo.png',

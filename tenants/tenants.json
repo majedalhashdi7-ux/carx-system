@@ -11,6 +11,7 @@
         "localhost:3000",
         "localhost:4002",
         "hmcar.vercel.app",
+        "hmcar-system-two.vercel.app",
         "hmcar.xyz",
         "www.hmcar.xyz",
         "daood.okigo.net"
@@ -47,6 +48,7 @@
         "localhost:3001",
         "carx.localhost",
         "carx-system.vercel.app",
+        "carx-system-five.vercel.app",
         "carx-system-psi.vercel.app"
       ],
       "mongoUri": "ENV:MONGO_URI_CARX",
