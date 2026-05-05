@@ -56,10 +56,18 @@ class App {
     return this.app;
   }
 
+  /**
+   * Register error handlers (Must be called after all routes)
+   */
+  registerErrorHandlers() {
+    this.setupErrorHandling();
+  }
+
   setupApp() {
     this.setupMiddleware();
-    this.setupRoutes();
-    this.setupErrorHandling();
+    this.setupApiRoutes();
+    this.setupStaticRoutes();
+    // No automatic setupErrorHandling here to allow custom routes in serverless
   }
 
   setupMiddleware() {
@@ -144,8 +152,7 @@ class App {
         next();
       });
 
-      // Route Registration
-      // We prioritize /api/v2 to avoid generic /api matching first incorrectly
+      // We prioritize /api/v2
       this.app.use('/api/v2', apiV2Router);
       this.app.use('/api', apiV2Router);
       this.app.use('/v2', apiV2Router);
@@ -166,7 +173,8 @@ class App {
         debug: {
           method: req.method,
           url: req.url,
-          path: req.path
+          path: req.path,
+          timestamp: new Date().toISOString()
         },
         code: 'NOT_FOUND'
       });

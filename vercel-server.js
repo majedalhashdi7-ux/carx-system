@@ -162,6 +162,14 @@ module.exports = async (req, res) => {
     
     const expressApp = appInstance.getExpressApp();
     
+    // Apply rate limiting middleware
+    expressApp.use('/api/', generalLimiter);
+    expressApp.use('/api/v2/auth/login', authLimiter);
+    expressApp.use('/api/v2/auth/register', authLimiter);
+    expressApp.use('/api/v2/auth/forgot-password', authLimiter);
+    expressApp.use('/api/v2/orders', strictLimiter);
+    expressApp.use('/api/v2/payments', strictLimiter);
+    
     // Diagnostic direct route
     expressApp.get('/api/v2/ping-status', (req, res) => {
       res.json({
@@ -172,6 +180,9 @@ module.exports = async (req, res) => {
         hasMongo: !!process.env.MONGO_URI
       });
     });
+
+    // Register 404 and error handlers (MUST BE LAST)
+    appInstance.registerErrorHandlers();
 
     return expressApp(req, res);
 
