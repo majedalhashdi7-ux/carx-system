@@ -49,12 +49,11 @@ export default function SearchSection() {
                             )}
                         >
                             <option value="" className="bg-black">{t('allBrands')}</option>
-                            <option value="toyota" className="bg-black">TOYOTA</option>
+                            <option value="hyundai" className="bg-black">HYUNDAI</option>
+                            <option value="kia" className="bg-black">KIA</option>
+                            <option value="genesis" className="bg-black">GENESIS</option>
                             <option value="mercedes" className="bg-black">MERCEDES</option>
                             <option value="bmw" className="bg-black">BMW</option>
-                            <option value="lexus" className="bg-black">LEXUS</option>
-                            <option value="ferrari" className="bg-black">FERRARI</option>
-                            <option value="porsche" className="bg-black">PORSCHE</option>
                         </select>
                     </div>
 

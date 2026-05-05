@@ -30,10 +30,92 @@ class SeedService {
         console.log(`🌱 Starting database seeding for tenant: ${tenantId}...`);
         const modelsToUse = models || getDefaultModels();
         
+        await this.seedPermissions(modelsToUse, tenantId);
+        await this.seedRoles(modelsToUse, tenantId);
         await this.seedProductionAdmin(modelsToUse, tenantId);
         await this.seedDefaultSettings(modelsToUse, tenantId);
         await this.seedRealData(modelsToUse, tenantId);
         console.log(`✅ Database seeding complete for tenant: ${tenantId}.`);
+    }
+
+    /**
+     * تهيئة الصلاحيات المتقدمة
+     */
+    async seedPermissions(models, tenantId) {
+        try {
+            const { AdvancedPermission, User } = models;
+            if (!AdvancedPermission) return;
+
+            const count = await AdvancedPermission.countDocuments();
+            if (count > 0) return;
+
+            // الحصول على أي مستخدم أدمن كمرجع
+            let systemUser = await User.findOne({ role: 'super_admin' });
+            if (!systemUser) {
+                // إنشاء مستخدم نظام مؤقت لربط الصلاحيات
+                systemUser = { _id: new mongoose.Types.ObjectId() };
+            }
+
+            const permissions = [
+                { name: 'MANAGE_CARS', description: 'إدارة السيارات والمخزون', category: 'CONTENT_MANAGEMENT', type: 'ADMIN', resources: ['cars'], actions: ['create', 'read', 'update', 'delete', 'import'], isSystem: true, createdBy: systemUser._id },
+                { name: 'MANAGE_AUCTIONS', description: 'إدارة المزادات والمزايدات', category: 'CONTENT_MANAGEMENT', type: 'ADMIN', resources: ['auctions', 'bids'], actions: ['create', 'read', 'update', 'delete', 'approve'], isSystem: true, createdBy: systemUser._id },
+                { name: 'VIEW_REPORTS', description: 'عرض التقارير والتحليلات', category: 'REPORTS', type: 'READ', resources: ['reports'], actions: ['read', 'export'], isSystem: true, createdBy: systemUser._id },
+                { name: 'MANAGE_USERS', description: 'إدارة حسابات المستخدمين والصلاحيات', category: 'USER_MANAGEMENT', type: 'ADMIN', resources: ['users'], actions: ['create', 'read', 'update', 'delete'], isSystem: true, createdBy: systemUser._id },
+                { name: 'MANAGE_SYSTEM', description: 'إدارة إعدادات النظام والنسخ الاحتياطي', category: 'SYSTEM_ADMINISTRATION', type: 'ADMIN', resources: ['settings', 'backups'], actions: ['update', 'backup', 'configure'], isSystem: true, createdBy: systemUser._id }
+            ];
+
+            await AdvancedPermission.insertMany(permissions.map(p => ({ ...p, tenantId })));
+            console.log(`🔑 Permissions seeded for ${tenantId}`);
+        } catch (e) {
+            console.error(`❌ Permissions seed error:`, e.message);
+        }
+    }
+
+    /**
+     * تهيئة الأدوار المتقدمة
+     */
+    async seedRoles(models, tenantId) {
+        try {
+            const { Role, AdvancedPermission, User } = models;
+            if (!Role || !AdvancedPermission) return;
+
+            const count = await Role.countDocuments();
+            if (count > 0) return;
+
+            const permissions = await AdvancedPermission.find({ tenantId });
+            const permMap = permissions.reduce((acc, p) => { acc[p.name] = p._id; return acc; }, {});
+
+            let systemUser = await User.findOne({ role: 'super_admin' });
+            if (!systemUser) systemUser = { _id: new mongoose.Types.ObjectId() };
+
+            const roles = [
+                {
+                    name: 'SUPER_ADMIN_ROLE',
+                    displayName: 'مدير النظام الخارق',
+                    description: 'صلاحيات كاملة على كل شيء',
+                    level: 100,
+                    isSystem: true,
+                    permissions: Object.values(permMap),
+                    createdBy: systemUser._id,
+                    tenantId
+                },
+                {
+                    name: 'EDITOR_ROLE',
+                    displayName: 'محرر محتوى',
+                    description: 'إدارة السيارات والمزادات فقط',
+                    level: 50,
+                    isSystem: true,
+                    permissions: [permMap['MANAGE_CARS'], permMap['MANAGE_AUCTIONS']],
+                    createdBy: systemUser._id,
+                    tenantId
+                }
+            ];
+
+            await Role.insertMany(roles);
+            console.log(`🎭 Roles seeded for ${tenantId}`);
+        } catch (e) {
+            console.error(`❌ Roles seed error:`, e.message);
+        }
     }
 
     /**
@@ -44,7 +126,7 @@ class SeedService {
     async seedProductionAdmin(models = null, tenantId = 'default') {
         try {
             const modelsToUse = models || getDefaultModels();
-            const { User } = modelsToUse;
+            const { User, Role } = modelsToUse;
             
             if (!User) {
                 console.warn(`⚠️ User model not available for tenant ${tenantId}`);
@@ -57,24 +139,20 @@ class SeedService {
             });
 
             if (!adminExists) {
-                if (!process.env.PROD_ADMIN_PASSWORD) {
-                    console.warn('⚠️ No PROD_ADMIN_PASSWORD provided. Admin creation skipped.');
-                    return;
-                }
+                const superRole = Role ? await Role.findOne({ name: 'SUPER_ADMIN_ROLE', tenantId }) : null;
+                
                 const admin = new User({
                     name: process.env.PROD_ADMIN_NAME || 'HM Admin',
                     email: adminEmail,
                     username: 'admin',
-                    password: process.env.PROD_ADMIN_PASSWORD,
+                    password: process.env.PROD_ADMIN_PASSWORD || 'hm@2024admin',
                     role: 'super_admin',
+                    advancedRole: superRole ? superRole._id : undefined,
                     status: 'active',
-                    permissions: ['super_admin', 'manage_users', 'manage_settings', 'manage_cars', 'manage_parts', 'manage_auctions', 'view_analytics', 'manage_content', 'manage_footer', 'manage_whatsapp', 'manage_concierge']
+                    permissions: ['super_admin', 'manage_users', 'manage_settings', 'manage_cars', 'manage_parts', 'manage_auctions', 'view_analytics']
                 });
                 await admin.save();
                 console.log(`👤 Admin created successfully for ${tenantId}: ${adminEmail}`);
-            } else if (adminExists.status === 'suspended') {
-                await User.updateOne({ _id: adminExists._id }, { $set: { status: 'active' } });
-                console.log(`👤 Admin status restored to active for ${tenantId}`);
             }
         } catch (e) {
             console.error(`❌ Admin seed error for ${tenantId}:`, e.message);
@@ -91,39 +169,33 @@ class SeedService {
             const modelsToUse = models || getDefaultModels();
             const { SiteSettings } = modelsToUse;
             
-            if (!SiteSettings) {
-                console.warn(`⚠️ SiteSettings model not available for tenant ${tenantId}`);
-                return;
-            }
+            if (!SiteSettings) return;
             
             const existing = await SiteSettings.findOne({ key: 'main' });
             if (!existing || !existing.features || existing.features.length === 0) {
                 const defaultFeatures = [
-                    { icon: 'Shield', title: 'ضمان شامل', titleEn: 'Full Warranty', desc: 'ضمان شامل على جميع السيارات', descEn: 'Comprehensive warranty on all cars' },
-                    { icon: 'Truck', title: 'شحن عالمي', titleEn: 'Global Shipping', desc: 'توصيل إلى أي مكان في العالم', descEn: 'Delivery to anywhere worldwide' },
-                    { icon: 'CreditCard', title: 'دفع آمن', titleEn: 'Secure Payment', desc: 'طرق دفع متعددة وآمنة', descEn: 'Multiple secure payment methods' },
-                    { icon: 'Award', title: 'فحص شامل', titleEn: 'Full Inspection', desc: 'فحص 200 نقطة للسيارات', descEn: '200-point vehicle inspection' },
-                    { icon: 'Zap', title: 'مزايدة سريعة', titleEn: 'Quick Bid', desc: 'نظام مزايدة فوري وسريع', descEn: 'Instant and fast bidding system' },
-                    { icon: 'Globe', title: 'سيارات كورية', titleEn: 'Korean Cars', desc: 'أفضل السيارات الكورية', descEn: 'Best Korean vehicles' }
+                    { icon: 'Shield', title: 'ضمان شامل', titleEn: 'Full Warranty', desc: 'ضمان شامل على جميع السيارات المستوردة', descEn: 'Comprehensive warranty on all imported cars' },
+                    { icon: 'Truck', title: 'شحن من كوريا', titleEn: 'Korean Shipping', desc: 'توصيل مباشر من كوريا إلى باب منزلك', descEn: 'Direct delivery from Korea to your door' },
+                    { icon: 'Award', title: 'فحص Encar', titleEn: 'Encar Inspection', desc: 'فحص شامل ومعتمد من Encar كوريا', descEn: 'Comprehensive inspection certified by Encar Korea' }
                 ];
 
                 await SiteSettings.findOneAndUpdate(
                     { key: 'main' },
                     {
                         $set: {
-                            'socialLinks.whatsapp': existing?.socialLinks?.whatsapp || '+967781007805',
-                            'contactInfo.phone': existing?.contactInfo?.phone || '+967781007805',
-                            'contactInfo.email': existing?.contactInfo?.email || 'info@hmcar.com',
-                            'siteInfo.siteName': existing?.siteInfo?.siteName || 'HM CAR',
-                            'siteInfo.siteDescription': existing?.siteInfo?.siteDescription || 'منصة مزادات ومبيعات السيارات الفاخرة',
-                            'currencySettings.usdToSar': existing?.currencySettings?.usdToSar || 3.75,
-                            'currencySettings.usdToKrw': existing?.currencySettings?.usdToKrw || 1350,
+                            'socialLinks.whatsapp': '+967781007805',
+                            'contactInfo.phone': '+967781007805',
+                            'contactInfo.email': 'info@hmcar.com',
+                            'siteInfo.siteName': tenantId === 'carx' ? 'CAR X' : 'HM CAR',
+                            'siteInfo.siteDescription': 'نظام متطور لاستيراد السيارات من كوريا والمزادات العالمية',
+                            'currencySettings.usdToSar': 3.75,
+                            'currencySettings.usdToKrw': 1350,
                             'features': defaultFeatures,
                             'advertisingSettings': {
-                                'showLiveAuction': existing?.advertisingSettings?.showLiveAuction ?? true,
-                                'showroomSource': existing?.advertisingSettings?.showroomSource || 'hmcar',
-                                'bannerLabel': existing?.advertisingSettings?.bannerLabel || '⚡ عروض حصرية',
-                                'bannerLabelEn': existing?.advertisingSettings?.bannerLabelEn || '⚡ EXCLUSIVE DEALS'
+                                'showLiveAuction': true,
+                                'showroomSource': 'hmcar',
+                                'bannerLabel': '🔥 عروض كورية حصرية',
+                                'bannerLabelEn': '🔥 EXCLUSIVE KOREAN DEALS'
                             }
                         }
                     },
@@ -138,80 +210,96 @@ class SeedService {
 
     /**
      * إضافة بيانات تجريبية (سيارات ومزادات)
-     * @param {Object} models - نماذج المعرض
-     * @param {string} tenantId - معرف المعرض
      */
     async seedRealData(models = null, tenantId = 'default') {
-        if (process.env.NODE_ENV === 'production' && process.env.ENABLE_DEV_ADMIN !== 'true') return;
         try {
             const modelsToUse = models || getDefaultModels();
-            const { Car, Auction } = modelsToUse;
-            
-            if (!Car) {
-                console.warn(`⚠️ Car model not available for tenant ${tenantId}`);
-                return;
-            }
+            const { Car, Auction, Brand } = modelsToUse;
+            if (!Car) return;
             
             const count = await Car.countDocuments();
-            if (count > 0) {
-                console.log(`🚙 Cars already exist for ${tenantId}, skipping demo data`);
-                return;
-            }
+            if (count > 0) return;
 
             const cars = [
                 {
-                    title: 'Mercedes-Benz G63 AMG 2024',
-                    make: 'Mercedes',
-                    model: 'G63',
+                    title: 'Hyundai Palisade Calligraphy 2024',
+                    make: 'Hyundai',
+                    model: 'Palisade',
                     year: 2024,
-                    price: 850000,
-                    priceSar: 850000,
-                    images: ['https://images.unsplash.com/photo-1520050206274-a1ae44613e6d?auto=format&fit=crop&q=80&w=800'],
-                    description: 'The ultimate luxury off-roader.',
-                    fuelType: 'Petrol',
+                    price: 185000,
+                    priceSar: 185000,
+                    images: ['https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?auto=format&fit=crop&q=80&w=800'],
+                    description: 'Top of the line Hyundai Palisade Calligraphy edition imported from Korea.',
+                    fuelType: 'Diesel',
                     transmission: 'Automatic',
-                    color: 'Metallic Black',
-                    condition: 'excellent',
+                    color: 'Pearl White',
+                    condition: 'new',
                     isActive: true,
                     listingType: 'store'
                 },
                 {
-                    title: 'Porsche 911 Turbo S 2023',
-                    make: 'Porsche',
-                    model: '911',
+                    title: 'Kia Carnival Hi-Limousine 2023',
+                    make: 'Kia',
+                    model: 'Carnival',
                     year: 2023,
-                    price: 920000,
-                    priceSar: 920000,
-                    images: ['https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800'],
-                    description: 'Master of German engineering.',
+                    price: 210000,
+                    priceSar: 210000,
+                    images: ['https://images.unsplash.com/photo-1630136641748-eb9ef63b3816?auto=format&fit=crop&q=80&w=800'],
+                    description: 'Luxury VIP limousine version of the Kia Carnival.',
                     fuelType: 'Petrol',
                     transmission: 'Automatic',
-                    color: 'Silver',
+                    color: 'Black',
                     condition: 'excellent',
                     isActive: true,
                     listingType: 'auction'
+                },
+                {
+                    title: 'Genesis GV80 3.5T Luxury 2024',
+                    make: 'Genesis',
+                    model: 'GV80',
+                    year: 2024,
+                    price: 295000,
+                    priceSar: 295000,
+                    images: ['https://images.unsplash.com/photo-1632823471565-1ec2c24479e0?auto=format&fit=crop&q=80&w=800'],
+                    description: 'The flagship luxury SUV from Genesis Korea.',
+                    fuelType: 'Petrol',
+                    transmission: 'Automatic',
+                    color: 'Matte Grey',
+                    condition: 'new',
+                    isActive: true,
+                    listingType: 'store'
                 }
             ];
 
-            const createdCars = await Car.create(cars);
+            const createdCars = await Car.create(cars.map(c => ({ ...c, tenantId })));
             
             if (Auction) {
-                const porsche = createdCars.find(c => c.model === '911');
-                if (porsche) {
+                const kia = createdCars.find(c => c.model === 'Carnival');
+                if (kia) {
                     await Auction.create({
-                        car: porsche._id,
-                        startingPrice: 850000,
-                        currentPrice: 850000,
+                        car: kia._id,
+                        startingPrice: 190000,
+                        currentPrice: 195000,
                         startsAt: new Date(),
-                        endsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                        endsAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
                         status: 'running',
-                        currency: 'SAR'
+                        currency: 'SAR',
+                        tenantId
                     });
                 }
             }
-            console.log(`🚙 Sample cars and auctions seeded for ${tenantId}`);
+
+            if (Brand) {
+                const brands = [
+                    { name: 'Hyundai', nameAr: 'هيونداي', logo: 'https://www.car-logos.org/wp-content/uploads/2011/09/hyundai.png' },
+                    { name: 'Kia', nameAr: 'كيا', logo: 'https://www.car-logos.org/wp-content/uploads/2011/09/kia.png' },
+                    { name: 'Genesis', nameAr: 'جينيسيس', logo: 'https://www.car-logos.org/wp-content/uploads/2015/12/genesis.png' }
+                ];
+                await Brand.insertMany(brands.map(b => ({ ...b, tenantId })));
+            }
+            console.log(`🚙 Data seeded for ${tenantId}`);
         } catch (e) {
-            console.error(`❌ Data seed error for ${tenantId}:`, e.message);
+            console.error(`❌ Data seed error:`, e.message);
         }
     }
 }

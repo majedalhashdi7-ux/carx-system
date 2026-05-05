@@ -8,8 +8,8 @@
  * يستخدم tenant-db-manager لإدارة اتصالات مستقلة لكل معرض.
  */
 
-const { resolveTenant, getAllTenants } = require('./tenants/tenant-resolver');
-const { getConnection, getConnectionsStatus } = require('./tenants/tenant-db-manager');
+const { getAllTenants } = require('./tenants/tenant-resolver');
+const { getConnectionsStatus } = require('./tenants/tenant-db-manager');
 
 // ── ثوابت ──
 const IS_VERCEL = !!(process.env.VERCEL || process.env.VERCEL_ENV);
@@ -117,16 +117,21 @@ function createCorsMiddleware() {
 }
 
 /**
- * التحقق من وجود MONGO_URI للمعرض الافتراضي
+ * التحقق من وجود MONGO_URI للمعرض الافتراضي وتصحيح التنسيق العشوائي
  */
 function hasValidMongoUri() {
-  const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
+  let mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
   
   if (!mongoUri) {
     console.error('❌ MONGO_URI is not defined in environment');
-    console.error('Available env vars:', Object.keys(process.env).filter(k => k.includes('MONGO') || k.includes('DB')));
     return false;
   }
+  
+  // تنظيف الرابط من الأقواس المزدوجة والمسافات الناتجة عن سطر الأوامر في ويندوز
+  mongoUri = mongoUri.replace(/^"|"$/g, '').trim();
+  
+  // تحديث المتغير في بيئة التشغيل لتعمل باقي المكاتب بشكل صحيح
+  process.env.MONGO_URI = mongoUri;
   
   if (!mongoUri.startsWith('mongodb')) {
     console.error('❌ MONGO_URI is invalid:', mongoUri.substring(0, 20));
@@ -136,36 +141,6 @@ function hasValidMongoUri() {
   return true;
 }
 
-/**
- * معالجة طلب الاتصال بقاعدة البيانات للمعرض
- * يتم استدعاؤها قبل تمرير الطلب للـ Express app
- */
-async function ensureTenantConnection(req) {
-  try {
-    const tenant = resolveTenant(req);
-    
-    if (!tenant) {
-      console.warn('[Vercel] Could not resolve tenant for request');
-      return null;
-    }
-    
-    if (!tenant.mongoUri) {
-      console.warn(`[Vercel] No MONGO_URI for tenant: ${tenant.id}`);
-      return null;
-    }
-    
-    // الحصول على اتصال (من الكاش أو إنشاء جديد)
-    const { connection, models } = await getConnection(tenant.id, tenant.mongoUri);
-    
-    console.log(`[Vercel] ✅ Tenant: ${tenant.id} | DB: ${connection.readyState === 1 ? 'connected' : 'connecting'}`);
-    
-    return { tenant, connection, models };
-  } catch (err) {
-    console.error(`[Vercel] ❌ Tenant connection error: ${err.message}`);
-    return null;
-  }
-}
-
 // ── Handler الرئيسي ──
 module.exports = async (req, res) => {
   // CORS على مستوى الـ handler - قبل أي شيء
@@ -173,35 +148,13 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(204).end();
 
   try {
-    // Debug: log all environment variables related to database
-    console.log('=== Environment Debug ===');
-    console.log('NODE_ENV:', process.env.NODE_ENV);
-    console.log('VERCEL:', !!process.env.VERCEL);
-    console.log('MONGO_URI:', process.env.MONGO_URI ? 'SET (length: ' + process.env.MONGO_URI.length + ')' : 'NOT SET');
-    console.log('MONGODB_URI:', process.env.MONGODB_URI ? 'SET' : 'NOT SET');
-    console.log('==========================');
-    
     // التحقق من وجود متغيرات البيئة الأساسية
     if (!hasValidMongoUri()) {
       return res.status(500).json({ 
         success: false, 
-        message: 'MONGO_URI is not set or invalid', 
-        code: 'MISSING_ENV',
-        debug: {
-          nodeEnv: process.env.NODE_ENV,
-          hasVercel: !!process.env.VERCEL
-        }
+        message: 'Database configuration error', 
+        code: 'MISSING_ENV'
       });
-    }
-
-    // التحقق المبكر من الاتصال بالمعرض (اختياري - للـ logging)
-    // ملاحظة: tenantMiddleware داخل modules/app.js سيتولى الاتصال الفعلي
-    // هذا فقط للتسجيل والمراقبة
-    const tenantInfo = await ensureTenantConnection(req);
-    
-    if (tenantInfo) {
-      // تسجيل معلومات المعرض للتشخيص
-      req._tenantId = tenantInfo.tenant.id;
     }
 
     // استخدام App class من modules/app.js

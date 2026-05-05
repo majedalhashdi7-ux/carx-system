@@ -2,7 +2,7 @@ const SiteSettings = require('../models/SiteSettings');
 
 class WhatsAppService {
   constructor() {
-    this.defaultNumber = process.env.DEFAULT_WHATSAPP || '966500000000';
+    this.defaultNumber = process.env.WHATSAPP_NUMBER || process.env.DEFAULT_WHATSAPP || '';
   }
 
   /**

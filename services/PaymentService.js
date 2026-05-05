@@ -71,16 +71,36 @@ class PaymentService {
   }
   
   static async processCardPayment(payment, paymentDetails) {
-    // Simulate card payment processing
-    // In production, integrate with actual payment gateway (Stripe, Mada, etc.)
-    
-    const cardNumber = paymentDetails.cardNumber;
-    const expiry = paymentDetails.expiry;
-    const cvv = paymentDetails.cvv;
-    const cardholderName = paymentDetails.cardholderName;
+    // 💡 نَمُوذَج تَكامُل Stripe (Production Ready Template)
+    /*
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    try {
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(payment.amount * 100), // القيمة بالهللة
+        currency: payment.currency.toLowerCase(),
+        payment_method_data: {
+          type: 'card',
+          card: { token: paymentDetails.token } // الرمز من الواجهة الأمامية
+        },
+        confirm: true,
+        description: `Order #${payment.order} - ${payment.user.name}`
+      });
+      
+      return {
+        success: paymentIntent.status === 'succeeded',
+        transactionId: paymentIntent.id,
+        gatewayResponse: paymentIntent
+      };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+    */
+
+    // --- المحاكاة الحالية (Development Simulation) ---
+    const cardNumber = paymentDetails.cardNumber || '';
     
     // Validate card details
-    if (!this.validateCard(cardNumber, expiry, cvv)) {
+    if (!this.validateCard(cardNumber, paymentDetails.expiry, paymentDetails.cvv)) {
       return {
         success: false,
         error: 'بيانات البطاقة غير صالحة',
@@ -88,19 +108,16 @@ class PaymentService {
       };
     }
     
-    // Simulate gateway processing
+    // محاكاة معالجة البوابة
     const transactionId = `TXN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    await new Promise(resolve => setTimeout(resolve, 1500));
     
-    // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Simulate success (90% success rate for demo)
-    const isSuccess = Math.random() > 0.1;
+    const isSuccess = Math.random() > 0.05; // 95% نجاح للمحاكاة
     
     return {
       success: isSuccess,
       transactionId: isSuccess ? transactionId : null,
-      error: isSuccess ? null : 'فشل في معالجة البطاقة',
+      error: isSuccess ? null : 'فشل في معالجة البطاقة من قبل البنك',
       cardLastFour: cardNumber.slice(-4),
       cardBrand: this.detectCardBrand(cardNumber)
     };

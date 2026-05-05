@@ -29,11 +29,21 @@ class WebSocketService {
   }
 
   initialize(server) {
+    // دعم Multi-Tenant: السماح بجميع الدومينات المعتمدة
+    const allowedOrigins = [
+      process.env.CLIENT_URL || 'http://localhost:3000',
+      process.env.BASE_URL || 'http://localhost:4001',
+      ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) : []),
+    ].filter(Boolean);
+
     this.io = socketIO(server, {
       cors: {
-        origin: process.env.CLIENT_URL || "http://localhost:4000",
-        methods: ["GET", "POST"]
-      }
+        origin: allowedOrigins,
+        methods: ['GET', 'POST'],
+        credentials: true
+      },
+      // Vercel لا يدعم WebSocket مستمر - استخدام polling كـ fallback
+      transports: ['websocket', 'polling'],
     });
 
     this.io.use(async (socket, next) => {

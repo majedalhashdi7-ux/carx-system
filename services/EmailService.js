@@ -14,13 +14,32 @@ const nodemailer = require('nodemailer');
 
 class EmailService {
     static getTransporter() {
+        // دعم متغيرات SMTP الجديدة مع التوافق مع القديمة
+        const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER;
+        const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
+        
+        if (!smtpUser || !smtpPass) {
+            return null;
+        }
+
         try {
+            const smtpHost = process.env.SMTP_HOST;
+            const smtpPort = process.env.SMTP_PORT;
+
+            // إذا تم تحديد SMTP_HOST نستخدم الإعدادات المخصصة
+            if (smtpHost) {
+                return nodemailer.createTransport({
+                    host: smtpHost,
+                    port: parseInt(smtpPort) || 587,
+                    secure: parseInt(smtpPort) === 465,
+                    auth: { user: smtpUser, pass: smtpPass }
+                });
+            }
+
+            // fallback: استخدام service name
             return nodemailer.createTransport({
                 service: process.env.EMAIL_SERVICE || 'gmail',
-                auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASS
-                }
+                auth: { user: smtpUser, pass: smtpPass }
             });
         } catch (e) {
             console.warn('⚠️ Email transporter not configured:', e.message);

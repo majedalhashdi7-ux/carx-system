@@ -57,11 +57,12 @@ function resolveMongoUri(value) {
   // إذا كانت القيمة تشير لمتغير بيئة
   if (value.startsWith('ENV:')) {
     const envVar = value.substring(4);
-    return process.env[envVar] || null;
+    const rawVal = process.env[envVar] || null;
+    return rawVal ? String(rawVal).replace(/^"|"$/g, '').trim() : null;
   }
 
   // قيمة مباشرة
-  return value;
+  return String(value).replace(/^"|"$/g, '').trim();
 }
 
 /**

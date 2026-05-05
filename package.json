@@ -54,6 +54,7 @@
     "clean:db": "node scripts/database/reset-database.js",
     "fresh-start": "npm run clean && npm install && npm run clean:db && npm run dev",
     "check:env": "node scripts/check/checkEnvironment.js",
+    "check:db-connections": "node scripts/check/check-tenant-db-connections.js",
     "check:health": "node scripts/check/healthCheck.js",
     "fix:assets": "node scripts/fixAssetPaths.js",
     "setup:railway": "node scripts/setup/setup-railway.js",

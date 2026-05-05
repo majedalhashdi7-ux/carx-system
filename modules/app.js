@@ -89,8 +89,8 @@ class App {
     // Rate Limiting
     this.app.use('/api', generalLimiter);
 
-    // Multi-Tenant Middleware
-    this.app.use(tenantMiddleware({ required: false, connectDb: true }));
+    // ملاحظة: tenantMiddleware يُطبَّق داخل routes/api/v2/index.js بشكل مباشر
+    // لتجنب ازدواجية تحديد المعرض
 
     // Request tracking (آمن من crash)
     this.app.use((req, res, next) => {

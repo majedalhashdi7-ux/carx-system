@@ -7,6 +7,9 @@ const nextConfig = {
     remotePatterns: [
       { protocol: 'http', hostname: 'localhost' },
       { protocol: 'https', hostname: 'daood.okigo.net' },
+      { protocol: 'https', hostname: 'hmcar-system-two.vercel.app' },
+      { protocol: 'https', hostname: 'carx-system-five.vercel.app' },
+      { protocol: 'https', hostname: 'res.cloudinary.com' },
       { protocol: 'https', hostname: 'hmcar.vercel.app' },
       { protocol: 'https', hostname: 'www.hmcar.vercel.app' },
       { protocol: 'https', hostname: 'hmcar.xyz' },

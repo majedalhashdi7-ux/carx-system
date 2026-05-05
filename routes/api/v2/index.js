@@ -109,6 +109,7 @@ router.use('/concierge', strictLimiter, require('./concierge'));       // الط
 router.use('/showroom', publicLimiter, require('./showroom'));          // المعرض الكوري (Encar)
 router.use('/invoices', strictLimiter, require('./invoices'));          // نظام الفواتير المخصص (Invoices)
 router.use('/system', strictLimiter, require('./system'));            // الفحص الشامل للنظام
+router.use('/import', strictLimiter, require('./import'));            // نظام الاستيراد المتقدم من الروابط
 
 /**
  * معالج الأخطاء المركزي لمسارات API
