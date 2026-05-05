@@ -17,6 +17,15 @@
 const mongoose = require('mongoose');
 const path = require('path');
 
+// Import SeedService safely (lazy load to avoid circular dependencies if any)
+let seedService = null;
+function getSeedService() {
+  if (!seedService) {
+    seedService = require('../services/SeedService');
+  }
+  return seedService;
+}
+
 // ── كاش الاتصالات: { tenantId: { connection, models, lastUsed } } ──
 const connectionPool = new Map();
 
@@ -165,6 +174,19 @@ async function getConnection(tenantId, mongoUri) {
   };
 
   connectionPool.set(tenantId, entry);
+
+  // ── التعبئة التلقائية (Auto-Seeding) ──
+  // إذا كانت قاعدة البيانات فارغة من المستخدمين، نقوم بتجهيز الأدمن والإعدادات
+  try {
+    const userCount = await models.User.countDocuments();
+    if (userCount === 0) {
+      console.log(`🌱 قاعدة بيانات المعرض ${tenantId} فارغة، جاري التهيئة...`);
+      const seed = getSeedService();
+      await seed.runAll(models, tenantId);
+    }
+  } catch (seedErr) {
+    console.error(`⚠️ فشل التهيئة التلقائية للمعرض ${tenantId}:`, seedErr.message);
+  }
 
   // أحداث الاتصال
   connection.on('error', (err) => {

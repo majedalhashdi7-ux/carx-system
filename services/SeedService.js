@@ -133,7 +133,9 @@ class SeedService {
                 return;
             }
             
-            const adminEmail = process.env.PROD_ADMIN_EMAIL || 'admin@hmcar.com';
+            const adminEmail = process.env.PROD_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'admin@hmcar.com';
+            const adminPassword = process.env.PROD_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || process.env.SUPER_ADMIN_PASSWORD || 'hm@2024admin';
+            
             const adminExists = await User.findOne({
                 $or: [{ email: adminEmail }, { username: 'admin' }]
             });
@@ -145,7 +147,7 @@ class SeedService {
                     name: process.env.PROD_ADMIN_NAME || 'HM Admin',
                     email: adminEmail,
                     username: 'admin',
-                    password: process.env.PROD_ADMIN_PASSWORD || 'hm@2024admin',
+                    password: adminPassword,
                     role: 'super_admin',
                     advancedRole: superRole ? superRole._id : undefined,
                     status: 'active',
