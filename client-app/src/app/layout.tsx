@@ -134,13 +134,25 @@ export default async function RootLayout({
             window.addEventListener('error', function(e) {
               const messages = [
                 'Maximum update depth exceeded',
+                'Hydration failed',
                 'Minified React error #185',
                 'Minified React error #321',
                 'Minified React error #418',
                 'Minified React error #423'
               ];
-              if (e.message && messages.some(msg => e.message.indexOf(msg) > -1)) {
-                console.warn('[Self-Healing] Fatal React loop or Hydration error detected. Clearing Service Workers & cache...');
+              const errorMsg = e.message || '';
+              if (messages.some(msg => errorMsg.indexOf(msg) > -1)) {
+                console.warn('[Self-Healing] Fatal React loop or Hydration error detected.');
+                
+                // [[ARABIC_COMMENT]] منع التكرار اللانهائي - الحد الأقصى 3 محاولات
+                const reloadCount = parseInt(sessionStorage.getItem('hm_reload_count') || '0');
+                if (reloadCount >= 3) {
+                  console.error('[Self-Healing] Maximum reload attempts reached. Stopping loop.');
+                  return;
+                }
+                
+                sessionStorage.setItem('hm_reload_count', (reloadCount + 1).toString());
+                
                 if ('serviceWorker' in navigator) {
                   navigator.serviceWorker.getRegistrations().then(function(regs) {
                     for(var i = 0; i < regs.length; i++) { regs[i].unregister(); }
@@ -151,13 +163,15 @@ export default async function RootLayout({
                     for(var i = 0; i < names.length; i++) { caches.delete(names[i]); }
                   });
                 }
-                sessionStorage.setItem('carx_crash_recovery', '1');
-                setTimeout(function() { window.location.reload(true); }, 500);
+                
+                setTimeout(function() { window.location.reload(); }, 500);
               }
             });
-            if (sessionStorage.getItem('carx_crash_recovery')) {
-              sessionStorage.removeItem('carx_crash_recovery');
-            }
+            
+            // [[ARABIC_COMMENT]] تصفير عداد المحاولات بعد دقيقة من التشغيل المستقر
+            setTimeout(function() {
+              sessionStorage.removeItem('hm_reload_count');
+            }, 60000);
             
             // تسجيل Service Worker للعمل Offline
             if ('serviceWorker' in navigator && typeof window !== 'undefined') {

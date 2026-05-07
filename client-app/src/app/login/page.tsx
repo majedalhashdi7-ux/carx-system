@@ -23,6 +23,14 @@ const CarXLogin = dynamic(() => import("@/components/CarXLogin"), { ssr: false }
 
 export default function Login() {
     const { tenant } = useTenant();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    if (!mounted) return <div className="min-h-screen bg-black" />;
+
     if (tenant?.id === 'carx') return <CarXLogin />;
     return <HMCarLogin />;
 }

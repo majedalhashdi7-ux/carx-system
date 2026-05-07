@@ -64,7 +64,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 }
             }
         }
-    }, [mounted]);
+    }, []);
 
     if (!mounted) {
         return <>{children}</>;
