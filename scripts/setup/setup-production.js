@@ -1,7 +1,7 @@
 // [[ARABIC_HEADER]] هذا الملف (scripts/setup-production.js) جزء من مشروع HM CAR ويحتوي تعليقات عربية لضمان الوضوح.
 
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Car = require('../models/Car');
 const Brand = require('../models/Brand');

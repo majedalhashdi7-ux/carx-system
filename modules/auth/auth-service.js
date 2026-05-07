@@ -13,7 +13,7 @@
  * @author HM CAR Team
  */
 
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const User = require('../../models/User');
 const ClientSession = require('../../models/ClientSession');

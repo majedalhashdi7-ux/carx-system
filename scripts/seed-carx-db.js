@@ -1,6 +1,6 @@
 // seed-carx-db.js - رفع البيانات الأولية لقاعدة car-x
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 // تعريف نموذج المستخدم البسيط لـ CAR X
 const userSchema = new mongoose.Schema({

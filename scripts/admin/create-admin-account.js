@@ -6,7 +6,7 @@
  */
 
 const { MongoClient } = require('mongodb');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 async function createAdminAccount() {
