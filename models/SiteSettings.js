@@ -11,7 +11,7 @@ const siteSettingsSchema = new mongoose.Schema({
         index: true
     },
     // مفتاح فريد للإعدادات (دائماً 'main')
-    key: { type: String, default: 'main', unique: true },
+    key: { type: String, default: 'main' },
 
     // روابط التواصل الاجتماعي
     socialLinks: {
@@ -121,13 +121,15 @@ const siteSettingsSchema = new mongoose.Schema({
     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 
 }, { timestamps: true });
+siteSettingsSchema.index({ key: 1, tenantId: 1 }, { unique: true });
 
 // دالة للحصول على الإعدادات (أو إنشاؤها إذا لم تكن موجودة)
-siteSettingsSchema.statics.getSettings = async function () {
-    let settings = await this.findOne({ key: 'main' });
+siteSettingsSchema.statics.getSettings = async function (tenantId = 'default') {
+    let settings = await this.findOne({ key: 'main', tenantId });
     if (!settings) {
         settings = await this.create({ 
             key: 'main',
+            tenantId,
             features: [],
             socialLinks: { whatsapp: '+967781007805' },
             homeContent: { 
@@ -143,10 +145,10 @@ siteSettingsSchema.statics.getSettings = async function () {
 };
 
 // دالة لتحديث الإعدادات
-siteSettingsSchema.statics.updateSettings = async function (data, userId) {
+siteSettingsSchema.statics.updateSettings = async function (data, userId, tenantId = 'default') {
     return await this.findOneAndUpdate(
-        { key: 'main' },
-        { ...data, updatedBy: userId },
+        { key: 'main', tenantId },
+        { ...data, updatedBy: userId, tenantId },
         { new: true, upsert: true }
     );
 };

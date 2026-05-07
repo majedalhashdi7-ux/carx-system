@@ -14,7 +14,6 @@ const permissionSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    unique: true,
     trim: true,
     maxlength: 100
   },
@@ -162,6 +161,7 @@ const permissionSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+permissionSchema.index({ name: 1, tenantId: 1 }, { unique: true });
 
 // Indexes
 permissionSchema.index({ category: 1, status: 1 });

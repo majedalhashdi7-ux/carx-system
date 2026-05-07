@@ -17,13 +17,13 @@ const userSchema = new mongoose.Schema({
   // صورة الملف الشخصي (رابط محلي تحت /uploads أو رابط Cloudinary)
   avatar: { type: String, default: '' },
   // اسم المستخدم الفريد (يُستخدم لتسجيل الدخول بدلاً من الإيميل لزيادة الأمان)
-  username: { type: String, unique: true, required: false, sparse: true, trim: true },
+  username: { type: String, required: false, sparse: true, trim: true },
   // رقم الهاتف (يُستخدم لحسابات الأدمن غالباً)
-  phone: { type: String, unique: true, required: false, sparse: true },
+  phone: { type: String, required: false, sparse: true },
   // البريد الإلكتروني (اختياري، لا يُستخدم للدخول)
-  email: { type: String, unique: true, required: false, lowercase: true, sparse: true, trim: true },
+  email: { type: String, required: false, lowercase: true, sparse: true, trim: true },
   //معرف فايربيس
-  firebaseUid: { type: String, unique: true, required: false, sparse: true },
+  firebaseUid: { type: String, required: false, sparse: true },
   // كلمة المرور (تُخزن بعد عمل hash)
   password: { type: String, required: false },
   // الدور: buyer/admin/seller/super_admin/manager
@@ -101,7 +101,7 @@ const userSchema = new mongoose.Schema({
   lastLoginIP: { type: String, default: '' },        // آخر IP تسجيل دخول
 
   // مفتاح اسم المشتري (Buyer Name Key) للعقود والتوثيق
-  buyerNameKey: { type: String, unique: true, required: false, sparse: true },
+  buyerNameKey: { type: String, required: false, sparse: true },
 
   // How the account was created
   createdVia: {
@@ -113,9 +113,10 @@ const userSchema = new mongoose.Schema({
 
 // [[ARABIC_COMMENT]] إضافة فهارس (Indexes) لتحسين سرعة الاستعلامات
 // Composite indexes for multi-tenant queries
-userSchema.index({ tenantId: 1, email: 1 }, { sparse: true });
-userSchema.index({ tenantId: 1, username: 1 }, { sparse: true });
-userSchema.index({ tenantId: 1, phone: 1 }, { sparse: true });
+userSchema.index({ tenantId: 1, email: 1 }, { unique: true, sparse: true });
+userSchema.index({ tenantId: 1, username: 1 }, { unique: true, sparse: true });
+userSchema.index({ tenantId: 1, phone: 1 }, { unique: true, sparse: true });
+userSchema.index({ tenantId: 1, buyerNameKey: 1 }, { unique: true, sparse: true });
 userSchema.index({ tenantId: 1, role: 1 });
 userSchema.index({ tenantId: 1, status: 1 });
 

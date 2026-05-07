@@ -14,7 +14,6 @@ const roleSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    unique: true,
     trim: true,
     maxlength: 100
   },
@@ -131,6 +130,7 @@ const roleSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+roleSchema.index({ name: 1, tenantId: 1 }, { unique: true });
 
 // Indexes
 roleSchema.index({ status: 1, level: 1 });

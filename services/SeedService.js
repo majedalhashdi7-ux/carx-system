@@ -29,6 +29,32 @@ class SeedService {
     async runAll(models = null, tenantId = 'default') {
         console.log(`🌱 Starting database seeding for tenant: ${tenantId}...`);
         const modelsToUse = models || getDefaultModels();
+        const { connection } = mongoose;
+        
+        // Try to drop old unique indexes that cause multi-tenant collisions
+        try {
+            if (connection.db) {
+                const dropIndexes = [
+                    { coll: 'users', idx: 'username_1' },
+                    { coll: 'users', idx: 'email_1' },
+                    { coll: 'users', idx: 'phone_1' },
+                    { coll: 'sitesettings', idx: 'key_1' },
+                    { coll: 'roles', idx: 'name_1' },
+                    { coll: 'advancedpermissions', idx: 'name_1' }
+                ];
+                
+                for (const item of dropIndexes) {
+                    try {
+                        await connection.db.collection(item.coll).dropIndex(item.idx);
+                        console.log(`✅ Dropped legacy index ${item.idx} on ${item.coll}`);
+                    } catch (e) {
+                        // Ignore if index doesn't exist
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn(`⚠️ Could not drop legacy indexes: ${e.message}`);
+        }
         
         await this.seedPermissions(modelsToUse, tenantId);
         await this.seedRoles(modelsToUse, tenantId);
@@ -137,6 +163,7 @@ class SeedService {
             const adminPassword = process.env.PROD_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || process.env.SUPER_ADMIN_PASSWORD || 'hm@2024admin';
             
             const adminExists = await User.findOne({
+                tenantId,
                 $or: [{ email: adminEmail }, { username: 'admin' }]
             });
 
@@ -144,6 +171,7 @@ class SeedService {
                 const superRole = Role ? await Role.findOne({ name: 'SUPER_ADMIN_ROLE', tenantId }) : null;
                 
                 const admin = new User({
+                    tenantId: tenantId,
                     name: process.env.PROD_ADMIN_NAME || 'HM Admin',
                     email: adminEmail,
                     username: 'admin',
@@ -173,7 +201,7 @@ class SeedService {
             
             if (!SiteSettings) return;
             
-            const existing = await SiteSettings.findOne({ key: 'main' });
+            const existing = await SiteSettings.findOne({ key: 'main', tenantId });
             if (!existing || !existing.features || existing.features.length === 0) {
                 const defaultFeatures = [
                     { icon: 'Shield', title: 'ضمان شامل', titleEn: 'Full Warranty', desc: 'ضمان شامل على جميع السيارات المستوردة', descEn: 'Comprehensive warranty on all imported cars' },
@@ -182,9 +210,10 @@ class SeedService {
                 ];
 
                 await SiteSettings.findOneAndUpdate(
-                    { key: 'main' },
+                    { key: 'main', tenantId },
                     {
                         $set: {
+                            tenantId: tenantId,
                             'socialLinks.whatsapp': '+967781007805',
                             'contactInfo.phone': '+967781007805',
                             'contactInfo.email': 'info@hmcar.com',
@@ -206,7 +235,11 @@ class SeedService {
                 console.log(`⚙️ Default site settings initialized for ${tenantId}`);
             }
         } catch (e) {
-            console.error(`❌ Settings seed error for ${tenantId}:`, e.message);
+            if (e.message.includes('E11000') || e.message.includes('duplicate key')) {
+                console.warn(`⚠️ SiteSettings index collision for ${tenantId}, skipping default settings seed.`);
+            } else {
+                console.error(`❌ Settings seed error for ${tenantId}:`, e.message);
+            }
         }
     }
 
@@ -218,59 +251,66 @@ class SeedService {
             const modelsToUse = models || getDefaultModels();
             const { Car, Auction, Brand } = modelsToUse;
             if (!Car) return;
-            
-            const count = await Car.countDocuments();
+
+            // فحص بالـ tenantId لضمان استقلالية كل معرض
+            const count = await Car.countDocuments({ tenantId });
             if (count > 0) return;
 
             const cars = [
                 {
                     title: 'Hyundai Palisade Calligraphy 2024',
-                    make: 'Hyundai',
-                    model: 'Palisade',
-                    year: 2024,
-                    price: 185000,
-                    priceSar: 185000,
+                    make: 'Hyundai', model: 'Palisade', year: 2024,
+                    price: 185000, priceSar: 185000,
                     images: ['https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?auto=format&fit=crop&q=80&w=800'],
-                    description: 'Top of the line Hyundai Palisade Calligraphy edition imported from Korea.',
-                    fuelType: 'Diesel',
-                    transmission: 'Automatic',
-                    color: 'Pearl White',
-                    condition: 'new',
-                    isActive: true,
-                    listingType: 'store'
+                    description: 'هيونداي باليسيد كاليجرافي 2024 - الإصدار الكوري الفاخر، استيراد مباشر من كوريا. مزود بجميع المواصفات الممتازة.',
+                    fuelType: 'Diesel', transmission: 'Automatic', color: 'أبيض لؤلؤي',
+                    condition: 'excellent', isActive: true, listingType: 'store', mileage: 0
                 },
                 {
                     title: 'Kia Carnival Hi-Limousine 2023',
-                    make: 'Kia',
-                    model: 'Carnival',
-                    year: 2023,
-                    price: 210000,
-                    priceSar: 210000,
-                    images: ['https://images.unsplash.com/photo-1630136641748-eb9ef63b3816?auto=format&fit=crop&q=80&w=800'],
-                    description: 'Luxury VIP limousine version of the Kia Carnival.',
-                    fuelType: 'Petrol',
-                    transmission: 'Automatic',
-                    color: 'Black',
-                    condition: 'excellent',
-                    isActive: true,
-                    listingType: 'auction'
+                    make: 'Kia', model: 'Carnival', year: 2023,
+                    price: 210000, priceSar: 210000,
+                    images: ['https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=800'],
+                    description: 'كيا كارنيفال هاي ليموزين 2023 - نسخة VIP الفاخرة للعائلات الكبيرة والأعمال التجارية.',
+                    fuelType: 'Petrol', transmission: 'Automatic', color: 'أسود لامع',
+                    condition: 'excellent', isActive: true, listingType: 'store', mileage: 0
                 },
                 {
-                    title: 'Genesis GV80 3.5T Luxury 2024',
-                    make: 'Genesis',
-                    model: 'GV80',
-                    year: 2024,
-                    price: 295000,
-                    priceSar: 295000,
-                    images: ['https://images.unsplash.com/photo-1632823471565-1ec2c24479e0?auto=format&fit=crop&q=80&w=800'],
-                    description: 'The flagship luxury SUV from Genesis Korea.',
-                    fuelType: 'Petrol',
-                    transmission: 'Automatic',
-                    color: 'Matte Grey',
-                    condition: 'new',
-                    isActive: true,
-                    listingType: 'store'
-                }
+                    title: 'Genesis G80 Sport 2024',
+                    make: 'Genesis', model: 'G80', year: 2024,
+                    price: 245000, priceSar: 245000,
+                    images: ['https://images.unsplash.com/photo-1544636331-e26879cd4d9b?auto=format&fit=crop&q=80&w=800'],
+                    description: 'جينيسيس G80 سبورت 2024 - السيارة الفاخرة الكورية التي تنافس الألمانية بتصميم عصري.',
+                    fuelType: 'Petrol', transmission: 'Automatic', color: 'رمادي مدهش',
+                    condition: 'excellent', isActive: true, listingType: 'store', mileage: 0
+                },
+                {
+                    title: 'Hyundai Tucson N-Line 2024',
+                    make: 'Hyundai', model: 'Tucson', year: 2024,
+                    price: 132000, priceSar: 132000,
+                    images: ['https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800'],
+                    description: 'هيونداي توسان N-Line 2024 - دفع رباعي، مواصفات كاملة، استيراد كوريا.',
+                    fuelType: 'Petrol', transmission: 'Automatic', color: 'أزرق معدني',
+                    condition: 'excellent', isActive: true, listingType: 'store', mileage: 0
+                },
+                {
+                    title: 'Kia EV6 GT-Line 2023',
+                    make: 'Kia', model: 'EV6', year: 2023,
+                    price: 195000, priceSar: 195000,
+                    images: ['https://images.unsplash.com/photo-1593941707882-a5bba14938c7?auto=format&fit=crop&q=80&w=800'],
+                    description: 'كيا EV6 الكهربائية GT-Line - سيارة المستقبل بتصميم ثوري وأداء استثنائي. شحن سريع 800V.',
+                    fuelType: 'Electric', transmission: 'Automatic', color: 'أبيض ثلجي',
+                    condition: 'excellent', isActive: true, listingType: 'store', mileage: 0
+                },
+                {
+                    title: 'Hyundai Santa Fe Premium 2023',
+                    make: 'Hyundai', model: 'Santa Fe', year: 2023,
+                    price: 158000, priceSar: 158000,
+                    images: ['https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&q=80&w=800'],
+                    description: 'هيونداي سانتافي 2023 برييميوم - 7 مقاعد، دفع رباعي كامل، باقة التقنية الكاملة.',
+                    fuelType: 'Petrol', transmission: 'Automatic', color: 'بني فاخر',
+                    condition: 'good', isActive: true, listingType: 'store', mileage: 25000
+                },
             ];
 
             const createdCars = await Car.create(cars.map(c => ({ ...c, tenantId })));

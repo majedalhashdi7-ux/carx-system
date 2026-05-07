@@ -112,4 +112,63 @@ router.get('/routes', requireAuthAPI, (req, res) => {
     res.json({ success: true, count: routes.length, routes });
 });
 
+// GET /api/v2/system/fix-data
+// إصلاح بيانات السيارات (سنة الصنع، المزادات المنتهية، الواتساب) عبر السيرفر الحي
+router.get('/fix-data', requireAuthAPI, async (req, res) => {
+    if (req.user.role !== 'super_admin' && req.user.role !== 'admin') {
+        return res.status(403).json({ success: false, message: 'غير مصرح' });
+    }
+    
+    try {
+        const carCollection = mongoose.connection.collection('cars');
+        const auctionCollection = mongoose.connection.collection('auctions');
+        const settingsCollection = mongoose.connection.collection('sitesettings');
+        const now = new Date();
+        
+        let fixedYears = 0;
+        const wrongYearCars = await carCollection.find({ year: { $gt: 9999 } }).toArray();
+        for (const car of wrongYearCars) {
+            const correctYear = Math.floor(car.year / 100);
+            await carCollection.updateOne({ _id: car._id }, { $set: { year: correctYear } });
+            fixedYears++;
+        }
+        
+        const expiredResult = await auctionCollection.updateMany(
+            { status: 'running', endsAt: { $lt: now } },
+            { $set: { status: 'ended' } }
+        );
+        
+        const startedResult = await auctionCollection.updateMany(
+            { status: 'scheduled', startsAt: { $lte: now }, endsAt: { $gt: now } },
+            { $set: { status: 'running' } }
+        );
+        
+        const settings = await settingsCollection.findOne({ key: 'main' });
+        let whatsappFixed = false;
+        if (settings && settings.socialLinks && settings.socialLinks.whatsapp) {
+            let cleanNumber = settings.socialLinks.whatsapp.replace('https://wa.me/', '').replace(/[+\-\s]/g, '');
+            const correctUrl = `https://wa.me/${cleanNumber}`;
+            await settingsCollection.updateOne(
+                { key: 'main' },
+                { $set: { 'socialLinks.whatsapp': correctUrl } }
+            );
+            whatsappFixed = true;
+        }
+
+        res.json({
+            success: true,
+            message: 'تم إصلاح البيانات بنجاح',
+            details: {
+                fixedYears,
+                expiredAuctions: expiredResult.modifiedCount,
+                activatedAuctions: startedResult.modifiedCount,
+                whatsappFixed
+            }
+        });
+    } catch (e) {
+        logger.error('Fix Data Error:', e);
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
 module.exports = router;

@@ -161,25 +161,6 @@ module.exports = async (req, res) => {
     });
     
     const expressApp = appInstance.getExpressApp();
-    
-    // Apply rate limiting middleware
-    expressApp.use('/api/', generalLimiter);
-    expressApp.use('/api/v2/auth/login', authLimiter);
-    expressApp.use('/api/v2/auth/register', authLimiter);
-    expressApp.use('/api/v2/auth/forgot-password', authLimiter);
-    expressApp.use('/api/v2/orders', strictLimiter);
-    expressApp.use('/api/v2/payments', strictLimiter);
-    
-    // Diagnostic direct route
-    expressApp.get('/api/v2/ping-status', (req, res) => {
-      res.json({
-        success: true,
-        message: 'Vercel Server is Live',
-        time: new Date().toISOString(),
-        env: process.env.NODE_ENV,
-        hasMongo: !!process.env.MONGO_URI
-      });
-    });
 
     // Register 404 and error handlers (MUST BE LAST)
     appInstance.registerErrorHandlers();

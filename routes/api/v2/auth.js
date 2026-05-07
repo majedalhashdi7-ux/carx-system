@@ -116,8 +116,9 @@ router.post('/register', authLimiter, async (req, res) => {
 // Client Login with Email - نظام الدخول الجديد للعملاء بالإيميل
 router.post('/client-login', authLimiter, async (req, res) => {
   try {
-    const { email, password, deviceId, rememberMe } = req.body;
-    const User = getModel(req, 'User');
+    const { identifier, password, role, deviceId, clientIP } = req.body;
+    const searchKey = String(identifier || '').trim();
+    console.log(`[AUTH] Login attempt for: '${searchKey}', Role: ${role}, Tenant: ${req.tenant?.id}`);
     const AuditLog = getModel(req, 'AuditLog');
 
     if (!email || !password) {
@@ -454,7 +455,7 @@ router.post('/login', authLimiter, async (req, res) => {
     const DeviceFingerprint = getModel(req, 'DeviceFingerprint');
 
     const searchKey = (identifier || email || phone || name || '').trim();
-    console.log(`[AUTH] Login attempt for: '${searchKey}', Role: ${role}`);
+    console.log(`[AUTH] Login attempt for: '${searchKey}', Role: ${role}, Tenant: ${req.tenant?.id}`);
 
     if (!searchKey || !password) {
       return sendResponse(res, validationErrorResponse(null, 'Identifier and password are required'));

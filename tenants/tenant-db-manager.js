@@ -178,7 +178,33 @@ async function getConnection(tenantId, mongoUri) {
   // ── التعبئة التلقائية (Auto-Seeding) ──
   // إذا كانت قاعدة البيانات فارغة من المستخدمين، نقوم بتجهيز الأدمن والإعدادات
   try {
-    const userCount = await models.User.countDocuments();
+    // Try to drop old unique indexes that cause multi-tenant collisions (Self-healing)
+    try {
+      const db = connection.db;
+      if (db) {
+        const dropIndexes = [
+          { coll: 'users', idx: 'username_1' },
+          { coll: 'users', idx: 'email_1' },
+          { coll: 'users', idx: 'phone_1' },
+          { coll: 'sitesettings', idx: 'key_1' },
+          { coll: 'roles', idx: 'name_1' },
+          { coll: 'advancedpermissions', idx: 'name_1' }
+        ];
+        
+        for (const item of dropIndexes) {
+          try {
+            await db.collection(item.coll).dropIndex(item.idx);
+            console.log(`✅ [DB FIX] Dropped legacy index ${item.idx} on ${item.coll}`);
+          } catch (e) {
+            // Ignore if index doesn't exist
+          }
+        }
+      }
+    } catch (e) {
+      console.warn(`⚠️ [DB FIX] Could not drop legacy indexes: ${e.message}`);
+    }
+
+    const userCount = await models.User.countDocuments({ tenantId });
     if (userCount === 0) {
       console.log(`🌱 قاعدة بيانات المعرض ${tenantId} فارغة، جاري التهيئة...`);
       const seed = getSeedService();

@@ -251,7 +251,7 @@ router.post('/:id/bid', requireAuthAPI, async (req, res) => {
             return sendResponse(res, errorResponse('Auction is not active', 'AUCTION_NOT_ACTIVE', 400));
         }
 
-        const settings = SiteSettings ? await SiteSettings.getSettings().catch(() : null) : null;
+        const settings = SiteSettings ? await SiteSettings.getSettings().catch(() => null) : null;
         const auctionMultiplier = normalizeMultiplier(settings?.currencySettings?.auctionMultiplier || 1);
         const currentHighest = auction.currentPrice || auction.startingPrice;
         const baseAmount = toBaseAmount(amount, auctionMultiplier);

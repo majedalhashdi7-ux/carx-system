@@ -16,6 +16,17 @@ const helmet = require('helmet');
 const compression = require('compression');
 const { tenantMiddleware } = require('../middleware/tenantMiddleware');
 const { generalLimiter, authLimiter, uploadLimiter } = require('../middleware/rateLimiter');
+const Sentry = require('@sentry/node');
+
+// تهيئة Sentry فوراً لالتقاط كل الأخطاء
+if (config.sentry && config.sentry.enabled) {
+  Sentry.init({
+    dsn: config.sentry.dsn,
+    environment: config.sentry.environment,
+    tracesSampleRate: config.sentry.tracesSampleRate,
+  });
+  console.log('🛡️ Sentry initialized (Backend)');
+}
 
 // آمن من crash في Monitoring
 let monitoring = null;
@@ -43,6 +54,12 @@ try {
 class App {
   constructor(options = {}) {
     this.app = express();
+    
+    // Vercel requires trust proxy to be enabled for rate limiting to work correctly
+    if (options.isServerless || process.env.VERCEL) {
+      this.app.set('trust proxy', 1);
+    }
+
     this.isServerless = options.isServerless || false;
     this.corsConfig = options.corsConfig || null;
     this.setupApp();
@@ -65,12 +82,17 @@ class App {
 
   setupApp() {
     this.setupMiddleware();
-    this.setupApiRoutes();
-    this.setupStaticRoutes();
+    this.setupRoutes();
     // No automatic setupErrorHandling here to allow custom routes in serverless
   }
 
   setupMiddleware() {
+    // Sentry Request Handler - يجب أن يكون أول Middleware
+    if (config.sentry && config.sentry.enabled) {
+      this.app.use(Sentry.Handlers.requestHandler());
+      this.app.use(Sentry.Handlers.tracingHandler());
+    }
+
     // CORS - مخصص للـ serverless أو عادي
     if (this.isServerless && this.corsConfig) {
       this.app.use(this.corsConfig);
@@ -123,6 +145,50 @@ class App {
       res.json({ status: 'ok', timestamp: new Date(), engine: 'HM-CAR-V2' });
     });
 
+    this.app.get('/api/v2/ping-status', (req, res) => {
+      res.json({
+        success: true,
+        message: 'API is Live',
+        time: new Date().toISOString(),
+        tenant: req.tenant?.id,
+        serverless: this.isServerless
+      });
+    });
+
+    // مسار حقن البيانات الحقيقية (محمي بمفتاح سري)
+    this.app.post('/api/v2/admin/force-seed', async (req, res) => {
+      try {
+        const { secret } = req.body;
+        const expectedSecret = process.env.SEED_SECRET || 'hm-seed-2024';
+        if (secret !== expectedSecret) {
+          return res.status(403).json({ success: false, message: 'Forbidden' });
+        }
+
+        const tenantId = req.tenant?.id || 'hmcar';
+        const { getConnection } = require('../tenants/tenant-db-manager');
+        const { resolveTenant } = require('../tenants/tenant-resolver');
+        const SeedService = require('../services/SeedService');
+
+        const tenant = resolveTenant(req);
+        if (!tenant) return res.status(400).json({ error: 'Tenant not resolved' });
+
+        const { models } = await getConnection(tenant.id, tenant.mongoUri);
+
+        // حذف البيانات القديمة
+        await models.Car.deleteMany({ tenantId: tenant.id });
+        if (models.Auction) await models.Auction.deleteMany({ tenantId: tenant.id });
+        if (models.Brand) await models.Brand.deleteMany({ tenantId: tenant.id });
+
+        // زرع البيانات الجديدة
+        await SeedService.seedRealData(models, tenant.id);
+
+        res.json({ success: true, message: `✅ Real data seeded for ${tenant.id}` });
+      } catch (e) {
+        console.error('[force-seed]', e.message);
+        res.status(500).json({ success: false, error: e.message });
+      }
+    });
+
     this.setupApiRoutes();
 
     this.app.get('/', (req, res) => {
@@ -165,6 +231,11 @@ class App {
   }
 
   setupErrorHandling() {
+    // Sentry Error Handler - يجب أن يكون قبل أي Middleware آخر لمعالجة الأخطاء
+    if (config.sentry && config.sentry.enabled) {
+      this.app.use(Sentry.Handlers.errorHandler());
+    }
+
     // 404
     this.app.use((req, res, next) => {
       res.status(404).json({
@@ -182,12 +253,22 @@ class App {
 
     // Global error handler
     this.app.use((err, req, res, next) => {
-      logger.error('⚠️ خطأ غير متوقع:', err);
+      const errorDetail = {
+        message: err.message,
+        stack: err.stack,
+        path: req.path,
+        method: req.method
+      };
+      
+      logger.error('⚠️ خطأ غير متوقع:', errorDetail);
+      console.error('[FATAL ERROR]', errorDetail);
+
       if (!res.headersSent) {
         res.status(500).json({
           success: false,
           message: 'حدث خطأ تقني داخلي في الخادم',
-          error: process.env.NODE_ENV === 'development' ? err.message : 'Internal Server Error'
+          debug: process.env.NODE_ENV === 'production' ? { message: err.message } : errorDetail,
+          error: err.message
         });
       }
     });
