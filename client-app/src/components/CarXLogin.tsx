@@ -104,20 +104,38 @@ export default function CarXLogin() {
             } : {};
 
             if (mode === "login") {
+                console.log("[Login] Attempting login for:", email);
                 const res = await api.auth.login({
                     identifier: email,
                     password,
                     deviceId,
                     deviceInfo,
                 });
+                
+                console.log("[Login] Response received:", res.success ? "Success" : "Failed");
+
                 if (res.success) {
-                    const role = res.data?.user?.role;
-                    if (role === "admin" || role === "superadmin") {
-                        router.replace("/admin");
+                    // [[ARABIC_COMMENT]] تخزين التوكن وبيانات المستخدم
+                    if (res.token) {
+                        localStorage.setItem('hm_token', res.token);
+                        document.cookie = `hm_token=${res.token}; path=/; max-age=604800; SameSite=Lax`;
+                    }
+                    if (res.user) {
+                        localStorage.setItem('hm_user', JSON.stringify(res.user));
+                        localStorage.setItem('hm_user_role', res.user.role || 'buyer');
+                        document.cookie = `hm_user_role=${res.user.role || 'buyer'}; path=/; max-age=604800; SameSite=Lax`;
+                    }
+
+                    const role = res.user?.role;
+                    console.log("[Login] User role:", role);
+
+                    if (role === "admin" || role === "super_admin" || role === "manager") {
+                        router.replace("/admin/dashboard");
                     } else {
                         router.replace("/client/dashboard");
                     }
                 } else {
+                    console.warn("[Login] Login failed message:", res.message);
                     // تحقق إذا كان الخطأ بسبب جهاز محظور
                     if (res.message?.includes("device") || res.message?.includes("جهاز")) {
                         setError(
@@ -141,8 +159,9 @@ export default function CarXLogin() {
                     setError(res.message || (isRTL ? "حدث خطأ أثناء إنشاء الحساب" : "Registration failed"));
                 }
             }
-        } catch {
-            setError(isRTL ? "خطأ في الاتصال. حاول مجدداً." : "Connection error. Please try again.");
+        } catch (err: any) {
+            console.error("[Login] Error during submission:", err);
+            setError(err.message || (isRTL ? "خطأ في الاتصال. حاول مجدداً." : "Connection error. Please try again."));
         } finally {
             setLoading(false);
         }

@@ -168,13 +168,14 @@ module.exports = async (req, res) => {
     return expressApp(req, res);
 
   } catch (fatalError) {
-    console.error('[Vercel] FATAL:', fatalError.message);
+    console.error('[Vercel] FATAL:', fatalError.message, fatalError.stack);
     if (!res.headersSent) {
       return res.status(500).json({ 
         success: false, 
         message: 'Server initialization failed',
         code: 'SERVER_ERROR',
-        error: process.env.NODE_ENV === 'development' ? fatalError.message : undefined
+        error: fatalError.message, // [[ARABIC_COMMENT]] إظهار رسالة الخطأ للتشخيص
+        stack: process.env.NODE_ENV === 'development' ? fatalError.stack : undefined
       });
     }
   }
