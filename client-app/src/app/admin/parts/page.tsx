@@ -27,6 +27,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import ImportSystem from "@/components/admin/ImportSystem";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/LanguageContext";
 import { api } from "@/lib/api-original";
@@ -81,6 +82,7 @@ export default function AdminPartsPage() {
         condition: 'New',
         stockQty: 1
     });
+    const [showImportModal, setShowImportModal] = useState(false);
 
     const [showSettings, setShowSettings] = useState(false);
     const [currencySettings, setCurrencySettings] = useState({ usdToSar: 3.75, usdToKrw: 1350, partsMultiplier: 1.15 });
@@ -312,7 +314,14 @@ export default function AdminPartsPage() {
                                 disabled={scraping}
                                 className="ck-btn-primary bg-orange-500 hover:bg-orange-400 text-black flex items-center gap-2 border-none">
                                 {scraping ? <div className="ck-radar w-4 h-4" /> : <RefreshCcw className="w-4 h-4" />}
-                                {isRTL ? 'استيراد القطع الكورية' : 'SCRAPE KOREAN AUTOPARTS'}
+                                {isRTL ? 'استيراد تلقائي' : 'AUTO SCRAPE'}
+                            </motion.button>
+                            <motion.button
+                                whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
+                                onClick={() => setShowImportModal(true)}
+                                className="ck-btn-ghost flex items-center gap-2 text-blue-400 border-blue-500/20 hover:bg-blue-500/10">
+                                <Upload className="w-4 h-4" />
+                                {isRTL ? 'استيراد يدوي (رابط)' : 'MANUAL IMPORT (LINK)'}
                             </motion.button>
                             <motion.button
                                 whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
@@ -631,6 +640,32 @@ export default function AdminPartsPage() {
                                     </button>
                                 </div>
                             </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {showImportModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="ck-modal-backdrop" onClick={() => setShowImportModal(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.92, y: 24 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.92, y: 24 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="ck-modal p-7 max-w-2xl w-full"
+                        >
+                            <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
+                                <div>
+                                    <h2 className="text-xl font-bold">{isRTL ? 'استيراد من رابط' : 'IMPORT FROM LINK'}</h2>
+                                </div>
+                                <button onClick={() => setShowImportModal(false)} className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 hover:text-red-400 transition-all flex items-center justify-center">
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+                            
+                            <ImportSystem type="part" onImportComplete={() => { setShowImportModal(false); loadParts(); }} />
                         </motion.div>
                     </motion.div>
                 )}

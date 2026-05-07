@@ -14,6 +14,8 @@
 const express = require('express');
 const router = express.Router();
 const { requireAuthAPI, requireAdmin } = require('../../../middleware/auth');
+const ScraperService = require('../../../services/ScraperService');
+const { processMany } = require('../../../services/externalImageService');
 
 /**
  * @route POST /api/v2/import/preview
@@ -40,7 +42,7 @@ router.post('/preview', requireAuthAPI, requireAdmin, async (req, res, next) => 
     if (req.tenantModels) {
       const Model = type === 'car' ? req.tenantModels.Car : req.tenantModels.SparePart;
       if (Model) {
-        const existing = await Model.findOne({ sourceUrl: url });
+        const existing = await Model.findOne({ externalUrl: url });
         isDuplicate = !!existing;
       }
     }
@@ -98,6 +100,17 @@ router.post('/save', requireAuthAPI, requireAdmin, async (req, res, next) => {
       return res.status(503).json({ success: false, error: 'قاعدة البيانات غير متاحة' });
     }
 
+    // [[ARABIC_COMMENT]] تحميل ومعالجة الصور لضمان بقائها في النظام (Local/Cloudinary)
+    let processedImages = data.images || [];
+    try {
+      if (processedImages.length > 0) {
+        processedImages = await processMany(processedImages, type === 'car' ? 'cars' : 'parts');
+      }
+    } catch (imgErr) {
+      console.warn('⚠️ [Import] Image processing failed:', imgErr.message);
+      // نستمر حتى لو فشلت معالجة الصور، سنستخدم الروابط الأصلية
+    }
+
     let saved;
     if (type === 'car') {
       const Car = req.tenantModels.Car;
@@ -111,10 +124,10 @@ router.post('/save', requireAuthAPI, requireAdmin, async (req, res, next) => {
         year: data.year || new Date().getFullYear(),
         price: data.price || 0,
         description: data.description,
-        images: data.images || [],
+        images: processedImages,
         fuelType: data.fuelType || 'Petrol',
         transmission: data.transmission || 'Automatic',
-        sourceUrl: data.sourceUrl,
+        externalUrl: data.sourceUrl,
         status: 'draft', // يبدأ كمسودة حتى يراجعه الأدمن
       });
     } else {
@@ -127,10 +140,10 @@ router.post('/save', requireAuthAPI, requireAdmin, async (req, res, next) => {
         partNumber: data.partNumber,
         category: data.category || 'استيراد',
         price: data.price || 0,
-        stock: data.stock || 1,
+        stockQty: data.stock || 1,
         description: data.description,
-        images: data.images || [],
-        sourceUrl: data.sourceUrl,
+        images: processedImages,
+        externalUrl: data.sourceUrl, // Model uses externalUrl
         status: 'draft',
       });
     }

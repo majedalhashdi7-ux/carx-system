@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import AdminPageShell from '@/components/AdminPageShell';
 import CarCard from './_components/CarCard';
 import CarModal from './_components/CarModal';
+import ImportSystem from '@/components/admin/ImportSystem';
 
 // ── نوع بيانات السيارة ──
 type Car = {
@@ -96,6 +97,7 @@ function CarsContent() {
     const [importLoading, setImportLoading] = useState(false);
     const [importStatus, setImportStatus] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
     const [encarUrl, setEncarUrl] = useState('');
+    const [showManualImport, setShowManualImport] = useState(false);
     const [brands, setBrands] = useState<Array<{_id: string, name: string}>>([]);
     
     const [currencySettings, setCurrencySettings] = useState({ usdToSar: 3.75, usdToKrw: 1350 });
@@ -361,41 +363,67 @@ function CarsContent() {
                             <div className="ck-card p-8 border-blue-500/20 bg-blue-500/5">
                                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
                                     <div className="space-y-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400">
-                                                <Globe className="w-5 h-5" />
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400">
+                                                    <Globe className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-sm font-black uppercase tracking-widest">{isRTL ? 'تكوين استيراد Encar' : 'ENCAR IMPORT PROTOCOL'}</h3>
+                                                    <p className="text-[10px] text-white/30 uppercase tracking-widest font-mono">AUTOMATED SCRAPER CONFIG</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h3 className="text-sm font-black uppercase tracking-widest">{isRTL ? 'تكوين استيراد Encar' : 'ENCAR IMPORT PROTOCOL'}</h3>
-                                                <p className="text-[10px] text-white/30 uppercase tracking-widest font-mono">AUTOMATED SCRAPER CONFIG</p>
+                                            
+                                            <div className="flex gap-2">
+                                                <button 
+                                                    onClick={() => setShowManualImport(false)}
+                                                    className={cn("px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase transition-all", !showManualImport ? "bg-blue-500 text-black" : "bg-white/5 text-white/40")}
+                                                >
+                                                    {isRTL ? 'تلقائي' : 'AUTO'}
+                                                </button>
+                                                <button 
+                                                    onClick={() => setShowManualImport(true)}
+                                                    className={cn("px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase transition-all", showManualImport ? "bg-red-500 text-white" : "bg-white/5 text-white/40")}
+                                                >
+                                                    {isRTL ? 'يدوي (رابط)' : 'MANUAL (LINK)'}
+                                                </button>
                                             </div>
                                         </div>
-                                        <textarea
-                                            value={encarUrl}
-                                            onChange={(e) => setEncarUrl(e.target.value)}
-                                            placeholder="https://car.encar.com/list/car?page=1&search=..."
-                                            title={isRTL ? 'رابط Encar للاستيراد' : 'Encar Import URL'}
-                                            className="ck-input w-full h-32 resize-none font-mono text-[11px] bg-black/40 border-white/5 focus:border-blue-500/40 p-4"
-                                            dir="ltr"
-                                        />
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={handleImportSave}
-                                                disabled={importLoading}
-                                                title={isRTL ? 'حفظ وتحديث الرابط' : 'Connect & Save'}
-                                                className="ck-btn-primary bg-blue-500 border-none text-black hover:bg-blue-400 flex-1 text-[11px] h-12"
-                                            >
-                                                {importLoading ? (isRTL ? 'جاري الحفظ...' : 'SAVING...') : (isRTL ? 'حفظ وتحديث الرابط' : 'CONNECT & SAVE')}
-                                            </button>
-                                            <button
-                                                onClick={handleScrapeNow}
-                                                disabled={importLoading}
-                                                title={isRTL ? 'جلب البيانات الآن' : 'Force Scrape'}
-                                                className="ck-btn-primary bg-white/5 border-white/10 hover:border-blue-500/40 text-white flex-1 text-[11px] h-12"
-                                            >
-                                                {importLoading ? (isRTL ? 'جاري الجلب...' : 'FETCHING...') : (isRTL ? 'جلب البيانات الآن' : 'FORCE SCRAPE')}
-                                            </button>
-                                        </div>
+
+                                        {!showManualImport ? (
+                                            <>
+                                                <textarea
+                                                    value={encarUrl}
+                                                    onChange={(e) => setEncarUrl(e.target.value)}
+                                                    placeholder="https://car.encar.com/list/car?page=1&search=..."
+                                                    title={isRTL ? 'رابط Encar للاستيراد' : 'Encar Import URL'}
+                                                    className="ck-input w-full h-32 resize-none font-mono text-[11px] bg-black/40 border-white/5 focus:border-blue-500/40 p-4"
+                                                    dir="ltr"
+                                                />
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={handleImportSave}
+                                                        disabled={importLoading}
+                                                        title={isRTL ? 'حفظ وتحديث الرابط' : 'Connect & Save'}
+                                                        className="ck-btn-primary bg-blue-500 border-none text-black hover:bg-blue-400 flex-1 text-[11px] h-12"
+                                                    >
+                                                        {importLoading ? (isRTL ? 'جاري الحفظ...' : 'SAVING...') : (isRTL ? 'حفظ وتحديث الرابط' : 'CONNECT & SAVE')}
+                                                    </button>
+                                                    <button
+                                                        onClick={handleScrapeNow}
+                                                        disabled={importLoading}
+                                                        title={isRTL ? 'جلب البيانات الآن' : 'Force Scrape'}
+                                                        className="ck-btn-primary bg-white/5 border-white/10 hover:border-blue-500/40 text-white flex-1 text-[11px] h-12"
+                                                    >
+                                                        {importLoading ? (isRTL ? 'جاري الجلب...' : 'FETCHING...') : (isRTL ? 'جلب البيانات الآن' : 'FORCE SCRAPE')}
+                                                    </button>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="p-4 bg-black/40 rounded-xl border border-white/5">
+                                                <ImportSystem type="car" onImportComplete={() => { loadData(); }} />
+                                            </div>
+                                        )}
                                         {importStatus && (
                                             <motion.div 
                                                 initial={{ opacity: 0, y: 5 }}
