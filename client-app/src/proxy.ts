@@ -21,7 +21,7 @@ const PROTECTED_ADMIN_ROUTES = ['/admin'];
 // مسارات التوثيق (تسجيل الدخول / إنشاء حساب)
 const AUTH_ROUTES = ['/login', '/register'];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // قراءة التوكن (Token) من ملفات تعريف الارتباط للتحقق من الجلسة
