@@ -71,32 +71,33 @@ class PaymentService {
   }
   
   static async processCardPayment(payment, paymentDetails) {
-    // 💡 نَمُوذَج تَكامُل Stripe (Production Ready Template)
-    /*
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    try {
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(payment.amount * 100), // القيمة بالهللة
-        currency: payment.currency.toLowerCase(),
-        payment_method_data: {
-          type: 'card',
-          card: { token: paymentDetails.token } // الرمز من الواجهة الأمامية
-        },
-        confirm: true,
-        description: `Order #${payment.order} - ${payment.user.name}`
-      });
-      
-      return {
-        success: paymentIntent.status === 'succeeded',
-        transactionId: paymentIntent.id,
-        gatewayResponse: paymentIntent
-      };
-    } catch (e) {
-      return { success: false, error: e.message };
+    // نَمُوذَج تَكامُل Stripe (Production Ready)
+    if (process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY !== 'mock') {
+      try {
+        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: Math.round(payment.amount * 100), // القيمة بالهللة
+          currency: payment.currency ? payment.currency.toLowerCase() : 'sar',
+          payment_method_data: {
+            type: 'card',
+            card: { token: paymentDetails.token } // الرمز من الواجهة الأمامية
+          },
+          confirm: true,
+          description: `Order #${payment.order} - ${payment.user.name}`
+        });
+        
+        return {
+          success: paymentIntent.status === 'succeeded' || paymentIntent.status === 'requires_action',
+          transactionId: paymentIntent.id,
+          gatewayResponse: paymentIntent
+        };
+      } catch (e) {
+        return { success: false, error: e.message };
+      }
     }
-    */
 
     // --- المحاكاة الحالية (Development Simulation) ---
+    // إذا لم يكن هناك مفتاح Stripe حقيقي، استخدم المحاكاة
     const cardNumber = paymentDetails.cardNumber || '';
     
     // Validate card details

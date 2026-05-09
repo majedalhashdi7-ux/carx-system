@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import {
     Bell, Palette, Globe,
-    Save, Lock, Eye, EyeOff, Smartphone, Mail, Volume2, Moon, Check
+    Save, Lock, Eye, EyeOff, Smartphone, Mail, Volume2, Moon, Check, Shield
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/LanguageContext";
@@ -13,6 +13,11 @@ export default function ClientSettingsPage() {
     const { isRTL, lang, toggleLanguage } = useLanguage();
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
+
+    // 2FA State
+    const [twoFactorStatus, setTwoFactorStatus] = useState<any>(null); // To store QR code and secret
+    const [twoFactorCode, setTwoFactorCode] = useState('');
+    const [twoFactorMessage, setTwoFactorMessage] = useState('');
 
     const [notifications, setNotifications] = useState({
         email: true,
@@ -57,6 +62,53 @@ export default function ClientSettingsPage() {
             await new Promise(r => setTimeout(r, 600));
             setPwdMessage(isRTL ? '✓ تم تغيير كلمة المرور بنجاح' : '✓ Password changed successfully');
             setPasswords({ current: '', new: '', confirm: '' });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleSetup2FA = async () => {
+        try {
+            setSaving(true);
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/v2/auth/2fa/setup', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                setTwoFactorStatus(data);
+                setTwoFactorMessage(isRTL ? 'امسح رمز الاستجابة السريعة (QR) باستخدام تطبيق المصادقة (مثل Google Authenticator).' : 'Scan the QR code with your authenticator app.');
+            } else {
+                setTwoFactorMessage(data.message || (isRTL ? 'فشل إعداد المصادقة الثنائية' : 'Failed to setup 2FA'));
+            }
+        } catch (err) {
+            setTwoFactorMessage(isRTL ? 'خطأ في الاتصال' : 'Connection error');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleEnable2FA = async () => {
+        try {
+            setSaving(true);
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/v2/auth/2fa/enable', {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ token: twoFactorCode })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setTwoFactorMessage(isRTL ? '✓ تم تفعيل المصادقة الثنائية بنجاح!' : '✓ 2FA enabled successfully!');
+                setTwoFactorStatus(null);
+            } else {
+                setTwoFactorMessage(data.message || (isRTL ? 'رمز غير صحيح' : 'Invalid code'));
+            }
+        } catch (err) {
+            setTwoFactorMessage(isRTL ? 'خطأ في الاتصال' : 'Connection error');
         } finally {
             setSaving(false);
         }
@@ -296,6 +348,63 @@ export default function ClientSettingsPage() {
                                         {isRTL ? 'تحديث كلمة المرور' : 'Update Password'}
                                     </button>
                                 </form>
+                            </div>
+                        </div>
+                    </motion.section>
+
+                    {/* ─── المصادقة الثنائية (2FA) ─── */}
+                    <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}>
+                        <div className="rounded-2xl border border-white/[0.06] overflow-hidden">
+                            <div className={cn('flex items-center gap-3 px-5 py-4 bg-white/[0.02] border-b border-white/[0.05]', isRTL && 'flex-row-reverse')}>
+                                <Shield className="w-4 h-4 text-[#c9a96e]/70" strokeWidth={1.8} />
+                                <span className="text-[12px] font-bold text-white/50 uppercase tracking-[0.25em]">
+                                    {isRTL ? 'المصادقة الثنائية (2FA)' : 'Two-Factor Authentication'}
+                                </span>
+                            </div>
+                            <div className="p-5">
+                                {twoFactorMessage && (
+                                    <div className={cn(
+                                        'mb-4 p-3.5 rounded-xl text-[12px] font-semibold flex items-center gap-2',
+                                        twoFactorMessage.includes('✓')
+                                            ? 'bg-green-400/10 border border-green-400/20 text-green-400'
+                                            : 'bg-red-400/10 border border-red-400/20 text-red-400'
+                                    )}>
+                                        {twoFactorMessage}
+                                    </div>
+                                )}
+                                
+                                {!twoFactorStatus ? (
+                                    <button
+                                        onClick={handleSetup2FA}
+                                        disabled={saving}
+                                        className="w-full py-3.5 rounded-xl bg-white/[0.05] border border-white/10 text-white/70 hover:text-white hover:bg-white/[0.08] font-semibold text-[13px] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                    >
+                                        <Shield className="w-4 h-4" strokeWidth={1.8} />
+                                        {isRTL ? 'إعداد المصادقة الثنائية لحماية أقوى' : 'Setup 2FA for Extra Security'}
+                                    </button>
+                                ) : (
+                                    <div className="flex flex-col items-center space-y-4">
+                                        <img src={twoFactorStatus.qrCode} alt="2FA QR Code" className="w-40 h-40 rounded-xl border border-white/20 p-2 bg-white" />
+                                        <p className="text-sm text-gray-400">Secret: <span className="font-mono text-white">{twoFactorStatus.secret}</span></p>
+                                        <div className="w-full relative mt-4">
+                                            <input
+                                                type="text"
+                                                value={twoFactorCode}
+                                                onChange={e => setTwoFactorCode(e.target.value)}
+                                                className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl py-3.5 px-4 text-center text-[18px] tracking-[0.5em] font-mono text-white focus:outline-none focus:border-[#c9a96e]/40 transition-all placeholder:text-white/20"
+                                                placeholder="123456"
+                                                maxLength={6}
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={handleEnable2FA}
+                                            disabled={saving || twoFactorCode.length < 6}
+                                            className="w-full py-3.5 rounded-xl bg-[#c9a96e] text-black font-bold text-[13px] transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
+                                        >
+                                            {isRTL ? 'تأكيد التفعيل' : 'Confirm Enable'}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </motion.section>

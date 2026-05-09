@@ -13,7 +13,8 @@ router.get('/health', requireAuthAPI, async (req, res) => {
             return res.status(403).json({ success: false, message: 'غير مصرح' });
         }
 
-        const dbStatus = mongoose.connection.readyState;
+        const dbConnection = req.tenantDb || mongoose.connection;
+        const dbStatus = dbConnection.readyState;
         const dbStatusMap = {
             0: 'Disconnected',
             1: 'Connected',
@@ -38,7 +39,9 @@ router.get('/health', requireAuthAPI, async (req, res) => {
 
         // تجربة استعلام بسيط لمعرفة زمن الاستجابة لقاعدة البيانات
         const dbStartTime = Date.now();
-        await mongoose.connection.db.admin().ping();
+        if (dbConnection.db) {
+            await dbConnection.db.admin().ping();
+        }
         const dbLatency = Date.now() - dbStartTime;
 
         res.json({
@@ -49,8 +52,9 @@ router.get('/health', requireAuthAPI, async (req, res) => {
                 database: {
                     state: dbStatusMap[dbStatus] || 'Unknown',
                     latencyMs: dbLatency,
-                    host: mongoose.connection.host,
-                    name: mongoose.connection.name
+                    host: dbConnection.host,
+                    name: dbConnection.name,
+                    tenant: req.tenant ? req.tenant.id : 'default'
                 },
                 server: {
                     uptimeSeconds: uptime,
@@ -120,9 +124,10 @@ router.get('/fix-data', requireAuthAPI, async (req, res) => {
     }
     
     try {
-        const carCollection = mongoose.connection.collection('cars');
-        const auctionCollection = mongoose.connection.collection('auctions');
-        const settingsCollection = mongoose.connection.collection('sitesettings');
+        const dbConnection = req.tenantDb || mongoose.connection;
+        const carCollection = dbConnection.collection('cars');
+        const auctionCollection = dbConnection.collection('auctions');
+        const settingsCollection = dbConnection.collection('sitesettings');
         const now = new Date();
         
         let fixedYears = 0;

@@ -648,4 +648,47 @@ router.post('/:id/suspend', requireAuthAPI, requirePermissionAPI('manage_users')
   }
 });
 
+// Export user data (GDPR)
+router.get('/me/export', requireAuthAPI, async (req, res) => {
+  try {
+    const User = getModel(req, 'User');
+    const Order = getModel(req, 'Order');
+    const Bid = getModel(req, 'Bid');
+    const Favorite = getModel(req, 'Favorite');
+
+    const userId = req.user.userId;
+    
+    // Fetch user and all their related data concurrently
+    const [user, orders, bids, favorites] = await Promise.all([
+      User.findOne(addTenantFilter(req, { _id: userId })).select('-password -__v').lean(),
+      Order?.find(addTenantFilter(req, { user: userId })).lean() || [],
+      Bid?.find(addTenantFilter(req, { user: userId })).lean() || [],
+      Favorite?.find(addTenantFilter(req, { user: userId })).lean() || []
+    ]);
+
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User Not Found' });
+    }
+
+    const exportData = {
+      user,
+      orders,
+      bids,
+      favorites,
+      exportedAt: new Date().toISOString()
+    };
+
+    res.json({
+      success: true,
+      data: exportData
+    });
+  } catch (error) {
+    console.error('Export user data error:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'An error occurred while exporting user data'
+    });
+  }
+});
+
 module.exports = router;

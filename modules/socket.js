@@ -72,7 +72,7 @@ class SocketModule {
                         const allowed = [
                             'https://hmcar.okigo.net',
                             'https://www.hmcar.okigo.net',
-                            'https://car-auction-sand.vercel.app',
+                            'https://hmcar-system-two.vercel.app',
                             'https://client-app-iota-eight.vercel.app',
                             ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [])
                         ];

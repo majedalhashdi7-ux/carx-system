@@ -96,7 +96,7 @@ class EmailService {
                     <div style="font-family: Arial, sans-serif; direction: rtl; text-align: right; padding: 20px;">
                         <h2 style="color: #c9a96e;">${template.title}</h2>
                         <p>${template.message}</p>
-                        ${template.actionUrl ? `<a href="${process.env.BASE_URL || 'https://car-auction-sand.vercel.app'}${template.actionUrl}" style="background: #c9a96e; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 10px;">عرض التفاصيل</a>` : ''}
+                        ${template.actionUrl ? `<a href="${process.env.BASE_URL || 'https://hmcar-system-two.vercel.app'}${template.actionUrl}" style="background: #c9a96e; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 10px;">عرض التفاصيل</a>` : ''}
                         <hr style="border: 1px solid #eee; margin-top: 20px;" />
                         <p style="color: #999; font-size: 12px;">HM CAR - منصة مزادات السيارات الفاخرة</p>
                     </div>

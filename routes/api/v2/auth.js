@@ -898,4 +898,80 @@ router.post('/otp/verify', async (req, res) => {
   }
 });
 
+// ==========================================
+// 2FA Endpoints
+// ==========================================
+const TwoFactorAuthService = require('../../../services/TwoFactorAuthService');
+
+// Setup 2FA (Generate secret and QR)
+router.get('/2fa/setup', requireAuthAPI, async (req, res) => {
+  try {
+    const User = getModel(req, 'User');
+    const user = await User.findById(req.user.userId);
+    
+    if (user.twoFactorEnabled) {
+      return res.status(400).json({ success: false, message: '2FA is already enabled' });
+    }
+
+    const { secret, otpauthUrl } = TwoFactorAuthService.generateSecret(user);
+    const qrCode = await TwoFactorAuthService.generateQRCode(otpauthUrl);
+    
+    // Temporarily save secret to user (not enabled yet)
+    user.twoFactorSecret = secret;
+    await user.save();
+
+    res.json({ success: true, qrCode, secret });
+  } catch (error) {
+    console.error('2FA Setup Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to setup 2FA' });
+  }
+});
+
+// Enable 2FA (Verify token to confirm)
+router.post('/2fa/enable', requireAuthAPI, async (req, res) => {
+  try {
+    const { token } = req.body;
+    const User = getModel(req, 'User');
+    const user = await User.findById(req.user.userId);
+
+    if (!user.twoFactorSecret) {
+       return res.status(400).json({ success: false, message: 'Please setup 2FA first' });
+    }
+
+    const isValid = TwoFactorAuthService.verifyToken(user.twoFactorSecret, token);
+    
+    if (!isValid) {
+      return res.status(400).json({ success: false, message: 'Invalid 2FA token' });
+    }
+
+    user.twoFactorEnabled = true;
+    const backupCodes = TwoFactorAuthService.generateBackupCodes();
+    user.twoFactorBackupCodes = backupCodes.map(code => TwoFactorAuthService.hashBackupCode(code));
+    await user.save();
+
+    res.json({ success: true, message: '2FA Enabled Successfully', backupCodes });
+  } catch (error) {
+    console.error('2FA Enable Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to enable 2FA' });
+  }
+});
+
+// Disable 2FA
+router.post('/2fa/disable', requireAuthAPI, async (req, res) => {
+  try {
+    const User = getModel(req, 'User');
+    const user = await User.findById(req.user.userId);
+
+    user.twoFactorEnabled = false;
+    user.twoFactorSecret = undefined;
+    user.twoFactorBackupCodes = [];
+    await user.save();
+
+    res.json({ success: true, message: '2FA Disabled Successfully' });
+  } catch (error) {
+    console.error('2FA Disable Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to disable 2FA' });
+  }
+});
+
 module.exports = router;

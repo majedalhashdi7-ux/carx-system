@@ -1,12 +1,29 @@
 'use client';
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Search, Car, Banknote } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/LanguageContext";
+import { api } from "@/lib/api";
 
 export default function SearchSection() {
-    const { t, isRTL } = useLanguage();
+    const { t, isRTL, language } = useLanguage();
+    const [brands, setBrands] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchBrands = async () => {
+            try {
+                const res = await api.brands.getAll();
+                if (res?.data?.brands) {
+                    setBrands(res.data.brands);
+                }
+            } catch (err) {
+                console.error("Failed to fetch brands", err);
+            }
+        };
+        fetchBrands();
+    }, []);
 
     return (
         <motion.div
@@ -49,11 +66,11 @@ export default function SearchSection() {
                             )}
                         >
                             <option value="" className="bg-black">{t('allBrands')}</option>
-                            <option value="hyundai" className="bg-black">HYUNDAI</option>
-                            <option value="kia" className="bg-black">KIA</option>
-                            <option value="genesis" className="bg-black">GENESIS</option>
-                            <option value="mercedes" className="bg-black">MERCEDES</option>
-                            <option value="bmw" className="bg-black">BMW</option>
+                            {brands.map(b => (
+                                <option key={b.id || b._id} value={b.slug || b.name.toLowerCase()} className="bg-black">
+                                    {language === 'ar' && b.nameAr ? b.nameAr : b.name}
+                                </option>
+                            ))}
                         </select>
                     </div>
 

@@ -30,7 +30,7 @@ class WhatsAppService {
       `🚗 السيارة: ${car.title}\n` +
       `📅 الموديل: ${car.year}\n` +
       `💰 السعر: ${car.priceSar || car.price || '—'} ريال\n` +
-      `🔗 الرابط: ${process.env.BASE_URL || 'https://car-auction-sand.vercel.app'}/cars/${car._id || car.id}\n\n` +
+      `🔗 الرابط: ${process.env.BASE_URL || 'https://hmcar-system-two.vercel.app'}/cars/${car._id || car.id}\n\n` +
       `هل يمكنني الحصول على مزيد من التفاصيل حول حالة الفحص والشحن؟`
     );
 
