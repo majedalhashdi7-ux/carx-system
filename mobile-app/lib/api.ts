@@ -1,7 +1,7 @@
 // lib/api.ts - رابط بنفس API الموقع
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BASE_URL = 'https://car-auction-sand.vercel.app/api';
+const BASE_URL = 'https://hmcar-system-two.vercel.app/api'; // Production URL
 
 async function getToken(): Promise<string | null> {
     return AsyncStorage.getItem('hm_token');

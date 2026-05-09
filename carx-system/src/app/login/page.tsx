@@ -8,11 +8,38 @@ import Link from 'next/link';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Connect to api.ts for authentication
-    console.log('Logging in...', email);
+    setLoading(true);
+    setError('');
+    
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api/v2'}/auth/login`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Tenant-ID': 'carx'
+        },
+        body: JSON.stringify({ identifier: email, password, role: 'admin' })
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok && data.token) {
+        localStorage.setItem('carx_token', data.token);
+        localStorage.setItem('carx_user', JSON.stringify(data.user));
+        window.location.href = '/admin';
+      } else {
+        setError(data.message || 'فشل تسجيل الدخول');
+      }
+    } catch (err) {
+      setError('حدث خطأ في الاتصال بالخادم');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -38,6 +65,16 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleLogin} className="space-y-6">
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm text-center"
+            >
+              {error}
+            </motion.div>
+          )}
+
           <div>
             <label className="block text-sm font-bold text-gray-300 mb-2">البريد الإلكتروني</label>
             <div className="relative">
@@ -79,10 +116,17 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="w-full bg-luxury-gold text-black font-black text-lg py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-white transition-colors shadow-xl shadow-luxury-gold/20 mt-8"
+            disabled={loading}
+            className="w-full bg-luxury-gold text-black font-black text-lg py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-white transition-colors shadow-xl shadow-luxury-gold/20 mt-8 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <LogIn className="w-5 h-5" />
-            الدخول للنظام
+            {loading ? (
+              <div className="w-6 h-6 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+            ) : (
+              <>
+                <LogIn className="w-5 h-5" />
+                الدخول للنظام
+              </>
+            )}
           </button>
         </form>
 

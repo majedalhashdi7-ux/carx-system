@@ -30,7 +30,7 @@ export async function fetchAPI<T>(endpoint: string, options: FetchOptions = {}):
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('carx_token');
       if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+        (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
       }
     }
 

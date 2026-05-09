@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Facebook, Twitter, Instagram, Youtube } from 'lucide-react';
+import { Mail, Phone } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -19,10 +19,8 @@ export default function Footer() {
               وجهتك الأولى لأفخم السيارات في المملكة. نجمع بين الأداء المذهل والرفاهية المطلقة لنقدم لك تجربة قيادة لا تُنسى.
             </p>
             <div className="flex gap-4 text-gray-400">
-              <a href="#" className="hover:text-luxury-gold transition-colors"><Facebook className="w-5 h-5" /></a>
-              <a href="#" className="hover:text-luxury-gold transition-colors"><Twitter className="w-5 h-5" /></a>
-              <a href="#" className="hover:text-luxury-gold transition-colors"><Instagram className="w-5 h-5" /></a>
-              <a href="#" className="hover:text-luxury-gold transition-colors"><Youtube className="w-5 h-5" /></a>
+              <a href="#" className="hover:text-luxury-gold transition-colors"><Mail className="w-5 h-5" /></a>
+              <a href="#" className="hover:text-luxury-gold transition-colors"><Phone className="w-5 h-5" /></a>
             </div>
           </div>
 

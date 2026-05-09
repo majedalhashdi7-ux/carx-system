@@ -1,145 +1,179 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect, use } from 'react';
 import { motion } from 'framer-motion';
-import { Check, Shield, Zap, Settings, Calendar, Disc, Fuel, CreditCard } from 'lucide-react';
+import { 
+  ChevronRight, Calendar, Fuel, Gauge, ShieldCheck, 
+  Share2, Heart, MessageSquare, AlertCircle, ArrowLeft
+} from 'lucide-react';
+import Link from 'next/link';
 import { api } from '@/lib/api';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 
-export default function CarDetailsPage() {
-  const { id } = useParams();
-  const router = useRouter();
+export default function CarDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const [car, setCar] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchCar = async () => {
-      try {
-        const res = await api.cars.getById(id as string);
-        if (res.data?.data) {
-          setCar(res.data.data);
-        } else if (res.data?.car) {
-          setCar(res.data.car);
-        }
-      } catch (err) {
-        console.error('Error fetching car:', err);
-      } finally {
-        setLoading(false);
+      setLoading(true);
+      const res = await api.cars.getById(id) as any;
+      if (res.error) {
+        setError(res.error);
+      } else {
+        const result = res.data;
+        setCar(result?.data || result);
       }
+      setLoading(false);
     };
-    if (id) fetchCar();
+    fetchCar();
   }, [id]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-luxury-gold"></div>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="w-12 h-12 border-4 border-luxury-gold/20 border-t-luxury-gold rounded-full animate-spin" />
+    </div>
+  );
 
-  if (!car) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white">
-        <h1 className="text-4xl font-bold mb-4">السيارة غير موجودة</h1>
-        <button onClick={() => router.back()} className="text-luxury-gold hover:underline">
-          العودة للمعرض
-        </button>
-      </div>
-    );
-  }
-
-  const images = car.images?.length > 0 ? car.images.map((img:any) => img.url) : ['https://images.unsplash.com/photo-1520031441872-265e4ff70366?auto=format&fit=crop&q=80&w=1200'];
+  if (error || !car) return (
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-8 text-center">
+      <AlertCircle className="w-16 h-16 text-red-500/50 mb-4" />
+      <h1 className="text-2xl font-bold text-white mb-2">تعذر العثور على السيارة</h1>
+      <p className="text-gray-400 mb-8">{error || 'ربما تم حذف هذه السيارة أو أنها غير متوفرة حالياً'}</p>
+      <Link href="/cars" className="px-8 py-3 bg-white/10 rounded-full text-white hover:bg-white/20 transition-all">
+        العودة للمعرض
+      </Link>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-black pt-24 pb-20">
-      <div className="container mx-auto px-6">
-        
-        {/* Gallery */}
-        <div className="w-full h-[50vh] md:h-[70vh] rounded-3xl overflow-hidden relative mb-12 border border-white/10 shadow-2xl shadow-luxury-gold/5">
-          <img src={images[0]} alt={car.title} className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-          <div className="absolute bottom-10 px-10">
-            <h1 className="text-4xl md:text-6xl font-black text-white mb-2">{car.title}</h1>
-            <p className="text-luxury-gold text-2xl font-bold">{car.priceSar || car.price} ريال سعودي</p>
+    <main className="min-h-screen bg-[#050505] text-white">
+      <Navbar />
+      
+      <div className="pt-24 pb-20">
+        {/* Breadcrumbs */}
+        <div className="max-w-7xl mx-auto px-4 md:px-8 mb-8">
+          <div className="flex items-center gap-2 text-xs font-bold text-white/30 uppercase tracking-widest" dir="rtl">
+            <Link href="/" className="hover:text-luxury-gold">الرئيسية</Link>
+            <ChevronRight className="w-3 h-3" />
+            <Link href="/cars" className="hover:text-luxury-gold">المعرض</Link>
+            <ChevronRight className="w-3 h-3" />
+            <span className="text-white/60">{car.title}</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-          {/* Details */}
-          <div className="lg:col-span-2 space-y-8">
-            <section className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-md">
-              <h2 className="text-2xl font-bold text-white mb-6">المواصفات الأساسية</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div className="flex flex-col gap-2">
-                  <Calendar className="text-luxury-gold w-6 h-6" />
-                  <span className="text-gray-400 text-sm">السنة</span>
-                  <span className="text-white font-bold text-lg">{car.year}</span>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Disc className="text-luxury-gold w-6 h-6" />
-                  <span className="text-gray-400 text-sm">الممشى</span>
-                  <span className="text-white font-bold text-lg">{car.mileage || 0} كم</span>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Settings className="text-luxury-gold w-6 h-6" />
-                  <span className="text-gray-400 text-sm">ناقل الحركة</span>
-                  <span className="text-white font-bold text-lg">{car.transmission === 'automatic' ? 'أوتوماتيك' : 'عادي'}</span>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Fuel className="text-luxury-gold w-6 h-6" />
-                  <span className="text-gray-400 text-sm">الوقود</span>
-                  <span className="text-white font-bold text-lg">{car.fuelType === 'petrol' ? 'بنزين' : 'كهرباء'}</span>
-                </div>
+        <div className="max-w-7xl mx-auto px-4 md:px-8 grid grid-cols-1 lg:grid-cols-12 gap-12">
+          
+          {/* Left: Media & Details */}
+          <div className="lg:col-span-8 space-y-12">
+            
+            {/* Gallery */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="relative aspect-video rounded-3xl overflow-hidden bg-white/5 border border-white/10 group"
+            >
+              <img 
+                src={car.mainImage || car.images?.[0] || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80'} 
+                alt={car.title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+              />
+              <div className="absolute top-6 left-6 flex gap-3">
+                <button className="w-12 h-12 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center hover:bg-luxury-gold hover:text-black transition-all">
+                  <Heart className="w-5 h-5" />
+                </button>
+                <button className="w-12 h-12 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all">
+                  <Share2 className="w-5 h-5" />
+                </button>
               </div>
-            </section>
+            </motion.div>
 
-            <section className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-md">
-              <h2 className="text-2xl font-bold text-white mb-6">وصف السيارة</h2>
-              <p className="text-gray-300 leading-relaxed">
+            {/* Quick Specs */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { label: 'الموديل', value: car.year || '2024', icon: Calendar },
+                { label: 'الممشى', value: car.mileage ? `${car.mileage} كم` : '0 كم', icon: Gauge },
+                { label: 'الوقود', value: car.fuelType || 'بنزين', icon: Fuel },
+                { label: 'الحالة', value: car.condition === 'new' ? 'جديدة' : 'مستعملة', icon: ShieldCheck },
+              ].map((spec, i) => (
+                <div key={i} className="p-6 rounded-3xl bg-white/[0.02] border border-white/5 flex flex-col items-center text-center space-y-2">
+                  <spec.icon className="w-6 h-6 text-luxury-gold/70" />
+                  <div className="text-[10px] uppercase font-bold text-white/20 tracking-widest">{spec.label}</div>
+                  <div className="text-sm font-bold">{spec.value}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Description */}
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold flex items-center gap-3">
+                <div className="w-1.5 h-6 bg-luxury-gold rounded-full" />
+                تفاصيل السيارة
+              </h2>
+              <div className="text-white/60 leading-relaxed text-lg" dir="rtl">
                 {car.description || 'لا يوجد وصف متاح لهذه السيارة حالياً.'}
-              </p>
-            </section>
+              </div>
+            </div>
+
           </div>
 
-          {/* Action Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-28 bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-md">
-              <h3 className="text-xl font-bold text-white mb-6 border-b border-white/10 pb-4">إتمام الشراء</h3>
+          {/* Right: Sidebar Actions */}
+          <div className="lg:col-span-4">
+            <div className="sticky top-24 space-y-6">
               
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center gap-3 text-gray-300">
-                  <div className="w-6 h-6 rounded-full bg-luxury-gold/20 flex items-center justify-center">
-                    <Check className="w-4 h-4 text-luxury-gold" />
+              <motion.div 
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="p-8 rounded-3xl bg-white/[0.03] border border-white/10 backdrop-blur-xl space-y-8"
+              >
+                <div>
+                  <div className="text-luxury-gold font-bold text-xs uppercase tracking-[0.3em] mb-3">السعر المعروض</div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-5xl font-black">{car.price?.toLocaleString()}</span>
+                    <span className="text-xl text-white/40">ريال</span>
                   </div>
-                  <span>فحص شامل 150 نقطة</span>
-                </li>
-                <li className="flex items-center gap-3 text-gray-300">
-                  <div className="w-6 h-6 rounded-full bg-luxury-gold/20 flex items-center justify-center">
-                    <Shield className="w-4 h-4 text-luxury-gold" />
-                  </div>
-                  <span>ضمان استرداد لمدة 7 أيام</span>
-                </li>
-                <li className="flex items-center gap-3 text-gray-300">
-                  <div className="w-6 h-6 rounded-full bg-luxury-gold/20 flex items-center justify-center">
-                    <Zap className="w-4 h-4 text-luxury-gold" />
-                  </div>
-                  <span>تسليم فوري لباب المنزل</span>
-                </li>
-              </ul>
+                </div>
 
-              <button className="w-full bg-luxury-gold text-black font-black text-lg py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-white transition-colors shadow-xl shadow-luxury-gold/20 mb-4">
-                <CreditCard className="w-5 h-5" />
-                حجز ودفع العربون
-              </button>
-              <p className="text-center text-xs text-gray-500">
-                سيطلب منك تسجيل الدخول لإتمام العملية
-              </p>
+                <div className="space-y-3">
+                  <button className="w-full py-5 bg-white text-black font-black uppercase tracking-widest rounded-2xl hover:bg-luxury-gold transition-all shadow-2xl shadow-white/5 active:scale-95">
+                    احجز الآن
+                  </button>
+                  <button className="w-full py-5 bg-white/5 border border-white/10 text-white font-bold rounded-2xl flex items-center justify-center gap-3 hover:bg-white/10 transition-all">
+                    <MessageSquare className="w-5 h-5" />
+                    تواصل معنا واتساب
+                  </button>
+                </div>
+
+                <div className="pt-8 border-t border-white/5 space-y-4">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-white/30">الماركة</span>
+                    <span className="font-bold uppercase tracking-wider">{car.brand}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-white/30">رقم الإعلان</span>
+                    <span className="font-mono text-white/60">#{car._id?.slice(-6).toUpperCase()}</span>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Trust badges */}
+              <div className="p-6 rounded-2xl border border-white/5 flex items-center gap-4 text-white/40">
+                <ShieldCheck className="w-8 h-8 text-luxury-gold/40" />
+                <p className="text-xs leading-relaxed">
+                  هذه السيارة مفحوصة ومضمونة من قبل فريق CAR X المتخصص. نحن نضمن لك جودة محركات السيارة وهيكلها.
+                </p>
+              </div>
+
             </div>
           </div>
-        </div>
 
+        </div>
       </div>
-    </div>
+
+      <Footer />
+    </main>
   );
 }
