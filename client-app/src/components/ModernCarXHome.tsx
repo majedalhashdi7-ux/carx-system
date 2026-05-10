@@ -600,8 +600,6 @@ export default function ModernCarXHome() {
                     </motion.div>
                 </div>
             </section>
-                </div>
-            </section>
 
             {/* ── قسم المميزات ── */}
             <section className="relative z-10 py-20 px-4 bg-gradient-to-b from-black to-gray-900">
