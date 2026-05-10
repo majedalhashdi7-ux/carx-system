@@ -172,22 +172,30 @@ export default function CarXLogin() {
             className="min-h-screen bg-black flex flex-col items-center justify-center px-4 relative overflow-hidden"
             dir={isRTL ? "rtl" : "ltr"}
         >
-            {/* خلفية بصرية (دوائر حمراء متوهجة) */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-red-600/10 rounded-full blur-[150px] pointer-events-none" />
-            <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-red-900/10 rounded-full blur-[120px] pointer-events-none" />
+            {/* خلفية بصرية سينمائية متطورة */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-red-600/20 rounded-full blur-[120px] animate-pulse" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-zinc-800/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
+                <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] mix-blend-overlay" />
+            </div>
 
-            {/* شعار CAR X */}
+            {/* شعار CAR X بتصميم متوهج */}
             <motion.div
-                initial={{ opacity: 0, y: -30 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-10 text-center"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="mb-12 text-center z-10"
             >
-                <h1 className="text-5xl md:text-6xl font-black tracking-widest text-white drop-shadow-[0_0_20px_rgba(220,38,38,0.8)]">
-                    CAR X
+                <h1 className="text-7xl md:text-8xl font-black tracking-tighter text-white italic">
+                    CAR<span className="text-red-600 drop-shadow-[0_0_15px_rgba(220,38,38,0.5)]">X</span>
                 </h1>
-                <p className="text-white/30 text-xs font-bold tracking-[0.3em] uppercase mt-2">
-                    {isRTL ? 'منصة السيارات المتكاملة' : 'The Complete Car Platform'}
-                </p>
+                <div className="flex items-center justify-center gap-4 mt-2">
+                    <div className="h-[1px] w-12 bg-gradient-to-r from-transparent to-white/20" />
+                    <p className="text-white/40 text-[10px] font-black tracking-[0.5em] uppercase">
+                        {isRTL ? 'الفخامة المطلقة' : 'ULTIMATE LUXURY'}
+                    </p>
+                    <div className="h-[1px] w-12 bg-gradient-to-l from-transparent to-white/20" />
+                </div>
             </motion.div>
 
             {/* بطاقة النموذج */}
@@ -197,21 +205,20 @@ export default function CarXLogin() {
                 transition={{ delay: 0.1 }}
                 className="w-full max-w-md bg-zinc-950 border border-white/8 rounded-[2rem] p-8 shadow-[0_30px_80px_rgba(0,0,0,0.8)]"
             >
-                {/* تبديل بين الدخول والتسجيل */}
-                <div className="flex rounded-xl bg-black/50 border border-white/5 p-1 mb-8">
+                <div className="flex rounded-2xl bg-white/5 border border-white/10 p-1.5 mb-10">
                     {(['login', 'register'] as const).map((m) => (
                         <button
                             key={m}
                             onClick={() => { setMode(m); setError(""); }}
-                            className={`flex-1 py-2.5 rounded-lg text-sm font-black uppercase tracking-widest transition-all ${
+                            className={`flex-1 py-3 rounded-xl text-xs font-black tracking-[0.2em] transition-all duration-500 ${
                                 mode === m
-                                    ? "bg-red-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.5)]"
-                                    : "text-white/30 hover:text-white/60"
+                                    ? "bg-white text-black shadow-2xl scale-[1.02]"
+                                    : "text-white/40 hover:text-white/70"
                             }`}
                         >
                             {m === "login"
                                 ? (isRTL ? "دخول" : "SIGN IN")
-                                : (isRTL ? "حساب جديد" : "REGISTER")}
+                                : (isRTL ? "عضوية جديدة" : "JOIN CLUB")}
                         </button>
                     ))}
                 </div>
