@@ -1,23 +1,91 @@
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;900&family=Noto+Kufi+Arabic:wght@300;400;700;900&display=swap');
 
-@theme {
-  --color-luxury-gold: #c9a96e;
-  --color-luxury-gold-light: #e8cd98;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --luxury-gold: #D4AF37;
+  --luxury-gold-glow: rgba(212, 175, 55, 0.4);
+  --deep-black: #050505;
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
 }
 
-@layer utilities {
-  .glass-panel {
-    @apply bg-black/40 backdrop-blur-md border border-white/10;
+@layer base {
+  body {
+    @apply bg-black text-white antialiased overflow-x-hidden;
+    font-family: 'Outfit', 'Noto Kufi Arabic', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-black tracking-tight uppercase;
   }
 }
 
-:root {
-  --background: #000000;
-  --foreground: #ffffff;
+@layer components {
+  .text-luxury-gold {
+    color: var(--luxury-gold);
+    text-shadow: 0 0 20px var(--luxury-gold-glow);
+  }
+
+  .bg-luxury-gold {
+    background-color: var(--luxury-gold);
+    box-shadow: 0 0 30px var(--luxury-gold-glow);
+  }
+
+  .glass-panel {
+    @apply backdrop-blur-xl bg-white/[0.03] border border-white/[0.08];
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+
+  .glass-panel-hover {
+    @apply hover:bg-white/[0.06] hover:border-white/[0.15] transition-all duration-500;
+  }
+
+  .premium-card {
+    @apply relative overflow-hidden rounded-[2rem] glass-panel transition-all duration-700;
+  }
+
+  .premium-card:hover {
+    @apply -translate-y-2 border-luxury-gold/30;
+    box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.8), 0 0 20px rgba(212, 175, 55, 0.1);
+  }
+
+  .glow-overlay {
+    @apply absolute inset-0 opacity-0 transition-opacity duration-700;
+    background: radial-gradient(circle at center, var(--luxury-gold-glow) 0%, transparent 70%);
+  }
+
+  .premium-card:hover .glow-overlay {
+    @apply opacity-100;
+  }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
 }
+
+::-webkit-scrollbar-track {
+  @apply bg-black;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-white/10 rounded-full hover:bg-luxury-gold/50 transition-colors;
+}
+
+/* Selection */
+::selection {
+  @apply bg-luxury-gold text-black;
+}
+
+/* RTL Adjustments */
+[dir="rtl"] .tracking-tighter {
+  letter-spacing: normal !important;
+}
+
+.font-arabic {
+  font-family: 'Noto Kufi Arabic', sans-serif;
+}
+

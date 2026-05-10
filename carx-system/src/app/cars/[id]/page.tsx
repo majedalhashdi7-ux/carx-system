@@ -7,9 +7,9 @@ import {
   Share2, Heart, MessageSquare, AlertCircle, ArrowLeft
 } from 'lucide-react';
 import Link from 'next/link';
-import { api } from '@/lib/api';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
+import { api } from '../../../lib/api';
+import Navbar from '../../../components/Navbar';
+import Footer from '../../../components/Footer';
 
 export default function CarDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);

@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "CAR X | مستقبل بيع وشراء السيارات",
-  description: "المنصة الرائدة لبيع وشراء السيارات الحديثة في المملكة العربية السعودية",
+  title: "CAR X | المعرض الحصري للسيارات الفاخرة في المملكة",
+  description: "اكتشف عالم الرفاهية والأداء مع CAR X. وجهتك الأولى لبيع وشراء أفخم السيارات العالمية بأفضل الأسعار وأعلى مستويات الخدمة.",
+  keywords: "سيارات فاخرة, بيع سيارات, سيارات مستعملة, مرسيدس, بي ام دبليو, فيراري, السعودية, الرياض",
 };
 
 export default function RootLayout({
@@ -15,10 +14,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl">
-      <body className="bg-black text-white antialiased">
-        <Navbar />
+      <body className="antialiased bg-black selection:bg-luxury-gold selection:text-black">
         {children}
-        <Footer />
       </body>
     </html>
   );

@@ -1,5 +1,4 @@
 {
-  "name": "carx-system",
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "outputDirectory": ".next",

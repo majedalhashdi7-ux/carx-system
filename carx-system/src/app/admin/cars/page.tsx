@@ -6,8 +6,8 @@ import {
   Plus, Search, Edit2, Trash2, ExternalLink, 
   Filter, MoreHorizontal, CheckCircle2, XCircle 
 } from 'lucide-react';
-import { api } from '@/lib/api';
-import Navbar from '@/components/Navbar';
+import { api } from '../../../lib/api';
+import Navbar from '../../../components/Navbar';
 
 export default function AdminCarsPage() {
   const [cars, setCars] = useState<any[]>([]);
