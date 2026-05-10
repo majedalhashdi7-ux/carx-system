@@ -210,10 +210,24 @@ function PWAFloatingButton({ isRTL, deferredInstall, onInstall }: { isRTL: boole
   );
 }
 
-// revalidate is not supported by client components
-// export const revalidate = 60;
+export default function HomeClient({ latestCars: initialLatestCars }: HomeClientProps) {
+  const [latestCars, setLatestCars] = useState<CarType[]>(initialLatestCars || []);
+  const [loadingCars, setLoadingCars] = useState(initialLatestCars?.length === 0);
 
-export default function HomeClient({ latestCars }: HomeClientProps) {
+  useEffect(() => {
+    if (latestCars.length === 0) {
+      setLoadingCars(true);
+      api.cars.list({ limit: 8, sort: 'createdAt:desc' })
+        .then(res => {
+          const data = res?.data || res;
+          if (Array.isArray(data)) setLatestCars(data);
+          else if (Array.isArray(data?.data)) setLatestCars(data.data);
+        })
+        .catch(err => console.error("Error fetching cars:", err))
+        .finally(() => setLoadingCars(false));
+    }
+  }, []);
+
   const { isRTL } = useLanguage();
   const { user, isLoggedIn } = useAuth();
   const { socket, isConnected } = useSocket();
@@ -459,6 +473,38 @@ export default function HomeClient({ latestCars }: HomeClientProps) {
         <>
           {/* 1. HERO SHOWCASE */}
           <LandingShowcase isRTL={isRTL} latestCars={latestCars} />
+
+          {/* 2. LATEST CARS SECTION (RESTORED) */}
+          <section className="relative z-10 py-24 px-4 bg-gradient-to-b from-transparent to-black/20">
+            <div className="max-w-7xl mx-auto">
+              <div className="flex items-center justify-between mb-12">
+                <div>
+                  <h2 className="text-4xl md:text-6xl font-black text-white italic uppercase tracking-tighter">
+                    {isRTL ? 'أحدث السيارات' : 'LATEST ARRIVALS'}
+                  </h2>
+                  <div className="h-1 w-20 bg-accent-gold mt-2" />
+                </div>
+                <Link href="/gallery" className="group flex items-center gap-2 text-accent-gold font-bold uppercase tracking-widest hover:text-white transition-colors">
+                  {isRTL ? 'عرض الكل' : 'VIEW ALL'}
+                  <ArrowRight className={cn("w-5 h-5 transition-transform group-hover:translate-x-2", isRTL && "rotate-180 group-hover:-translate-x-2")} />
+                </Link>
+              </div>
+
+              {loadingCars ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="h-[400px] rounded-[2.5rem] bg-white/5 animate-pulse border border-white/10" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                  {latestCars.slice(0, 8).map((car, i) => (
+                    <ModernCarCard key={car.id || i} car={car as any} index={i} formatPrice={formatPrice} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
 
           {/* 2.5 ANNOUNCEMENT RIBBON REMOVED: Replaced fully by SmartAdBanner */}
 

@@ -570,21 +570,58 @@ export default function AdminPartsPage() {
                             <form onSubmit={handleSubmit} className="space-y-5">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="col-span-2">
-                                        <label className="block cockpit-mono text-[9px] text-orange-400/60 uppercase tracking-[0.15em] mb-2">{isRTL ? 'صورة القطعة' : 'PART IMAGE'}</label>
-                                        <div className="flex items-center gap-4">
-                                            <div className="relative w-20 h-20 ck-card overflow-hidden flex items-center justify-center">
-                                                {formData.images[0]
-                                                    ? <Image src={formData.images[0]} alt="Part" fill sizes="80px" quality={50} className="object-cover" />
-                                                    : <Upload className="w-6 h-6 text-orange-500/30" />}
-                                                <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer"
-                                                    onChange={async (e) => {
-                                                        const file = e.target.files?.[0]; if (!file) return;
-                                                        const data = new FormData(); data.append('image', file);
-                                                        try { const res = await (api as any).upload.image(data); if (res.success) setFormData({ ...formData, images: [res.url] }); } catch { }
-                                                    }} />
-                                            </div>
-                                            <p className="cockpit-mono text-[9px] text-white/30">{isRTL ? 'اضغط لرفع صورة' : 'Click to upload'}</p>
+                                        <label className="block cockpit-mono text-[9px] text-orange-400/60 uppercase tracking-[0.15em] mb-2">{isRTL ? 'صور القطعة' : 'PART IMAGES'}</label>
+                                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
+                                            {formData.images.map((img, idx) => (
+                                                <div key={idx} className="relative aspect-square ck-card overflow-hidden group">
+                                                    {img ? (
+                                                        <>
+                                                            <Image src={img} alt="Part" fill sizes="100px" quality={50} className="object-cover" />
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const newImages = [...formData.images];
+                                                                    newImages.splice(idx, 1);
+                                                                    if (newImages.length === 0) newImages.push('');
+                                                                    setFormData({ ...formData, images: newImages });
+                                                                }}
+                                                                className="absolute top-1 right-1 w-5 h-5 bg-red-500/80 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            >
+                                                                <X className="w-3 h-3 text-white" />
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <div className="w-full h-full flex flex-col items-center justify-center text-orange-500/20">
+                                                            <Upload className="w-5 h-5 mb-1" />
+                                                            <span className="text-[8px] font-bold">UPLOAD</span>
+                                                            <input 
+                                                                type="file" 
+                                                                accept="image/*" 
+                                                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                                                onChange={async (e) => {
+                                                                    const file = e.target.files?.[0];
+                                                                    if (!file) return;
+                                                                    const data = new FormData();
+                                                                    data.append('image', file);
+                                                                    try {
+                                                                        const res = await (api as any).upload.image(data);
+                                                                        if (res.success) {
+                                                                            const newImages = [...formData.images];
+                                                                            newImages[idx] = res.url;
+                                                                            if (newImages.length < 8) newImages.push('');
+                                                                            setFormData({ ...formData, images: newImages });
+                                                                        }
+                                                                    } catch (err) {
+                                                                        showToast(isRTL ? '❌ فشل الرفع' : '❌ Upload failed', 'error');
+                                                                    }
+                                                                }} 
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
                                         </div>
+                                        <p className="cockpit-mono text-[8px] text-white/20 mt-2 uppercase tracking-widest">{isRTL ? 'يمكنك إضافة حتى 8 صور' : 'UP TO 8 IMAGES ALLOWED'}</p>
                                     </div>
 
                                     <div className="col-span-2">
@@ -597,7 +634,8 @@ export default function AdminPartsPage() {
                                     <div>
                                         <label className="block cockpit-mono text-[9px] text-orange-400/60 uppercase tracking-[0.15em] mb-2">{isRTL ? 'الوكالة' : 'BRAND'}</label>
                                         <select aria-label="Brand" value={formData.brand} onChange={(e) => setFormData({ ...formData, brand: e.target.value })} className="ck-select">
-                                            {['TOYOTA', 'KIA', 'HYUNDAI', 'FORD', 'NISSAN', 'MERCEDES', 'BMW', 'LEXUS'].map(b => <option key={b} value={b}>{b}</option>)}
+                                            <option value="">{isRTL ? 'اختر الوكالة' : 'Select Brand'}</option>
+                                            {['TOYOTA', 'KIA', 'HYUNDAI', 'FORD', 'NISSAN', 'MERCEDES', 'BMW', 'LEXUS', 'AUDI', 'HONDA', 'CHEVROLET', 'VOLKSWAGEN', 'ISUZU', 'PROTON'].map(b => <option key={b} value={b}>{b}</option>)}
                                         </select>
                                     </div>
                                     <div>

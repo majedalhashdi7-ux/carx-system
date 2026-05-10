@@ -168,84 +168,68 @@ export default function Navbar() {
                 <div className="max-w-400 mx-auto px-6 flex items-center justify-between">
                     {/* الشعار - Logo */}
                     <div className="group flex flex-col items-start gap-2 shrink-0">
-                        <div className="flex items-center gap-3">
-                            <Link href="/" className="flex items-center gap-3">
-                            <motion.div
-                                whileHover={{ scale: 1.05 }}
-                                className="relative flex items-center"
-                            >
-                                <span className="text-2xl font-black tracking-[-0.04em] text-white transition-all drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
+                        <Link href="/" className="flex items-center gap-3">
+                            <div className="flex items-center">
+                                <span className="text-2xl font-black tracking-[-0.04em] text-white transition-all group-hover:text-accent-gold">
                                     {siteInfo?.siteName?.split(' ')[0] || rawText('HM')}
                                 </span>
-                                <span className="text-2xl font-display italic text-accent-gold ml-1 transition-all drop-shadow-[0_0_12px_rgba(201,169,110,0.5)]">
+                                <span className="text-2xl font-display italic text-accent-gold ml-1 transition-all group-hover:text-white">
                                     {siteInfo?.siteName?.split(' ')[1] || rawText('CAR')}
                                 </span>
-                                <motion.div
-                                    initial={{ width: 0 }}
-                                    whileHover={{ width: '100%' }}
-                                    className="absolute -bottom-1 left-0 h-px bg-accent-gold opacity-50"
-                                />
-                            </motion.div>
+                            </div>
                         </Link>
-                        </div>
                     </div>
 
 
                     {/* أزرار الإجراءات على اليمين (أو اليسار في RTL) - Right Actions */}
                     <div className="flex items-center gap-2">
-                        {pathname !== '/' && (
-                            <>
-                                {isLoggedIn && (
-                                    <button
-                                        onClick={() => setNotificationsOpen(true)}
-                                        className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all relative"
-                                        title={isRTL ? 'الإشعارات' : 'Notifications'}
-                                    >
-                                        <Bell className="w-4 h-4" />
-                                        <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-cinematic-neon-red animate-pulse" />
-                                    </button>
-                                )}
-
-                                {!isLoggedIn && (
-                                    <Link href="/login" className="hidden sm:block">
-                                        <div className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer">
-                                            {isRTL ? rawText('دخول') : rawText('SIGN IN')}
-                                        </div>
-                                    </Link>
-                                )}
-
-                                {/* [[ARABIC_COMMENT]] زر المفضلة */}
-                                <button 
-                                    onClick={() => setFavoritesOpen(true)}
-                                    className="relative w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/10 transition-all" 
-                                    title={isRTL ? 'المفضلة' : 'Favorites'}
-                                >
-                                    <Heart className="w-4 h-4" />
-                                </button>
-
-                                {/* [[ARABIC_COMMENT]] زر السلة مع عداد */}
-                                <Link href="/cart" className="relative w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all">
-                                    <ShoppingCart className="w-4 h-4" />
-                                    {cartCount > 0 && (
-                                        <span className="absolute -top-1.5 -right-1.5 min-w-4.5 h-4.5 bg-cinematic-neon-gold text-black text-[9px] font-black rounded-full flex items-center justify-center px-1">
-                                            {cartCount > 9 ? rawText('9+') : cartCount}
-                                        </span>
-                                    )}
-                                </Link>
-
-                                {/* [[ARABIC_COMMENT]] محول العملات الجديد */}
-                                {/* CurrencySwitcher removed */}
-
-                                {/* زر تغيير اللغة - لتبديل الواجهة بين العربية والإنجليزية */}
-                                <button
-                                    onClick={toggleLanguage}
-                                    className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all"
-                                    title={isRTL ? "English" : "العربية"}
-                                >
-                                    <Languages className="w-4 h-4 text-accent-gold" />
-                                </button>
-                            </>
+                        {/* Always show core actions */}
+                        {isLoggedIn && (
+                            <button
+                                onClick={() => setNotificationsOpen(true)}
+                                className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all relative"
+                                title={isRTL ? 'الإشعارات' : 'Notifications'}
+                            >
+                                <Bell className="w-4 h-4" />
+                                <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-cinematic-neon-red animate-pulse" />
+                            </button>
                         )}
+
+                        {!isLoggedIn && (
+                            <Link href="/login" className="hidden sm:block">
+                                <div className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer">
+                                    {isRTL ? rawText('دخول') : rawText('SIGN IN')}
+                                </div>
+                            </Link>
+                        )}
+
+                        {/* [[ARABIC_COMMENT]] زر المفضلة */}
+                        <button 
+                            onClick={() => setFavoritesOpen(true)}
+                            className="relative w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/10 transition-all" 
+                            title={isRTL ? 'المفضلة' : 'Favorites'}
+                        >
+                            <Heart className="w-4 h-4" />
+                        </button>
+
+                        {/* [[ARABIC_COMMENT]] زر السلة مع عداد */}
+                        <Link href="/cart" className="relative w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all">
+                            <ShoppingCart className="w-4 h-4" />
+                            {cartCount > 0 && (
+                                <span className="absolute -top-1.5 -right-1.5 min-w-4.5 h-4.5 bg-cinematic-neon-gold text-black text-[9px] font-black rounded-full flex items-center justify-center px-1">
+                                    {cartCount > 9 ? rawText('9+') : cartCount}
+                                </span>
+                            )}
+                        </Link>
+
+                        {/* زر تغيير اللغة - لتبديل الواجهة بين العربية والإنجليزية */}
+                        <button
+                            onClick={toggleLanguage}
+                            className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all"
+                            title={isRTL ? "English" : "العربية"}
+                        >
+                            <Languages className="w-4 h-4 text-accent-gold" />
+                        </button>
 
                         {/* Mobile Toggle */}
                         <button
