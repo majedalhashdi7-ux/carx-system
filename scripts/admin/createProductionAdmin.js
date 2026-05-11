@@ -12,7 +12,7 @@
  */
 require('dotenv').config();
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 const ADMIN_DATA = {
     name: process.env.PROD_ADMIN_NAME || 'HM Admin',

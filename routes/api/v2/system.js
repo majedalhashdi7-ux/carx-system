@@ -5,6 +5,33 @@ const os = require('os');
 const { requireAuthAPI } = require('../../../middleware/auth');
 const logger = require('../../../modules/core/logger');
 
+// GET /api/v2/system/public-health
+// فحص عام للنظام بدون تطلب تسجيل دخول (يستخدم للتشخيص)
+router.get('/public-health', async (req, res) => {
+    try {
+        const dbConnection = req.tenantDb || mongoose.connection;
+        const dbStatus = dbConnection.readyState;
+        const dbStatusMap = {
+            0: 'Disconnected',
+            1: 'Connected',
+            2: 'Connecting',
+            3: 'Disconnecting',
+        };
+
+        res.json({
+            success: true,
+            tenant: req.tenant ? req.tenant.id : 'unknown',
+            database: {
+                status: dbStatusMap[dbStatus] || 'Unknown',
+                name: dbConnection.name || 'none'
+            },
+            time: new Date()
+        });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
 // GET /api/v2/system/health
 // فحص شامل للنظام (قاعدة البيانات، الذاكرة، الخوادم)
 router.get('/health', requireAuthAPI, async (req, res) => {
