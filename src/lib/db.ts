@@ -15,7 +15,7 @@ const cached: CachedConnection = global.mongooseCarX || { conn: null, promise: n
 global.mongooseCarX = cached;
 
 export async function connectDB(): Promise<typeof mongoose> {
-  const MONGO_URI = process.env.MONGO_URI || process.env.MONGO_URI_CARX || '';
+  const MONGO_URI = process.env.MONGO_URI_CARX || process.env.MONGO_URI || '';
 
   if (!MONGO_URI) {
     throw new Error('MONGO_URI is not defined in environment variables');
