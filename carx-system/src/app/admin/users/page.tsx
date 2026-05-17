@@ -11,8 +11,20 @@ export default function AdminUsersPage() {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    // This is a placeholder since we don't have api.users exported yet
-    setLoading(false);
+    const fetchUsers = async () => {
+      setLoading(true);
+      try {
+        const res = await api.users.getAll();
+        if (res.data) {
+          setUsers((res.data as any).data?.users || (res.data as any).users || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch users', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUsers();
   }, []);
 
   return (

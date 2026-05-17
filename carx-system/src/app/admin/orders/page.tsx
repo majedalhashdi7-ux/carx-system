@@ -11,9 +11,20 @@ export default function AdminOrdersPage() {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    // This is a placeholder since we don't have api.orders exported yet
-    // For now we will just simulate an empty list
-    setLoading(false);
+    const fetchOrders = async () => {
+      setLoading(true);
+      try {
+        const res = await api.orders.getAll();
+        if (res.data) {
+          setOrders((res.data as any).data?.orders || (res.data as any).orders || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch orders', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrders();
   }, []);
 
   return (

@@ -27,6 +27,17 @@ export default function AdminCarsPage() {
     setLoading(false);
   };
 
+  const handleDelete = async (id: string) => {
+    if (window.confirm('هل أنت متأكد من حذف هذه السيارة؟')) {
+      try {
+        await api.cars.delete(id);
+        fetchCars();
+      } catch (err) {
+        alert('فشل حذف السيارة');
+      }
+    }
+  };
+
   useEffect(() => {
     fetchCars();
   }, []);
@@ -140,10 +151,13 @@ export default function AdminCarsPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <button className="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:text-luxury-gold transition-all">
+                          <Link href={`/admin/cars/${car._id}/edit`} className="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:text-luxury-gold transition-all">
                             <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button className="p-2 rounded-lg bg-red-500/5 border border-red-500/10 hover:bg-red-500/10 hover:text-red-500 transition-all">
+                          </Link>
+                          <button 
+                            onClick={() => handleDelete(car._id)}
+                            className="p-2 rounded-lg bg-red-500/5 border border-red-500/10 hover:bg-red-500/10 hover:text-red-500 transition-all"
+                          >
                             <Trash2 className="w-4 h-4" />
                           </button>
                           <button className="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all">

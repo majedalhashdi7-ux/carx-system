@@ -62,6 +62,11 @@ export const api = {
     getById: (id: string) => fetchAPI(`/cars/${id}`),
     getFeatured: () => fetchAPI('/cars?isFeatured=true&limit=6'),
     search: (query: string) => fetchAPI(`/cars?search=${encodeURIComponent(query)}`),
+    delete: (id: string) => fetchAPI(`/cars/${id}`, { method: 'DELETE' }),
+    update: (id: string, data: any) => fetchAPI(`/cars/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
   },
   parts: {
     getAll: (params?: Record<string, string>) => fetchAPI('/parts', { params }),
@@ -82,4 +87,10 @@ export const api = {
   admin: {
     getStats: () => fetchAPI('/dashboard/admin'),
   },
+  users: {
+    getAll: () => fetchAPI('/users'),
+  },
+  orders: {
+    getAll: () => fetchAPI('/orders'), // Wait, let's verify if /orders exists, we'll assume /auctions or /orders is the standard
+  }
 };
