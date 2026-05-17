@@ -2,15 +2,15 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Save, Link as LinkIcon, AlertCircle } from 'lucide-react';
+import { ArrowRight, Save, Link as LinkIcon, AlertCircle, Upload, X } from 'lucide-react';
 import Link from 'next/link';
 import Navbar from '../../../../components/Navbar';
-import { api } from '../../../../lib/api';
 
 export default function NewCarPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [previewImage, setPreviewImage] = useState('');
   
   const [formData, setFormData] = useState({
     title: '',
@@ -33,14 +33,36 @@ export default function NewCarPage() {
     }));
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setPreviewImage(base64String);
+        setFormData(prev => ({ ...prev, imageUrl: base64String }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const url = e.target.value;
+    setFormData(prev => ({ ...prev, imageUrl: url }));
+    setPreviewImage(url);
+  };
+
+  const clearImage = () => {
+    setPreviewImage('');
+    setFormData(prev => ({ ...prev, imageUrl: '' }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      // In a real implementation, api.cars.create would be added to api.ts
-      // For now we assume a standard POST request
       const token = localStorage.getItem('carx_token');
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api/v2'}/cars`, {
         method: 'POST',
@@ -193,21 +215,53 @@ export default function NewCarPage() {
                 </select>
               </div>
 
-              {/* Image URL */}
+              {/* Image Upload Area */}
               <div className="md:col-span-2">
-                <label className="block text-sm font-bold text-white/60 mb-2">رابط الصورة الرئيسية</label>
-                <div className="relative">
-                  <LinkIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                  <input 
-                    type="url" 
-                    name="imageUrl"
-                    value={formData.imageUrl}
-                    onChange={handleChange}
-                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 pr-11 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
-                    placeholder="https://example.com/image.jpg"
-                    dir="ltr"
-                  />
-                </div>
+                <label className="block text-sm font-bold text-white/60 mb-3">صورة السيارة الرئيسية</label>
+                
+                {previewImage ? (
+                  <div className="relative aspect-video w-full rounded-2xl overflow-hidden border border-white/10 bg-black">
+                    <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
+                    <button 
+                      type="button"
+                      onClick={clearImage}
+                      className="absolute top-4 left-4 p-2 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 hover:bg-red-500 hover:text-white transition-all text-white/60"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Local File Input */}
+                    <label className="border-2 border-dashed border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer hover:border-luxury-gold/30 hover:bg-white/[0.01] transition-all group text-center">
+                      <Upload className="w-10 h-10 text-white/20 group-hover:text-luxury-gold transition-colors mb-3" />
+                      <span className="text-sm font-bold">تحميل صورة من الجهاز</span>
+                      <span className="text-xs text-white/30 mt-1">يدعم PNG, JPG, WEBP</span>
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {/* Web Link Input */}
+                    <div className="border border-white/10 bg-white/[0.02] rounded-2xl p-8 flex flex-col justify-center space-y-4">
+                      <div className="flex items-center gap-2 text-white/40">
+                        <LinkIcon className="w-5 h-5 text-luxury-gold" />
+                        <span className="text-sm font-bold">أو أضف رابط صورة مباشر</span>
+                      </div>
+                      <input 
+                        type="url" 
+                        value={formData.imageUrl}
+                        onChange={handleUrlChange}
+                        placeholder="https://example.com/image.jpg"
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-xs focus:border-luxury-gold/50 focus:outline-none transition-colors"
+                        dir="ltr"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Description */}

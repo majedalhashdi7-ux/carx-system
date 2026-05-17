@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowRight, Save, Link as LinkIcon, AlertCircle } from 'lucide-react';
+import { ArrowRight, Save, Link as LinkIcon, AlertCircle, Upload, X } from 'lucide-react';
 import Link from 'next/link';
 import Navbar from '../../../../../components/Navbar';
 import { api } from '../../../../../lib/api';
@@ -15,6 +15,7 @@ export default function EditCarPage() {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState('');
+  const [previewImage, setPreviewImage] = useState('');
   
   const [formData, setFormData] = useState({
     title: '',
@@ -36,6 +37,7 @@ export default function EditCarPage() {
         if (res.data) {
           const car = (res.data as any).data?.car || (res.data as any).car;
           if (car) {
+            const img = car.images?.[0] || car.mainImage || '';
             setFormData({
               title: car.title || '',
               make: car.make || car.brand || '',
@@ -46,8 +48,9 @@ export default function EditCarPage() {
               fuelType: car.fuelType || 'petrol',
               transmission: car.transmission || 'automatic',
               description: car.description || '',
-              imageUrl: car.images?.[0] || car.mainImage || ''
+              imageUrl: img
             });
+            setPreviewImage(img);
           }
         }
       } catch (err) {
@@ -67,6 +70,30 @@ export default function EditCarPage() {
       ...prev,
       [name]: name === 'year' || name === 'price' ? Number(value) : value
     }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setPreviewImage(base64String);
+        setFormData(prev => ({ ...prev, imageUrl: base64String }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const url = e.target.value;
+    setFormData(prev => ({ ...prev, imageUrl: url }));
+    setPreviewImage(url);
+  };
+
+  const clearImage = () => {
+    setPreviewImage('');
+    setFormData(prev => ({ ...prev, imageUrl: '' }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -222,20 +249,53 @@ export default function EditCarPage() {
                 </select>
               </div>
 
-              {/* Image URL */}
+              {/* Image Upload Area */}
               <div className="md:col-span-2">
-                <label className="block text-sm font-bold text-white/60 mb-2">رابط الصورة الرئيسية</label>
-                <div className="relative">
-                  <LinkIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                  <input 
-                    type="url" 
-                    name="imageUrl"
-                    value={formData.imageUrl}
-                    onChange={handleChange}
-                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 pr-11 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
-                    dir="ltr"
-                  />
-                </div>
+                <label className="block text-sm font-bold text-white/60 mb-3">صورة السيارة الرئيسية</label>
+                
+                {previewImage ? (
+                  <div className="relative aspect-video w-full rounded-2xl overflow-hidden border border-white/10 bg-black">
+                    <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
+                    <button 
+                      type="button"
+                      onClick={clearImage}
+                      className="absolute top-4 left-4 p-2 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 hover:bg-red-500 hover:text-white transition-all text-white/60"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Local File Input */}
+                    <label className="border-2 border-dashed border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer hover:border-luxury-gold/30 hover:bg-white/[0.01] transition-all group text-center">
+                      <Upload className="w-10 h-10 text-white/20 group-hover:text-luxury-gold transition-colors mb-3" />
+                      <span className="text-sm font-bold">تحميل صورة من الجهاز</span>
+                      <span className="text-xs text-white/30 mt-1">يدعم PNG, JPG, WEBP</span>
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {/* Web Link Input */}
+                    <div className="border border-white/10 bg-white/[0.02] rounded-2xl p-8 flex flex-col justify-center space-y-4">
+                      <div className="flex items-center gap-2 text-white/40">
+                        <LinkIcon className="w-5 h-5 text-luxury-gold" />
+                        <span className="text-sm font-bold">أو أضف رابط صورة مباشر</span>
+                      </div>
+                      <input 
+                        type="url" 
+                        value={formData.imageUrl}
+                        onChange={handleUrlChange}
+                        placeholder="https://example.com/image.jpg"
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-xs focus:border-luxury-gold/50 focus:outline-none transition-colors"
+                        dir="ltr"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Description */}

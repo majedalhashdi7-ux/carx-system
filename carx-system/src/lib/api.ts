@@ -91,6 +91,10 @@ export const api = {
     getAll: () => fetchAPI('/users'),
   },
   orders: {
-    getAll: () => fetchAPI('/orders'), // Wait, let's verify if /orders exists, we'll assume /auctions or /orders is the standard
+    getAll: () => fetchAPI('/orders'),
+    create: (data: any) => fetchAPI('/orders', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
   }
 };

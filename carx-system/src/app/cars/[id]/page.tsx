@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect, use } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronRight, Calendar, Fuel, Gauge, ShieldCheck, 
-  Share2, Heart, MessageSquare, AlertCircle, ArrowLeft
+  Share2, Heart, MessageSquare, AlertCircle, ArrowLeft, X, Check
 } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '../../../lib/api';
@@ -16,6 +16,18 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
   const [car, setCar] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Booking Modal States
+  const [showModal, setShowModal] = useState(false);
+  const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookingError, setBookingError] = useState('');
+  const [bookingForm, setBookingForm] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    notes: ''
+  });
 
   useEffect(() => {
     const fetchCar = async () => {
@@ -32,6 +44,37 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
     fetchCar();
   }, [id]);
 
+  const handleBookingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBookingLoading(true);
+    setBookingError('');
+    
+    try {
+      const res = await api.orders.create({
+        car: car._id,
+        totalAmount: car.price,
+        customerName: bookingForm.name,
+        customerPhone: bookingForm.phone,
+        customerEmail: bookingForm.email,
+        notes: bookingForm.notes
+      });
+
+      if (res.error) {
+        throw new Error(res.error);
+      }
+      setBookingSuccess(true);
+    } catch (err: any) {
+      setBookingError(err.message || 'حدث خطأ أثناء إرسال طلب الحجز');
+    } finally {
+      setBookingLoading(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setBookingForm(prev => ({ ...prev, [name]: value }));
+  };
+
   if (loading) return (
     <div className="min-h-screen bg-black flex items-center justify-center">
       <div className="w-12 h-12 border-4 border-luxury-gold/20 border-t-luxury-gold rounded-full animate-spin" />
@@ -43,7 +86,7 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
       <AlertCircle className="w-16 h-16 text-red-500/50 mb-4" />
       <h1 className="text-2xl font-bold text-white mb-2">تعذر العثور على السيارة</h1>
       <p className="text-gray-400 mb-8">{error || 'ربما تم حذف هذه السيارة أو أنها غير متوفرة حالياً'}</p>
-      <Link href="/cars" className="px-8 py-3 bg-white/10 rounded-full text-white hover:bg-white/20 transition-all">
+      <Link href="/showroom" className="px-8 py-3 bg-white/10 rounded-full text-white hover:bg-white/20 transition-all">
         العودة للمعرض
       </Link>
     </div>
@@ -59,7 +102,7 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
           <div className="flex items-center gap-2 text-xs font-bold text-white/30 uppercase tracking-widest" dir="rtl">
             <Link href="/" className="hover:text-luxury-gold">الرئيسية</Link>
             <ChevronRight className="w-3 h-3" />
-            <Link href="/cars" className="hover:text-luxury-gold">المعرض</Link>
+            <Link href="/showroom" className="hover:text-luxury-gold">المعرض</Link>
             <ChevronRight className="w-3 h-3" />
             <span className="text-white/60">{car.title}</span>
           </div>
@@ -138,7 +181,10 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
                 </div>
 
                 <div className="space-y-3">
-                  <button className="w-full py-5 bg-white text-black font-black uppercase tracking-widest rounded-2xl hover:bg-luxury-gold transition-all shadow-2xl shadow-white/5 active:scale-95">
+                  <button 
+                    onClick={() => setShowModal(true)}
+                    className="w-full py-5 bg-white text-black font-black uppercase tracking-widest rounded-2xl hover:bg-luxury-gold transition-all shadow-2xl shadow-white/5 active:scale-95"
+                  >
                     احجز الآن
                   </button>
                   <button className="w-full py-5 bg-white/5 border border-white/10 text-white font-bold rounded-2xl flex items-center justify-center gap-3 hover:bg-white/10 transition-all">
@@ -150,7 +196,7 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
                 <div className="pt-8 border-t border-white/5 space-y-4">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-white/30">الماركة</span>
-                    <span className="font-bold uppercase tracking-wider">{car.brand}</span>
+                    <span className="font-bold uppercase tracking-wider">{car.brand || car.make}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-white/30">رقم الإعلان</span>
@@ -172,6 +218,145 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
 
         </div>
       </div>
+
+      {/* Booking Modal */}
+      <AnimatePresence>
+        {showModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Overlay */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setShowModal(false);
+                setBookingSuccess(false);
+              }}
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            />
+            
+            {/* Modal Body */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-lg bg-zinc-950 border border-white/10 rounded-3xl p-8 overflow-hidden shadow-2xl"
+              dir="rtl"
+            >
+              <button 
+                onClick={() => {
+                  setShowModal(false);
+                  setBookingSuccess(false);
+                }}
+                className="absolute top-6 left-6 text-white/40 hover:text-white transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+
+              <div className="absolute top-0 right-0 w-48 h-48 bg-luxury-gold/5 blur-[80px] pointer-events-none" />
+
+              {!bookingSuccess ? (
+                <div className="space-y-6 relative z-10">
+                  <div>
+                    <h3 className="text-2xl font-black">حجز السيارة</h3>
+                    <p className="text-white/40 text-xs mt-1">قم بتعبئة بياناتك وسيقوم مستشار المبيعات بالتواصل معك فوراً.</p>
+                  </div>
+
+                  {bookingError && (
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-xl flex items-center gap-3 text-sm font-bold">
+                      <AlertCircle className="w-5 h-5 shrink-0" />
+                      <p>{bookingError}</p>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleBookingSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-white/60 mb-2">الاسم بالكامل</label>
+                      <input 
+                        type="text"
+                        name="name"
+                        required
+                        value={bookingForm.name}
+                        onChange={handleInputChange}
+                        placeholder="مثال: أحمد محمد"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-luxury-gold/50"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-white/60 mb-2">رقم الجوال</label>
+                      <input 
+                        type="tel"
+                        name="phone"
+                        required
+                        value={bookingForm.phone}
+                        onChange={handleInputChange}
+                        placeholder="مثال: 050XXXXXXX"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-luxury-gold/50 text-right"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-white/60 mb-2">البريد الإلكتروني</label>
+                      <input 
+                        type="email"
+                        name="email"
+                        required
+                        value={bookingForm.email}
+                        onChange={handleInputChange}
+                        placeholder="example@mail.com"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-luxury-gold/50"
+                        dir="ltr"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-white/60 mb-2">ملاحظات خاصة (اختياري)</label>
+                      <textarea 
+                        name="notes"
+                        rows={3}
+                        value={bookingForm.notes}
+                        onChange={handleInputChange}
+                        placeholder="مثال: أفضل وقت للتواصل معي هو في المساء..."
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-luxury-gold/50 resize-none"
+                      />
+                    </div>
+
+                    <button 
+                      type="submit"
+                      disabled={bookingLoading}
+                      className="w-full py-4 bg-luxury-gold text-black font-black uppercase tracking-widest rounded-xl hover:bg-white transition-all disabled:opacity-50 mt-6"
+                    >
+                      {bookingLoading ? 'جاري إرسال الطلب...' : 'تأكيد طلب الحجز'}
+                    </button>
+                  </form>
+                </div>
+              ) : (
+                <div className="text-center py-12 space-y-6 relative z-10 flex flex-col items-center">
+                  <div className="w-20 h-20 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center text-green-500">
+                    <Check className="w-10 h-10" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black text-white">تم الحجز بنجاح!</h3>
+                    <p className="text-white/40 text-sm mt-2 max-w-xs mx-auto">
+                      شكراً لاهتمامك بـ CAR X. لقد تم تسجيل طلب حجزك للسيارة **{car.title}** بنجاح. سيتصل بك مستشارنا الفني بأقرب وقت ممكن.
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setShowModal(false);
+                      setBookingSuccess(false);
+                    }}
+                    className="px-8 py-3 bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl text-sm font-bold transition-all"
+                  >
+                    إغلاق النافذة
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <Footer />
     </main>
