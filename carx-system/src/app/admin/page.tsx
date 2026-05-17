@@ -1,6 +1,8 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { 
   LayoutDashboard, 
   Car, 
@@ -14,15 +16,34 @@ import {
 } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
+import { api } from '../../lib/api';
 
 export default function AdminDashboard() {
-  const stats = [
-    { label: 'إجمالي السيارات', value: '24', icon: Car, trend: '+12%', color: 'text-luxury-gold' },
-    { label: 'الطلبات النشطة', value: '156', icon: ShoppingBag, trend: '+5%', color: 'text-green-400' },
-    { label: 'العملاء الجدد', value: '1,204', icon: Users, trend: '+18%', color: 'text-blue-400' },
-    { label: 'الإيرادات (ريال)', value: '4.2M', icon: TrendingUp, trend: '+25%', color: 'text-purple-400' },
-  ];
+  const [dashboardStats, setDashboardStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await api.admin.getStats();
+        if (res.data && res.data.success) {
+          setDashboardStats(res.data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  const stats = [
+    { label: 'إجمالي السيارات', value: dashboardStats?.totalCars ?? '0', icon: Car, trend: '+12%', color: 'text-luxury-gold' },
+    { label: 'الطلبات النشطة', value: dashboardStats?.pendingOrders ?? '0', icon: ShoppingBag, trend: '+5%', color: 'text-green-400' },
+    { label: 'العملاء الجدد', value: dashboardStats?.totalUsers ?? '0', icon: Users, trend: '+18%', color: 'text-blue-400' },
+    { label: 'المزادات الجارية', value: dashboardStats?.runningAuctions ?? '0', icon: TrendingUp, trend: '+25%', color: 'text-purple-400' },
+  ];
   return (
     <main className="min-h-screen bg-black text-white selection:bg-luxury-gold selection:text-black">
       <Navbar />
@@ -37,13 +58,14 @@ export default function AdminDashboard() {
                 <h2 className="text-xs font-black text-white/30 uppercase tracking-[0.2em]">القائمة الرئيسية</h2>
               </div>
               {[
-                { label: 'لوحة القيادة', icon: LayoutDashboard, active: true },
-                { label: 'إدارة السيارات', icon: Car, active: false },
-                { label: 'الطلبات والمبيعات', icon: ShoppingBag, active: false },
-                { label: 'قاعدة العملاء', icon: Users, active: false },
-                { label: 'إعدادات المنصة', icon: Settings, active: false },
+                { label: 'لوحة القيادة', icon: LayoutDashboard, active: true, href: '/admin' },
+                { label: 'إدارة السيارات', icon: Car, active: false, href: '/admin/cars' },
+                { label: 'الطلبات والمبيعات', icon: ShoppingBag, active: false, href: '/admin/orders' },
+                { label: 'قاعدة العملاء', icon: Users, active: false, href: '/admin/users' },
+                { label: 'إعدادات المنصة', icon: Settings, active: false, href: '/admin/settings' },
               ].map((item, idx) => (
-                <button 
+                <Link 
+                  href={item.href}
                   key={idx}
                   className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl text-sm font-bold transition-all group ${
                     item.active 
@@ -56,8 +78,9 @@ export default function AdminDashboard() {
                     {item.label}
                   </div>
                   {item.active && <div className="w-1.5 h-1.5 rounded-full bg-black/30" />}
-                </button>
+                </Link>
               ))}
+
             </div>
           </aside>
 

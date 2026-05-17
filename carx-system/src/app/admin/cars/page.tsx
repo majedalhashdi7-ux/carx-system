@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { 
   Plus, Search, Edit2, Trash2, ExternalLink, 
   Filter, MoreHorizontal, CheckCircle2, XCircle 
@@ -45,10 +46,10 @@ export default function AdminCarsPage() {
             <h1 className="text-3xl font-bold">إدارة السيارات</h1>
             <p className="text-white/40 text-sm mt-1">تحكم في مخزون السيارات المعروضة في CAR X</p>
           </div>
-          <button className="flex items-center gap-2 px-6 py-3 bg-luxury-gold text-black font-bold rounded-xl hover:bg-white transition-all shadow-lg shadow-luxury-gold/10">
+          <Link href="/admin/cars/new" className="flex items-center gap-2 px-6 py-3 bg-luxury-gold text-black font-bold rounded-xl hover:bg-white transition-all shadow-lg shadow-luxury-gold/10">
             <Plus className="w-5 h-5" />
             إضافة سيارة جديدة
-          </button>
+          </Link>
         </div>
 
         {/* Filters & Search */}

@@ -61,9 +61,25 @@ export const api = {
     getAll: (params?: Record<string, string>) => fetchAPI('/cars', { params }),
     getById: (id: string) => fetchAPI(`/cars/${id}`),
     getFeatured: () => fetchAPI('/cars?isFeatured=true&limit=6'),
+    search: (query: string) => fetchAPI(`/cars?search=${encodeURIComponent(query)}`),
+  },
+  parts: {
+    getAll: (params?: Record<string, string>) => fetchAPI('/parts', { params }),
+    getById: (id: string) => fetchAPI(`/parts/${id}`),
+    getByCategory: (category: string) => fetchAPI(`/parts?category=${encodeURIComponent(category)}`),
   },
   brands: {
     getAll: () => fetchAPI('/brands'),
+    getById: (id: string) => fetchAPI(`/brands/${id}`),
   },
-  // Add more services as needed (auth, etc)
+  auth: {
+    login: (identifier: string, password: string) => fetchAPI('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ identifier, password, role: 'admin' }),
+    }),
+    verify: () => fetchAPI('/auth/verify', { method: 'GET' }),
+  },
+  admin: {
+    getStats: () => fetchAPI('/dashboard/admin'),
+  },
 };

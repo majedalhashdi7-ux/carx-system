@@ -1,0 +1,248 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { ArrowRight, Save, Link as LinkIcon, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
+import Navbar from '../../../../components/Navbar';
+import { api } from '../../../../lib/api';
+
+export default function NewCarPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  
+  const [formData, setFormData] = useState({
+    title: '',
+    make: '',
+    model: '',
+    year: new Date().getFullYear(),
+    price: 0,
+    category: 'sedan',
+    fuelType: 'petrol',
+    transmission: 'automatic',
+    description: '',
+    imageUrl: ''
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: name === 'year' || name === 'price' ? Number(value) : value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      // In a real implementation, api.cars.create would be added to api.ts
+      // For now we assume a standard POST request
+      const token = localStorage.getItem('carx_token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api/v2'}/cars`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Tenant-ID': 'carx',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          ...formData,
+          images: formData.imageUrl ? [formData.imageUrl] : [],
+          isActive: true
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || data.error || 'حدث خطأ أثناء إضافة السيارة');
+      }
+
+      router.push('/admin/cars');
+    } catch (err: any) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
+  return (
+    <main className="min-h-screen bg-[#050505] text-white">
+      <Navbar />
+
+      <div className="pt-32 pb-20 px-4 md:px-8 max-w-4xl mx-auto">
+        <div className="mb-8">
+          <Link href="/admin/cars" className="inline-flex items-center gap-2 text-white/40 hover:text-luxury-gold transition-colors text-sm font-bold mb-4">
+            <ArrowRight className="w-4 h-4" />
+            العودة للقائمة
+          </Link>
+          <h1 className="text-3xl font-black tracking-tight">إضافة <span className="text-luxury-gold">سيارة جديدة</span></h1>
+          <p className="text-white/40 mt-2 text-sm font-medium">أدخل تفاصيل السيارة لعرضها في المعرض الحصري.</p>
+        </div>
+
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-xl mb-6 flex items-center gap-3">
+            <AlertCircle className="w-5 h-5" />
+            <p className="text-sm font-bold">{error}</p>
+          </div>
+        )}
+
+        <div className="bg-white/5 border border-white/10 rounded-3xl p-6 md:p-10 backdrop-blur-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-luxury-gold/5 blur-[100px] pointer-events-none" />
+          
+          <form onSubmit={handleSubmit} className="space-y-8 relative z-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Title */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-bold text-white/60 mb-2">اسم السيارة (العنوان)</label>
+                <input 
+                  type="text" 
+                  name="title"
+                  required
+                  value={formData.title}
+                  onChange={handleChange}
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
+                  placeholder="مثال: مرسيدس جي كلاس 2024"
+                />
+              </div>
+
+              {/* Make & Model */}
+              <div>
+                <label className="block text-sm font-bold text-white/60 mb-2">الماركة</label>
+                <input 
+                  type="text" 
+                  name="make"
+                  required
+                  value={formData.make}
+                  onChange={handleChange}
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
+                  placeholder="مثال: Mercedes"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-white/60 mb-2">الموديل</label>
+                <input 
+                  type="text" 
+                  name="model"
+                  required
+                  value={formData.model}
+                  onChange={handleChange}
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
+                  placeholder="مثال: G63 AMG"
+                />
+              </div>
+
+              {/* Year & Price */}
+              <div>
+                <label className="block text-sm font-bold text-white/60 mb-2">سنة الصنع</label>
+                <input 
+                  type="number" 
+                  name="year"
+                  required
+                  min="1900"
+                  max={new Date().getFullYear() + 1}
+                  value={formData.year}
+                  onChange={handleChange}
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
+                  dir="ltr"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-white/60 mb-2">السعر (ر.س)</label>
+                <input 
+                  type="number" 
+                  name="price"
+                  required
+                  min="0"
+                  value={formData.price}
+                  onChange={handleChange}
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors font-mono"
+                  dir="ltr"
+                />
+              </div>
+
+              {/* Selects */}
+              <div>
+                <label className="block text-sm font-bold text-white/60 mb-2">الفئة</label>
+                <select 
+                  name="category" 
+                  value={formData.category}
+                  onChange={handleChange}
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
+                >
+                  <option value="sedan">سيدان</option>
+                  <option value="suv">دفع رباعي (SUV)</option>
+                  <option value="sport">رياضية</option>
+                  <option value="luxury">فاخرة</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-white/60 mb-2">الوقود</label>
+                <select 
+                  name="fuelType" 
+                  value={formData.fuelType}
+                  onChange={handleChange}
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
+                >
+                  <option value="petrol">بنزين</option>
+                  <option value="diesel">ديزل</option>
+                  <option value="electric">كهرباء</option>
+                  <option value="hybrid">هجين</option>
+                </select>
+              </div>
+
+              {/* Image URL */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-bold text-white/60 mb-2">رابط الصورة الرئيسية</label>
+                <div className="relative">
+                  <LinkIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                  <input 
+                    type="url" 
+                    name="imageUrl"
+                    value={formData.imageUrl}
+                    onChange={handleChange}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 pr-11 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
+                    placeholder="https://example.com/image.jpg"
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-bold text-white/60 mb-2">الوصف</label>
+                <textarea 
+                  name="description"
+                  rows={4}
+                  value={formData.description}
+                  onChange={handleChange}
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors resize-none"
+                  placeholder="اكتب وصفاً مفصلاً للسيارة..."
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-6 border-t border-white/10">
+              <button 
+                type="submit"
+                disabled={loading}
+                className="bg-luxury-gold text-black px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Save className="w-5 h-5" />
+                    حفظ السيارة
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  );
+}

@@ -70,7 +70,7 @@ export default function Home() {
               </p>
 
               <div className="flex flex-wrap gap-6 pt-8">
-                <Link href="/cars" className="bg-luxury-gold text-black px-10 py-5 rounded-2xl font-black text-lg flex items-center gap-3 hover:bg-white transition-all duration-500 transform hover:scale-105 shadow-[0_0_30px_rgba(212,175,55,0.4)]">
+                <Link href="/showroom" className="bg-luxury-gold text-black px-10 py-5 rounded-2xl font-black text-lg flex items-center gap-3 hover:bg-white transition-all duration-500 transform hover:scale-105 shadow-[0_0_30px_rgba(212,175,55,0.4)]">
                   استكشف المعرض
                   <ArrowRight className="w-5 h-5" />
                 </Link>
@@ -113,7 +113,7 @@ export default function Home() {
               <h2 className="text-luxury-gold font-black uppercase tracking-[0.3em] text-sm">المجموعة المميزة</h2>
               <h3 className="text-4xl md:text-5xl font-black tracking-tighter">أحدث السيارات <span className="text-white/20">في المعرض</span></h3>
             </div>
-            <Link href="/cars" className="group flex items-center gap-3 text-sm font-black uppercase tracking-widest text-white/40 hover:text-luxury-gold transition-colors">
+            <Link href="/showroom" className="group flex items-center gap-3 text-sm font-black uppercase tracking-widest text-white/40 hover:text-luxury-gold transition-colors">
               شاهد الكل
               <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>

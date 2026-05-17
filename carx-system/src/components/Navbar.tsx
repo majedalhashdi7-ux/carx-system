@@ -17,7 +17,7 @@ export default function Navbar() {
 
   const navLinks = [
     { name: 'الرئيسية', href: '/' },
-    { name: 'المعرض', href: '/cars' },
+    { name: 'المعرض', href: '/showroom' },
     { name: 'من نحن', href: '/about' },
     { name: 'اتصل بنا', href: '/contact' },
     { name: 'لوحة التحكم', href: '/admin' },
@@ -62,7 +62,7 @@ export default function Navbar() {
               <User className="w-5 h-5" />
             </button>
             <div className="h-8 w-[1px] bg-white/10 mx-2" />
-            <Link href="/cars" className="bg-white text-black px-8 py-3.5 rounded-2xl font-black text-sm hover:bg-luxury-gold transition-all duration-500 transform hover:scale-105">
+            <Link href="/showroom" className="bg-white text-black px-8 py-3.5 rounded-2xl font-black text-sm hover:bg-luxury-gold transition-all duration-500 transform hover:scale-105">
               استكشف الآن
             </Link>
           </div>
@@ -98,7 +98,7 @@ export default function Navbar() {
                 </Link>
               ))}
               <div className="pt-6 border-t border-white/10">
-                <Link href="/cars" className="block w-full bg-white text-black py-4 rounded-2xl font-black text-center">
+                <Link href="/showroom" className="block w-full bg-white text-black py-4 rounded-2xl font-black text-center">
                   المعرض الحصري
                 </Link>
               </div>
