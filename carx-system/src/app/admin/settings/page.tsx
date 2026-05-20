@@ -1,35 +1,243 @@
 'use client';
 
-import { useState } from 'react';
-import { Save, Settings, Globe, Shield, CreditCard, Bell } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Save, Settings, Globe, Shield, CreditCard, Bell, Share2, Upload, Sparkles, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import Navbar from '../../../components/Navbar';
+import { api } from '../../../lib/api';
+import { uploadImage } from '../../../lib/cloudinary';
 
 export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('general');
+  const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [imageUploading, setImageUploading] = useState(false);
+
+  // Forms Data
+  const [generalData, setGeneralData] = useState({
+    title: 'CAR X',
+    description: 'المعرض الحصري للسيارات الفاخرة',
+    phone: '',
+    email: ''
+  });
+
+  const [socialData, setSocialData] = useState({
+    salesWhatsapp: '',
+    auctionWhatsapp: '',
+    supportWhatsapp: '',
+    facebook: '',
+    instagram: '',
+    twitter: ''
+  });
+
+  const [brandData, setBrandData] = useState({
+    logo: '',
+    heroVideoUrl: ''
+  });
+
+  const [securityData, setSecurityData] = useState({
+    deviceLockEnabled: true,
+    maintenanceMode: false
+  });
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      setInitialLoading(true);
+      try {
+        const res = await api.settings.get();
+        if (res.data && (res.data as any).success) {
+          const settings = (res.data as any).data;
+          
+          setGeneralData({
+            title: settings.siteInfo?.name || 'CAR X',
+            description: settings.siteInfo?.description || 'المعرض الحصري للسيارات الفاخرة',
+            phone: settings.contactInfo?.phone || '',
+            email: settings.contactInfo?.email || ''
+          });
+
+          const carx = settings.homeContent?.carxSettings || {};
+          setSocialData({
+            salesWhatsapp: carx.salesWhatsapp || settings.contactInfo?.whatsapp || '',
+            auctionWhatsapp: carx.auctionWhatsapp || settings.contactInfo?.whatsapp || '',
+            supportWhatsapp: carx.supportWhatsapp || settings.contactInfo?.whatsapp || '',
+            facebook: settings.socialLinks?.facebook || '',
+            instagram: settings.socialLinks?.instagram || '',
+            twitter: settings.socialLinks?.twitter || ''
+          });
+
+          setBrandData({
+            logo: settings.siteInfo?.logo || '',
+            heroVideoUrl: carx.heroVideoUrl || '/videos/CAR_X.mp4'
+          });
+
+          setSecurityData({
+            deviceLockEnabled: carx.deviceLockEnabled !== false,
+            maintenanceMode: settings.features?.maintenanceMode || false
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch settings:', err);
+        setErrorMsg('حدث خطأ أثناء تحميل الإعدادات');
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const handleGeneralChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setGeneralData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSocialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setSocialData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleBrandChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setBrandData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageUploading(true);
+      setErrorMsg('');
+      try {
+        const url = await uploadImage(file);
+        setBrandData(prev => ({ ...prev, logo: url }));
+        setSuccessMsg('تم رفع الشعار الجديد بنجاح');
+      } catch (err: any) {
+        setErrorMsg(err.message || 'فشل رفع الشعار');
+      } finally {
+        setImageUploading(false);
+      }
+    }
+  };
+
+  const showToast = (msg: string, isError = false) => {
+    if (isError) {
+      setErrorMsg(msg);
+      setTimeout(() => setErrorMsg(''), 5000);
+    } else {
+      setSuccessMsg(msg);
+      setTimeout(() => setSuccessMsg(''), 5000);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    try {
+      if (activeTab === 'general') {
+        const res1 = await api.settings.updateSiteInfo({
+          name: generalData.title,
+          description: generalData.description,
+          logo: brandData.logo
+        });
+        const res2 = await api.settings.updateContactInfo({
+          phone: generalData.phone,
+          email: generalData.email,
+          whatsapp: socialData.salesWhatsapp
+        });
+
+        if (res1.error || res2.error) throw new Error(res1.error || res2.error);
+        showToast('تم حفظ الإعدادات العامة بنجاح!');
+      } 
+      else if (activeTab === 'social') {
+        const res = await api.settings.updateCarX({
+          salesWhatsapp: socialData.salesWhatsapp,
+          auctionWhatsapp: socialData.auctionWhatsapp,
+          supportWhatsapp: socialData.supportWhatsapp,
+          heroVideoUrl: brandData.heroVideoUrl
+        });
+        if (res.error) throw new Error(res.error);
+        showToast('تم حفظ روابط التواصل والمبيعات بنجاح!');
+      }
+      else if (activeTab === 'brand') {
+        const res = await api.settings.updateCarX({
+          heroVideoUrl: brandData.heroVideoUrl
+        });
+        const resLogo = await api.settings.updateSiteInfo({
+          name: generalData.title,
+          description: generalData.description,
+          logo: brandData.logo
+        });
+        if (res.error || resLogo.error) throw new Error(res.error || resLogo.error);
+        showToast('تم تحديث هوية المعارض والشعار السحابي بنجاح!');
+      }
+      else if (activeTab === 'security') {
+        const res = await api.settings.updateCarX({
+          deviceLockEnabled: securityData.deviceLockEnabled
+        });
+        if (res.error) throw new Error(res.error);
+        showToast('تم تحديث الخيارات الأمنية والتشغيلية بنجاح!');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'حدث خطأ غير متوقع أثناء الحفظ', true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const tabs = [
-    { id: 'general', label: 'عام', icon: Globe },
-    { id: 'security', label: 'الأمان', icon: Shield },
-    { id: 'payment', label: 'الدفع', icon: CreditCard },
-    { id: 'notifications', label: 'الإشعارات', icon: Bell },
+    { id: 'general', label: 'عام وتواصل', icon: Globe },
+    { id: 'social', label: 'الواتساب والاجتماعي', icon: Share2 },
+    { id: 'brand', label: 'الهوية والشعار السحابي', icon: Sparkles },
+    { id: 'security', label: 'الأمان والتشغيل', icon: Shield },
   ];
+
+  if (initialLoading) {
+    return (
+      <main className="min-h-screen bg-[#050505] text-white flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-luxury-gold/30 border-t-luxury-gold rounded-full animate-spin" />
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#050505] text-white">
       <Navbar />
 
-      <div className="pt-32 pb-20 px-4 md:px-8 max-w-5xl mx-auto">
+      <div className="pt-32 pb-20 px-4 md:px-8 max-w-6xl mx-auto">
+        
+        {/* Toast Messages */}
+        {successMsg && (
+          <div className="fixed bottom-10 left-10 z-50 bg-green-500/20 border border-green-500/30 text-green-400 px-6 py-4 rounded-2xl flex items-center gap-3 backdrop-blur-xl shadow-[0_0_30px_rgba(34,197,94,0.1)]">
+            <CheckCircle className="w-5 h-5" />
+            <span className="font-bold text-sm">{successMsg}</span>
+          </div>
+        )}
+        {errorMsg && (
+          <div className="fixed bottom-10 left-10 z-50 bg-red-500/20 border border-red-500/30 text-red-500 px-6 py-4 rounded-2xl flex items-center gap-3 backdrop-blur-xl shadow-[0_0_30px_rgba(239,68,68,0.1)]">
+            <AlertCircle className="w-5 h-5" />
+            <span className="font-bold text-sm">{errorMsg}</span>
+          </div>
+        )}
+
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
           <div>
-            <h1 className="text-3xl font-bold">إعدادات المنصة</h1>
-            <p className="text-white/40 text-sm mt-1">تكوين وتخصيص تجربة CAR X بالكامل</p>
+            <h1 className="text-3xl font-black">إعدادات المنصة</h1>
+            <p className="text-white/40 text-sm mt-1">تخصيص وإدارة تجربة وهوية CAR X بالكامل</p>
           </div>
+          
           <button 
-            disabled={loading}
-            className="flex items-center gap-2 px-8 py-3 bg-luxury-gold text-black font-bold rounded-xl hover:bg-white transition-all shadow-lg shadow-luxury-gold/10"
+            type="button"
+            onClick={handleSubmit}
+            disabled={loading || imageUploading}
+            className="flex items-center gap-2 px-8 py-4 bg-luxury-gold text-black font-black rounded-xl hover:bg-white transition-all shadow-lg shadow-luxury-gold/10 disabled:opacity-50"
           >
-            <Save className="w-5 h-5" />
+            {loading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Save className="w-5 h-5" />
+            )}
             حفظ التغييرات
           </button>
         </div>
@@ -40,11 +248,15 @@ export default function AdminSettingsPage() {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-5 py-4 rounded-xl text-sm font-bold transition-all ${
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setErrorMsg('');
+                  setSuccessMsg('');
+                }}
+                className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-bold transition-all ${
                   activeTab === tab.id 
-                    ? 'bg-white/10 text-white' 
-                    : 'text-white/40 hover:text-white hover:bg-white/5'
+                    ? 'bg-white/10 text-white border border-white/10 shadow-lg' 
+                    : 'text-white/40 hover:text-white hover:bg-white/5 border border-transparent'
                 }`}
               >
                 <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-luxury-gold' : ''}`} />
@@ -54,60 +266,244 @@ export default function AdminSettingsPage() {
           </div>
 
           {/* Settings Content */}
-          <div className="flex-1 bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-xl">
-            {activeTab === 'general' && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-                  <Globe className="w-6 h-6 text-luxury-gold" /> الإعدادات العامة
-                </h2>
-                
-                <div>
-                  <label className="block text-sm font-bold text-white/60 mb-2">اسم المنصة</label>
-                  <input 
-                    type="text" 
-                    defaultValue="CAR X"
-                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-bold text-white/60 mb-2">الوصف التعريفي (SEO)</label>
-                  <textarea 
-                    rows={3}
-                    defaultValue="المعرض الحصري للسيارات الفاخرة في المملكة"
-                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors resize-none"
-                  />
-                </div>
+          <div className="flex-1 bg-white/5 border border-white/10 rounded-[2rem] p-8 md:p-10 backdrop-blur-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-luxury-gold/5 blur-[100px] pointer-events-none" />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-bold text-white/60 mb-2">رقم هاتف التواصل</label>
-                    <input 
-                      type="text" 
-                      defaultValue="+966 50 000 0000"
-                      className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
-                      dir="ltr"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-white/60 mb-2">البريد الإلكتروني للعملاء</label>
-                    <input 
-                      type="email" 
-                      defaultValue="support@carx.sa"
-                      className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
-                      dir="ltr"
-                    />
+            <form onSubmit={handleSubmit} className="space-y-8 relative z-10">
+              
+              {/* Tab: General */}
+              {activeTab === 'general' && (
+                <div className="space-y-6">
+                  <h2 className="text-xl font-bold flex items-center gap-2 text-luxury-gold">
+                    <Globe className="w-6 h-6" /> الإعدادات العامة وتفاصيل التواصل
+                  </h2>
+                  <p className="text-xs text-white/40 leading-relaxed">تتحكم هذه الإعدادات باسم وهامش الموقع والبريد وتفاصيل الاتصال الهامة للزوار.</p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-bold text-white/60 mb-2">اسم المنصة</label>
+                      <input 
+                        type="text" 
+                        name="title"
+                        value={generalData.title}
+                        onChange={handleGeneralChange}
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
+                      />
+                    </div>
+                    
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-bold text-white/60 mb-2">الوصف التعريفي (SEO Description)</label>
+                      <textarea 
+                        name="description"
+                        rows={3}
+                        value={generalData.description}
+                        onChange={handleGeneralChange}
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors resize-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-white/60 mb-2">رقم هاتف التواصل</label>
+                      <input 
+                        type="text" 
+                        name="phone"
+                        value={generalData.phone}
+                        onChange={handleGeneralChange}
+                        placeholder="+966 50 000 0000"
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
+                        dir="ltr"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-white/60 mb-2">البريد الإلكتروني</label>
+                      <input 
+                        type="email" 
+                        name="email"
+                        value={generalData.email}
+                        onChange={handleGeneralChange}
+                        placeholder="support@carx-motors.com"
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
+                        dir="ltr"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {activeTab !== 'general' && (
-              <div className="h-64 flex flex-col items-center justify-center text-white/30 text-center space-y-4">
-                <Settings className="w-12 h-12 animate-spin-slow opacity-20" />
-                <p className="text-sm">هذا القسم قيد التطوير...</p>
-              </div>
-            )}
+              {/* Tab: Social/Whatsapp */}
+              {activeTab === 'social' && (
+                <div className="space-y-6">
+                  <h2 className="text-xl font-bold flex items-center gap-2 text-luxury-gold">
+                    <Share2 className="w-6 h-6" /> أرقام الواتساب ووسائل التواصل الاجتماعي
+                  </h2>
+                  <p className="text-xs text-white/40 leading-relaxed">تتحكم هذه الإعدادات بأزرار وتوجيهات الاتصال التلقائية للعملاء لحجز السيارات والقطع.</p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-xs font-bold text-white/60 mb-2">واتساب المبيعات</label>
+                      <input 
+                        type="text" 
+                        name="salesWhatsapp"
+                        value={socialData.salesWhatsapp}
+                        onChange={handleSocialChange}
+                        placeholder="+966 50 000 0000"
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
+                        dir="ltr"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-white/60 mb-2">واتساب المزادات الحية</label>
+                      <input 
+                        type="text" 
+                        name="auctionWhatsapp"
+                        value={socialData.auctionWhatsapp}
+                        onChange={handleSocialChange}
+                        placeholder="+966 50 000 0000"
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
+                        dir="ltr"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-bold text-white/60 mb-2">واتساب الدعم الفني العام</label>
+                      <input 
+                        type="text" 
+                        name="supportWhatsapp"
+                        value={socialData.supportWhatsapp}
+                        onChange={handleSocialChange}
+                        placeholder="+966 50 000 0000"
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
+                        dir="ltr"
+                      />
+                    </div>
+
+                    <div className="border-t border-white/10 md:col-span-2 my-4 pt-6">
+                      <h3 className="text-sm font-bold text-white/80 mb-4">روابط الشبكات الاجتماعية</h3>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-white/60 mb-2">رابط فيسبوك</label>
+                      <input 
+                        type="text" 
+                        name="facebook"
+                        value={socialData.facebook}
+                        onChange={handleSocialChange}
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
+                        dir="ltr"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-white/60 mb-2">رابط انستجرام</label>
+                      <input 
+                        type="text" 
+                        name="instagram"
+                        value={socialData.instagram}
+                        onChange={handleSocialChange}
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
+                        dir="ltr"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab: Brand & Assets */}
+              {activeTab === 'brand' && (
+                <div className="space-y-6">
+                  <h2 className="text-xl font-bold flex items-center gap-2 text-luxury-gold">
+                    <Sparkles className="w-6 h-6" /> الشعار السحابي وهوية المنصة
+                  </h2>
+                  <p className="text-xs text-white/40 leading-relaxed">تخصيص الشعار المرفوع سحابياً عبر Cloudinary ومصادر الوسائط الفاخرة لواجهة العميل.</p>
+
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-xs font-bold text-white/60 mb-3">شعار المعرض (شعار شفاف)</label>
+                      
+                      {imageUploading ? (
+                        <div className="border border-dashed border-luxury-gold/30 bg-white/[0.01] rounded-2xl p-8 flex items-center justify-center gap-3">
+                          <Loader2 className="w-5 h-5 text-luxury-gold animate-spin" />
+                          <span className="text-sm font-bold text-luxury-gold">جاري رفع الشعار السحابي...</span>
+                        </div>
+                      ) : brandData.logo ? (
+                        <div className="flex items-center gap-6 p-4 border border-white/10 bg-black/50 rounded-2xl">
+                          <img src={brandData.logo} className="h-16 max-w-[150px] object-contain rounded bg-white/5 p-2" alt="Logo" />
+                          <label className="bg-white/5 border border-white/10 hover:bg-white/10 text-xs px-4 py-2.5 rounded-xl cursor-pointer font-bold transition-all">
+                            تحديث الشعار
+                            <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                          </label>
+                        </div>
+                      ) : (
+                        <label className="border border-dashed border-white/10 hover:border-luxury-gold/30 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all bg-black/35">
+                          <Upload className="w-8 h-8 text-white/20 mb-2" />
+                          <span className="text-xs font-bold">انقر لرفع الشعار</span>
+                          <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                        </label>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-white/60 mb-2">رابط فيديو البانر الرئيسي (Hero Video)</label>
+                      <input 
+                        type="text" 
+                        name="heroVideoUrl"
+                        value={brandData.heroVideoUrl}
+                        onChange={handleBrandChange}
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
+                        dir="ltr"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab: Security & Functionality */}
+              {activeTab === 'security' && (
+                <div className="space-y-6">
+                  <h2 className="text-xl font-bold flex items-center gap-2 text-luxury-gold">
+                    <Shield className="w-6 h-6" /> الخيارات الأمنية وحالة التشغيل
+                  </h2>
+                  <p className="text-xs text-white/40 leading-relaxed">التحكم في خيارات أمان الأجهزة وحصانة المنصة العامة ضد الاختراق.</p>
+
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between p-5 border border-white/10 bg-white/[0.01] rounded-2xl">
+                      <div className="space-y-1">
+                        <span className="block text-sm font-bold">تفعيل بصمة الجهاز (Device Fingerprint)</span>
+                        <span className="text-xs text-white/30">يقوم بحماية حسابات المدراء ومطابقة البصمة لمنع التهكير.</span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={securityData.deviceLockEnabled} 
+                          onChange={(e) => setSecurityData(prev => ({ ...prev, deviceLockEnabled: e.target.checked }))}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-luxury-gold" />
+                      </label>
+                    </div>
+
+                    <div className="flex items-center justify-between p-5 border border-white/10 bg-white/[0.01] rounded-2xl">
+                      <div className="space-y-1">
+                        <span className="block text-sm font-bold">وضع الصيانة الكامل</span>
+                        <span className="text-xs text-white/30">تعطيل تصفح المنصة بشكل مؤقت للقيام بالتحديثات البرمجية.</span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={securityData.maintenanceMode} 
+                          onChange={(e) => setSecurityData(prev => ({ ...prev, maintenanceMode: e.target.checked }))}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500" />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </form>
           </div>
         </div>
       </div>

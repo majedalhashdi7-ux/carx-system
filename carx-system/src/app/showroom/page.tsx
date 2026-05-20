@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../lib/api';
 import CarCard3D from '../../components/CarCard3D';
+import CarCardSkeleton from '../../components/CarCardSkeleton';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 
@@ -47,6 +48,19 @@ export default function ShowroomPage() {
       setLoading(false);
     };
     fetchCars();
+
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const brandParam = params.get('make') || params.get('brand');
+      const searchParam = params.get('search');
+      if (brandParam) {
+        setSelectedBrand(brandParam);
+        setShowFilters(true);
+      }
+      if (searchParam) {
+        setSearchQuery(searchParam);
+      }
+    }
   }, []);
 
   // Extract unique brands from data
@@ -305,7 +319,7 @@ export default function ShowroomPage() {
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
               {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="h-[480px] rounded-[2.5rem] bg-white/5 animate-pulse border border-white/5" />
+                <CarCardSkeleton key={i} />
               ))}
             </div>
           ) : filteredCars.length === 0 ? (

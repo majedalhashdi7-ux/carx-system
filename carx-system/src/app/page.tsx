@@ -8,27 +8,56 @@ import {
   Star, 
   Globe, 
   ChevronRight,
-  Play
+  Play,
+  X,
+  Loader2
 } from 'lucide-react';
 import Link from 'next/link';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import CarCard3D from '../components/CarCard3D';
+import CarCardSkeleton from '../components/CarCardSkeleton';
 import { useState, useEffect } from 'react';
 import { api } from '../lib/api';
 
 export default function Home() {
   const [featuredCars, setFeaturedCars] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [videoOpen, setVideoOpen] = useState(false);
+  const [heroVideo, setHeroVideo] = useState('/videos/CAR_X.mp4');
 
   useEffect(() => {
     const fetchFeatured = async () => {
-      const res = await api.cars.getFeatured() as any;
-      if (res.data) {
-        const result = res.data;
-        setFeaturedCars(result.data?.cars || result.cars || []);
+      setLoading(true);
+      try {
+        const res = await api.cars.getFeatured() as any;
+        if (res.data) {
+          const result = res.data;
+          setFeaturedCars(result.data?.cars || result.cars || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch featured cars', err);
+      } finally {
+        setLoading(false);
       }
     };
+
+    const fetchSettings = async () => {
+      try {
+        const res = await api.settings.get() as any;
+        if (res.data && res.data.success) {
+          const carx = res.data.data.homeContent?.carxSettings || {};
+          if (carx.heroVideoUrl) {
+            setHeroVideo(carx.heroVideoUrl);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch settings video:', err);
+      }
+    };
+
     fetchFeatured();
+    fetchSettings();
   }, []);
 
   return (
@@ -74,7 +103,11 @@ export default function Home() {
                   استكشف المعرض
                   <ArrowRight className="w-5 h-5" />
                 </Link>
-                <button className="glass-panel px-10 py-5 rounded-2xl font-black text-lg flex items-center gap-3 hover:bg-white/10 transition-all duration-500">
+                
+                <button 
+                  onClick={() => setVideoOpen(true)}
+                  className="glass-panel px-10 py-5 rounded-2xl font-black text-lg flex items-center gap-3 hover:bg-white/10 transition-all duration-500"
+                >
                   <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
                     <Play className="w-4 h-4 text-luxury-gold fill-luxury-gold" />
                   </div>
@@ -97,7 +130,7 @@ export default function Home() {
         <div className="container mx-auto px-6">
           <div className="flex flex-wrap justify-center items-center gap-12 md:gap-24 opacity-30 grayscale hover:grayscale-0 transition-all duration-700">
              {['ROLEX', 'FERRARI', 'BUGATTI', 'PORSCHE', 'LAMBORGHINI'].map(brand => (
-               <span key={brand} className="text-2xl font-black tracking-widest">{brand}</span>
+                <span key={brand} className="text-2xl font-black tracking-widest">{brand}</span>
              ))}
           </div>
         </div>
@@ -120,13 +153,13 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredCars.length > 0 ? (
+            {!loading && featuredCars.length > 0 ? (
               featuredCars.map((car, idx) => (
                 <CarCard3D key={car._id || idx} car={car} index={idx} />
               ))
             ) : (
               [1, 2, 3].map(i => (
-                <div key={i} className="h-[480px] rounded-[2.5rem] bg-white/5 border border-white/10 animate-pulse" />
+                <CarCardSkeleton key={i} />
               ))
             )}
           </div>
@@ -207,6 +240,34 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Interactive Lightbox Video Player */}
+      {videoOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl">
+          {/* Background Close Click */}
+          <div className="absolute inset-0 cursor-pointer" onClick={() => setVideoOpen(false)} />
+          
+          <div className="relative w-full max-w-5xl aspect-video bg-black border border-white/10 rounded-[2rem] overflow-hidden shadow-2xl z-10 animate-scale-in">
+            {/* Close Button */}
+            <button 
+              onClick={() => setVideoOpen(false)}
+              className="absolute top-6 right-6 p-3 rounded-2xl bg-black/60 border border-white/10 hover:bg-red-500 hover:text-white hover:border-transparent transition-all z-20"
+              title="إغلاق المشغل"
+            >
+              <X className="w-5 h-5 text-white" />
+            </button>
+
+            {/* Video Player */}
+            <video 
+              src={heroVideo}
+              controls
+              autoPlay
+              className="w-full h-full object-cover"
+              controlsList="nodownload"
+            />
+          </div>
+        </div>
+      )}
 
       <Footer />
     </main>

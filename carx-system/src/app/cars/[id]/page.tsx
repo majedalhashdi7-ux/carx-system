@@ -4,7 +4,7 @@ import { useState, useEffect, use } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronRight, Calendar, Fuel, Gauge, ShieldCheck, 
-  Share2, Heart, MessageSquare, AlertCircle, ArrowLeft, X, Check
+  Share2, Heart, MessageSquare, AlertCircle, X, Check
 } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '../../../lib/api';
@@ -16,6 +16,11 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
   const [car, setCar] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // Gallery and Action states
+  const [activeImage, setActiveImage] = useState('');
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [whatsappNumber, setWhatsappNumber] = useState('+966500000000');
 
   // Booking Modal States
   const [showModal, setShowModal] = useState(false);
@@ -37,12 +42,79 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
         setError(res.error);
       } else {
         const result = res.data;
-        setCar(result?.data || result);
+        const fetchedCar = result?.data || result;
+        setCar(fetchedCar);
+        
+        // Set active gallery image
+        if (fetchedCar) {
+          const mainImg = fetchedCar.mainImage || fetchedCar.images?.[0] || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80';
+          setActiveImage(mainImg);
+          
+          // Check favorite state
+          const favs = JSON.parse(localStorage.getItem('carx_favorites') || '[]');
+          setIsFavorite(favs.includes(fetchedCar._id || fetchedCar.id));
+        }
       }
       setLoading(false);
     };
+
     fetchCar();
+    
+    // Fetch dynamic WhatsApp from settings
+    api.settings.getPublic().then((res: any) => {
+      if (res.data?.homeContent?.carxSettings?.salesWhatsapp) {
+        setWhatsappNumber(res.data.homeContent.carxSettings.salesWhatsapp);
+      } else if (res.data?.contactInfo?.phone) {
+        setWhatsappNumber(res.data.contactInfo.phone);
+      }
+    }).catch(() => {});
   }, [id]);
+
+  const toggleFavorite = () => {
+    if (!car) return;
+    const carId = car._id || car.id;
+    const favs = JSON.parse(localStorage.getItem('carx_favorites') || '[]');
+    let updatedFavs;
+    if (isFavorite) {
+      updatedFavs = favs.filter((fid: string) => fid !== carId);
+    } else {
+      updatedFavs = [...favs, carId];
+    }
+    localStorage.setItem('carx_favorites', JSON.stringify(updatedFavs));
+    setIsFavorite(!isFavorite);
+  };
+
+  const handleShare = async () => {
+    if (!car) return;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: car.title,
+          text: `شاهد هذه السيارة الرائعة في CAR X: ${car.title}`,
+          url: window.location.href,
+        });
+      } catch (err) {
+        console.error('Error sharing:', err);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        alert('تم نسخ رابط السيارة بنجاح إلى الحافظة!');
+      } catch (err) {
+        console.error('Failed to copy link:', err);
+      }
+    }
+  };
+
+  const handleWhatsAppClick = () => {
+    if (!car) return;
+    const carId = car._id || car.id;
+    const message = encodeURIComponent(
+      `مرحباً CAR X، أنا مهتم بالسيارة المعروضة في موقعكم:\n\n*السيارة:* ${car.title}\n*السعر:* ${car.price?.toLocaleString()} ريال\n*رقم الإعلان:* #${carId?.slice(-6).toUpperCase()}\n\nرابط السيارة: ${window.location.href}`
+    );
+    const cleanNum = whatsappNumber.replace(/\+/g, '').replace(/\s/g, '');
+    window.open(`https://wa.me/${cleanNum}?text=${message}`, '_blank');
+  };
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +123,7 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
     
     try {
       const res = await api.orders.create({
-        car: car._id,
+        car: car._id || car.id,
         totalAmount: car.price,
         customerName: bookingForm.name,
         customerPhone: bookingForm.phone,
@@ -64,7 +136,7 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
       }
       setBookingSuccess(true);
     } catch (err: any) {
-      setBookingError(err.message || 'حدث خطأ أثناء إرسال طلب الحجز');
+      setBookingError(err.message || 'حدث خطأ أثناء إرسال طلب الحجز. يرجى المحاولة لاحقاً.');
     } finally {
       setBookingLoading(false);
     }
@@ -92,6 +164,8 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
     </div>
   );
 
+  const imagesList = car.images && car.images.length > 0 ? car.images : [car.mainImage || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80'];
+
   return (
     <main className="min-h-screen bg-[#050505] text-white">
       <Navbar />
@@ -114,31 +188,54 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
           <div className="lg:col-span-8 space-y-12">
             
             {/* Gallery */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="relative aspect-video rounded-3xl overflow-hidden bg-white/5 border border-white/10 group"
-            >
-              <img 
-                src={car.mainImage || car.images?.[0] || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80'} 
-                alt={car.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-              />
-              <div className="absolute top-6 left-6 flex gap-3">
-                <button className="w-12 h-12 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center hover:bg-luxury-gold hover:text-black transition-all">
-                  <Heart className="w-5 h-5" />
-                </button>
-                <button className="w-12 h-12 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all">
-                  <Share2 className="w-5 h-5" />
-                </button>
-              </div>
-            </motion.div>
+            <div className="space-y-4">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="relative aspect-video rounded-3xl overflow-hidden bg-white/5 border border-white/10 group"
+              >
+                <img 
+                  src={activeImage} 
+                  alt={car.title}
+                  className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
+                />
+                <div className="absolute top-6 left-6 flex gap-3 z-10">
+                  <button 
+                    onClick={toggleFavorite}
+                    className={`w-12 h-12 rounded-2xl bg-black/60 backdrop-blur-md border border-white/10 flex items-center justify-center transition-all ${isFavorite ? 'text-rose-500 bg-rose-500/10 border-rose-500/30' : 'hover:bg-luxury-gold hover:text-black'}`}
+                  >
+                    <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
+                  </button>
+                  <button 
+                    onClick={handleShare}
+                    className="w-12 h-12 rounded-2xl bg-black/60 backdrop-blur-md border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all"
+                  >
+                    <Share2 className="w-5 h-5" />
+                  </button>
+                </div>
+              </motion.div>
+
+              {/* Thumbnails */}
+              {imagesList.length > 1 && (
+                <div className="flex gap-4 overflow-x-auto py-2 pr-1" dir="rtl">
+                  {imagesList.map((img: string, idx: number) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveImage(img)}
+                      className={`relative w-24 h-16 rounded-xl overflow-hidden border-2 shrink-0 transition-all ${activeImage === img ? 'border-luxury-gold scale-95 shadow-lg' : 'border-white/10 opacity-60 hover:opacity-100'}`}
+                    >
+                      <img src={img} alt={`${car.title} thumbnail ${idx}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Quick Specs */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
                 { label: 'الموديل', value: car.year || '2024', icon: Calendar },
-                { label: 'الممشى', value: car.mileage ? `${car.mileage} كم` : '0 كم', icon: Gauge },
+                { label: 'الممشى', value: car.mileage ? `${car.mileage.toLocaleString()} كم` : '0 كم', icon: Gauge },
                 { label: 'الوقود', value: car.fuelType || 'بنزين', icon: Fuel },
                 { label: 'الحالة', value: car.condition === 'new' ? 'جديدة' : 'مستعملة', icon: ShieldCheck },
               ].map((spec, i) => (
@@ -152,7 +249,7 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
 
             {/* Description */}
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold flex items-center gap-3">
+              <h2 className="text-2xl font-bold flex items-center gap-3" dir="rtl">
                 <div className="w-1.5 h-6 bg-luxury-gold rounded-full" />
                 تفاصيل السيارة
               </h2>
@@ -170,9 +267,9 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
               <motion.div 
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="p-8 rounded-3xl bg-white/[0.03] border border-white/10 backdrop-blur-xl space-y-8"
+                className="p-8 rounded-3xl bg-white/[0.03] border border-white/10 backdrop-blur-xl space-y-8 animate-glow"
               >
-                <div>
+                <div dir="rtl">
                   <div className="text-luxury-gold font-bold text-xs uppercase tracking-[0.3em] mb-3">السعر المعروض</div>
                   <div className="flex items-baseline gap-2">
                     <span className="text-5xl font-black">{car.price?.toLocaleString()}</span>
@@ -187,27 +284,30 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
                   >
                     احجز الآن
                   </button>
-                  <button className="w-full py-5 bg-white/5 border border-white/10 text-white font-bold rounded-2xl flex items-center justify-center gap-3 hover:bg-white/10 transition-all">
+                  <button 
+                    onClick={handleWhatsAppClick}
+                    className="w-full py-5 bg-[#25D366]/10 border border-[#25D366]/30 text-[#25D366] font-bold rounded-2xl flex items-center justify-center gap-3 hover:bg-[#25D366]/20 transition-all"
+                  >
                     <MessageSquare className="w-5 h-5" />
                     تواصل معنا واتساب
                   </button>
                 </div>
 
-                <div className="pt-8 border-t border-white/5 space-y-4">
+                <div className="pt-8 border-t border-white/5 space-y-4" dir="rtl">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-white/30">الماركة</span>
                     <span className="font-bold uppercase tracking-wider">{car.brand || car.make}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-white/30">رقم الإعلان</span>
-                    <span className="font-mono text-white/60">#{car._id?.slice(-6).toUpperCase()}</span>
+                    <span className="font-mono text-white/60">#{ (car._id || car.id)?.slice(-6).toUpperCase() }</span>
                   </div>
                 </div>
               </motion.div>
 
               {/* Trust badges */}
-              <div className="p-6 rounded-2xl border border-white/5 flex items-center gap-4 text-white/40">
-                <ShieldCheck className="w-8 h-8 text-luxury-gold/40" />
+              <div className="p-6 rounded-2xl border border-white/5 flex items-center gap-4 text-white/40" dir="rtl">
+                <ShieldCheck className="w-8 h-8 text-luxury-gold/40 shrink-0" />
                 <p className="text-xs leading-relaxed">
                   هذه السيارة مفحوصة ومضمونة من قبل فريق CAR X المتخصص. نحن نضمن لك جودة محركات السيارة وهيكلها.
                 </p>

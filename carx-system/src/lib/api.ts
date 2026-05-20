@@ -72,15 +72,43 @@ export const api = {
     getAll: (params?: Record<string, string>) => fetchAPI('/parts', { params }),
     getById: (id: string) => fetchAPI(`/parts/${id}`),
     getByCategory: (category: string) => fetchAPI(`/parts?category=${encodeURIComponent(category)}`),
+    create: (data: any) => fetchAPI('/parts', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    update: (id: string, data: any) => fetchAPI(`/parts/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+    delete: (id: string) => fetchAPI(`/parts/${id}`, { method: 'DELETE' }),
   },
   brands: {
     getAll: () => fetchAPI('/brands'),
     getById: (id: string) => fetchAPI(`/brands/${id}`),
+    create: (data: any) => fetchAPI('/brands', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    update: (id: string, data: any) => fetchAPI(`/brands/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+    delete: (id: string) => fetchAPI(`/brands/${id}`, { method: 'DELETE' }),
+  },
+  contact: {
+    send: (data: { name: string; email: string; phone?: string; subject?: string; message: string }) => fetchAPI('/contact', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
   },
   auth: {
     login: (identifier: string, password: string) => fetchAPI('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ identifier, password, role: 'admin' }),
+    }),
+    register: (data: any) => fetchAPI('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
     }),
     verify: () => fetchAPI('/auth/verify', { method: 'GET' }),
   },
@@ -92,9 +120,30 @@ export const api = {
   },
   orders: {
     getAll: () => fetchAPI('/orders'),
+    getById: (id: string) => fetchAPI(`/orders/${id}`),
+    updateStatus: (id: string, status: string) => fetchAPI(`/orders/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status })
+    }),
     create: (data: any) => fetchAPI('/orders', {
       method: 'POST',
       body: JSON.stringify(data)
     }),
+  },
+  settings: {
+    get: () => fetchAPI('/settings'),
+    getPublic: () => fetchAPI('/settings/public'),
+    updateSiteInfo: (siteInfo: any) => fetchAPI('/settings/site-info', {
+      method: 'PUT',
+      body: JSON.stringify({ siteInfo })
+    }),
+    updateContactInfo: (contactInfo: any) => fetchAPI('/settings/contact-info', {
+      method: 'PUT',
+      body: JSON.stringify({ contactInfo })
+    }),
+    updateCarX: (carxSettings: any) => fetchAPI('/settings/carx', {
+      method: 'PUT',
+      body: JSON.stringify({ carxSettings })
+    })
   }
 };

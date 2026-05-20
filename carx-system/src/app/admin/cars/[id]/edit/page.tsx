@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowRight, Save, Link as LinkIcon, AlertCircle, Upload, X } from 'lucide-react';
+import { ArrowRight, Save, Link as LinkIcon, AlertCircle, Upload, X, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import Navbar from '../../../../../components/Navbar';
 import { api } from '../../../../../lib/api';
+import { uploadImage } from '../../../../../lib/cloudinary';
 
 export default function EditCarPage() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function EditCarPage() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState('');
   const [previewImage, setPreviewImage] = useState('');
+  const [imageUploading, setImageUploading] = useState(false);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -72,16 +74,20 @@ export default function EditCarPage() {
     }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setPreviewImage(base64String);
-        setFormData(prev => ({ ...prev, imageUrl: base64String }));
-      };
-      reader.readAsDataURL(file);
+      setImageUploading(true);
+      setError('');
+      try {
+        const url = await uploadImage(file);
+        setPreviewImage(url);
+        setFormData(prev => ({ ...prev, imageUrl: url }));
+      } catch (err: any) {
+        setError(err.message || 'فشل رفع الصورة إلى Cloudinary');
+      } finally {
+        setImageUploading(false);
+      }
     }
   };
 
@@ -253,7 +259,13 @@ export default function EditCarPage() {
               <div className="md:col-span-2">
                 <label className="block text-sm font-bold text-white/60 mb-3">صورة السيارة الرئيسية</label>
                 
-                {previewImage ? (
+                {imageUploading ? (
+                  <div className="border-2 border-dashed border-luxury-gold/30 bg-white/[0.01] rounded-2xl p-12 flex flex-col items-center justify-center text-center">
+                    <Loader2 className="w-10 h-10 text-luxury-gold animate-spin mb-3" />
+                    <span className="text-sm font-bold text-luxury-gold">جاري رفع الصورة إلى الخادم السحابي...</span>
+                    <span className="text-xs text-white/30 mt-1">يرجى الانتظار لحين اكتمال الرفع</span>
+                  </div>
+                ) : previewImage ? (
                   <div className="relative aspect-video w-full rounded-2xl overflow-hidden border border-white/10 bg-black">
                     <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
                     <button 

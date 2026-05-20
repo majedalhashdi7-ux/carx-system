@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { 
   LayoutDashboard, 
   Car, 
+  Wrench,
+  Award,
   ShoppingBag, 
   Users, 
   Settings, 
@@ -25,7 +27,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await api.admin.getStats();
+        const res = await api.admin.getStats() as any;
         if (res.data && res.data.success) {
           setDashboardStats(res.data.data);
         }
@@ -60,6 +62,8 @@ export default function AdminDashboard() {
               {[
                 { label: 'لوحة القيادة', icon: LayoutDashboard, active: true, href: '/admin' },
                 { label: 'إدارة السيارات', icon: Car, active: false, href: '/admin/cars' },
+                { label: 'إدارة قطع الغيار', icon: Wrench, active: false, href: '/admin/parts' },
+                { label: 'إدارة الوكالات', icon: Award, active: false, href: '/admin/brands' },
                 { label: 'الطلبات والمبيعات', icon: ShoppingBag, active: false, href: '/admin/orders' },
                 { label: 'قاعدة العملاء', icon: Users, active: false, href: '/admin/users' },
                 { label: 'إعدادات المنصة', icon: Settings, active: false, href: '/admin/settings' },
@@ -96,10 +100,10 @@ export default function AdminDashboard() {
                 <button className="glass-panel p-4 rounded-2xl hover:bg-white/5 transition-colors">
                   <Search className="w-5 h-5 text-white/60" />
                 </button>
-                <button className="bg-white text-black px-6 py-4 rounded-2xl font-bold flex items-center gap-2 hover:bg-luxury-gold transition-colors duration-300">
+                <Link href="/admin/cars/new" className="bg-white text-black px-6 py-4 rounded-2xl font-bold flex items-center gap-2 hover:bg-luxury-gold transition-colors duration-300">
                   <Plus className="w-5 h-5" />
                   إضافة سيارة جديدة
-                </button>
+                </Link>
               </div>
             </div>
 

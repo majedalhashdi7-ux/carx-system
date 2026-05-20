@@ -5,6 +5,7 @@ const express = require('express');
 const router = express.Router();
 const { getModel } = require('../../../tenants/tenant-model-helper');
 const { requireAuthAPI, requireAdmin } = require('../../../middleware/auth');
+const { cacheResponse, invalidateCache } = require('../../../middleware/cache');
 
 function normalizeExternalImage(url) {
     if (!url || typeof url !== 'string') return null;
@@ -73,7 +74,7 @@ function cleanModelName(value = '') {
 }
 
 // GET /api/v2/parts - قائمة قطع الغيار
-router.get('/', async (req, res) => {
+router.get('/', cacheResponse(600), async (req, res) => {
     try {
         const SparePart = getModel(req, 'SparePart');
         const SiteSettings = getModel(req, 'SiteSettings');
@@ -216,8 +217,72 @@ router.get('/', async (req, res) => {
     }
 });
 
+// GET /api/v2/parts/:id - Get a single spare part details
+router.get('/:id', cacheResponse(600), async (req, res) => {
+    try {
+        const SparePart = getModel(req, 'SparePart');
+        const SiteSettings = getModel(req, 'SiteSettings');
+        const p = await SparePart.findById(req.params.id)
+            .populate('brand', 'name logoUrl')
+            .lean();
+
+        if (!p) {
+            return res.status(404).json({ success: false, error: 'Part not found' });
+        }
+
+        const settings = await SiteSettings.getSettings().catch(() => null);
+        const usdToSar = Number(settings?.currencySettings?.usdToSar || 3.75);
+        const usdToKrw = Number(settings?.currencySettings?.usdToKrw || 1350);
+        const partsMultiplier = Number(settings?.currencySettings?.partsMultiplier || 1.0);
+        const safeMultiplier = Number.isFinite(partsMultiplier) && partsMultiplier > 0 ? partsMultiplier : 1.0;
+
+        const sarPrice = Number(p.priceSar || p.price || 0);
+        const baseUsd = Number(p.basePriceUsd || p.priceUsd || (sarPrice > 0 ? (sarPrice / usdToSar) : 0));
+        const adjustedUsd = Number((baseUsd * safeMultiplier).toFixed(2));
+        const adjustedSar = sarPrice > 0 && !p.basePriceUsd && !p.priceUsd
+            ? sarPrice
+            : Math.round(adjustedUsd * usdToSar);
+        const adjustedKrw = Number(Math.round(adjustedUsd * usdToKrw));
+
+        res.json({
+            success: true,
+            part: {
+                id: p._id,
+                name: p.name,
+                nameAr: p.nameAr || translatePartNameToArabic(p.name) || p.name,
+                brand: p.carMake || (p.brand && typeof p.brand === 'object' ? p.brand.name : p.brand),
+                brandId: p.brand && typeof p.brand === 'object' ? p.brand._id : p.brand,
+                brandLogo: p.carMakeLogoUrl || (p.brand && typeof p.brand === 'object' ? p.brand.logoUrl : null),
+                model: cleanModelName(p.carModel || ''),
+                price: adjustedSar,
+                priceSar: adjustedSar,
+                priceUsd: adjustedUsd,
+                priceKrw: adjustedKrw,
+                basePriceUsd: Number((p.basePriceUsd || baseUsd).toFixed(2)),
+                currency: 'SAR',
+                category: p.partType,
+                categoryAr: p.partTypeAr || toArabicCategory(p.partType),
+                condition: String(p.condition || 'NEW').toUpperCase(),
+                img: normalizeExternalImage(p.images?.[0]) || 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=1000&auto=format&fit=crop',
+                images: (p.images || []).map(normalizeExternalImage).filter(Boolean),
+                carModel: cleanModelName(p.carModel || ''),
+                compatibility: [cleanModelName(p.carModel || '') || 'ALL Models'],
+                stock: p.stockQty || 1,
+                stockQty: p.stockQty || 1,
+                soldCount: p.soldCount || 0,
+                inStock: typeof p.inStock === 'boolean' ? p.inStock : true,
+                description: p.description || '',
+                rareLevel: 3
+            }
+        });
+    } catch (error) {
+        console.error('API Single Part error:', error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
+    }
+});
+
 // POST /api/v2/parts - Add new part
-router.post('/', requireAuthAPI, async (req, res) => {
+router.post('/', requireAuthAPI, invalidateCache('/api/v2/parts*'), async (req, res) => {
     try {
         const SparePart = getModel(req, 'SparePart');
         const { name, brand, model, year, price, category, images, description, condition, stockQty } = req.body;
@@ -242,7 +307,7 @@ router.post('/', requireAuthAPI, async (req, res) => {
 });
 
 // PUT /api/v2/parts/:id - Update part
-router.put('/:id', requireAuthAPI, async (req, res) => {
+router.put('/:id', requireAuthAPI, invalidateCache('/api/v2/parts*'), async (req, res) => {
     try {
         const SparePart = getModel(req, 'SparePart');
         const { name, brand, model, year, price, category, images, description, condition, stockQty } = req.body;
@@ -267,7 +332,7 @@ router.put('/:id', requireAuthAPI, async (req, res) => {
 });
 
 // DELETE /api/v2/parts/:id - Delete part
-router.delete('/:id', requireAuthAPI, async (req, res) => {
+router.delete('/:id', requireAuthAPI, invalidateCache('/api/v2/parts*'), async (req, res) => {
     try {
         const SparePart = getModel(req, 'SparePart');
         await SparePart.findByIdAndDelete(req.params.id);
@@ -278,7 +343,7 @@ router.delete('/:id', requireAuthAPI, async (req, res) => {
 });
 
 // [[ARABIC_COMMENT]] PATCH /api/v2/parts/:id/toggle-stock - تبديل حالة الظهور (In Stock / Out of Stock)
-router.patch('/:id/toggle-stock', requireAuthAPI, async (req, res) => {
+router.patch('/:id/toggle-stock', requireAuthAPI, invalidateCache('/api/v2/parts*'), async (req, res) => {
     try {
         const SparePart = getModel(req, 'SparePart');
         if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
@@ -310,7 +375,7 @@ router.patch('/:id/toggle-stock', requireAuthAPI, async (req, res) => {
 
 // [[ARABIC_COMMENT]] PATCH /api/v2/parts/:id/sold - تسجيل بيع قطعة غيار
 // [[ARABIC_COMMENT]] المنطق الجديد: زيادة عداد "المباع" (soldCount) دون إنقاص الكمية أو الإخفاء التلقائي
-router.patch('/:id/sold', requireAuthAPI, async (req, res) => {
+router.patch('/:id/sold', requireAuthAPI, invalidateCache('/api/v2/parts*'), async (req, res) => {
     try {
         const SparePart = getModel(req, 'SparePart');
         const { soldQty = 1 } = req.body;
@@ -372,7 +437,7 @@ const cheerio = require('cheerio');
 // تقوم بسحب بيانات الماركات من موقع autospare.com.eg
 // وتقوم بحفظ الصور نهائياً عبر خدمات Cloudinary
 // ==========================================
-router.post('/scrape/brands', requireAuthAPI, requireAdmin, async (req, res) => {
+router.post('/scrape/brands', requireAuthAPI, requireAdmin, invalidateCache('/api/v2/parts*'), async (req, res) => {
     try {
         const SparePart = getModel(req, 'SparePart');
         const SiteSettings = getModel(req, 'SiteSettings');
@@ -579,7 +644,7 @@ router.post('/scrape/brands', requireAuthAPI, requireAdmin, async (req, res) => 
 });
 
 // POST /api/v2/parts/fix-brand-links - ربط القطع بمعرفات وكالات قطع الغيار تلقائياً
-router.post('/fix-brand-links', requireAuthAPI, requireAdmin, async (req, res) => {
+router.post('/fix-brand-links', requireAuthAPI, requireAdmin, invalidateCache('/api/v2/parts*'), async (req, res) => {
     try {
         const SparePart = getModel(req, 'SparePart');
         const Brand = getModel(req, 'Brand');

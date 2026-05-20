@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import { api } from '../../lib/api';
@@ -65,28 +66,33 @@ export default function BrandsPage() {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {brands.map((brand, idx) => (
-                <motion.div 
+                <Link 
+                  href={`/showroom?make=${encodeURIComponent(brand.name)}`}
                   key={brand._id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: idx * 0.1 }}
-                  className="premium-card aspect-square rounded-[2rem] p-8 flex flex-col items-center justify-center text-center group cursor-pointer"
+                  className="block"
                 >
-                  <div className="glow-overlay" />
-                  <div className="relative z-10 space-y-6 w-full flex flex-col items-center">
-                    <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center p-4 group-hover:scale-110 transition-transform duration-500">
-                      {brand.logo ? (
-                        <img src={brand.logo} alt={brand.name} className="max-w-full max-h-full object-contain" />
-                      ) : (
-                        <span className="text-3xl font-black">{brand.name?.charAt(0)}</span>
-                      )}
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="premium-card aspect-square rounded-[2rem] p-8 flex flex-col items-center justify-center text-center group cursor-pointer"
+                  >
+                    <div className="glow-overlay" />
+                    <div className="relative z-10 space-y-6 w-full flex flex-col items-center">
+                      <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center p-4 group-hover:scale-110 transition-transform duration-500">
+                        {brand.logo ? (
+                          <img src={brand.logo} alt={brand.name} className="max-w-full max-h-full object-contain" />
+                        ) : (
+                          <span className="text-3xl font-black">{brand.name?.charAt(0)}</span>
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold mb-1">{brand.name}</h3>
+                        <p className="text-white/40 text-sm uppercase tracking-widest">{brand.country || 'International'}</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-xl font-bold mb-1">{brand.name}</h3>
-                      <p className="text-white/40 text-sm uppercase tracking-widest">{brand.country || 'International'}</p>
-                    </div>
-                  </div>
-                </motion.div>
+                  </motion.div>
+                </Link>
               ))}
             </div>
           )}

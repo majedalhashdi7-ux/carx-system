@@ -1,15 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Mail, Lock, LogIn, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/admin';
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,9 +32,12 @@ export default function LoginPage() {
       const data = await res.json();
       
       if (res.ok && data.token) {
+        // حفظ التوكن في localStorage للاستخدام في API calls
         localStorage.setItem('carx_token', data.token);
         localStorage.setItem('carx_user', JSON.stringify(data.user));
-        window.location.href = '/admin';
+        // حفظ التوكن في cookie ليقرأه الـ middleware (حماية المسارات)
+        document.cookie = `carx_token=${data.token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict`;
+        window.location.href = redirectTo;
       } else {
         setError(data.message || 'فشل تسجيل الدخول');
       }
@@ -96,7 +102,7 @@ export default function LoginPage() {
           <div>
             <div className="flex justify-between items-center mb-2">
               <label className="block text-sm font-bold text-gray-300">كلمة المرور</label>
-              <Link href="#" className="text-xs text-luxury-gold hover:underline">نسيت كلمة المرور؟</Link>
+              <Link href="/forgot-password" className="text-xs text-luxury-gold hover:underline">نسيت كلمة المرور؟</Link>
             </div>
             <div className="relative">
               <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
@@ -133,7 +139,7 @@ export default function LoginPage() {
         <div className="mt-8 text-center">
           <p className="text-gray-400 text-sm">
             ليس لديك حساب؟{' '}
-            <Link href="#" className="text-luxury-gold font-bold hover:underline flex items-center justify-center gap-1 mt-2">
+            <Link href="/register" className="text-luxury-gold font-bold hover:underline flex items-center justify-center gap-1 mt-2">
               إنشاء حساب جديد
               <ArrowRight className="w-4 h-4" />
             </Link>
@@ -141,5 +147,24 @@ export default function LoginPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black flex items-center justify-center text-white relative">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-luxury-gold/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="relative z-10 flex flex-col items-center gap-4">
+          <span className="text-3xl font-black tracking-tighter text-white">
+            CAR<span className="text-luxury-gold">X</span>
+          </span>
+          <div className="w-8 h-8 border-2 border-luxury-gold/30 border-t-luxury-gold rounded-full animate-spin" />
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
