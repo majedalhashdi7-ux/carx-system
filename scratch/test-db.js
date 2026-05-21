@@ -14,7 +14,13 @@ async function test(uri, name) {
 }
 
 async function run() {
-    await test('mongodb+srv://hmcar_admin:2svcqiBXi2ak6V3T@cluster0.jb1hm41.mongodb.net/?appName=Cluster0', 'MONGO_URI');
-    await test('mongodb+srv://carx:alQ1ZGSVtOZ1IPle@cluster0.1bqjdzp.mongodb.net/carx?retryWrites=true&w=majority&appName=Cluster0', 'MONGO_URI_CARX');
+    const MONGO_URI = process.env.MONGO_URI;
+    const MONGO_URI_CARX = process.env.MONGO_URI_CARX;
+    if (!MONGO_URI || !MONGO_URI_CARX) {
+        console.error('❌ Set MONGO_URI and MONGO_URI_CARX environment variables');
+        process.exit(1);
+    }
+    await test(MONGO_URI, 'MONGO_URI');
+    await test(MONGO_URI_CARX, 'MONGO_URI_CARX');
 }
 run();

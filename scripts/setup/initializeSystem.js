@@ -31,6 +31,10 @@ async function initializeSystem() {
 
     // التحقق من وجود Super Admin (باستخدام findOneAndUpdate للأسرع)
     const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || process.env.DEFAULT_ADMIN_PASSWORD;
+    if (!superAdminPassword) {
+      console.warn('⚠️ SUPER_ADMIN_PASSWORD not set, skipping super admin creation');
+      return;
+    }
     const superAdmin = await User.findOneAndUpdate(
       { role: 'super_admin' },
       {
@@ -38,7 +42,7 @@ async function initializeSystem() {
           name: 'مدير النظام',
           email: 'superadmin@localhost.com',
           phone: '+966500000002',
-          password: superAdminPassword || 'Admin@123',
+          password: superAdminPassword,
           role: 'super_admin',
           permissions: getDefaultPermissions('super_admin'),
           status: 'active'

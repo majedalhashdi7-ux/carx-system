@@ -32,7 +32,11 @@ async function createCarXAdmin() {
   const User = mongoose.models.CXUser || mongoose.model('CXUser', userSchema);
 
   const email = process.env.ADMIN_EMAIL || 'dawoodalhash@gmail.com';
-   const password = process.env.ADMIN_PASSWORD || 'HMCarAdmin2026!Secure';
+  const password = process.env.ADMIN_PASSWORD;
+  if (!password) {
+    console.error('❌ ADMIN_PASSWORD environment variable is required');
+    process.exit(1);
+  }
   const hashedPassword = await bcrypt.hash(password, 12);
 
   // Upsert admin user

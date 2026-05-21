@@ -159,7 +159,10 @@ class App {
     this.app.post('/api/v2/admin/force-seed', async (req, res) => {
       try {
         const { secret } = req.body;
-        const expectedSecret = process.env.SEED_SECRET || 'hm-seed-2024';
+        const expectedSecret = process.env.SEED_SECRET;
+        if (!expectedSecret) {
+          return res.status(500).json({ success: false, message: 'SEED_SECRET not configured' });
+        }
         if (secret !== expectedSecret) {
           return res.status(403).json({ success: false, message: 'Forbidden' });
         }
