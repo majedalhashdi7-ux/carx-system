@@ -31,6 +31,16 @@ async function startServer() {
   }
 }
 
+// معالجة الأخطاء غير المتوقعة على مستوى العملية
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error.message);
+  process.exit(1);
+});
+
 // البدء الفعلي للتطبيق
 if (require.main === module) {
   startServer();

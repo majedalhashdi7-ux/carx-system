@@ -50,9 +50,10 @@ export async function fetchAPI<T>(endpoint: string, options: FetchOptions = {}):
     }
 
     return { data };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'فشل الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت.';
     console.error(`API Error on ${endpoint}:`, error);
-    return { error: error.message || 'فشل الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت.' };
+    return { error: message };
   }
 }
 
@@ -63,7 +64,7 @@ export const api = {
     getFeatured: () => fetchAPI('/cars?isFeatured=true&limit=6'),
     search: (query: string) => fetchAPI(`/cars?search=${encodeURIComponent(query)}`),
     delete: (id: string) => fetchAPI(`/cars/${id}`, { method: 'DELETE' }),
-    update: (id: string, data: any) => fetchAPI(`/cars/${id}`, {
+    update: (id: string, data: Record<string, unknown>) => fetchAPI(`/cars/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data)
     }),
@@ -72,11 +73,11 @@ export const api = {
     getAll: (params?: Record<string, string>) => fetchAPI('/parts', { params }),
     getById: (id: string) => fetchAPI(`/parts/${id}`),
     getByCategory: (category: string) => fetchAPI(`/parts?category=${encodeURIComponent(category)}`),
-    create: (data: any) => fetchAPI('/parts', {
+    create: (data: Record<string, unknown>) => fetchAPI('/parts', {
       method: 'POST',
       body: JSON.stringify(data)
     }),
-    update: (id: string, data: any) => fetchAPI(`/parts/${id}`, {
+    update: (id: string, data: Record<string, unknown>) => fetchAPI(`/parts/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data)
     }),
@@ -85,11 +86,11 @@ export const api = {
   brands: {
     getAll: () => fetchAPI('/brands'),
     getById: (id: string) => fetchAPI(`/brands/${id}`),
-    create: (data: any) => fetchAPI('/brands', {
+    create: (data: Record<string, unknown>) => fetchAPI('/brands', {
       method: 'POST',
       body: JSON.stringify(data)
     }),
-    update: (id: string, data: any) => fetchAPI(`/brands/${id}`, {
+    update: (id: string, data: Record<string, unknown>) => fetchAPI(`/brands/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data)
     }),
@@ -106,7 +107,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ identifier, password, role: 'admin' }),
     }),
-    register: (data: any) => fetchAPI('/auth/register', {
+    register: (data: Record<string, unknown>) => fetchAPI('/auth/register', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
@@ -125,7 +126,7 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify({ status })
     }),
-    create: (data: any) => fetchAPI('/orders', {
+    create: (data: Record<string, unknown>) => fetchAPI('/orders', {
       method: 'POST',
       body: JSON.stringify(data)
     }),
@@ -133,15 +134,15 @@ export const api = {
   settings: {
     get: () => fetchAPI('/settings'),
     getPublic: () => fetchAPI('/settings/public'),
-    updateSiteInfo: (siteInfo: any) => fetchAPI('/settings/site-info', {
+    updateSiteInfo: (siteInfo: Record<string, unknown>) => fetchAPI('/settings/site-info', {
       method: 'PUT',
       body: JSON.stringify({ siteInfo })
     }),
-    updateContactInfo: (contactInfo: any) => fetchAPI('/settings/contact-info', {
+    updateContactInfo: (contactInfo: Record<string, unknown>) => fetchAPI('/settings/contact-info', {
       method: 'PUT',
       body: JSON.stringify({ contactInfo })
     }),
-    updateCarX: (carxSettings: any) => fetchAPI('/settings/carx', {
+    updateCarX: (carxSettings: Record<string, unknown>) => fetchAPI('/settings/carx', {
       method: 'PUT',
       body: JSON.stringify({ carxSettings })
     })

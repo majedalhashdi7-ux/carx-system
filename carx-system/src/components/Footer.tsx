@@ -46,7 +46,7 @@ export default function Footer() {
           localStorage.setItem('carx_subscribers', JSON.stringify(subscribers));
         }
       }
-    } catch (err) {
+    } catch (_err) {
       setError('حدث خطأ، يرجى المحاولة لاحقاً.');
     } finally {
       setLoading(false);

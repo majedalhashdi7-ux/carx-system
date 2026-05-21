@@ -74,8 +74,8 @@ export default function AdminEditPartPage() {
             setError(partRes.error || 'فشل جلب تفاصيل قطعة الغيار');
           }
         }
-      } catch (err) {
-        console.error('Failed to load edit part details:', err);
+      } catch (_err) {
+        console.error('Failed to load edit part details:', _err);
         setError('حدث خطأ أثناء جلب البيانات من الخادم');
       } finally {
         setInitialLoading(false);
@@ -143,7 +143,7 @@ export default function AdminEditPartPage() {
       } else {
         setError(res.error || 'فشل تعديل قطعة الغيار');
       }
-    } catch (err) {
+    } catch (_err) {
       setError('حدث خطأ غير متوقع أثناء الاتصال بالخادم');
     } finally {
       setLoading(false);

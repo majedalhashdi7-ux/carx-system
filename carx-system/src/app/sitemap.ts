@@ -42,8 +42,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     clearTimeout(timeout);
     if (carsRes.ok) {
       const carsData = await carsRes.json();
-      const carsList: any[] = carsData?.data?.cars || carsData?.cars || [];
-      carsList.forEach((car: any) => {
+      const carsList: Array<{ id?: string; _id?: string; updatedAt?: string; createdAt?: string }> = carsData?.data?.cars || carsData?.cars || [];
+      carsList.forEach((car) => {
         carPaths.push({
           url: `${baseUrl}/showroom/${car.id || car._id}`,
           lastModified: new Date(car.updatedAt || car.createdAt || Date.now()),
@@ -68,8 +68,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     clearTimeout(timeout);
     if (partsRes.ok) {
       const partsData = await partsRes.json();
-      const partsList: any[] = partsData?.parts || partsData?.data?.parts || [];
-      partsList.forEach((part: any) => {
+      const partsList: Array<{ id?: string; _id?: string; updatedAt?: string; createdAt?: string }> = partsData?.parts || partsData?.data?.parts || [];
+      partsList.forEach((part) => {
         partPaths.push({
           url: `${baseUrl}/parts/${part.id || part._id}`,
           lastModified: new Date(part.updatedAt || part.createdAt || Date.now()),

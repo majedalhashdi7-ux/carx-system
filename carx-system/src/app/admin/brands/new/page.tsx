@@ -63,7 +63,7 @@ export default function AdminNewBrandPage() {
       } else {
         setError(res.error || 'فشل إضافة الوكالة');
       }
-    } catch (err) {
+    } catch (_err) {
       setError('حدث خطأ غير متوقع أثناء الاتصال بالخادم');
     } finally {
       setLoading(false);

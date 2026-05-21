@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Filter, AlertCircle, LayoutGrid, List, SlidersHorizontal } from 'lucide-react';
+import { Search, AlertCircle, LayoutGrid, List, SlidersHorizontal } from 'lucide-react';
 import { api } from '../../lib/api';
 import CarCard3D from '../../components/CarCard3D';
 import Navbar from '../../components/Navbar';

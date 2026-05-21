@@ -63,8 +63,8 @@ export default function AdminEditBrandPage() {
             setError(res.error || 'فشل جلب تفاصيل الوكالة');
           }
         }
-      } catch (err) {
-        console.error('Failed to load edit brand details:', err);
+      } catch (_err) {
+        console.error('Failed to load edit brand details:', _err);
         setError('حدث خطأ أثناء جلب البيانات من الخادم');
       } finally {
         setInitialLoading(false);
@@ -114,7 +114,7 @@ export default function AdminEditBrandPage() {
       } else {
         setError(res.error || 'فشل تعديل بيانات الوكالة');
       }
-    } catch (err) {
+    } catch (_err) {
       setError('حدث خطأ غير متوقع أثناء الاتصال بالخادم');
     } finally {
       setLoading(false);

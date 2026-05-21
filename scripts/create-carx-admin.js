@@ -4,7 +4,11 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://car-auction:jyT24fgC7TXfyKEt@cluster0.1bqjdzp.mongodb.net/carx_production?retryWrites=true&w=majority';
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGO_URI_CARX;
+if (!MONGO_URI) {
+  console.error('❌ MONGO_URI or MONGO_URI_CARX environment variable is required');
+  process.exit(1);
+}
 
 const userSchema = new mongoose.Schema({
   name: String,
@@ -24,7 +28,11 @@ async function createAdmin() {
   console.log('✅ متصل بـ carx_production');
 
   const adminEmail = process.env.ADMIN_EMAIL || 'dawoodalhash@gmail.com';
-   const adminPassword = process.env.ADMIN_PASSWORD || 'HMCarAdmin2026!Secure';
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminPassword) {
+    console.error('❌ ADMIN_PASSWORD environment variable is required');
+    process.exit(1);
+  }
   const adminName = 'Daood Al-Hashemi';
 
   const existing = await User.findOne({ email: adminEmail });
@@ -46,7 +54,7 @@ async function createAdmin() {
       status: 'active',
     });
     console.log(`✅ تم إنشاء حساب الإدمن: ${adminEmail}`);
-    console.log(`   كلمة المرور: ${adminPassword}`);
+    console.log('   Password: [set via ADMIN_PASSWORD env var]');
   }
 
   await mongoose.disconnect();

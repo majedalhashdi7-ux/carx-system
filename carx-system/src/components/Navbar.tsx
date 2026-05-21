@@ -9,7 +9,7 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{ name?: string; email?: string; role?: string } | null>(null);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -27,7 +27,7 @@ export default function Navbar() {
         setIsLoggedIn(true);
         try {
           setUser(JSON.parse(userData));
-        } catch (e) {
+        } catch (_e) {
           setUser(null);
         }
       }

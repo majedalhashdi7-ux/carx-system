@@ -93,15 +93,15 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
           text: `شاهد هذه السيارة الرائعة في CAR X: ${car.title}`,
           url: window.location.href,
         });
-      } catch (err) {
-        console.error('Error sharing:', err);
+      } catch (_err) {
+        console.error('Error sharing:', _err);
       }
     } else {
       try {
         await navigator.clipboard.writeText(window.location.href);
         alert('تم نسخ رابط السيارة بنجاح إلى الحافظة!');
-      } catch (err) {
-        console.error('Failed to copy link:', err);
+      } catch (_err) {
+        console.error('Failed to copy link:', _err);
       }
     }
   };

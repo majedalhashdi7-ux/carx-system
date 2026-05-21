@@ -63,7 +63,7 @@ export default function RegisterPage() {
       } else {
         setError(res.error || 'حدث خطأ أثناء إنشاء الحساب');
       }
-    } catch (err) {
+    } catch (_err) {
       setError('حدث خطأ في الاتصال بالخادم');
     } finally {
       setLoading(false);

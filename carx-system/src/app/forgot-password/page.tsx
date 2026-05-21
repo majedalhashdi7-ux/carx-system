@@ -19,7 +19,7 @@ export default function ForgotPasswordPage() {
     try {
       // محاكاة إرسال الطلب أو استدعاء حقيقي للـ API في حالة وجوده
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api/v2';
-      const res = await fetch(`${apiUrl}/auth/forgot-password`, {
+      await fetch(`${apiUrl}/auth/forgot-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -30,7 +30,7 @@ export default function ForgotPasswordPage() {
 
       // نقبل الاستجابة حتى لو كانت محاكاة أو نجاح محلي لتجنب تسريب وجود البريد الإلكتروني لأسباب أمنية
       setSubmitted(true);
-    } catch (err) {
+    } catch (_err) {
       // في حالة فشل الاتصال، نظهر رسالة نجاح عامة لأسباب أمنية أو نوجه العميل للتواصل مع الدعم
       setSubmitted(true);
     } finally {

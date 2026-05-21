@@ -9,8 +9,7 @@ import {
   Globe, 
   ChevronRight,
   Play,
-  X,
-  Loader2
+  X
 } from 'lucide-react';
 import Link from 'next/link';
 import Navbar from '../components/Navbar';
@@ -35,8 +34,8 @@ export default function Home() {
           const result = res.data;
           setFeaturedCars(result.data?.cars || result.cars || []);
         }
-      } catch (err) {
-        console.error('Failed to fetch featured cars', err);
+      } catch (_err) {
+        console.error('Failed to fetch featured cars', _err);
       } finally {
         setLoading(false);
       }
@@ -51,8 +50,8 @@ export default function Home() {
             setHeroVideo(carx.heroVideoUrl);
           }
         }
-      } catch (err) {
-        console.error('Failed to fetch settings video:', err);
+      } catch (_err) {
+        console.error('Failed to fetch settings video:', _err);
       }
     };
 
