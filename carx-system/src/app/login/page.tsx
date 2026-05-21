@@ -41,7 +41,7 @@ function LoginForm() {
       } else {
         setError(data.message || 'فشل تسجيل الدخول');
       }
-    } catch (err) {
+    } catch (_err) {
       setError('حدث خطأ في الاتصال بالخادم');
     } finally {
       setLoading(false);

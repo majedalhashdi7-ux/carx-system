@@ -1,6 +1,6 @@
 // CAR X Error Logger - Console-based (Sentry can be added later)
 
-export const captureException = (error: any, context?: any) => {
+export const captureException = (error: unknown, context?: Record<string, unknown>) => {
   console.error('⚠️ [CAR X ERROR]:', error);
   if (context) {
     console.group('🔍 Context');

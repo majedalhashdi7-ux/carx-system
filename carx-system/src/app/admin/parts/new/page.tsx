@@ -36,8 +36,8 @@ export default function AdminNewPartPage() {
         if (res.data) {
           setBrands((res.data as any).data?.brands || (res.data as any).brands || []);
         }
-      } catch (err) {
-        console.error('Failed to load brands:', err);
+      } catch (_err) {
+        console.error('Failed to load brands:', _err);
       }
     };
     fetchBrands();
@@ -102,7 +102,7 @@ export default function AdminNewPartPage() {
       } else {
         setError(res.error || 'فشل إضافة قطعة الغيار');
       }
-    } catch (err) {
+    } catch (_err) {
       setError('حدث خطأ غير متوقع أثناء الاتصال بالخادم');
     } finally {
       setLoading(false);

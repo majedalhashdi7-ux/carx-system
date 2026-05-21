@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { 
   Plus, Search, Edit2, Trash2, ExternalLink, 
@@ -26,7 +25,7 @@ export default function AdminPartsPage() {
         const result = res.data;
         setParts(result?.data?.parts || result?.parts || []);
       }
-    } catch (err) {
+    } catch (_err) {
       setError('فشل جلب قطع الغيار من الخادم');
     } finally {
       setLoading(false);
@@ -42,7 +41,7 @@ export default function AdminPartsPage() {
         } else {
           alert(res.error || 'فشل حذف قطعة الغيار');
         }
-      } catch (err) {
+      } catch (_err) {
         alert('فشل الاتصال بالخادم لحذف قطعة الغيار');
       }
     }
@@ -62,7 +61,7 @@ export default function AdminPartsPage() {
       } else {
         alert(res.error || 'فشل تعديل حالة التوفر');
       }
-    } catch (err) {
+    } catch (_err) {
       alert('حدث خطأ أثناء تعديل حالة التوفر');
     }
   };

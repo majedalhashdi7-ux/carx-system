@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { 
   Plus, Search, Edit2, Trash2, ExternalLink, 
@@ -28,7 +27,7 @@ export default function AdminBrandsPage() {
         const result = res.data;
         setBrands(result?.data?.brands || result?.brands || []);
       }
-    } catch (err) {
+    } catch (_err) {
       setError('فشل جلب الوكالات من الخادم');
     } finally {
       setLoading(false);
@@ -44,7 +43,7 @@ export default function AdminBrandsPage() {
         } else {
           alert(res.error || 'فشل حذف الوكالة');
         }
-      } catch (err) {
+      } catch (_err) {
         alert('فشل الاتصال بالخادم لحذف الوكالة');
       }
     }

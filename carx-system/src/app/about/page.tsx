@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Shield, Award, Users, MapPin, Calendar, Clock } from 'lucide-react';
+import { Award, Users, MapPin, Calendar } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 

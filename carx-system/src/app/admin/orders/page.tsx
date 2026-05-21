@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Filter, Eye, X, CheckCircle2, Clock, XCircle, AlertCircle, ShoppingBag, User, Calendar, CreditCard, ChevronRight, Loader2 } from 'lucide-react';
+import { Search, Filter, Eye, X, CheckCircle2, Clock, XCircle, AlertCircle, ShoppingBag, User, CreditCard, Loader2 } from 'lucide-react';
 import Navbar from '../../../components/Navbar';
 import { api } from '../../../lib/api';
 
@@ -21,8 +21,8 @@ export default function AdminOrdersPage() {
       if (res.data) {
         setOrders((res.data as any).data?.orders || (res.data as any).orders || []);
       }
-    } catch (err) {
-      console.error('Failed to fetch orders', err);
+    } catch (_err) {
+      console.error('Failed to fetch orders', _err);
     } finally {
       setLoading(false);
     }
@@ -39,8 +39,8 @@ export default function AdminOrdersPage() {
         setSelectedOrder((res.data as any).data);
         setModalOpen(true);
       }
-    } catch (err) {
-      console.error('Failed to fetch order details', err);
+    } catch (_err) {
+      console.error('Failed to fetch order details', _err);
     }
   };
 

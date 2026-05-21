@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Filter, Shield, UserX, UserCheck, MoreHorizontal, User } from 'lucide-react';
+import { Search, Filter, Shield, UserCheck, MoreHorizontal, User } from 'lucide-react';
 import Navbar from '../../../components/Navbar';
 import { api } from '../../../lib/api';
 
@@ -18,8 +18,8 @@ export default function AdminUsersPage() {
         if (res.data) {
           setUsers((res.data as any).data?.users || (res.data as any).users || []);
         }
-      } catch (err) {
-        console.error('Failed to fetch users', err);
+      } catch (_err) {
+        console.error('Failed to fetch users', _err);
       } finally {
         setLoading(false);
       }

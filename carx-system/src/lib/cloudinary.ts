@@ -21,9 +21,9 @@ export const uploadImage = async (file: File): Promise<string> => {
 
     const data = await response.json();
     return data.secure_url;
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Cloudinary Upload Error:', err);
-    throw new Error(err.message || 'فشل الاتصال بخادم رفع الصور السحابي');
+    throw new Error(err instanceof Error ? err.message : 'فشل الاتصال بخادم رفع الصور السحابي');
   }
 };
 

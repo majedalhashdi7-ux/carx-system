@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { 
-  Plus, Search, Edit2, Trash2, ExternalLink, 
+  Plus, Search, Edit2, Trash2, 
   Filter, MoreHorizontal, CheckCircle2, XCircle 
 } from 'lucide-react';
 import { api } from '../../../lib/api';
@@ -32,7 +31,7 @@ export default function AdminCarsPage() {
       try {
         await api.cars.delete(id);
         fetchCars();
-      } catch (err) {
+      } catch (_err) {
         alert('فشل حذف السيارة');
       }
     }

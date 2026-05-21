@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Save, Settings, Globe, Shield, CreditCard, Bell, Share2, Upload, Sparkles, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Save, Globe, Shield, Share2, Upload, Sparkles, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import Navbar from '../../../components/Navbar';
 import { api } from '../../../lib/api';
 import { uploadImage } from '../../../lib/cloudinary';
@@ -76,8 +76,8 @@ export default function AdminSettingsPage() {
             maintenanceMode: settings.features?.maintenanceMode || false
           });
         }
-      } catch (err) {
-        console.error('Failed to fetch settings:', err);
+      } catch (_err) {
+        console.error('Failed to fetch settings:', _err);
         setErrorMsg('حدث خطأ أثناء تحميل الإعدادات');
       } finally {
         setInitialLoading(false);

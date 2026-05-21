@@ -55,7 +55,7 @@ export default function EditCarPage() {
             setPreviewImage(img);
           }
         }
-      } catch (err) {
+      } catch (_err) {
         setError('فشل في جلب بيانات السيارة');
       } finally {
         setInitialLoading(false);

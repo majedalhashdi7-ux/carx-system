@@ -4,8 +4,8 @@ import type { NextRequest } from 'next/server';
 // المسارات التي تتطلب تسجيل دخول
 const PROTECTED_PATHS = ['/admin'];
 
-// المسارات العامة (لا تحتاج توكن)
-const PUBLIC_PATHS = ['/login', '/register', '/', '/showroom', '/parts', '/brands', '/about', '/contact', '/faq', '/terms', '/privacy', '/shipping'];
+// المسارات العامة (لا تحتاج توكن) - مُعرّفة للتوثيق
+// const PUBLIC_PATHS = ['/login', '/register', '/', '/showroom', '/parts', '/brands', '/about', '/contact', '/faq', '/terms', '/privacy', '/shipping'];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
