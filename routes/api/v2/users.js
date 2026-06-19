@@ -2,6 +2,7 @@
 
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 const { getModel, addTenantFilter, getTenantId } = require('../../../tenants/tenant-model-helper');
 const { requireAuthAPI, requirePermissionAPI } = require('../../../middleware/auth');
 
@@ -196,9 +197,23 @@ router.put('/profile', requireAuthAPI, async (req, res) => {
       }
     );
 
+    const token = jwt.sign(
+      {
+        userId: user._id,
+        tenantId: req.tenant?.id || 'default',
+        email: user.email,
+        role: user.role,
+        permissions: user.permissions || []
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d', issuer: 'hm-car-auction', audience: 'api-users' }
+    );
+
     res.json({
       success: true,
       data: user,
+      user: user,
+      token,
       message: 'Profile updated successfully'
     });
   } catch (error) {

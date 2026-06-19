@@ -125,7 +125,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ token, newPassword }),
     }),
-    updateProfile: (data: { name?: string; email?: string; phone?: string }) => fetchAPI('/auth/update-profile', {
+    updateProfile: (data: { name?: string; email?: string; phone?: string }) => fetchAPI('/users/profile', {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
