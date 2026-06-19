@@ -70,16 +70,22 @@ export default function RegisterPage() {
     try {
       const res = await api.auth.register({ name, email, phone, password });
 
-      if (!res.error && res.data) {
+      if (res.error) {
+        setError(res.error);
+        return;
+      }
+
+      const resData = res.data as any;
+      // Backend returns { success, token, user, data } at top level
+      const token = resData?.token;
+      const userData = resData?.user || resData?.data;
+
+      if (resData?.success && token && userData) {
         setSuccess(true);
-        const token = (res.data as any).token;
-        const userData = (res.data as any).user;
-        if (token && userData) {
-          login(token, userData);
-        }
+        login(token, userData);
         setTimeout(() => { window.location.href = '/'; }, 2500);
       } else {
-        setError(res.error || 'حدث خطأ أثناء إنشاء الحساب');
+        setError(resData?.message || 'حدث خطأ أثناء إنشاء الحساب');
       }
     } catch (err) {
       setError('حدث خطأ في الاتصال بالخادم');

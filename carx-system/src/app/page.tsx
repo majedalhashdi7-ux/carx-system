@@ -9,8 +9,6 @@ import {
   Star, 
   Globe, 
   ChevronRight,
-  Play,
-  X,
   Award,
   Users,
   Car,
@@ -29,8 +27,6 @@ export default function Home() {
   const [featuredCars, setFeaturedCars] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [carsError, setCarsError] = useState(false);
-  const [videoOpen, setVideoOpen] = useState(false);
-  const [heroVideo, setHeroVideo] = useState('https://assets.mixkit.co/videos/preview/mixkit-sports-car-driving-on-a-highway-at-sunset-40243-large.mp4');
   const [showSplash, setShowSplash] = useState(true);
   const [featuredBrands, setFeaturedBrands] = useState<string[]>(['FERRARI', 'PORSCHE', 'LAMBORGHINI', 'BUGATTI', 'ROLLS ROYCE', 'BENTLEY']);
   const [totalCarsCount, setTotalCarsCount] = useState(500);
@@ -65,18 +61,6 @@ export default function Home() {
       }
     };
 
-    const fetchSettings = async () => {
-      try {
-        const res = await api.settings.get() as any;
-        if (res.data && res.data.success) {
-          const carx = res.data.data.homeContent?.carxSettings || {};
-          if (carx.heroVideoUrl) setHeroVideo(carx.heroVideoUrl);
-        }
-      } catch (err) {
-        console.error('Failed to fetch settings video:', err);
-      }
-    };
-
     const fetchBrands = async () => {
       try {
         const res = await api.brands.getAll() as any;
@@ -103,7 +87,6 @@ export default function Home() {
     };
 
     fetchFeatured();
-    fetchSettings();
     fetchBrands();
     fetchTotalCars();
   }, []);
@@ -152,16 +135,6 @@ export default function Home() {
                   استكشف المعرض
                   <ArrowRight className="w-5 h-5" />
                 </Link>
-                
-                <button 
-                  onClick={() => setVideoOpen(true)}
-                  className="glass-panel px-10 py-5 rounded-2xl font-black text-lg flex items-center gap-3 hover:bg-white/10 transition-all duration-500"
-                >
-                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                    <Play className="w-4 h-4 text-luxury-gold fill-luxury-gold" />
-                  </div>
-                  مشاهدة الفيديو
-                </button>
               </div>
             </motion.div>
           </div>
@@ -338,34 +311,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* Interactive Lightbox Video Player */}
-      {videoOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl">
-          {/* Background Close Click */}
-          <div className="absolute inset-0 cursor-pointer" onClick={() => setVideoOpen(false)} />
-          
-          <div className="relative w-full max-w-5xl aspect-video bg-black border border-white/10 rounded-[2rem] overflow-hidden shadow-2xl z-10 animate-scale-in">
-            {/* Close Button */}
-            <button 
-              onClick={() => setVideoOpen(false)}
-              className="absolute top-6 right-6 p-3 rounded-2xl bg-black/60 border border-white/10 hover:bg-red-500 hover:text-white hover:border-transparent transition-all z-20"
-              title="إغلاق المشغل"
-            >
-              <X className="w-5 h-5 text-white" />
-            </button>
-
-            {/* Video Player */}
-            <video 
-              src={heroVideo}
-              controls
-              autoPlay
-              className="w-full h-full object-cover"
-              controlsList="nodownload"
-            />
-          </div>
-        </div>
-      )}
 
       <Footer />
     </main>

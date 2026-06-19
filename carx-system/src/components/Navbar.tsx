@@ -179,9 +179,11 @@ export default function Navbar() {
               </div>
 
               <div className="h-8 w-[1px] bg-white/10 mx-2" />
-              <Link href="/showroom" className="bg-white text-black px-8 py-3.5 rounded-2xl font-black text-sm hover:bg-luxury-gold transition-all duration-500 transform hover:scale-105">
-                استكشف الآن
-              </Link>
+              {!isLoggedIn && (
+                <Link href="/login" className="bg-white text-black px-8 py-3.5 rounded-2xl font-black text-sm hover:bg-luxury-gold transition-all duration-500 transform hover:scale-105">
+                  تسجيل الدخول
+                </Link>
+              )}
             </div>
 
             {/* Mobile Toggle */}
