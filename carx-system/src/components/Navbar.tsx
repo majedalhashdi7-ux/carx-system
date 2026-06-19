@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, X, User, Search, ShoppingCart } from 'lucide-react';
+import { Menu, X, User, Search, ShoppingCart, ShoppingBag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CurrencySelector from './CurrencySelector';
 import AdvancedCart from './AdvancedCart';
@@ -147,6 +147,15 @@ export default function Navbar() {
                             الملف الشخصي
                           </Link>
 
+                          <Link 
+                            href="/my-orders" 
+                            className="flex items-center gap-2 w-full text-right px-4 py-2.5 text-sm text-white/70 hover:text-luxury-gold hover:bg-white/5 rounded-xl transition-colors font-bold mt-1"
+                            onClick={() => setShowUserDropdown(false)}
+                          >
+                            <ShoppingBag className="w-4 h-4 text-luxury-gold/70" />
+                            طلباتي
+                          </Link>
+
                           {(user?.role === 'admin' || user?.role === 'super_admin') && (
                             <Link 
                               href="/admin" 
@@ -225,6 +234,25 @@ export default function Navbar() {
                   >
                     لوحة التحكم
                   </Link>
+                )}
+
+                {isLoggedIn && (
+                  <>
+                    <Link 
+                      href="/profile"
+                      className="block text-xl font-bold text-white/70 hover:text-luxury-gold transition-colors"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      الملف الشخصي
+                    </Link>
+                    <Link 
+                      href="/my-orders"
+                      className="block text-xl font-bold text-white/70 hover:text-luxury-gold transition-colors"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      طلباتي
+                    </Link>
+                  </>
                 )}
 
                 {/* Mobile Auth Options */}

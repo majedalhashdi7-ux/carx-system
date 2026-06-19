@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Phone, Lock, Eye, EyeOff, Save, CheckCircle, AlertCircle, ArrowRight, Shield } from 'lucide-react';
+import { User, Mail, Phone, Lock, Eye, EyeOff, Save, CheckCircle, AlertCircle, ArrowRight, Shield, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/AuthContext';
@@ -123,6 +123,10 @@ export default function ProfilePage() {
               <ArrowRight className="w-4 h-4" />
               الرئيسية
             </Link>
+            <span className="text-white/20">/</span>
+            <Link href="/my-orders" className="text-white/40 hover:text-luxury-gold transition-colors text-sm font-bold">
+              طلباتي
+            </Link>
             {isAdmin && (
               <>
                 <span className="text-white/20">/</span>
@@ -150,7 +154,6 @@ export default function ProfilePage() {
           </div>
         </motion.div>
 
-        {/* Tabs */}
         <div className="flex gap-2 mb-8 p-1 bg-white/[0.03] border border-white/[0.06] rounded-2xl">
           {([
             { id: 'profile', label: 'البيانات الشخصية', icon: User },
@@ -169,6 +172,13 @@ export default function ProfilePage() {
               {tab.label}
             </button>
           ))}
+          <Link
+            href="/my-orders"
+            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-black text-white/40 hover:text-white hover:bg-white/[0.04] transition-all duration-300"
+          >
+            <ShoppingBag className="w-4 h-4" />
+            طلباتي
+          </Link>
         </div>
 
         <AnimatePresence mode="wait">

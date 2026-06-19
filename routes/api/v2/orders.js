@@ -61,7 +61,26 @@ router.post('/', requireAuthAPI, async (req, res) => {
     try {
         const Order = getModel(req, 'Order');
         const SiteSettings = getModel(req, 'SiteSettings');
-        const { items, pricing, notes, channel = 'whatsapp' } = req.body;
+        
+        let { items, pricing, notes, channel = 'whatsapp' } = req.body;
+
+        // دعم حجز السيارات المباشر من صفحة تفاصيل السيارة في carx-system
+        if (!items && req.body.car) {
+            const Car = getModel(req, 'Car');
+            const carDoc = await Car.findById(req.body.car).lean().catch(() => null);
+            items = [{
+                itemType: 'car',
+                refId: req.body.car,
+                titleSnapshot: carDoc ? carDoc.title : 'حجز سيارة',
+                qty: 1,
+                unitPriceSar: req.body.totalAmount || (carDoc ? carDoc.price : 0)
+            }];
+            pricing = {
+                grandTotalSar: req.body.totalAmount || (carDoc ? carDoc.price : 0),
+                subTotalSar: req.body.totalAmount || (carDoc ? carDoc.price : 0)
+            };
+        }
+
         const buyerId = req.user.userId || req.user._id;
         const settings = await SiteSettings.getSettings().catch(() => null);
 
