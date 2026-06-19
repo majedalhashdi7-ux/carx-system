@@ -56,7 +56,7 @@ describe('Cars Flow (E2E)', () => {
         await clearDatabase();
     });
 
-    after(async () => {
+    after(async () => { 
         await closeDatabase();
     });
 

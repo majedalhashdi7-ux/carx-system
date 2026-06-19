@@ -17,16 +17,15 @@ const checks = {
 // 1. فحص المكونات الأساسية
 console.log('📦 فحص المكونات الأساسية...');
 const components = [
-  'src/components/CinematicSplash.tsx',
-  'src/components/LuxuryCarCard.tsx',
-  'src/components/LuxuryPartCard.tsx',
-  'src/components/ReviewSystem.tsx',
-  'src/components/ComparisonSystem.tsx',
-  'src/components/TheatricalCarDisplay.tsx',
-  'src/components/AdvancedCart.tsx',
-  'src/components/CurrencySelector.tsx',
-  'src/components/Navbar.tsx',
-  'src/components/ModernCarXHome.tsx',
+  'carx-system/src/components/CinematicSplash.tsx',
+  'carx-system/src/components/LuxuryCarCard.tsx',
+  'carx-system/src/components/LuxuryPartCard.tsx',
+  'carx-system/src/components/ReviewSystem.tsx',
+  'carx-system/src/components/ComparisonSystem.tsx',
+  'carx-system/src/components/TheatricalCarDisplay.tsx',
+  'carx-system/src/components/AdvancedCart.tsx',
+  'carx-system/src/components/CurrencySelector.tsx',
+  'carx-system/src/components/Navbar.tsx',
 ];
 
 components.forEach(comp => {
@@ -40,10 +39,8 @@ components.forEach(comp => {
 // 2. فحص الـ Contexts
 console.log('\n🔗 فحص Contexts...');
 const contexts = [
-  'src/lib/CartContext.tsx',
-  'src/lib/CurrencyContext.tsx',
-  'src/lib/AuthContext.tsx',
-  'src/lib/LanguageContext.tsx',
+  'carx-system/src/lib/CartContext.tsx',
+  'carx-system/src/lib/CurrencyContext.tsx',
 ];
 
 contexts.forEach(ctx => {
@@ -57,12 +54,11 @@ contexts.forEach(ctx => {
 // 3. فحص الصفحات
 console.log('\n📄 فحص الصفحات...');
 const pages = [
-  'src/app/page.tsx',
-  'src/app/showroom/page.tsx',
-  'src/app/showroom/[id]/page.tsx',
-  'src/app/parts/page.tsx',
-  'src/app/brands/page.tsx',
-  'src/app/login/page.tsx',
+  'carx-system/src/app/page.tsx',
+  'carx-system/src/app/showroom/page.tsx',
+  'carx-system/src/app/parts/page.tsx',
+  'carx-system/src/app/brands/page.tsx',
+  'carx-system/src/app/login/page.tsx',
 ];
 
 pages.forEach(page => {
@@ -76,9 +72,9 @@ pages.forEach(page => {
 // 4. فحص APIs
 console.log('\n🔌 فحص APIs...');
 const apis = [
-  'src/app/api/cars/route.ts',
-  'src/app/api/parts/route.ts',
-  'src/app/api/admin/import/route.ts',
+  'carx-system/src/app/api/cars/route.ts',
+  'carx-system/src/app/api/parts/route.ts',
+  'carx-system/src/app/api/admin/import/route.ts',
 ];
 
 apis.forEach(api => {
@@ -92,12 +88,12 @@ apis.forEach(api => {
 // 5. فحص الملفات الأساسية
 console.log('\n⚙️ فحص الملفات الأساسية...');
 const essentials = [
-  'package.json',
-  'next.config.js',
-  'tailwind.config.js',
-  'tsconfig.json',
-  'src/app/globals.css',
-  'src/app/layout.tsx',
+  'carx-system/package.json',
+  'carx-system/next.config.js',
+  'carx-system/tailwind.config.ts',
+  'carx-system/tsconfig.json',
+  'carx-system/src/app/globals.css',
+  'carx-system/src/app/layout.tsx',
 ];
 
 essentials.forEach(file => {

@@ -45,7 +45,7 @@ describe('Tenant Routing Integration', function() {
   it('keeps host tenant even with mismatched x-tenant-id header', async function() {
     const res = await request(app)
       .get('/api/v2/tenant/info')
-      .set('Host', 'daood.okigo.net')
+      .set('Host', 'hmcar-system-two.vercel.app')
       .set('X-Tenant-ID', 'carx')
       .expect(200);
 
@@ -56,7 +56,7 @@ describe('Tenant Routing Integration', function() {
   it('keeps host tenant even with mismatched query tenant', async function() {
     const res = await request(app)
       .get('/api/v2/tenant/info?tenant=carx')
-      .set('Host', 'daood.okigo.net')
+      .set('Host', 'hmcar-system-two.vercel.app')
       .expect(200);
 
     expect(res.body).to.have.property('success', true);
@@ -66,7 +66,7 @@ describe('Tenant Routing Integration', function() {
   it('keeps carx host tenant even with mismatched header and query', async function() {
     const res = await request(app)
       .get('/api/v2/tenant/info?tenant=hmcar')
-      .set('Host', 'carx-system.vercel.app')
+      .set('Host', 'carx-system-five.vercel.app')
       .set('X-Tenant-ID', 'hmcar')
       .expect(200);
 

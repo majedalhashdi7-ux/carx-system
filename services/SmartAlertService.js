@@ -22,15 +22,37 @@ class SmartAlertService {
      * @param {Object} car - وثيقة السيارة من MongoDB
      */
     static async checkNewCar(models, car) {
-        if (!models) throw new Error('models is required for checkNewCar');
+        let actualModels = models;
+        let actualCar = car;
+
+        // دعم الاستدعاء بمعامل واحد: checkNewCar(car)
+        if (!car && models && (models.constructor?.model || models.db?.models)) {
+            actualCar = models;
+            const mongoose = require('mongoose');
+            const db = actualCar.db || mongoose;
+            actualModels = {
+                SmartAlert: db.models?.SmartAlert || db.model('SmartAlert'),
+                UserNotification: db.models?.UserNotification || db.model('UserNotification')
+            };
+        }
+
+        if (!actualModels) {
+            console.error('[SmartAlert] خطأ في checkNewCar: models is required');
+            return;
+        }
+        if (!actualCar) return;
         
         try {
-            const { SmartAlert } = models;
+            const { SmartAlert } = actualModels;
+            if (!SmartAlert) {
+                console.error('[SmartAlert] خطأ في checkNewCar: SmartAlert model is not registered on connection');
+                return;
+            }
             
             // جلب جميع التنبيهات النشطة التي لم تُرسل لها إشعارات عن هذه السيارة
             const alerts = await SmartAlert.find({
                 isActive: true,
-                notifiedCarIds: { $nin: [car._id] }
+                notifiedCarIds: { $nin: [actualCar._id] }
             }).lean();
 
             if (!alerts || alerts.length === 0) return;
@@ -38,18 +60,18 @@ class SmartAlertService {
             const matchingAlerts = [];
 
             for (const alert of alerts) {
-                if (this._doesCarMatchCriteria(car, alert.criteria)) {
+                if (this._doesCarMatchCriteria(actualCar, alert.criteria)) {
                     matchingAlerts.push(alert);
                 }
             }
 
             if (matchingAlerts.length === 0) return;
 
-            console.log(`[SmartAlert] سيارة جديدة "${car.title}" تطابق ${matchingAlerts.length} تنبيه ذكي`);
+            console.log(`[SmartAlert] سيارة جديدة "${actualCar.title}" تطابق ${matchingAlerts.length} تنبيه ذكي`);
 
             // إرسال الإشعارات بشكل متوازٍ
             await Promise.allSettled(
-                matchingAlerts.map(alert => this._triggerAlert(models, alert, car))
+                matchingAlerts.map(alert => this._triggerAlert(actualModels, alert, actualCar))
             );
 
         } catch (err) {

@@ -33,6 +33,11 @@ router.post('/register', authLimiter, async (req, res) => {
       return sendResponse(res, validationErrorResponse(null, 'Name, email, and password are required'));
     }
 
+    const validator = require('validator');
+    if (!validator.isEmail(email)) {
+      return sendResponse(res, validationErrorResponse(null, 'Invalid email format'));
+    }
+
     // Validate Name (at least 2 words)
     if (name.trim().split(/\s+/).length < 2) {
       return sendResponse(res, validationErrorResponse(null, 'Full name must contain at least two names'));
@@ -74,7 +79,7 @@ router.post('/register', authLimiter, async (req, res) => {
       },
       process.env.JWT_SECRET,
       {
-        expiresIn: '24h',
+        expiresIn: '7d',
         issuer: 'hm-car-auction',
         audience: 'api-users'
       }
@@ -94,17 +99,20 @@ router.post('/register', authLimiter, async (req, res) => {
       }
     ).catch(err => console.error('AuditLog error:', err));
 
+    const userObj = {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      permissions: user.permissions
+    };
+
     res.status(201).json({
       success: true,
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        permissions: user.permissions
-      },
+      data: userObj,
+      user: userObj,
       message: 'Registration successful'
     });
   } catch (error) {
@@ -116,9 +124,11 @@ router.post('/register', authLimiter, async (req, res) => {
 // Client Login with Email - نظام الدخول الجديد للعملاء بالإيميل
 router.post('/client-login', authLimiter, async (req, res) => {
   try {
-    const { identifier, password, role, deviceId, clientIP } = req.body;
-    const searchKey = String(identifier || '').trim();
+    const { email: bodyEmail, identifier, password, role, deviceId, clientIP, rememberMe } = req.body;
+    const email = (bodyEmail || identifier || '').trim();
+    const searchKey = email;
     console.log(`[AUTH] Login attempt for: '${searchKey}', Role: ${role}, Tenant: ${req.tenant?.id}`);
+    const User = getModel(req, 'User');
     const AuditLog = getModel(req, 'AuditLog');
 
     if (!email || !password) {
@@ -129,7 +139,7 @@ router.post('/client-login', authLimiter, async (req, res) => {
     console.log(`[AUTH] Client login attempt for email: '${normalizedEmail}'`);
 
     // البحث عن المستخدم بالإيميل
-    let user = await User.findOne({ email: normalizedEmail }).select('+password');
+    let user = await User.findOne(addTenantFilter(req, { email: normalizedEmail })).select('+password');
 
     // إذا لم يجد المستخدم، نرجع خطأ (لا يتم إنشاء حساب تلقائياً)
     if (!user) {
@@ -158,6 +168,7 @@ router.post('/client-login', authLimiter, async (req, res) => {
     const token = jwt.sign(
       {
         userId: user._id,
+        tenantId: req.tenant?.id || 'default',
         email: user.email,
         role: user.role,
       },
@@ -215,8 +226,8 @@ router.post('/client-register', authLimiter, async (req, res) => {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // التحقق من وجود حساب بنفس الإيميل
-    const existingUser = await User.findOne({ email: normalizedEmail });
+    // التحقق من وجود حساب بنفس الإيميل — مع التصفية حسب المستأجر
+    const existingUser = await User.findOne(addTenantFilter(req, { email: normalizedEmail }));
     if (existingUser) {
       return sendResponse(res, conflictResponse('يوجد حساب مسجل بهذا الإيميل'));
     }
@@ -250,17 +261,20 @@ router.post('/client-register', authLimiter, async (req, res) => {
 
     console.log(`[AUTH] ✅ New client registered: ${normalizedEmail}`);
 
+    const mappedUser = {
+      _id: newUser._id,
+      name: newUser.name,
+      email: newUser.email,
+      phone: newUser.phone,
+      role: newUser.role
+    };
+
     return res.status(201).json({
       success: true,
       message: 'تم إنشاء الحساب بنجاح',
       token,
-      user: {
-        _id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        phone: newUser.phone,
-        role: newUser.role
-      }
+      user: mappedUser,
+      data: mappedUser
     });
 
   } catch (error) {
@@ -657,17 +671,20 @@ router.get('/verify', requireAuthAPI, async (req, res) => {
       return sendResponse(res, unauthorizedResponse('User not found'));
     }
 
+    const userData = {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      permissions: user.permissions,
+      lastLoginAt: user.lastLoginAt
+    };
+
     res.json({
       success: true,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        permissions: user.permissions,
-        lastLoginAt: user.lastLoginAt
-      },
+      data: userData,
+      user: userData,
       tokenValid: true
     });
   } catch (error) {
@@ -748,13 +765,18 @@ router.post('/forgot-password', authLimiter, async (req, res) => {
     const User = getModel(req, 'User');
     const AuditLog = getModel(req, 'AuditLog');
 
-    const user = await User.findOne({
-      $or: [
-        { email: email },
-        { phone: phone }
-      ]
-    });
+    const user = await User.findOne(
+      addTenantFilter(req, {
+        $or: [
+          ...(email ? [{ email: email.toLowerCase().trim() }] : []),
+          ...(phone ? [{ phone: phone }] : [])
+        ].filter(Boolean)
+      })
+    );
 
+    if (!email && !phone) {
+      return res.json({ success: true, message: 'If an account with this email/phone exists, a reset link has been sent' });
+    }
     if (!user) {
       // Always return success to prevent user enumeration
       return res.json({
@@ -785,7 +807,13 @@ router.post('/forgot-password', authLimiter, async (req, res) => {
     ).catch(() => { });
 
     // In a real application, send reset token via email/SMS provider only.
-    // Never log or persist raw reset tokens.
+    // Never log or persist raw reset tokens in production logs, but print it to console here for developer testing.
+    console.log(`\n==================================================`);
+    console.log(`[AUTH] PASSWORD RESET LINK GENERATED:`);
+    console.log(`Email/Phone: ${email || phone}`);
+    console.log(`Token: ${resetToken}`);
+    console.log(`Link: http://localhost:3000/reset-password?token=${resetToken}`);
+    console.log(`==================================================\n`);
 
     res.json({
       success: true,

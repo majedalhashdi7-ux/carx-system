@@ -2,9 +2,8 @@
 
 const express = require('express');
 const router = express.Router();
-const LiveAuction = require('../../../models/LiveAuction');
-const AdvancedNotification = require('../../../models/AdvancedNotification');
 const { requireAuthAPI } = require('../../../middleware/auth');
+const { getModel, addTenantFilter, getTenantId } = require('../../../tenants/tenant-model-helper');
 
 // GET /api/v2/live-auctions - Get all live auction sessions
 router.get('/', async (req, res) => {
@@ -13,7 +12,8 @@ router.get('/', async (req, res) => {
         const query = {};
         if (status) query.status = status;
 
-        const sessions = await LiveAuction.find(query).sort({ startTime: -1, createdAt: -1 });
+        const LiveAuction = getModel(req, 'LiveAuction');
+        const sessions = await LiveAuction.find(addTenantFilter(req, query)).sort({ startTime: -1, createdAt: -1 });
         res.json({ success: true, data: sessions });
     } catch (error) {
         console.error('Error fetching live auctions:', error);
@@ -24,7 +24,8 @@ router.get('/', async (req, res) => {
 // GET /api/v2/live-auctions/:id - Get specific session details
 router.get('/:id', async (req, res) => {
     try {
-        const session = await LiveAuction.findById(req.params.id);
+        const LiveAuction = getModel(req, 'LiveAuction');
+        const session = await LiveAuction.findOne(addTenantFilter(req, { _id: req.params.id }));
         if (!session) return res.status(404).json({ success: false, error: 'Session not found' });
         res.json({ success: true, data: session });
     } catch (error) {
@@ -41,7 +42,8 @@ router.post('/', requireAuthAPI, async (req, res) => {
             return res.status(403).json({ success: false, error: 'Access denied' });
         }
 
-        const session = new LiveAuction(req.body);
+        const LiveAuction = getModel(req, 'LiveAuction');
+        const session = new LiveAuction({ ...req.body, tenantId: getTenantId(req) });
         await session.save();
         res.status(201).json({ success: true, data: session });
     } catch (error) {
@@ -57,7 +59,12 @@ router.put('/:id', requireAuthAPI, async (req, res) => {
             return res.status(403).json({ success: false, error: 'Access denied' });
         }
 
-        const session = await LiveAuction.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const LiveAuction = getModel(req, 'LiveAuction');
+        const session = await LiveAuction.findOneAndUpdate(
+            addTenantFilter(req, { _id: req.params.id }),
+            req.body,
+            { new: true }
+        );
         if (!session) return res.status(404).json({ success: false, error: 'Session not found' });
         res.json({ success: true, data: session });
     } catch (error) {
@@ -73,7 +80,8 @@ router.delete('/:id', requireAuthAPI, async (req, res) => {
             return res.status(403).json({ success: false, error: 'Access denied' });
         }
 
-        const session = await LiveAuction.findByIdAndDelete(req.params.id);
+        const LiveAuction = getModel(req, 'LiveAuction');
+        const session = await LiveAuction.findOneAndDelete(addTenantFilter(req, { _id: req.params.id }));
         if (!session) return res.status(404).json({ success: false, error: 'Session not found' });
         res.json({ success: true, message: 'Session deleted' });
     } catch (error) {
@@ -89,7 +97,9 @@ router.post('/:id/start', requireAuthAPI, async (req, res) => {
             return res.status(403).json({ success: false, error: 'Access denied' });
         }
 
-        const session = await LiveAuction.findById(req.params.id);
+        const LiveAuction = getModel(req, 'LiveAuction');
+        const AdvancedNotification = getModel(req, 'AdvancedNotification');
+        const session = await LiveAuction.findOne(addTenantFilter(req, { _id: req.params.id }));
         if (!session) return res.status(404).json({ success: false, error: 'Session not found' });
 
         session.status = 'live';
@@ -120,7 +130,9 @@ router.post('/:id/end', requireAuthAPI, async (req, res) => {
             return res.status(403).json({ success: false, error: 'Access denied' });
         }
 
-        const session = await LiveAuction.findById(req.params.id);
+        const LiveAuction = getModel(req, 'LiveAuction');
+        const AdvancedNotification = getModel(req, 'AdvancedNotification');
+        const session = await LiveAuction.findOne(addTenantFilter(req, { _id: req.params.id }));
         if (!session) return res.status(404).json({ success: false, error: 'Session not found' });
 
         session.status = 'ended';

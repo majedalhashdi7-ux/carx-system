@@ -4,7 +4,7 @@ import { MetadataRoute } from 'next';
 export const dynamic = 'force-dynamic';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://carx-system.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://carx-system-five.vercel.app';
 
   // المسارات الثابتة للمنصة
   const staticPaths: MetadataRoute.Sitemap = [

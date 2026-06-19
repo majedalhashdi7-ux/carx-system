@@ -13,6 +13,7 @@ import {
   Download, Zap, Shield, Info, RefreshCw
 } from 'lucide-react';
 import Image from 'next/image';
+import { api } from '@/lib/api-original';
 
 interface ImportResult {
   success: boolean;
@@ -55,14 +56,8 @@ export default function ImportSystem({ type, onImportComplete }: ImportSystemPro
     setResult(null);
 
     try {
-      // استدعاء API المعاينة
-      const response = await fetch('/api/v2/import/preview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, type })
-      });
-
-      const data = await response.json();
+      // استدعاء API المعاينة عبر كائن api المركزي
+      const data = await api.import.preview(url, type);
 
       if (data.success) {
         setPreviewData(data.data);
@@ -82,10 +77,10 @@ export default function ImportSystem({ type, onImportComplete }: ImportSystemPro
           message: data.error || 'فشل الاستيراد'
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       setResult({
         success: false,
-        message: 'حدث خطأ أثناء الاتصال بالخادم'
+        message: error.message || 'حدث خطأ أثناء الاتصال بالخادم'
       });
     } finally {
       setLoading(false);
@@ -97,13 +92,8 @@ export default function ImportSystem({ type, onImportComplete }: ImportSystemPro
 
     setLoading(true);
     try {
-      const response = await fetch('/api/v2/import/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: previewData, type })
-      });
-
-      const data = await response.json();
+      // حفظ البيانات المستوردة كمسودة
+      const data = await api.import.save(previewData, type);
 
       if (data.success) {
         setResult({
@@ -125,10 +115,10 @@ export default function ImportSystem({ type, onImportComplete }: ImportSystemPro
           message: data.error || 'فشل الحفظ في قاعدة البيانات'
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       setResult({
         success: false,
-        message: 'حدث خطأ تقني أثناء الحفظ'
+        message: error.message || 'حدث خطأ تقني أثناء الحفظ'
       });
     } finally {
       setLoading(false);

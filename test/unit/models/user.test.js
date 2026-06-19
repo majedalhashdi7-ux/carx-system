@@ -118,6 +118,7 @@ describe('User Model - Unit Tests', () => {
         });
 
         it('should enforce unique email', async () => {
+            await User.ensureIndexes();
             const userData = createUserData({ email: 'test@example.com' });
             await User.create(userData);
 

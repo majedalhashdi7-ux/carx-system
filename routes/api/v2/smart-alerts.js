@@ -15,7 +15,7 @@
 const express = require('express');
 const router = express.Router();
 const SmartAlertService = require('../../../services/SmartAlertService');
-const SmartAlert = require('../../../models/SmartAlert');
+const { getModel, addTenantFilter } = require('../../../tenants/tenant-model-helper');
 
 // Middleware للتحقق من تسجيل الدخول
 const requireAuth = (req, res, next) => {
@@ -99,7 +99,8 @@ router.put('/:id', requireAuth, async (req, res) => {
 // تفعيل أو إيقاف تنبيه
 router.patch('/:id/toggle', requireAuth, async (req, res) => {
     try {
-        const alert = await SmartAlert.findOne({ _id: req.params.id, user: req.session.userId });
+        const SmartAlert = getModel(req, 'SmartAlert');
+        const alert = await SmartAlert.findOne(addTenantFilter(req, { _id: req.params.id, user: req.session.userId }));
         if (!alert) {
             return res.status(404).json({ success: false, message: 'التنبيه غير موجود' });
         }

@@ -12,6 +12,8 @@
 
 const { Server } = require('socket.io');
 const logger = require('./core/logger');
+const { getTenantById } = require('../tenants/tenant-resolver');
+const { getConnection } = require('../tenants/tenant-db-manager');
 
 /**
  * فئة إدارة السوكيت (SocketModule)
@@ -150,9 +152,15 @@ class SocketModule {
                 try {
                     if (userId) {
                         socket.userId = userId;
-                        const User = require('../models/User');
-                        await User.findByIdAndUpdate(userId, { isOnline: true, lastActiveAt: new Date() });
-                        logger.info(`👤 تفعيل حالة متصل للمستخدم ID: ${userId}`);
+                        const tenant = getTenantById(tenantId);
+                        if (tenant) {
+                            const { models } = await getConnection(tenant.id, tenant.mongoUri);
+                            const User = models.User;
+                            await User.findByIdAndUpdate(userId, { isOnline: true, lastActiveAt: new Date() });
+                            logger.info(`👤 تفعيل حالة متصل للمستخدم ID: ${userId} في معرض ${tenantId}`);
+                        } else {
+                            logger.warn(`Could not resolve tenant ${tenantId} for user active status`);
+                        }
                         
                         const adminRoom = this._tenantRoom(tenantId, 'admin_room');
                         this.io.to(adminRoom).emit('admin_notification', {
@@ -173,9 +181,13 @@ class SocketModule {
                 logger.info(`🔌 قطع اتصال المستخدم: ${socketId}`);
                 if (socket.userId) {
                     try {
-                        const User = require('../models/User');
-                        await User.findByIdAndUpdate(socket.userId, { isOnline: false, lastActiveAt: new Date() });
-                        logger.info(`💤 تغيير الحالة لغير متصل للمستخدم ID: ${socket.userId}`);
+                        const tenant = getTenantById(tenantId);
+                        if (tenant) {
+                            const { models } = await getConnection(tenant.id, tenant.mongoUri);
+                            const User = models.User;
+                            await User.findByIdAndUpdate(socket.userId, { isOnline: false, lastActiveAt: new Date() });
+                            logger.info(`💤 تغيير الحالة لغير متصل للمستخدم ID: ${socket.userId} في معرض ${tenantId}`);
+                        }
                         
                         const adminRoom = this._tenantRoom(tenantId, 'admin_room');
                         this.io.to(adminRoom).emit('admin_notification', {

@@ -32,7 +32,7 @@ vercel --prod --confirm
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
     Write-Host "✅ تم نشر HM CAR بنجاح!" -ForegroundColor Green
-    Write-Host "🌐 URL: https://daood.okigo.net" -ForegroundColor Green
+    Write-Host "🌐 URL: https://hmcar-system-two.vercel.app" -ForegroundColor Green
 } else {
     Write-Host ""
     Write-Host "⚠️ يحتاج Vercel CLI أو تسجيل دخول" -ForegroundColor Yellow
@@ -67,7 +67,7 @@ vercel --prod --confirm
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
     Write-Host "✅ تم نشر CAR X بنجاح!" -ForegroundColor Green
-    Write-Host "🌐 URL: https://carx-system-psi.vercel.app" -ForegroundColor Green
+    Write-Host "🌐 URL: https://carx-system-five.vercel.app" -ForegroundColor Green
 } else {
     Write-Host ""
     Write-Host "⚠️ يحتاج Vercel CLI أو تسجيل دخول" -ForegroundColor Yellow
@@ -103,8 +103,8 @@ Write-Host "    MONGO_URI=mongodb+srv://carx:alQ1ZGSVtOZ1IPle@cluster0.1bqjdzp.m
 Write-Host ""
 
 Write-Host "🔗 الروابط:" -ForegroundColor Cyan
-Write-Host "  HM CAR: https://daood.okigo.net"
-Write-Host "  CAR X: https://carx-system-psi.vercel.app"
+Write-Host "  HM CAR: https://hmcar-system-two.vercel.app"
+Write-Host "  CAR X: https://carx-system-five.vercel.app"
 Write-Host ""
 
 Write-Host "🎉 اكتمل النشر!" -ForegroundColor Green

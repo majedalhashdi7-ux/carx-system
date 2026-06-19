@@ -50,8 +50,8 @@ describe('Parts API Integration Tests', () => {
         });
 
         it('should search parts by name', async () => {
-            await SparePart.create(createPartData({ name: 'Engine Oil Filter' }));
-            await SparePart.create(createPartData({ name: 'Brake Pad' }));
+            await SparePart.create(createPartData({ name: 'Engine Oil Filter', partType: 'engine' }));
+            await SparePart.create(createPartData({ name: 'Brake Pad', partType: 'brake' }));
 
             const res = await request(app)
                 .get('/api/v2/parts?search=Engine')

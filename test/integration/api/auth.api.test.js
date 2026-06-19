@@ -112,10 +112,7 @@ describe('Auth API Integration Tests', () => {
     describe('GET /api/v2/auth/verify', () => {
         it('should verify valid token', async () => {
             const userData = createUserData();
-            const user = await User.create({
-                ...userData,
-                password: await hashPassword(userData.password),
-            });
+            const user = await User.create(userData);
 
             const loginRes = await request(app)
                 .post('/api/v2/auth/login')
@@ -156,10 +153,7 @@ describe('Auth API Integration Tests', () => {
     describe('POST /api/v2/auth/logout', () => {
         it('should logout successfully', async () => {
             const userData = createUserData();
-            await User.create({
-                ...userData,
-                password: await hashPassword(userData.password),
-            });
+            await User.create(userData);
 
             const loginRes = await request(app)
                 .post('/api/v2/auth/login')

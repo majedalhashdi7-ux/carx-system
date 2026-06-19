@@ -55,10 +55,17 @@ npm-debug.log*
 coverage/
 .nyc_output/
 
-# ESLint/Test reports
+# ESLint/Test reports - منع ملفات التقارير الضخمة من الدخول للـ git
 lint_results.json
 eslint_report.json
 *.report.json
+eslint-output.txt
+lint_errors.txt
+lint_output.txt
+lint-results.json
+smart_alerts_eslint.json
+*eslint*.json
+*eslint*.txt
 
 # Testing
 test-results/

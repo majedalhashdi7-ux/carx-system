@@ -39,9 +39,11 @@ class EnvironmentChecker {
     try {
       console.log('🔍 فحص قاعدة البيانات...');
       
-      // محاولة الاتصال أولاً
-      const { connectDB } = require('../config/database.js');
-      await connectDB();
+      // استخدام DatabaseManager الرئيسي بدل config/database.js المحذوف
+      const DatabaseManager = require('../modules/core/database');
+      if (DatabaseManager.instance) {
+        await DatabaseManager.instance.connect();
+      }
       
       if (mongoose.connection.readyState === 1) {
         this.results.database = {
@@ -196,13 +198,7 @@ class EnvironmentChecker {
       issues.push('Helmet غير مثبت');
     }
     
-    // فحص CSRF
-    try {
-      require('csurf');
-      console.log('✅ CSURF مثبت');
-    } catch (error) {
-      issues.push('CSURF غير مثبت');
-    }
+
     
     // فحص Rate Limiting
     if (serverConfig.security.rateLimit.skip && !serverConfig.isDevelopment) {

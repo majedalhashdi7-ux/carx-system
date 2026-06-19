@@ -35,6 +35,7 @@ import { useSettings } from "@/lib/SettingsContext";
 import { cn } from "@/lib/utils";
 import { useStandalone } from "@/lib/useStandalone";
 import { useTenant } from "@/lib/TenantContext";
+import ModernCarCard from "@/components/ModernCarCard";
 
 export type CarType = {
   id?: string;

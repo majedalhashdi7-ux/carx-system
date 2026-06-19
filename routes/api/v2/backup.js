@@ -8,8 +8,7 @@ const mongoose = require('mongoose');
 const { requireAuthAPI, requirePermissionAPI } = require('../../../middleware/auth');
 
 // [[ARABIC_COMMENT]] جلب جميع النماذج للنسخ الاحتياطي
-const Car = require('../../../models/Car');
-const SparePart = require('../../../models/SparePart'); // [[ARABIC_COMMENT]] الاسم الصحيح للنموذج هو SparePart وليس Part
+const { getModel, addTenantFilter } = require('../../../tenants/tenant-model-helper');
 
 // [[ARABIC_COMMENT]] POST /api/v2/backup - إنشاء نسخة احتياطية يدوية (أدمن فقط)
 router.post('/', requireAuthAPI, requirePermissionAPI('manage_cars'), async (req, res) => {
@@ -17,9 +16,11 @@ router.post('/', requireAuthAPI, requirePermissionAPI('manage_cars'), async (req
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
 
         // [[ARABIC_COMMENT]] جلب جميع البيانات
+        const Car = getModel(req, 'Car');
+        const SparePart = getModel(req, 'SparePart');
         const [cars, parts] = await Promise.all([
-            Car.find({}).lean(),
-            SparePart.find({}).lean(),
+            Car.find(addTenantFilter(req, {})).lean(),
+            SparePart.find(addTenantFilter(req, {})).lean(),
         ]);
 
         // [[ARABIC_COMMENT]] بناء ملف النسخة الاحتياطية
@@ -57,9 +58,11 @@ router.post('/', requireAuthAPI, requirePermissionAPI('manage_cars'), async (req
 // [[ARABIC_COMMENT]] GET /api/v2/backup/status - معلومات النسخ الاحتياطي
 router.get('/status', requireAuthAPI, requirePermissionAPI('manage_cars'), async (req, res) => {
     try {
+        const Car = getModel(req, 'Car');
+        const SparePart = getModel(req, 'SparePart');
         const [carCount, partCount] = await Promise.all([
-            Car.countDocuments(),
-            SparePart.countDocuments(),
+            Car.countDocuments(addTenantFilter(req, {})),
+            SparePart.countDocuments(addTenantFilter(req, {})),
         ]);
 
         res.json({

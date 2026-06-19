@@ -131,8 +131,18 @@ router.post('/', requireAuthAPI, async (req, res) => {
              return res.status(400).json({ success: false, error: 'تم التلاعب بالأسعار وإرسال قيم سالبة غير معتمدة' });
         }
 
-        // توليد رقم طلب فريد
-        const orderNumber = `HM-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+        // توليد رقم طلب فريد وآمن مع التحقق من عدم التكرار في قاعدة البيانات
+        let orderNumber;
+        let orderExists = true;
+        const crypto = require('crypto');
+        while (orderExists) {
+            const randHex = crypto.randomBytes(3).toString('hex').toUpperCase(); // 6 أحرف
+            orderNumber = `HM-${new Date().getFullYear()}-${randHex}`;
+            const existingOrder = await Order.findOne(addTenantFilter(req, { orderNumber }));
+            if (!existingOrder) {
+                orderExists = false;
+            }
+        }
 
         const newOrder = new Order({
             orderNumber,
@@ -185,14 +195,21 @@ router.get('/:id', requireAuthAPI, async (req, res) => {
     try {
         const Order = getModel(req, 'Order');
         const userId = req.user.userId || req.user._id;
-        const query = addTenantFilter(req, { _id: req.params.id });
-        if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
-            query.buyer = userId;
+        
+        // جلب الطلب دون تصفية المشتري للتحقق من وجوده أولاً
+        const order = await Order.findOne(addTenantFilter(req, { _id: req.params.id })).populate('buyer', 'name email phone').lean();
+
+        if (!order) {
+            return res.status(404).json({ success: false, error: 'Order not found' });
         }
 
-        const order = await Order.findOne(query).populate('buyer', 'name email phone').lean();
-
-        if (!order) return res.status(404).json({ success: false, error: 'Order not found' });
+        // إذا كان المشتري مختلفاً وليس مسؤولاً، يتم إرجاع 403 Forbidden
+        if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
+            const buyerIdStr = order.buyer?._id?.toString() || order.buyer?.toString();
+            if (buyerIdStr !== userId.toString()) {
+                return res.status(403).json({ success: false, error: 'Forbidden' });
+            }
+        }
 
         res.json({ success: true, data: order });
     } catch (error) {
@@ -222,6 +239,34 @@ router.patch('/:id/status', requireAuthAPI, async (req, res) => {
         });
 
         await order.save();
+
+        // إرسال إشعار للمشتري عند تغيير حالة الطلب
+        try {
+            const UserNotification = getModel(req, 'UserNotification');
+            const notification = new UserNotification({
+                user: order.buyer,
+                title: 'تحديث حالة الطلب',
+                message: `تم تحديث حالة طلبك رقم ${order.orderNumber} إلى: ${status}`,
+                type: 'info',
+                actionUrl: `/orders/${order._id}`,
+                tenantId: getTenantId(req)
+            });
+            await notification.save();
+
+            // طباعة رابط الواتساب التخيلي لإرسال الإشعار للعميل
+            const User = getModel(req, 'User');
+            const buyer = await User.findById(order.buyer);
+            if (buyer && buyer.phone) {
+                console.log(`\n==================================================`);
+                console.log(`[NOTIFICATION] WHATSAPP NOTIFICATION MOCK:`);
+                console.log(`To: ${buyer.name} (${buyer.phone})`);
+                console.log(`Message: مرحباً ${buyer.name}، تم تحديث حالة طلبك رقم ${order.orderNumber} إلى ${status}. تفاصيل: http://localhost:3000/orders/${order._id}`);
+                console.log(`==================================================\n`);
+            }
+        } catch (notifyErr) {
+            console.error('Failed to notify order buyer:', notifyErr);
+        }
+
         res.json({ success: true, message: 'Order status updated successfully' });
     } catch (error) {
         res.status(500).json({ success: false, error: 'Internal Server Error' });

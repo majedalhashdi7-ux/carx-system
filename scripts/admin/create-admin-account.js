@@ -103,7 +103,7 @@ async function createAdminAccount() {
         console.log('🏙️  المدينة:', adminData.city);
         
         console.log('\n🎉 تم إنشاء/تحديث حساب الأدمن بنجاح!');
-        console.log('🌐 يمكنك الآن تسجيل الدخول على: https://daood.okigo.net');
+        console.log('🌐 يمكنك الآن تسجيل الدخول على: https://hmcar-system-two.vercel.app');
 
     } catch (error) {
         console.error('❌ خطأ في إنشاء حساب الأدمن:', error.message);

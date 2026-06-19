@@ -15,7 +15,7 @@
 openssl rand -hex 32  # JWT_SECRET
 openssl rand -hex 32  # SESSION_SECRET
 
-# 2. غير في .env:
+# 2. غير في .env: 
 JWT_SECRET=<المفتاح الجديد>
 SESSION_SECRET=<المفتاح الجديد>
 PROD_ADMIN_PASSWORD=<كلمة سر قوية جديدة>

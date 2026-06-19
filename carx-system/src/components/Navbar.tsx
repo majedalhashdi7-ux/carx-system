@@ -2,48 +2,34 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, X, User, Search } from 'lucide-react';
+import { Menu, X, User, Search, ShoppingCart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import CurrencySelector from './CurrencySelector';
+import AdvancedCart from './AdvancedCart';
+import { useAuth } from '../lib/AuthContext';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState<any>(null);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchType, setSearchType] = useState<'cars' | 'parts'>('cars');
+  const [showCart, setShowCart] = useState(false);
+
+  // استخدام AuthContext بدلاً من localStorage مباشرةً
+  const { user, isLoggedIn, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
-    
-    // Check local storage for token client-side
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('carx_token');
-      const userData = localStorage.getItem('carx_user');
-      if (token && userData) {
-        setIsLoggedIn(true);
-        try {
-          setUser(JSON.parse(userData));
-        } catch (e) {
-          setUser(null);
-        }
-      }
-    }
-    
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const handleLogout = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('carx_token');
-      localStorage.removeItem('carx_user');
-      setIsLoggedIn(false);
-      setUser(null);
-      window.location.href = '/login';
-    }
+    logout();
+    setShowUserDropdown(false);
+    window.location.href = '/login';
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -60,9 +46,12 @@ export default function Navbar() {
   const navLinks = [
     { name: 'الرئيسية', href: '/' },
     { name: 'المعرض', href: '/showroom' },
+    { name: 'قطع الغيار', href: '/parts' },
+    { name: 'الماركات', href: '/brands' },
     { name: 'من نحن', href: '/about' },
     { name: 'اتصل بنا', href: '/contact' },
   ];
+
 
   return (
     <>
@@ -113,6 +102,15 @@ export default function Navbar() {
                 className="w-12 h-12 flex items-center justify-center rounded-2xl text-white/60 hover:text-white hover:bg-white/5 transition-all"
               >
                 <Search className="w-5 h-5" />
+              </button>
+
+              <CurrencySelector />
+
+              <button 
+                onClick={() => setShowCart(true)}
+                className="w-12 h-12 flex items-center justify-center rounded-2xl text-white/60 hover:text-white hover:bg-white/5 transition-all relative"
+              >
+                <ShoppingCart className="w-5 h-5" />
               </button>
 
               {/* User Dropdown */}
@@ -317,6 +315,11 @@ export default function Navbar() {
             </div>
           </motion.div>
         )}
+      </AnimatePresence>
+
+      {/* Advanced Cart Drawer */}
+      <AnimatePresence>
+        {showCart && <AdvancedCart show={showCart} onClose={() => setShowCart(false)} />}
       </AnimatePresence>
     </>
   );

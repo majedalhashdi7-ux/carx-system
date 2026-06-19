@@ -88,51 +88,29 @@ const requireAuthAPI = (req, res, next) => {
       
       return next();
     } catch (err) {
-      return res.status(401).json({ error: 'Token invalid or expired', details: err.message });
+      return res.status(401).json({ success: false, error: 'Token invalid or expired', details: err.message });
     }
   }
 
   // Fallback إلى session (آمن من undefined)
   const session = req.session || {};
   if (!session.user) {
-    return res.status(401).json({ error: 'يجب تسجيل الدخول', code: 'UNAUTHORIZED' });
+    return res.status(401).json({ success: false, error: 'يجب تسجيل الدخول', code: 'UNAUTHORIZED' });
   }
   req.user = session.user;
   next();
 };
 
-// Simple auth middleware
-const auth = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.split(' ')[1];
-    try {
-      const jwtSecret = process.env.JWT_SECRET;
-      if (!jwtSecret) return res.status(500).json({ error: 'Server configuration error' });
-      const decoded = jwt.verify(token, jwtSecret);
-      req.user = decoded;
-      return next();
-    } catch (err) {
-      return res.status(401).json({ error: 'Token invalid' });
-    }
-  }
+// Simple auth middleware (aliased to requireAuthAPI to avoid duplication)
+const auth = requireAuthAPI;
 
-  const session = req.session || {};
-  if (!session.user) {
-    return res.status(401).json({ error: 'يجب تسجيل الدخول' });
-  }
-  req.user = session.user;
-  next();
-};
-
-// Permission check
 const requirePermissionAPI = (permission) => {
   return (req, res, next) => {
     if (!req.user) {
-      return res.status(401).json({ error: 'يجب تسجيل الدخول' });
+      return res.status(401).json({ success: false, error: 'يجب تسجيل الدخول' });
     }
 
-    if (req.user.role === 'super_admin') {
+    if (req.user.role === 'admin' || req.user.role === 'super_admin') {
       return next();
     }
 
@@ -142,6 +120,7 @@ const requirePermissionAPI = (permission) => {
     }
 
     return res.status(403).json({
+      success: false,
       error: 'ليس لديك صلاحية للوصول',
       message: `عذراً، لا تملك صلاحية (${permission}) المطلوبة`
     });

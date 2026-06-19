@@ -102,15 +102,29 @@ export const api = {
     }),
   },
   auth: {
-    login: (identifier: string, password: string) => fetchAPI('/auth/login', {
+    login: (identifier: string, password: string, role = 'buyer') => {
+      const endpoint = role === 'buyer' ? '/auth/client-login' : '/auth/login';
+      return fetchAPI(endpoint, {
+        method: 'POST',
+        body: JSON.stringify({ identifier, email: identifier, password, role }),
+      });
+    },
+    register: (data: any) => fetchAPI('/auth/client-register', {
       method: 'POST',
-      body: JSON.stringify({ identifier, password, role: 'admin' }),
-    }),
-    register: (data: any) => fetchAPI('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        ...data,
+        confirmPassword: data.confirmPassword || data.password
+      }),
     }),
     verify: () => fetchAPI('/auth/verify', { method: 'GET' }),
+    forgotPassword: (emailOrPhone: { email?: string; phone?: string }) => fetchAPI('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify(emailOrPhone),
+    }),
+    resetPassword: (token: string, newPassword: string) => fetchAPI('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword }),
+    }),
   },
   admin: {
     getStats: () => fetchAPI('/dashboard/admin'),

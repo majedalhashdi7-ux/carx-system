@@ -25,7 +25,7 @@ MONGO_URI_CARX=${realConnectionString.replace('<db_password>', 'YOUR_PASSWORD_HE
 
 # Authentication
 NEXTAUTH_SECRET=ultra-secure-nextauth-secret-key-2024-production
-NEXTAUTH_URL=https://daood.okigo.net
+NEXTAUTH_URL=https://hmcar-system-two.vercel.app
 
 # Admin Configuration
 ADMIN_EMAIL=dawoodalhash@gmail.com
@@ -45,9 +45,9 @@ SYSTEM_VERSION=2.0.0
 
     // 2. تحديث client-app/.env.local
     const clientEnvContent = `# HM CAR Client App - Production Ready
-NEXT_PUBLIC_API_URL=https://daood.okigo.net/api
+NEXT_PUBLIC_API_URL=https://hmcar-system-two.vercel.app/api
 NEXT_PUBLIC_APP_NAME=HM CAR
-NEXT_PUBLIC_APP_URL=https://daood.okigo.net
+NEXT_PUBLIC_APP_URL=https://hmcar-system-two.vercel.app
 NEXT_PUBLIC_WHATSAPP=+967781007805
 
 # Database - Connection String حقيقي
@@ -55,7 +55,7 @@ MONGO_URI=${realConnectionString.replace('<db_password>', 'YOUR_PASSWORD_HERE')}
 
 # Authentication
 NEXTAUTH_SECRET=hmcar-secure-secret-2024-production
-NEXTAUTH_URL=https://daood.okigo.net
+NEXTAUTH_URL=https://hmcar-system-two.vercel.app
 
 # Production
 NODE_ENV=production
@@ -66,9 +66,9 @@ NODE_ENV=production
 
     // 3. تحديث carx-system/.env.local
     const carxEnvContent = `# CAR X System - Production Ready
-NEXT_PUBLIC_API_URL=https://daood.okigo.net/api
+NEXT_PUBLIC_API_URL=https://hmcar-system-two.vercel.app/api
 NEXT_PUBLIC_APP_NAME=CAR X
-NEXT_PUBLIC_APP_URL=https://daood.okigo.net
+NEXT_PUBLIC_APP_URL=https://hmcar-system-two.vercel.app
 NEXT_PUBLIC_WHATSAPP=+967781007805
 
 # Database - Connection String حقيقي
@@ -76,7 +76,7 @@ MONGO_URI=${realConnectionString.replace('<db_password>', 'YOUR_PASSWORD_HERE')}
 
 # Authentication
 NEXTAUTH_SECRET=carx-ultra-secure-secret-2024-production
-NEXTAUTH_URL=https://daood.okigo.net
+NEXTAUTH_URL=https://hmcar-system-two.vercel.app
 
 # Admin
 ADMIN_EMAIL=dawoodalhash@gmail.com
@@ -105,7 +105,7 @@ function createVercelGuide() {
 \`\`\`
 MONGO_URI=${realConnectionString.replace('<db_password>', 'YOUR_ACTUAL_PASSWORD')}
 NEXTAUTH_SECRET=hmcar-ultra-secure-secret-2024-production
-NEXTAUTH_URL=https://daood.okigo.net
+NEXTAUTH_URL=https://hmcar-system-two.vercel.app
 ADMIN_EMAIL=dawoodalhash@gmail.com
 WHATSAPP_NUMBER=+967781007805
 USD_TO_SAR=3.75
@@ -117,7 +117,7 @@ NODE_ENV=production
 \`\`\`
 MONGO_URI=${realConnectionString.replace('<db_password>', 'YOUR_ACTUAL_PASSWORD')}
 NEXTAUTH_SECRET=carx-ultra-secure-secret-2024-production
-NEXTAUTH_URL=https://daood.okigo.net
+NEXTAUTH_URL=https://hmcar-system-two.vercel.app
 ADMIN_EMAIL=dawoodalhash@gmail.com
 WHATSAPP_NUMBER=+967781007805
 USD_TO_SAR=3.75

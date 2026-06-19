@@ -17,11 +17,18 @@
 
 const express = require('express');
 const router = express.Router();
-const DeviceFingerprint = require('../../../models/DeviceFingerprint');
-const User = require('../../../models/User');
-const ClientSession = require('../../../models/ClientSession');
+const { getModel } = require('../../../tenants/tenant-model-helper');
 const { requireAuthAPI, requireAdmin } = require('../../../middleware/auth');
 const { blockedIPs } = require('../../../middleware/securityEnhanced');
+
+router.use((req, res, next) => {
+  req.models = {
+    DeviceFingerprint: getModel(req, 'DeviceFingerprint'),
+    User: getModel(req, 'User'),
+    ClientSession: getModel(req, 'ClientSession')
+  };
+  next();
+});
 
 // ══════════════════════════════════════════════
 // 📊 لوحة الأمان الرئيسية (Security Dashboard)
@@ -32,6 +39,7 @@ const { blockedIPs } = require('../../../middleware/securityEnhanced');
  * إحصائيات شاملة للأمان
  */
 router.get('/dashboard', requireAuthAPI, requireAdmin, async (req, res) => {
+  const { DeviceFingerprint, User, ClientSession } = req.models;
   try {
     const [
       totalDevices,
@@ -116,6 +124,7 @@ router.get('/dashboard', requireAuthAPI, requireAdmin, async (req, res) => {
  * قائمة الأجهزة مع فلترة متقدمة
  */
 router.get('/devices', requireAuthAPI, requireAdmin, async (req, res) => {
+  const { DeviceFingerprint } = req.models;
   try {
     const {
       search = '',
@@ -213,6 +222,7 @@ router.get('/devices', requireAuthAPI, requireAdmin, async (req, res) => {
  * تفاصيل جهاز محدد مع السجل الأمني الكامل
  */
 router.get('/devices/:id', requireAuthAPI, requireAdmin, async (req, res) => {
+  const { DeviceFingerprint, User, ClientSession } = req.models;
   try {
     const device = await DeviceFingerprint.findById(req.params.id);
     if (!device) {
@@ -258,6 +268,7 @@ router.get('/devices/:id', requireAuthAPI, requireAdmin, async (req, res) => {
  * حظر/فك حظر جهاز مع سبب ومدة
  */
 router.post('/toggle-ban/:id', requireAuthAPI, requireAdmin, async (req, res) => {
+  const { DeviceFingerprint } = req.models;
   try {
     const device = await DeviceFingerprint.findById(req.params.id);
     if (!device) {
@@ -336,6 +347,7 @@ router.post('/toggle-ban/:id', requireAuthAPI, requireAdmin, async (req, res) =>
  * تفعيل/تعطيل إعفاء الجهاز من القيود
  */
 router.post('/toggle-exempt/:id', requireAuthAPI, requireAdmin, async (req, res) => {
+  const { DeviceFingerprint } = req.models;
   try {
     const device = await DeviceFingerprint.findById(req.params.id);
     if (!device) {
@@ -392,6 +404,7 @@ router.post('/toggle-exempt/:id', requireAuthAPI, requireAdmin, async (req, res)
  * رفع/خفض مستوى الثقة يدوياً
  */
 router.post('/trust/:id', requireAuthAPI, requireAdmin, async (req, res) => {
+  const { DeviceFingerprint } = req.models;
   try {
     const device = await DeviceFingerprint.findById(req.params.id);
     if (!device) {
@@ -451,6 +464,7 @@ router.post('/trust/:id', requireAuthAPI, requireAdmin, async (req, res) => {
  * إضافة ملاحظة أدمن للجهاز
  */
 router.post('/add-note/:id', requireAuthAPI, requireAdmin, async (req, res) => {
+  const { DeviceFingerprint } = req.models;
   try {
     const device = await DeviceFingerprint.findById(req.params.id);
     if (!device) {
@@ -477,6 +491,7 @@ router.post('/add-note/:id', requireAuthAPI, requireAdmin, async (req, res) => {
  * الجلسات النشطة حالياً
  */
 router.get('/sessions', requireAuthAPI, requireAdmin, async (req, res) => {
+  const { ClientSession } = req.models;
   try {
     const { search, userId } = req.query;
 
@@ -504,6 +519,7 @@ router.get('/sessions', requireAuthAPI, requireAdmin, async (req, res) => {
  * إنهاء جلسة محددة
  */
 router.post('/sessions/:id/terminate', requireAuthAPI, requireAdmin, async (req, res) => {
+  const { ClientSession } = req.models;
   try {
     const session = await ClientSession.findById(req.params.id);
     if (!session) {
@@ -528,6 +544,7 @@ router.post('/sessions/:id/terminate', requireAuthAPI, requireAdmin, async (req,
  * إنهاء كل جلسات مستخدم محدد
  */
 router.post('/sessions/terminate-all/:userId', requireAuthAPI, requireAdmin, async (req, res) => {
+  const { ClientSession } = req.models;
   try {
     const result = await ClientSession.updateMany(
       { userId: req.params.userId, isActive: true },
@@ -561,6 +578,7 @@ router.post('/sessions/terminate-all/:userId', requireAuthAPI, requireAdmin, asy
  * تقرير أمني شامل
  */
 router.get('/report', requireAuthAPI, requireAdmin, async (req, res) => {
+  const { DeviceFingerprint } = req.models;
   try {
     const [
       trustDistribution,
@@ -634,6 +652,7 @@ router.get('/report', requireAuthAPI, requireAdmin, async (req, res) => {
  * تنظيف البيانات القديمة
  */
 router.post('/cleanup', requireAuthAPI, requireAdmin, async (req, res) => {
+  const { DeviceFingerprint, ClientSession } = req.models;
   try {
     const { daysOld = 90 } = req.body;
     const cutoffDate = new Date(Date.now() - daysOld * 24 * 60 * 60 * 1000);
@@ -668,6 +687,7 @@ router.post('/cleanup', requireAuthAPI, requireAdmin, async (req, res) => {
  * إجراءات جماعية على أجهزة متعددة
  */
 router.post('/bulk-action', requireAuthAPI, requireAdmin, async (req, res) => {
+  const { DeviceFingerprint } = req.models;
   try {
     const { ids, action } = req.body; // action: 'ban', 'unban', 'exempt', 'remove-exempt', 'delete'
 

@@ -6,7 +6,7 @@
  */
 
 const { MongoClient } = require('mongodb');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 async function activateAllFeatures() {
@@ -51,7 +51,7 @@ async function activateAllFeatures() {
         await createAuctionTypes(db);
 
         console.log('\n🎉 تم تفعيل جميع المميزات بنجاح!');
-        console.log('🌐 الموقع جاهز على: https://daood.okigo.net');
+        console.log('🌐 الموقع جاهز على: https://hmcar-system-two.vercel.app');
 
     } catch (error) {
         console.error('❌ خطأ في تفعيل المميزات:', error.message);

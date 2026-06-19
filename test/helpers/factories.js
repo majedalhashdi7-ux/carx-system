@@ -1,5 +1,5 @@
 // Test Data Factories
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 /**
  * Create test user data
@@ -22,6 +22,7 @@ function createAdminData(overrides = {}) {
     return createUserData({
         name: 'Admin User',
         email: 'admin@example.com',
+        phone: '+0987654321',
         role: 'admin',
         ...overrides,
     });
@@ -41,6 +42,8 @@ function createCarData(overrides = {}) {
         condition: 'excellent',
         description: 'Test car description',
         images: ['https://example.com/car1.jpg'],
+        isActive: true,
+        isSold: false,
         ...overrides,
     };
 }
@@ -89,7 +92,7 @@ function createOrderData(userId, items, overrides = {}) {
         ? items.map(item => ({
             titleSnapshot: item.titleSnapshot || 'Test Item',
             refId: item.refId || item.part || item.car || new mongoose.Types.ObjectId(),
-            itemType: item.itemType || (item.part ? 'part' : 'car'),
+            itemType: item.itemType || (item.part ? 'sparePart' : 'car'),
             price: item.price || 100,
             quantity: item.quantity || 1,
             ...item

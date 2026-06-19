@@ -112,11 +112,11 @@ const userSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // [[ARABIC_COMMENT]] إضافة فهارس (Indexes) لتحسين سرعة الاستعلامات
-// Composite indexes for multi-tenant queries
-userSchema.index({ tenantId: 1, email: 1 }, { unique: true, sparse: true });
-userSchema.index({ tenantId: 1, username: 1 }, { unique: true, sparse: true });
-userSchema.index({ tenantId: 1, phone: 1 }, { unique: true, sparse: true });
-userSchema.index({ tenantId: 1, buyerNameKey: 1 }, { unique: true, sparse: true });
+// Composite indexes for multi-tenant queries using partialFilterExpression for optional fields
+userSchema.index({ tenantId: 1, email: 1 }, { unique: true, partialFilterExpression: { email: { $type: 'string' } } });
+userSchema.index({ tenantId: 1, username: 1 }, { unique: true, partialFilterExpression: { username: { $type: 'string' } } });
+userSchema.index({ tenantId: 1, phone: 1 }, { unique: true, partialFilterExpression: { phone: { $type: 'string' } } });
+userSchema.index({ tenantId: 1, buyerNameKey: 1 }, { unique: true, partialFilterExpression: { buyerNameKey: { $type: 'string' } } });
 userSchema.index({ tenantId: 1, role: 1 });
 userSchema.index({ tenantId: 1, status: 1 });
 

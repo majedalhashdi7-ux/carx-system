@@ -1,20 +1,18 @@
 const mongoose = require('mongoose');
 
-async function test(uri, name) {
-    console.log(`Testing ${name}...`);
-    try {
-        await mongoose.connect(uri, {
-            serverSelectionTimeoutMS: 5000
-        });
-        console.log(`✅ ${name} connected successfully!`);
-        await mongoose.disconnect();
-    } catch (err) {
-        console.error(`❌ ${name} failed:`, err.message);
-    }
-}
+// Try direct connection using one of the shards resolved by nslookup
+const uri = 'mongodb://hmcar_admin:2svcqiBXi2ak6V3T@ac-zyizetm-shard-00-02.jb1hm41.mongodb.net:27017/car-auction?ssl=true&authSource=admin&replicaSet=atlas-zyizetm-shard-0';
 
-async function run() {
-    await test('mongodb+srv://hmcar_admin:2svcqiBXi2ak6V3T@cluster0.jb1hm41.mongodb.net/?appName=Cluster0', 'MONGO_URI');
-    await test('mongodb+srv://carx:alQ1ZGSVtOZ1IPle@cluster0.1bqjdzp.mongodb.net/carx?retryWrites=true&w=majority&appName=Cluster0', 'MONGO_URI_CARX');
-}
-run();
+console.log('Connecting to:', uri.replace(/:([^:]+)@/, ':****@'));
+
+mongoose.connect(uri, {
+  serverSelectionTimeoutMS: 5000
+})
+.then(() => {
+  console.log('✅ Connected successfully to MongoDB Atlas via direct shard URI!');
+  process.exit(0);
+})
+.catch(err => {
+  console.error('❌ Connection failed:', err);
+  process.exit(1);
+});

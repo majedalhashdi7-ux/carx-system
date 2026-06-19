@@ -54,7 +54,8 @@ router.get('/', (req, res) => {
 router.get('/health', async (req, res) => {
   try {
     const mongoose = require('mongoose');
-    const dbStatus = mongoose.connection.readyState === 1 ? 'متصل' : 'غير متصل';
+    const dbConnection = req.tenantDb || mongoose.connection;
+    const dbStatus = dbConnection.readyState === 1 ? 'متصل' : 'غير متصل';
 
     const health = {
       status: 'healthy',
@@ -62,7 +63,7 @@ router.get('/health', async (req, res) => {
       uptime: process.uptime(),
       database: {
         status: dbStatus,
-        name: mongoose.connection.name
+        name: dbConnection.name
       },
       memory: process.memoryUsage(),
       environment: process.env.NODE_ENV || 'development'
@@ -90,7 +91,14 @@ router.use('/orders', strictLimiter, require('./orders'));              // ال�
 router.use('/notifications', publicLimiter, require('./notifications')); // التنبيهات
 router.use('/analytics', strictLimiter, require('./analytics'));        // التحليلات - حماية متوسطة
 router.use('/upload', uploadLimiter, require('./upload.js'));           // رفع الملفات - حد صارم
-router.use('/search', searchLimiter);                                   // البحث - حد متوسط
+router.use('/search', searchLimiter, (req, res) => {
+  // TODO: ربط router البحث (search.js) عند إنشائه
+  res.status(501).json({
+    success: false,
+    message: 'نظام البحث قيد التطوير',
+    code: 'NOT_IMPLEMENTED'
+  });
+});                                                  // البحث - قيد التطوير
 router.use('/settings', autoCacheMiddleware({ ttl: 600 }), require('./settings')); // [[ARABIC_COMMENT]] كاش للإعدادات لمدة 10 دقائق
 router.use('/messages', publicLimiter, require('./messages'));          // الرسائل
 router.use('/reviews', publicLimiter, require('./reviews'));            // التقييمات

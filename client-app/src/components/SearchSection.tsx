@@ -8,13 +8,13 @@ import { useLanguage } from "@/lib/LanguageContext";
 import { api } from "@/lib/api";
 
 export default function SearchSection() {
-    const { t, isRTL, language } = useLanguage();
+    const { t, isRTL, lang } = useLanguage();
     const [brands, setBrands] = useState<any[]>([]);
 
     useEffect(() => {
         const fetchBrands = async () => {
             try {
-                const res = await api.brands.getAll();
+                const res = await api.brands.list();
                 if (res?.data?.brands) {
                     setBrands(res.data.brands);
                 }
@@ -68,7 +68,7 @@ export default function SearchSection() {
                             <option value="" className="bg-black">{t('allBrands')}</option>
                             {brands.map(b => (
                                 <option key={b.id || b._id} value={b.slug || b.name.toLowerCase()} className="bg-black">
-                                    {language === 'ar' && b.nameAr ? b.nameAr : b.name}
+                                    {lang.toLowerCase() === 'ar' && b.nameAr ? b.nameAr : b.name}
                                 </option>
                             ))}
                         </select>

@@ -54,7 +54,6 @@ function loadSchemas() {
     'SiteSettings': 'SiteSettings.js',
     'Order': 'Order.js',
     'Invoice': 'Invoice.js',
-    'Notification': 'Notification.js',
     'UserNotification': 'UserNotification.js',
     'Favorite': 'Favorite.js',
     'Review': 'Review.js',
@@ -66,8 +65,6 @@ function loadSchemas() {
     'Analytics': 'Analytics.js',
     'Report': 'Report.js',
     'Payment': 'Payment.js',
-    'Settings': 'Settings.js',
-    'SiteSetting': 'SiteSetting.js',
     'VehicleCategory': 'VehicleCategory.js',
     'SearchHistory': 'SearchHistory.js',
     'ExchangeRate': 'ExchangeRate.js',
@@ -337,14 +334,8 @@ if (!process.env.VERCEL && !process.env.NOW_REGION) {
   }, 15 * 60 * 1000);
 }
 
-// إغلاق كل الاتصالات عند إيقاف السيرفر
-process.on('SIGINT', async () => {
-  await closeAllConnections();
-});
-
-process.on('SIGTERM', async () => {
-  await closeAllConnections();
-});
+// ملاحظة: لا يتم تسجيل SIGINT/SIGTERM هنا لتجنب التعارض مع app.js
+// يتم استدعاء closeAllConnections() من دالة shutdown() في modules/app.js
 
 module.exports = {
   getConnection,

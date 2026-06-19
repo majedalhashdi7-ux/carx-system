@@ -78,7 +78,9 @@ router.get('/', cacheResponse(600), async (req, res) => {
     try {
         const SparePart = getModel(req, 'SparePart');
         const SiteSettings = getModel(req, 'SiteSettings');
-        const { category, q, brand, brandId, carModel, limit = 20 } = req.query;
+        const category = req.query.category || req.query.partType;
+        const q = req.query.q || req.query.search;
+        const { brand, brandId, carModel, limit = 20 } = req.query;
         const filter = {};
 
         // [[ARABIC_COMMENT]] فلتر الفئة: يدعم الأسماء الإنجليزية والعربية معاً
@@ -170,18 +172,16 @@ router.get('/', cacheResponse(600), async (req, res) => {
             .limit(Number(limit))
             .lean();
 
-        res.json({
-            success: true,
-            parts: parts.map(p => {
-                const sarPrice = Number(p.priceSar || p.price || 0);
-                const baseUsd = Number(p.basePriceUsd || p.priceUsd || (sarPrice > 0 ? (sarPrice / usdToSar) : 0));
-                const adjustedUsd = Number((baseUsd * safeMultiplier).toFixed(2));
-                const adjustedSar = sarPrice > 0 && !p.basePriceUsd && !p.priceUsd
-                    ? sarPrice
-                    : Math.round(adjustedUsd * usdToSar);
-                const adjustedKrw = Number(Math.round(adjustedUsd * usdToKrw));
+        const mappedParts = parts.map(p => {
+            const sarPrice = Number(p.priceSar || p.price || 0);
+            const baseUsd = Number(p.basePriceUsd || p.priceUsd || (sarPrice > 0 ? (sarPrice / usdToSar) : 0));
+            const adjustedUsd = Number((baseUsd * safeMultiplier).toFixed(2));
+            const adjustedSar = sarPrice > 0 && !p.basePriceUsd && !p.priceUsd
+                ? sarPrice
+                : Math.round(adjustedUsd * usdToSar);
+            const adjustedKrw = Number(Math.round(adjustedUsd * usdToKrw));
 
-                return ({
+            return ({
                 id: p._id,
                 name: p.name,
                 nameAr: p.nameAr || translatePartNameToArabic(p.name) || p.name,
@@ -197,19 +197,27 @@ router.get('/', cacheResponse(600), async (req, res) => {
                 currency: 'SAR',
                 category: p.partType,
                 categoryAr: p.partTypeAr || toArabicCategory(p.partType),
+                partType: p.partType,
+                partTypeAr: p.partTypeAr || toArabicCategory(p.partType),
                 condition: String(p.condition || 'NEW').toUpperCase(),
                 img: normalizeExternalImage(p.images?.[0]) || 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=1000&auto=format&fit=crop',
                 images: (p.images || []).map(normalizeExternalImage).filter(Boolean),
                 carModel: cleanModelName(p.carModel || ''),
                 compatibility: [cleanModelName(p.carModel || '') || 'ALL Models'],
-                stock: p.stockQty || 1,
-                stockQty: p.stockQty || 1,
+                _id: p._id,
+                stock: typeof p.stockQty === 'number' ? p.stockQty : 1,
+                stockQty: typeof p.stockQty === 'number' ? p.stockQty : 1,
                 soldCount: p.soldCount || 0,
                 inStock: typeof p.inStock === 'boolean' ? p.inStock : true,
                 description: p.description || '',
                 rareLevel: 3
-                });
-            })
+            });
+        });
+
+        res.json({
+            success: true,
+            data: mappedParts,
+            parts: mappedParts
         });
     } catch (error) {
         console.error('API Parts error:', error);
@@ -244,36 +252,42 @@ router.get('/:id', cacheResponse(600), async (req, res) => {
             : Math.round(adjustedUsd * usdToSar);
         const adjustedKrw = Number(Math.round(adjustedUsd * usdToKrw));
 
+        const mappedPart = {
+            id: p._id,
+            name: p.name,
+            nameAr: p.nameAr || translatePartNameToArabic(p.name) || p.name,
+            brand: p.carMake || (p.brand && typeof p.brand === 'object' ? p.brand.name : p.brand),
+            brandId: p.brand && typeof p.brand === 'object' ? p.brand._id : p.brand,
+            brandLogo: p.carMakeLogoUrl || (p.brand && typeof p.brand === 'object' ? p.brand.logoUrl : null),
+            model: cleanModelName(p.carModel || ''),
+            price: adjustedSar,
+            priceSar: adjustedSar,
+            priceUsd: adjustedUsd,
+            priceKrw: adjustedKrw,
+            basePriceUsd: Number((p.basePriceUsd || baseUsd).toFixed(2)),
+            currency: 'SAR',
+            category: p.partType,
+            categoryAr: p.partTypeAr || toArabicCategory(p.partType),
+            partType: p.partType,
+            partTypeAr: p.partTypeAr || toArabicCategory(p.partType),
+            condition: String(p.condition || 'NEW').toUpperCase(),
+            img: normalizeExternalImage(p.images?.[0]) || 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=1000&auto=format&fit=crop',
+            images: (p.images || []).map(normalizeExternalImage).filter(Boolean),
+            carModel: cleanModelName(p.carModel || ''),
+            compatibility: [cleanModelName(p.carModel || '') || 'ALL Models'],
+            _id: p._id,
+            stock: typeof p.stockQty === 'number' ? p.stockQty : 1,
+            stockQty: typeof p.stockQty === 'number' ? p.stockQty : 1,
+            soldCount: p.soldCount || 0,
+            inStock: typeof p.inStock === 'boolean' ? p.inStock : true,
+            description: p.description || '',
+            rareLevel: 3
+        };
+
         res.json({
             success: true,
-            part: {
-                id: p._id,
-                name: p.name,
-                nameAr: p.nameAr || translatePartNameToArabic(p.name) || p.name,
-                brand: p.carMake || (p.brand && typeof p.brand === 'object' ? p.brand.name : p.brand),
-                brandId: p.brand && typeof p.brand === 'object' ? p.brand._id : p.brand,
-                brandLogo: p.carMakeLogoUrl || (p.brand && typeof p.brand === 'object' ? p.brand.logoUrl : null),
-                model: cleanModelName(p.carModel || ''),
-                price: adjustedSar,
-                priceSar: adjustedSar,
-                priceUsd: adjustedUsd,
-                priceKrw: adjustedKrw,
-                basePriceUsd: Number((p.basePriceUsd || baseUsd).toFixed(2)),
-                currency: 'SAR',
-                category: p.partType,
-                categoryAr: p.partTypeAr || toArabicCategory(p.partType),
-                condition: String(p.condition || 'NEW').toUpperCase(),
-                img: normalizeExternalImage(p.images?.[0]) || 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=1000&auto=format&fit=crop',
-                images: (p.images || []).map(normalizeExternalImage).filter(Boolean),
-                carModel: cleanModelName(p.carModel || ''),
-                compatibility: [cleanModelName(p.carModel || '') || 'ALL Models'],
-                stock: p.stockQty || 1,
-                stockQty: p.stockQty || 1,
-                soldCount: p.soldCount || 0,
-                inStock: typeof p.inStock === 'boolean' ? p.inStock : true,
-                description: p.description || '',
-                rareLevel: 3
-            }
+            data: mappedPart,
+            part: mappedPart
         });
     } catch (error) {
         console.error('API Single Part error:', error);

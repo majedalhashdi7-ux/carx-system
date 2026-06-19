@@ -1,6 +1,7 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useInView } from 'framer-motion';
+import { useRef } from 'react';
 import { 
   ArrowRight, 
   ShieldCheck, 
@@ -10,33 +11,55 @@ import {
   ChevronRight,
   Play,
   X,
-  Loader2
+  Award,
+  Users,
+  Car,
+  TrendingUp
 } from 'lucide-react';
 import Link from 'next/link';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import CarCard3D from '../components/CarCard3D';
 import CarCardSkeleton from '../components/CarCardSkeleton';
-import { useState, useEffect } from 'react';
+import CinematicSplash from '../components/CinematicSplash';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '../lib/api';
 
 export default function Home() {
   const [featuredCars, setFeaturedCars] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [carsError, setCarsError] = useState(false);
   const [videoOpen, setVideoOpen] = useState(false);
-  const [heroVideo, setHeroVideo] = useState('/videos/CAR_X.mp4');
+  const [heroVideo, setHeroVideo] = useState('https://assets.mixkit.co/videos/preview/mixkit-sports-car-driving-on-a-highway-at-sunset-40243-large.mp4');
+  const [showSplash, setShowSplash] = useState(true);
+  const [featuredBrands, setFeaturedBrands] = useState<string[]>(['FERRARI', 'PORSCHE', 'LAMBORGHINI', 'BUGATTI', 'ROLLS ROYCE', 'BENTLEY']);
+  const [totalCarsCount, setTotalCarsCount] = useState(500);
+
+  const toArabicNumerals = (num: number) => {
+    return String(num).replace(/[0-9]/g, (d) => '٠١٢٣٤٥٦٧٨٩'[parseInt(d)]);
+  };
+
+  const handleSplashComplete = useCallback(() => {
+    setShowSplash(false);
+  }, []);
 
   useEffect(() => {
     const fetchFeatured = async () => {
       setLoading(true);
+      setCarsError(false);
       try {
         const res = await api.cars.getFeatured() as any;
         if (res.data) {
           const result = res.data;
-          setFeaturedCars(result.data?.cars || result.cars || []);
+          const cars = result.data?.cars || result.cars || [];
+          setFeaturedCars(cars);
+          if (cars.length === 0) setCarsError(true);
+        } else {
+          setCarsError(true);
         }
       } catch (err) {
         console.error('Failed to fetch featured cars', err);
+        setCarsError(true);
       } finally {
         setLoading(false);
       }
@@ -47,21 +70,47 @@ export default function Home() {
         const res = await api.settings.get() as any;
         if (res.data && res.data.success) {
           const carx = res.data.data.homeContent?.carxSettings || {};
-          if (carx.heroVideoUrl) {
-            setHeroVideo(carx.heroVideoUrl);
-          }
+          if (carx.heroVideoUrl) setHeroVideo(carx.heroVideoUrl);
         }
       } catch (err) {
         console.error('Failed to fetch settings video:', err);
       }
     };
 
+    const fetchBrands = async () => {
+      try {
+        const res = await api.brands.getAll() as any;
+        if (res.data) {
+          const brands = res.data.data?.brands || res.data.brands || [];
+          if (brands.length > 0) {
+            setFeaturedBrands(brands.slice(0, 6).map((b: any) => (b.en || b.name || '').toUpperCase()));
+          }
+        }
+      } catch {
+        // يبقى على القيم الافتراضية
+      }
+    };
+
+    const fetchTotalCars = async () => {
+      try {
+        const res = await api.cars.getAll({ limit: '1' }) as any;
+        if (res.data && res.data.pagination) {
+          setTotalCarsCount(res.data.pagination.total || 500);
+        }
+      } catch (err) {
+        console.error('Failed to fetch total cars count:', err);
+      }
+    };
+
     fetchFeatured();
     fetchSettings();
+    fetchBrands();
+    fetchTotalCars();
   }, []);
 
   return (
     <main className="min-h-screen bg-black text-white selection:bg-luxury-gold selection:text-black">
+      {showSplash && <CinematicSplash onComplete={handleSplashComplete} />}
       <Navbar />
 
       {/* Hero Section */}
@@ -126,12 +175,51 @@ export default function Home() {
       </section>
 
       {/* Featured Brands / Logos */}
-      <section className="py-20 border-y border-white/5 bg-[#050505]">
+      <section className="py-16 border-y border-white/[0.04] bg-[#050505] overflow-hidden">
         <div className="container mx-auto px-6">
-          <div className="flex flex-wrap justify-center items-center gap-12 md:gap-24 opacity-30 grayscale hover:grayscale-0 transition-all duration-700">
-             {['ROLEX', 'FERRARI', 'BUGATTI', 'PORSCHE', 'LAMBORGHINI'].map(brand => (
-                <span key={brand} className="text-2xl font-black tracking-widest">{brand}</span>
+          <div className="flex flex-wrap justify-center items-center gap-10 md:gap-20">
+             {featuredBrands.map((brand, i) => (
+               <motion.span
+                 key={brand}
+                 initial={{ opacity: 0, y: 10 }}
+                 whileInView={{ opacity: 1, y: 0 }}
+                 transition={{ delay: i * 0.1 }}
+                 className="text-xl md:text-2xl font-black tracking-widest text-white/20 hover:text-luxury-gold transition-colors duration-500 cursor-default select-none"
+               >
+                 {brand}
+               </motion.span>
              ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== Statistics Section ===== */}
+      <section className="py-24 bg-black relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-luxury-gold/[0.02] to-transparent" />
+        <div className="container mx-auto px-6 relative z-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {[
+              { icon: Car, num: `${toArabicNumerals(totalCarsCount)}+`, label: 'سيارة فاخرة', sub: 'في معرضنا' },
+              { icon: Users, num: '١٢٠٠+', label: 'عميل راضٍ', sub: 'حول العالم' },
+              { icon: Award, num: '١٠', label: 'سنوات خبرة', sub: 'في السوق' },
+              { icon: TrendingUp, num: '٩٩٪', label: 'رضا العملاء', sub: 'تقييم ممتاز' },
+            ].map((stat, i) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1, duration: 0.6 }}
+                className="stat-card group"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-luxury-gold/10 border border-luxury-gold/20 flex items-center justify-center mx-auto mb-4 group-hover:bg-luxury-gold group-hover:border-luxury-gold transition-all duration-500">
+                  <stat.icon className="w-5 h-5 text-luxury-gold group-hover:text-black transition-colors duration-500" />
+                </div>
+                <p className="text-4xl font-black text-luxury-gold">{stat.num}</p>
+                <p className="text-sm font-black text-white mt-1">{stat.label}</p>
+                <p className="text-xs text-white/30 font-medium">{stat.sub}</p>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
@@ -153,13 +241,23 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {!loading && featuredCars.length > 0 ? (
-              featuredCars.map((car, idx) => (
-                <CarCard3D key={car._id || idx} car={car} index={idx} />
-              ))
-            ) : (
+            {loading ? (
               [1, 2, 3].map(i => (
                 <CarCardSkeleton key={i} />
+              ))
+            ) : carsError || featuredCars.length === 0 ? (
+              <div className="col-span-3 flex flex-col items-center justify-center py-24 text-center space-y-4">
+                <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                  <Car className="w-7 h-7 text-white/20" />
+                </div>
+                <p className="text-white/30 text-sm font-bold">لا توجد سيارات مميزة حالياً</p>
+                <Link href="/showroom" className="text-luxury-gold text-sm font-black hover:text-white transition-colors">
+                  تصفح جميع السيارات ←
+                </Link>
+              </div>
+            ) : (
+              featuredCars.map((car, idx) => (
+                <CarCard3D key={car._id || idx} car={car} index={idx} />
               ))
             )}
           </div>

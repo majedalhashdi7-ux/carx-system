@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Search, Filter, Settings, Wrench } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
+import LuxuryPartCard from '../../components/LuxuryPartCard';
 import { api } from '../../lib/api';
 
 export default function PartsPage() {
@@ -95,35 +96,29 @@ export default function PartsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredParts.map(part => (
-                <div key={part._id} className="premium-card p-6 rounded-[2rem] group">
-                  <div className="glow-overlay" />
-                  <div className="relative z-10 h-full flex flex-col">
-                    <div className="aspect-square rounded-2xl overflow-hidden bg-white/5 mb-6 relative">
-                      <img 
-                        src={part.images?.[0] || 'https://via.placeholder.com/400?text=Part'} 
-                        alt={part.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                      />
-                      <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 text-xs font-bold text-luxury-gold">
-                        {part.condition === 'new' ? 'جديد' : 'مستعمل'}
-                      </div>
-                    </div>
-                    
-                    <div className="flex-1 flex flex-col">
-                      <div className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">{part.brand || 'عام'}</div>
-                      <h3 className="text-xl font-bold mb-2 line-clamp-2">{part.name}</h3>
-                      <p className="text-white/40 text-sm mb-4 font-mono">PN: {part.partNumber || 'N/A'}</p>
-                      
-                      <div className="mt-auto flex items-center justify-between pt-4 border-t border-white/10">
-                        <div className="font-mono text-xl font-black">{part.price?.toLocaleString() || 0} <span className="text-sm text-luxury-gold">ر.س</span></div>
-                        <button className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-luxury-gold hover:text-black transition-colors">
-                          <Search className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              {filteredParts.map((part, idx) => (
+                <LuxuryPartCard
+                  key={part._id}
+                  part={{
+                    _id: part._id,
+                    name: part.name,
+                    partNumber: part.partNumber,
+                    category: part.category,
+                    brand: part.brand,
+                    price: part.price,
+                    priceSar: part.priceSar,
+                    images: part.images || [part.img],
+                    stock: part.stock || part.stockQty,
+                    condition: part.condition,
+                    warranty: part.warranty,
+                    compatibility: part.compatibility,
+                    isOriginal: part.condition === 'new',
+                    isFeatured: part.isFeatured,
+                    rating: part.rating,
+                    reviews: part.reviewsCount,
+                  }}
+                  index={idx}
+                />
               ))}
             </div>
           )}

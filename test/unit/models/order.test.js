@@ -179,6 +179,7 @@ describe('Order Model - Unit Tests', () => {
         });
 
         it('should enforce unique orderNumber', async () => {
+            await Order.ensureIndexes();
             const user = await User.create(createUserData());
             const orderData1 = createOrderData(user._id, []);
             orderData1.orderNumber = 'HM-2026-000010';

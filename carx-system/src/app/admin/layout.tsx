@@ -1,64 +1,47 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { api } from '../../lib/api';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '../../lib/AuthContext';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, isLoggedIn, isLoading } = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
 
   useEffect(() => {
-    const verifyAuth = async () => {
-      try {
-        const token = localStorage.getItem('carx_token');
-        const userStr = localStorage.getItem('carx_user');
+    if (isLoading) return; // انتظر حتى يكتمل التحقق
 
-        if (!token || !userStr) {
-          router.push('/login');
-          return;
-        }
+    if (!isLoggedIn) {
+      router.push('/login?redirect=/admin');
+      return;
+    }
 
-        const user = JSON.parse(userStr);
+    const allowedRoles = ['admin', 'super_admin', 'manager'];
+    if (!allowedRoles.includes(user?.role || '')) {
+      // المستخدم مسجّل دخوله لكن ليس أدمن
+      router.push('/');
+    }
+  }, [isLoading, isLoggedIn, user, router]);
 
-        // Optional: Verify the role client-side first
-        if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'manager') {
-          router.push('/login');
-          return;
-        }
-
-        // Verify with backend
-        const res = await api.auth.verify();
-        if (res.error) {
-          localStorage.removeItem('carx_token');
-          localStorage.removeItem('carx_user');
-          router.push('/login');
-        } else {
-          setIsAuthenticated(true);
-        }
-      } catch (error) {
-        console.error('Auth verification failed:', error);
-        router.push('/login');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    verifyAuth();
-  }, [router, pathname]);
-
+  // حالة التحميل
   if (isLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-16 h-16 border-4 border-luxury-gold/30 border-t-luxury-gold rounded-full animate-spin"></div>
+        <div className="flex flex-col items-center gap-6">
+          <span className="text-4xl font-black tracking-tighter text-white">
+            CAR<span className="text-luxury-gold">X</span>
+          </span>
+          <div className="w-10 h-10 border-[3px] border-luxury-gold/30 border-t-luxury-gold rounded-full animate-spin" />
+          <p className="text-white/30 text-sm font-bold">جاري التحقق من الصلاحيات...</p>
+        </div>
       </div>
     );
   }
 
-  if (!isAuthenticated) {
-    return null; // Will redirect
+  // غير مصرح له — سيتم التوجيه
+  const allowedRoles = ['admin', 'super_admin', 'manager'];
+  if (!isLoggedIn || !allowedRoles.includes(user?.role || '')) {
+    return null;
   }
 
   return <>{children}</>;

@@ -24,7 +24,7 @@ MONGO_URI_CARX=mongodb+srv://carx_production:SECURE_PASSWORD_HERE@cluster.mongod
 
 # Authentication
 NEXTAUTH_SECRET=ultra-secure-nextauth-secret-key-2024-production
-NEXTAUTH_URL=https://daood.okigo.net
+NEXTAUTH_URL=https://hmcar-system-two.vercel.app
 
 # Admin Configuration
 ADMIN_EMAIL=dawoodalhash@gmail.com
@@ -47,9 +47,9 @@ function fixClientAppEnv() {
     console.log('🔧 إصلاح client-app .env.local...');
     
     const clientEnvContent = `# HM CAR Client App - Local Development
-NEXT_PUBLIC_API_URL=https://daood.okigo.net/api
+NEXT_PUBLIC_API_URL=https://hmcar-system-two.vercel.app/api
 NEXT_PUBLIC_APP_NAME=HM CAR
-NEXT_PUBLIC_APP_URL=https://daood.okigo.net
+NEXT_PUBLIC_APP_URL=https://hmcar-system-two.vercel.app
 NEXT_PUBLIC_WHATSAPP=+967781007805
 
 # Database
@@ -57,7 +57,7 @@ MONGO_URI=mongodb+srv://hmcar_production:SECURE_PASSWORD@cluster.mongodb.net/hmc
 
 # Authentication
 NEXTAUTH_SECRET=hmcar-secure-secret-2024
-NEXTAUTH_URL=https://daood.okigo.net
+NEXTAUTH_URL=https://hmcar-system-two.vercel.app
 
 # Development
 NODE_ENV=production
@@ -72,9 +72,9 @@ function fixCarXEnv() {
     console.log('🔧 إصلاح carx-system .env.local...');
     
     const carxEnvContent = `# CAR X System - Production Environment
-NEXT_PUBLIC_API_URL=https://daood.okigo.net/api
+NEXT_PUBLIC_API_URL=https://hmcar-system-two.vercel.app/api
 NEXT_PUBLIC_APP_NAME=CAR X
-NEXT_PUBLIC_APP_URL=https://daood.okigo.net
+NEXT_PUBLIC_APP_URL=https://hmcar-system-two.vercel.app
 NEXT_PUBLIC_WHATSAPP=+967781007805
 
 # Database
@@ -82,7 +82,7 @@ MONGO_URI=mongodb+srv://carx_production:SECURE_PASSWORD@cluster.mongodb.net/carx
 
 # Authentication
 NEXTAUTH_SECRET=carx-ultra-secure-secret-2024
-NEXTAUTH_URL=https://daood.okigo.net
+NEXTAUTH_URL=https://hmcar-system-two.vercel.app
 
 # Admin
 ADMIN_EMAIL=dawoodalhash@gmail.com
@@ -117,7 +117,7 @@ function fixTenantsConfig() {
                     "hmcar.vercel.app", 
                     "hmcar.xyz", 
                     "www.hmcar.xyz",
-                    "daood.okigo.net"
+                    "hmcar-system-two.vercel.app"
                 ],
                 "mongoUri": "ENV:MONGO_URI",
                 "logo": "/uploads/tenants/hmcar/logo.png",
@@ -150,7 +150,7 @@ function fixTenantsConfig() {
                 "domains": [
                     "localhost:3001", 
                     "carx.localhost",
-                    "carx-system.vercel.app"
+                    "carx-system-five.vercel.app"
                 ],
                 "mongoUri": "ENV:MONGO_URI_CARX",
                 "logo": "/uploads/tenants/carx/logo.png",
@@ -191,7 +191,7 @@ const nextConfig = {
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'localhost' },
-      { protocol: 'https', hostname: 'daood.okigo.net' },
+      { protocol: 'https', hostname: 'hmcar-system-two.vercel.app' },
       { protocol: 'https', hostname: 'hmcar.vercel.app' },
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'ci.encar.com' },
@@ -225,7 +225,7 @@ const nextConfig = {
 
   env: {
     SYSTEM_NAME: 'HM CAR',
-    SYSTEM_DOMAIN: process.env.VERCEL_URL || 'daood.okigo.net',
+    SYSTEM_DOMAIN: process.env.VERCEL_URL || 'hmcar-system-two.vercel.app',
     SYSTEM_VERSION: '2.0.0',
   },
 
@@ -254,8 +254,8 @@ const nextConfig = {
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'localhost' },
-      { protocol: 'https', hostname: 'daood.okigo.net' },
-      { protocol: 'https', hostname: 'carx-system.vercel.app' },
+      { protocol: 'https', hostname: 'hmcar-system-two.vercel.app' },
+      { protocol: 'https', hostname: 'carx-system-five.vercel.app' },
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'ci.encar.com' },
       { protocol: 'https', hostname: 'img.encar.com' },
@@ -288,7 +288,7 @@ const nextConfig = {
 
   env: {
     SYSTEM_NAME: 'CAR X',
-    SYSTEM_DOMAIN: process.env.VERCEL_URL || 'daood.okigo.net',
+    SYSTEM_DOMAIN: process.env.VERCEL_URL || 'hmcar-system-two.vercel.app',
     SYSTEM_VERSION: '2.0.0',
   },
 
@@ -312,9 +312,9 @@ function createProductionFiles() {
     
     // client-app .env.production
     const clientProdEnv = `# HM CAR Production Environment
-NEXT_PUBLIC_API_URL=https://daood.okigo.net/api
+NEXT_PUBLIC_API_URL=https://hmcar-system-two.vercel.app/api
 NEXT_PUBLIC_APP_NAME=HM CAR
-NEXT_PUBLIC_APP_URL=https://daood.okigo.net
+NEXT_PUBLIC_APP_URL=https://hmcar-system-two.vercel.app
 NEXT_PUBLIC_WHATSAPP=+967781007805
 NODE_ENV=production
 `;
@@ -322,9 +322,9 @@ NODE_ENV=production
     
     // carx-system .env.production
     const carxProdEnv = `# CAR X Production Environment
-NEXT_PUBLIC_API_URL=https://daood.okigo.net/api
+NEXT_PUBLIC_API_URL=https://hmcar-system-two.vercel.app/api
 NEXT_PUBLIC_APP_NAME=CAR X
-NEXT_PUBLIC_APP_URL=https://daood.okigo.net
+NEXT_PUBLIC_APP_URL=https://hmcar-system-two.vercel.app
 NEXT_PUBLIC_WHATSAPP=+967781007805
 NODE_ENV=production
 `;

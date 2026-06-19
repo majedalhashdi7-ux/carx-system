@@ -2,15 +2,17 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import {
   Search, SlidersHorizontal, LayoutGrid, List, X,
-  ChevronDown, Sparkles, ArrowUpDown, Car
+  ChevronDown, Sparkles, ArrowUpDown, Car, GitCompare
 } from 'lucide-react';
 import { api } from '../../lib/api';
 import CarCard3D from '../../components/CarCard3D';
+import LuxuryCarCard from '../../components/LuxuryCarCard';
 import CarCardSkeleton from '../../components/CarCardSkeleton';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
+import ComparisonSystem from '../../components/ComparisonSystem';
 
 const SORT_OPTIONS = [
   { value: 'newest', label: 'الأحدث أولاً' },
@@ -36,6 +38,7 @@ export default function ShowroomPage() {
   const [selectedFuel, setSelectedFuel] = useState('');
   const [selectedTransmission, setSelectedTransmission] = useState('');
   const [yearRange, setYearRange] = useState<[number, number]>([2015, 2026]);
+  const [showComparison, setShowComparison] = useState(false);
 
   useEffect(() => {
     const fetchCars = async () => {
@@ -341,11 +344,79 @@ export default function ShowroomPage() {
                 : 'flex flex-col gap-6'
               }
             >
-              {filteredCars.map((car, idx) => (
-                <CarCard3D key={car._id || idx} car={car} index={idx} />
-              ))}
+              {filteredCars.map((car, idx) =>
+                viewMode === 'list' ? (
+                  <LuxuryCarCard key={car._id || idx} car={{
+                    _id: car._id || car.id || '',
+                    title: car.title || '',
+                    make: car.brand || car.make || '',
+                    model: car.model || '',
+                    year: car.year || 2024,
+                    price: car.price || 0,
+                    priceSar: car.priceSar,
+                    images: car.images?.length ? car.images : [car.mainImage || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80'],
+                    mileage: car.mileage,
+                    fuelType: car.fuelType,
+                    transmission: car.transmission,
+                    color: car.color,
+                    condition: car.condition,
+                    featured: car.isFeatured,
+                  }} index={idx} />
+                ) : (
+                  <CarCard3D key={car._id || idx} car={car} index={idx} />
+                )
+              )}
             </motion.div>
           )}
+        </div>
+      </section>
+
+      {/* Comparison Panel */}
+      <section className="pb-16">
+        <div className="container mx-auto px-6">
+          <div className="flex items-center justify-between mb-6">
+            <button
+              onClick={() => setShowComparison(!showComparison)}
+              className={`flex items-center gap-3 px-6 py-3 rounded-2xl border font-bold transition-all ${
+                showComparison
+                  ? 'bg-luxury-gold text-black border-luxury-gold'
+                  : 'bg-white/5 border-white/10 text-white/60 hover:border-luxury-gold/30'
+              }`}
+            >
+              <GitCompare className="w-5 h-5" />
+              مقارنة السيارات
+            </button>
+          </div>
+
+          <AnimatePresence>
+            {showComparison && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
+              >
+                <ComparisonSystem
+                  cars={filteredCars.map(c => ({
+                    _id: c._id || c.id || '',
+                    title: c.title || '',
+                    make: c.brand || c.make || '',
+                    model: c.model || '',
+                    year: c.year || 2024,
+                    price: c.price || 0,
+                    priceSar: c.priceSar,
+                    images: c.images?.length ? c.images : [c.mainImage || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80'],
+                    mileage: c.mileage,
+                    fuelType: c.fuelType,
+                    transmission: c.transmission,
+                    color: c.color,
+                    condition: c.condition,
+                  }))}
+                  maxCompare={3}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </section>
 

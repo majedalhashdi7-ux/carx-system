@@ -22,7 +22,7 @@ MONGO_URI=mongodb+srv://carx_user:SECURE_PASSWORD@cluster.mongodb.net/carx_produ
 
 # Authentication
 NEXTAUTH_SECRET=carx-ultra-secure-key-2024-production
-NEXTAUTH_URL=https://daood.okigo.net
+NEXTAUTH_URL=https://hmcar-system-two.vercel.app
 
 # Contact Information
 WHATSAPP_NUMBER=+967781007805
@@ -53,7 +53,7 @@ function fixTenantsConfig() {
                 "nameEn": "HM CAR",
                 "description": "منصة مزادات ومبيعات السيارات الفاخرة",
                 "descriptionEn": "Premium Car Auction & Sales Platform",
-                "domains": ["localhost:4002", "localhost:3000", "hmcar.vercel.app", "hmcar.xyz", "www.hmcar.xyz", "hmcar-system.vercel.app", "daood.okigo.net"],
+                "domains": ["localhost:4002", "localhost:3000", "hmcar.vercel.app", "hmcar.xyz", "www.hmcar.xyz", "hmcar-system.vercel.app", "hmcar-system-two.vercel.app"],
                 "mongoUri": "ENV:MONGO_URI",
                 "logo": "/uploads/tenants/hmcar/logo.png",
                 "favicon": "/uploads/tenants/hmcar/favicon.ico",
@@ -83,7 +83,7 @@ function fixTenantsConfig() {
                 "nameEn": "CAR X",
                 "description": "معرض وأمزاد CAR X",
                 "descriptionEn": "CAR X Showroom & Auctions",
-                "domains": ["localhost:3001", "carx.localhost", "carx-motors.com", "www.carx-motors.com", "carx-system.vercel.app"],
+                "domains": ["localhost:3001", "carx.localhost", "carx-motors.com", "www.carx-motors.com", "carx-system-five.vercel.app"],
                 "mongoUri": "ENV:MONGO_URI_CARX",
                 "logo": "/uploads/tenants/carx/logo.png",
                 "favicon": "/uploads/tenants/carx/favicon.ico",
@@ -130,11 +130,11 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'daood.okigo.net',
+        hostname: 'hmcar-system-two.vercel.app',
       },
       {
         protocol: 'https',
-        hostname: 'carx-system.vercel.app',
+        hostname: 'carx-system-five.vercel.app',
       },
       {
         protocol: 'https',

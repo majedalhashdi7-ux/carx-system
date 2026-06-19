@@ -1,6 +1,6 @@
 // [[ARABIC_HEADER]] هذا الملف (services/cache/connection.js) جزء من مشروع HM CAR ويحتوي تعليقات عربية لضمان الوضوح.
 
-const redis = require('redis');
+// Redis package removed as it is unused. Caching is handled by ioredis or in-memory fallback.
 
 class CacheConnection {
   constructor() {

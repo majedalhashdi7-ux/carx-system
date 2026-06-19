@@ -15,6 +15,8 @@ class CacheService {
         // Cache map for Fallback In-Memory caching (for serverless environments)
         this.memoryCache = new Map();
         this.isMemoryCacheEnabled = true;
+        // حد أعلى لعدد المدخلات في الذاكرة المؤقتة لمنع تسرب الذاكرة
+        this.MAX_MEMORY_CACHE_SIZE = parseInt(process.env.MEMORY_CACHE_MAX_SIZE) || 500;
 
         const redisUrl = process.env.REDIS_URL || process.env.KV_URL
             || (process.env.REDIS_HOST
@@ -74,6 +76,16 @@ class CacheService {
         return item.value;
     }
 
+    // Helper to set in memory cache with LRU eviction when limit exceeded
+    _memorySet(key, value, ttlInSeconds) {
+        // If at limit, evict oldest entries first (simple LRU)
+        if (this.memoryCache.size >= this.MAX_MEMORY_CACHE_SIZE) {
+            const firstKey = this.memoryCache.keys().next().value;
+            this.memoryCache.delete(firstKey);
+        }
+        this.memoryCache.set(key, { value, expiry: Date.now() + ttlInSeconds * 1000 });
+    }
+
     async get(key) {
         if (this.isRedisEnabled && this.redis) {
             try {
@@ -92,10 +104,10 @@ class CacheService {
                 await this.redis.set(key, JSON.stringify(value), 'EX', ttlInSeconds);
             } catch (e) {
                 // Fallback to memory
-                this.memoryCache.set(key, { value, expiry: Date.now() + ttlInSeconds * 1000 });
+                this._memorySet(key, value, ttlInSeconds);
             }
         } else if (this.isMemoryCacheEnabled) {
-            this.memoryCache.set(key, { value, expiry: Date.now() + ttlInSeconds * 1000 });
+            this._memorySet(key, value, ttlInSeconds);
         }
     }
 

@@ -2,8 +2,8 @@
 
 const express = require('express');
 const router = express.Router();
-const Lead = require('../../../models/Lead');
 const { requireAuthAPI, requireAdmin } = require('../../../middleware/auth');
+const { getModel, addTenantFilter, getTenantId } = require('../../../tenants/tenant-model-helper');
 
 // POST /api/v2/leads - استقبال Lead جديد (عام)
 router.post('/', async (req, res) => {
@@ -17,6 +17,7 @@ router.post('/', async (req, res) => {
             });
         }
 
+        const Lead = getModel(req, 'Lead');
         const lead = await Lead.create({
             name: name ? String(name).trim() : '',
             phone: phone ? String(phone).trim() : '',
@@ -25,18 +26,20 @@ router.post('/', async (req, res) => {
             category: category ? String(category).trim() : '',
             query: query ? String(query).trim() : '',
             source: source ? String(source).trim() : 'web',
-            status: 'new'
+            status: 'new',
+            tenantId: getTenantId(req)
         });
 
         // سجل نشاط للأدمن
         try {
-            const AuditLog = require('../../../models/AuditLog');
+            const AuditLog = getModel(req, 'AuditLog');
             await AuditLog.create({
                 action: 'CREATE',
                 target: 'Lead',
                 targetId: lead._id,
                 description: `Lead جديد: ${lead.name || lead.phone || 'غير معروف'}`,
-                metadata: { category: lead.category, query: lead.query, source: lead.source }
+                metadata: { category: lead.category, query: lead.query, source: lead.source },
+                tenantId: getTenantId(req)
             });
         } catch (auditErr) {
             console.error('Failed to log lead activity', auditErr);
@@ -59,9 +62,10 @@ router.get('/', requireAuthAPI, requireAdmin, async (req, res) => {
 
         const filter = status !== 'all' ? { status } : {};
 
+        const Lead = getModel(req, 'Lead');
         const [leads, total] = await Promise.all([
-            Lead.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
-            Lead.countDocuments(filter)
+            Lead.find(addTenantFilter(req, filter)).sort({ createdAt: -1 }).skip(skip).limit(limit),
+            Lead.countDocuments(addTenantFilter(req, filter))
         ]);
 
         res.json({

@@ -81,7 +81,7 @@ $hmcarResult = $LASTEXITCODE
 if ($hmcarResult -eq 0) {
     Write-Host ""
     Write-Host "✅ تم نشر HM CAR بنجاح!" -ForegroundColor Green
-    Write-Host "🌐 URL: https://daood.okigo.net" -ForegroundColor Green
+    Write-Host "🌐 URL: https://hmcar-system-two.vercel.app" -ForegroundColor Green
     Write-Host ""
     
     # فحص سريع
@@ -89,7 +89,7 @@ if ($hmcarResult -eq 0) {
     Start-Sleep -Seconds 5
     
     try {
-        $response = Invoke-WebRequest -Uri "https://daood.okigo.net" -TimeoutSec 10
+        $response = Invoke-WebRequest -Uri "https://hmcar-system-two.vercel.app" -TimeoutSec 10
         if ($response.StatusCode -eq 200) {
             Write-Host "✅ HM CAR Frontend يعمل!" -ForegroundColor Green
         }
@@ -131,7 +131,7 @@ $carxResult = $LASTEXITCODE
 if ($carxResult -eq 0) {
     Write-Host ""
     Write-Host "✅ تم نشر CAR X بنجاح!" -ForegroundColor Green
-    Write-Host "🌐 URL: https://carx-system-psi.vercel.app" -ForegroundColor Green
+    Write-Host "🌐 URL: https://carx-system-five.vercel.app" -ForegroundColor Green
     Write-Host ""
     
     # فحص سريع
@@ -139,7 +139,7 @@ if ($carxResult -eq 0) {
     Start-Sleep -Seconds 5
     
     try {
-        $response = Invoke-WebRequest -Uri "https://carx-system-psi.vercel.app" -TimeoutSec 10
+        $response = Invoke-WebRequest -Uri "https://carx-system-five.vercel.app" -TimeoutSec 10
         if ($response.StatusCode -eq 200) {
             Write-Host "✅ CAR X Frontend يعمل!" -ForegroundColor Green
         }
@@ -165,8 +165,8 @@ Write-Host ""
 
 if ($hmcarResult -eq 0) {
     Write-Host "✅ HM CAR" -ForegroundColor Green
-    Write-Host "   Frontend: https://daood.okigo.net" -ForegroundColor Green
-    Write-Host "   API: https://daood.okigo.net/api/v2/cars" -ForegroundColor Green
+    Write-Host "   Frontend: https://hmcar-system-two.vercel.app" -ForegroundColor Green
+    Write-Host "   API: https://hmcar-system-two.vercel.app/api/v2/cars" -ForegroundColor Green
 } else {
     Write-Host "❌ HM CAR - فشل النشر" -ForegroundColor Red
 }
@@ -175,8 +175,8 @@ Write-Host ""
 
 if ($carxResult -eq 0) {
     Write-Host "✅ CAR X" -ForegroundColor Green
-    Write-Host "   Frontend: https://carx-system-psi.vercel.app" -ForegroundColor Green
-    Write-Host "   API: https://carx-system-psi.vercel.app/api/cars" -ForegroundColor Green
+    Write-Host "   Frontend: https://carx-system-five.vercel.app" -ForegroundColor Green
+    Write-Host "   API: https://carx-system-five.vercel.app/api/cars" -ForegroundColor Green
 } else {
     Write-Host "❌ CAR X - فشل النشر" -ForegroundColor Red
 }

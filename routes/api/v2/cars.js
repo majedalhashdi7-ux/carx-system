@@ -231,40 +231,38 @@ router.get('/', cacheResponse(300), async (req, res, next) => {
 
         res.json({
             success: true,
-            data: {
-                cars: cars.map(car => ({
-                    id: car._id,
-                    title: car.title,
-                    make: car.make,
-                    model: car.model,
-                    year: car.year,
-                    price: car.price || car.priceSar || (car.priceUsd ? car.priceUsd * usdToSar : 0) || 0,
-                    priceSar: car.priceSar || car.price || (car.priceUsd ? car.priceUsd * usdToSar : 0) || 0,
-                    priceUsd: car.priceUsd || (car.priceSar ? car.priceSar / usdToSar : 0) || 0,
-                    basePriceUsd: car.basePriceUsd || car.priceUsd || (car.priceSar ? car.priceSar / usdToSar : 0) || 0,
-                    priceKrw: car.priceKrw || 0,
-                    displayCurrency: car.displayCurrency || 'SAR',
-                    images: car.images || [],
-                    category: car.category,
-                    isActive: car.isActive,
-                    isSold: car.isSold,
-                    createdAt: car.createdAt,
-                    color: car.color,
-                    fuelType: car.fuelType,
-                    transmission: car.transmission,
-                    mileage: car.mileage,
-                    description: car.description,
-                    listingType: car.listingType,
-                    source: car.source || (car.listingType === 'showroom' ? 'korean_import' : 'hm_local'),
-                    agency: car.agency || null
-
-                })),
-                pagination: {
-                    current: parseInt(page),
-                    pages: Math.ceil(total / limit),
-                    total,
-                    limit: parseInt(limit)
-                }
+            data: cars.map(car => ({
+                _id: car._id,
+                id: car._id,
+                title: car.title,
+                make: car.make,
+                model: car.model,
+                year: car.year,
+                price: car.price || car.priceSar || (car.priceUsd ? car.priceUsd * usdToSar : 0) || 0,
+                priceSar: car.priceSar || car.price || (car.priceUsd ? car.priceUsd * usdToSar : 0) || 0,
+                priceUsd: car.priceUsd || (car.priceSar ? car.priceSar / usdToSar : 0) || 0,
+                basePriceUsd: car.basePriceUsd || car.priceUsd || (car.priceSar ? car.priceSar / usdToSar : 0) || 0,
+                priceKrw: car.priceKrw || 0,
+                displayCurrency: car.displayCurrency || 'SAR',
+                images: car.images || [],
+                category: car.category,
+                isActive: car.isActive,
+                isSold: car.isSold,
+                createdAt: car.createdAt,
+                color: car.color,
+                fuelType: car.fuelType,
+                transmission: car.transmission,
+                mileage: car.mileage,
+                description: car.description,
+                listingType: car.listingType,
+                source: car.source || (car.listingType === 'showroom' ? 'korean_import' : 'hm_local'),
+                agency: car.agency || null
+            })),
+            pagination: {
+                current: parseInt(page),
+                pages: Math.ceil(total / limit),
+                total,
+                limit: parseInt(limit)
             }
         });
     } catch (error) {

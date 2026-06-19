@@ -18,7 +18,7 @@ const deploymentInfo = {
         envVars: {
             'MONGO_URI': process.env.MONGO_URI || '',
             'NEXTAUTH_SECRET': process.env.NEXTAUTH_SECRET || '',
-            'NEXTAUTH_URL': process.env.NEXTAUTH_URL || 'https://daood.okigo.net',
+            'NEXTAUTH_URL': process.env.NEXTAUTH_URL || 'https://hmcar-system-two.vercel.app',
             'ADMIN_EMAIL': process.env.ADMIN_EMAIL || 'dawoodalhash@gmail.com',
             'ADMIN_PASSWORD': process.env.ADMIN_PASSWORD || '',
             'WHATSAPP_NUMBER': process.env.WHATSAPP_NUMBER || '+967781007805',
@@ -33,7 +33,7 @@ const deploymentInfo = {
         envVars: {
             'MONGO_URI': process.env.MONGO_URI || '',
             'NEXTAUTH_SECRET': process.env.NEXTAUTH_SECRET || '',
-            'NEXTAUTH_URL': process.env.NEXTAUTH_URL || 'https://daood.okigo.net',
+            'NEXTAUTH_URL': process.env.NEXTAUTH_URL || 'https://hmcar-system-two.vercel.app',
             'ADMIN_EMAIL': process.env.ADMIN_EMAIL || 'dawoodalhash@gmail.com',
             'ADMIN_PASSWORD': process.env.ADMIN_PASSWORD || '',
             'WHATSAPP_NUMBER': process.env.WHATSAPP_NUMBER || '+967781007805',

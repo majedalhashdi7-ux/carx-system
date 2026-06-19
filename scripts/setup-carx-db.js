@@ -1,7 +1,7 @@
 // setup-carx-db.js - سكريبت لإنشاء قاعدة البيانات car-x على MongoDB Atlas
 
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 // تعريف نموذج المستخدم البسيط
 const userSchema = new mongoose.Schema({

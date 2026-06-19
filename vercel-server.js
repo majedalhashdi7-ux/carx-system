@@ -40,16 +40,13 @@ function getAllowedOrigins() {
   
   // إضافة الدومينات الثابتة للتوافقية
   const staticOrigins = [
-    'https://daood.okigo.net',
-    'https://www.daood.okigo.net',
+    'https://hmcar-system-two.vercel.app',
+    'https://www.hmcar-system-two.vercel.app',
     'https://hmcar.xyz',
     'https://www.hmcar.xyz',
     'https://hmcar.okigo.net',
     'https://www.hmcar.okigo.net',
-    'https://hmcar-system-two.vercel.app',
     'https://carx-system-five.vercel.app',
-    'https://carx-system.vercel.app',
-    'https://carx-system-psi.vercel.app',
     ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean) : []),
   ];
   
@@ -137,6 +134,22 @@ function hasValidMongoUri() {
   return mongoUri.startsWith('mongodb');
 }
 
+// ── App Instance Cache (مهم لأداء Vercel Serverless) ──
+// نحتفظ بنسخة واحدة من التطبيق بدل إنشاء نسخة جديدة لكل طلب
+let _cachedAppInstance = null;
+
+function getOrCreateApp() {
+  if (_cachedAppInstance) return _cachedAppInstance;
+  const App = require('./modules/app');
+  const appInstance = new App({
+    isServerless: true,
+    corsConfig: createCorsMiddleware()
+  });
+  appInstance.registerErrorHandlers();
+  _cachedAppInstance = appInstance;
+  return appInstance;
+}
+
 // ── Handler الرئيسي ──
 module.exports = async (req, res) => {
   // CORS على مستوى الـ handler - قبل أي شيء
@@ -153,17 +166,9 @@ module.exports = async (req, res) => {
       });
     }
 
-    // Use App class from modules/app.js
-    const App = require('./modules/app');
-    const appInstance = new App({
-      isServerless: true,
-      corsConfig: createCorsMiddleware()
-    });
-    
+    // Use cached App instance for performance
+    const appInstance = getOrCreateApp();
     const expressApp = appInstance.getExpressApp();
-
-    // Register 404 and error handlers (MUST BE LAST)
-    appInstance.registerErrorHandlers();
 
     return expressApp(req, res);
 

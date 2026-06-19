@@ -13,8 +13,7 @@
         "hmcar.vercel.app",
         "hmcar-system-two.vercel.app",
         "hmcar.xyz",
-        "www.hmcar.xyz",
-        "daood.okigo.net"
+        "www.hmcar.xyz"
       ],
       "mongoUri": "ENV:MONGO_URI",
       "logo": "/uploads/tenants/hmcar/logo.png",
@@ -47,9 +46,7 @@
       "domains": [
         "localhost:3001",
         "carx.localhost",
-        "carx-system.vercel.app",
-        "carx-system-five.vercel.app",
-        "carx-system-psi.vercel.app"
+        "carx-system-five.vercel.app"
       ],
       "mongoUri": "ENV:MONGO_URI_CARX",
       "logo": "/uploads/tenants/carx/logo.png",

@@ -56,13 +56,13 @@ function createMainReadme() {
 
 #### 1. **HM CAR** (client-app)
 - **الوصف**: منصة مزادات ومبيعات السيارات الفاخرة
-- **الدومين**: https://daood.okigo.net
+- **الدومين**: https://hmcar-system-two.vercel.app
 - **المجلد**: \`client-app/\`
 - **اللون الأساسي**: ذهبي (#D4AF37)
 
 #### 2. **CAR X** (carx-system)  
 - **الوصف**: معرض وأمزاد CAR X
-- **الدومين**: https://daood.okigo.net (نفس الدومين، معرض مختلف)
+- **الدومين**: https://hmcar-system-two.vercel.app (نفس الدومين، معرض مختلف)
 - **المجلد**: \`carx-system/\`
 - **اللون الأساسي**: أسود وأحمر (#000000, #ff0000)
 

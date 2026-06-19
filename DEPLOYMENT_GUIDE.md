@@ -112,8 +112,8 @@ NODE_ENV=production
 ### **HM CAR:**
 
 ```
-1. افتح: https://daood.okigo.net
-2. افتح: https://daood.okigo.net/api/v2/cars
+1. افتح: https://hmcar-system-two.vercel.app
+2. افتح: https://hmcar-system-two.vercel.app/api/v2/cars
 3. يجب أن ترى:
    ✅ الصفحة الرئيسية تعمل
    ✅ API يرجع بيانات JSON
@@ -123,8 +123,8 @@ NODE_ENV=production
 ### **CAR X:**
 
 ```
-1. افتح: https://carx-system-psi.vercel.app
-2. افتح: https://carx-system-psi.vercel.app/api/cars
+1. افتح: https://carx-system-five.vercel.app
+2. افتح: https://carx-system-five.vercel.app/api/cars
 3. يجب أن ترى:
    ✅ الصفحة الرئيسية تعمل
    ✅ API يرجع بيانات JSON
@@ -137,8 +137,8 @@ NODE_ENV=production
 
 | النظام | Frontend | API |
 |--------|----------|-----|
-| **HM CAR** | https://daood.okigo.net | https://daood.okigo.net/api/v2/cars |
-| **CAR X** | https://carx-system-psi.vercel.app | https://carx-system-psi.vercel.app/api/cars |
+| **HM CAR** | https://hmcar-system-two.vercel.app | https://hmcar-system-two.vercel.app/api/v2/cars |
+| **CAR X** | https://carx-system-five.vercel.app | https://carx-system-five.vercel.app/api/cars |
 
 ---
 

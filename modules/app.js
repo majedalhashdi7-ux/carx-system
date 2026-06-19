@@ -15,7 +15,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 const { tenantMiddleware } = require('../middleware/tenantMiddleware');
-const { generalLimiter, authLimiter, uploadLimiter } = require('../middleware/rateLimiter');
+const { authLimiter, uploadLimiter } = require('../middleware/rateLimiter');
+const { fullSecurityMiddleware } = require('../middleware/securityEnhanced');
 const Sentry = require('@sentry/node');
 
 // تهيئة Sentry فوراً لالتقاط كل الأخطاء
@@ -83,7 +84,11 @@ class App {
   setupApp() {
     this.setupMiddleware();
     this.setupRoutes();
-    // No automatic setupErrorHandling here to allow custom routes in serverless
+    // في الوضع المحلي: تفعيل معالج الأخطاء تلقائياً
+    // في Vercel: يُستدعى عبر registerErrorHandlers() بعد تسجيل المسارات
+    if (!this.isServerless) {
+      this.setupErrorHandling();
+    }
   }
 
   setupMiddleware() {
@@ -101,10 +106,8 @@ class App {
       this.app.use(cors(config.security.cors));
     }
 
-    // Helmet بإعدادات مرنة
-    this.app.use(helmet({
-      contentSecurityPolicy: false,
-    }));
+    // Helmet بإعدادات مرنة وتفعيل CSP
+    this.app.use(helmet(config.security.helmet || { contentSecurityPolicy: false }));
 
     this.app.use(compression());
 
@@ -116,8 +119,9 @@ class App {
     this.app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
     this.app.use('/public', express.static(path.join(__dirname, '..', 'public')));
 
-    // Rate Limiting
-    this.app.use('/api', generalLimiter);
+    // تفعيل حماية الأمان الكاملة للمسارات
+    // ملاحظة: generalLimiter مُطبَّق في كل router فرعي (index.js) لتجنب التكرار
+    this.app.use('/api', fullSecurityMiddleware);
 
     // ملاحظة: tenantMiddleware يُطبَّق داخل routes/api/v2/index.js بشكل مباشر
     // لتجنب ازدواجية تحديد المعرض
@@ -155,39 +159,7 @@ class App {
       });
     });
 
-    // مسار حقن البيانات الحقيقية (محمي بمفتاح سري)
-    this.app.post('/api/v2/admin/force-seed', async (req, res) => {
-      try {
-        const { secret } = req.body;
-        const expectedSecret = process.env.SEED_SECRET || 'hm-seed-2024';
-        if (secret !== expectedSecret) {
-          return res.status(403).json({ success: false, message: 'Forbidden' });
-        }
 
-        const tenantId = req.tenant?.id || 'hmcar';
-        const { getConnection } = require('../tenants/tenant-db-manager');
-        const { resolveTenant } = require('../tenants/tenant-resolver');
-        const SeedService = require('../services/SeedService');
-
-        const tenant = resolveTenant(req);
-        if (!tenant) return res.status(400).json({ error: 'Tenant not resolved' });
-
-        const { models } = await getConnection(tenant.id, tenant.mongoUri);
-
-        // حذف البيانات القديمة
-        await models.Car.deleteMany({ tenantId: tenant.id });
-        if (models.Auction) await models.Auction.deleteMany({ tenantId: tenant.id });
-        if (models.Brand) await models.Brand.deleteMany({ tenantId: tenant.id });
-
-        // زرع البيانات الجديدة
-        await SeedService.seedRealData(models, tenant.id);
-
-        res.json({ success: true, message: `✅ Real data seeded for ${tenant.id}` });
-      } catch (e) {
-        console.error('[force-seed]', e.message);
-        res.status(500).json({ success: false, error: e.message });
-      }
-    });
 
     this.setupApiRoutes();
 
@@ -210,13 +182,15 @@ class App {
       this.app.use(['/api/v2/auth/register', '/api/auth/register', '/v2/auth/register'], authLimiter);
       // Upload rate limiting
       this.app.use(['/api/v2/upload', '/api/upload', '/v2/upload'], uploadLimiter);
-      // Log all requests for debugging (optional, can be noisy)
-      this.app.use((req, res, next) => {
-        if (req.url.startsWith('/api')) {
-          console.log(`[API REQUEST] ${req.method} ${req.url}`);
-        }
-        next();
-      });
+      // Log API requests in development only (not in production to reduce cost/noise)
+      if (process.env.NODE_ENV !== 'production') {
+        this.app.use((req, res, next) => {
+          if (req.url.startsWith('/api')) {
+            console.log(`[API REQUEST] ${req.method} ${req.url}`);
+          }
+          next();
+        });
+      }
 
       // We prioritize /api/v2
       this.app.use('/api/v2', apiV2Router);
@@ -305,6 +279,13 @@ class App {
       const shutdown = async () => {
         logger.info('⏳ جاري إغلاق النظام بأمان...');
         server.close(() => { logger.info('🛑 تم إيقاف استقبال الطلبات'); });
+        try {
+          const { closeAllConnections } = require('../tenants/tenant-db-manager');
+          await closeAllConnections();
+          logger.info('🔌 تم إغلاق اتصالات المعارض (Tenants)');
+        } catch (e) {
+          // tenant-db-manager may not be initialized
+        }
         await database.disconnect();
         process.exit(0);
       };

@@ -235,12 +235,8 @@ mongoose.connection.on('disconnected', () => {
   databaseManager.isConnected = false;
 });
 
-// عند إغلاق التطبيق (غير مطلوب في Serverless)
-if (!IS_SERVERLESS) {
-  process.on('SIGINT', async () => {
-    await databaseManager.disconnect();
-    process.exit(0);
-  });
-}
+// ملاحظة: معالجة SIGINT/SIGTERM مركزية في modules/app.js
+// الذي يستدعي database.disconnect() قبل process.exit()
+// لا نضيف handler منفصل هنا لتجنب Race Condition
 
 module.exports = databaseManager;

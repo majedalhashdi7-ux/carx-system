@@ -32,7 +32,7 @@ MONGO_URI_CARX=${carxConnectionString}
 
 # Authentication
 NEXTAUTH_SECRET=ultra-secure-nextauth-secret-key-2024-production-final
-NEXTAUTH_URL=https://daood.okigo.net
+NEXTAUTH_URL=https://hmcar-system-two.vercel.app
 
 # Admin Configuration
 ADMIN_EMAIL=dawoodalhash@gmail.com
@@ -53,9 +53,9 @@ SYSTEM_VERSION=2.0.0
 
     // 2. تحديث client-app/.env.local (HM CAR فقط)
     const clientEnvContent = `# HM CAR Client App - قاعدة بيانات منفصلة
-NEXT_PUBLIC_API_URL=https://daood.okigo.net/api
+NEXT_PUBLIC_API_URL=https://hmcar-system-two.vercel.app/api
 NEXT_PUBLIC_APP_NAME=HM CAR
-NEXT_PUBLIC_APP_URL=https://daood.okigo.net
+NEXT_PUBLIC_APP_URL=https://hmcar-system-two.vercel.app
 NEXT_PUBLIC_WHATSAPP=+967781007805
 
 # HM CAR Database - قاعدة بيانات HM CAR فقط
@@ -63,7 +63,7 @@ MONGO_URI=${hmcarConnectionString}
 
 # Authentication
 NEXTAUTH_SECRET=hmcar-secure-secret-2024-production-final
-NEXTAUTH_URL=https://daood.okigo.net
+NEXTAUTH_URL=https://hmcar-system-two.vercel.app
 
 # Admin
 ADMIN_EMAIL=dawoodalhash@gmail.com
@@ -78,9 +78,9 @@ NODE_ENV=production
 
     // 3. تحديث carx-system/.env.local (CAR X فقط)
     const carxEnvContent = `# CAR X System - قاعدة بيانات منفصلة
-NEXT_PUBLIC_API_URL=https://daood.okigo.net/api
+NEXT_PUBLIC_API_URL=https://hmcar-system-two.vercel.app/api
 NEXT_PUBLIC_APP_NAME=CAR X
-NEXT_PUBLIC_APP_URL=https://daood.okigo.net
+NEXT_PUBLIC_APP_URL=https://hmcar-system-two.vercel.app
 NEXT_PUBLIC_WHATSAPP=+967781007805
 
 # CAR X Database - قاعدة بيانات CAR X فقط
@@ -88,7 +88,7 @@ MONGO_URI=${carxConnectionString}
 
 # Authentication
 NEXTAUTH_SECRET=carx-ultra-secure-secret-2024-production-final
-NEXTAUTH_URL=https://daood.okigo.net
+NEXTAUTH_URL=https://hmcar-system-two.vercel.app
 
 # Admin
 ADMIN_EMAIL=dawoodalhash@gmail.com

@@ -8,11 +8,15 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '../../../lib/api';
+import { useAuth } from '../../../lib/AuthContext';
 import Navbar from '../../../components/Navbar';
 import Footer from '../../../components/Footer';
+import ReviewSystem from '../../../components/ReviewSystem';
+import TheatricalCarDisplay from '../../../components/TheatricalCarDisplay';
 
 export default function CarDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const { user } = useAuth();
   const [car, setCar] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -24,6 +28,7 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
 
   // Booking Modal States
   const [showModal, setShowModal] = useState(false);
+  const [showTheatrical, setShowTheatrical] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState('');
@@ -33,6 +38,18 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
     email: '',
     notes: ''
   });
+
+  // Prefill booking form when user is loaded
+  useEffect(() => {
+    if (user) {
+      setBookingForm(prev => ({
+        ...prev,
+        name: user.name || prev.name,
+        phone: user.phone || prev.phone,
+        email: user.email || prev.email,
+      }));
+    }
+  }, [user]);
 
   useEffect(() => {
     const fetchCar = async () => {
@@ -192,7 +209,8 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="relative aspect-video rounded-3xl overflow-hidden bg-white/5 border border-white/10 group"
+                className="relative aspect-video rounded-3xl overflow-hidden bg-white/5 border border-white/10 group cursor-pointer"
+                onClick={() => setShowTheatrical(true)}
               >
                 <img 
                   src={activeImage} 
@@ -256,6 +274,24 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
               <div className="text-white/60 leading-relaxed text-lg" dir="rtl">
                 {car.description || 'لا يوجد وصف متاح لهذه السيارة حالياً.'}
               </div>
+            </div>
+
+            {/* Reviews Section */}
+            <div className="space-y-6 pt-8">
+              <h2 className="text-2xl font-bold flex items-center gap-3" dir="rtl">
+                <div className="w-1.5 h-6 bg-luxury-gold rounded-full" />
+                التقييمات والمراجعات
+              </h2>
+              <ReviewSystem
+                itemId={car._id || car.id}
+                itemType="car"
+                reviews={[]}
+                averageRating={car.rating || 0}
+                totalReviews={car.reviewsCount || 0}
+                onSubmitReview={(review) => {
+                  console.log('Review submitted:', review);
+                }}
+              />
             </div>
 
           </div>
@@ -455,6 +491,17 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
               )}
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Theatrical Fullscreen Gallery */}
+      <AnimatePresence>
+        {showTheatrical && (
+          <TheatricalCarDisplay
+            images={imagesList}
+            title={car.title}
+            onClose={() => setShowTheatrical(false)}
+          />
         )}
       </AnimatePresence>
 

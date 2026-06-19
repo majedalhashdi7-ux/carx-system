@@ -2,11 +2,8 @@
 
 const express = require('express');
 const router = express.Router();
-const Bid = require('../../../models/Bid');
-const Auction = require('../../../models/Auction');
-const SiteSettings = require('../../../models/SiteSettings');
+const { getModel, addTenantFilter, getTenantId } = require('../../../tenants/tenant-model-helper');
 const { requireAuthAPI } = require('../../../middleware/auth');
-const { addTenantFilter, getTenantId } = require('../../../tenants/tenant-model-helper');
 
 function normalizeMultiplier(value) {
     const num = Number(value);
@@ -28,6 +25,8 @@ router.get('/my', requireAuthAPI, async (req, res) => {
     try {
         const userId = req.user.userId || req.user._id || req.user.id;
 
+        const Bid = getModel(req, 'Bid');
+        const SiteSettings = getModel(req, 'SiteSettings');
         const settings = await SiteSettings.getSettings().catch(() => null);
         const auctionMultiplier = normalizeMultiplier(settings?.currencySettings?.auctionMultiplier || 1);
 
@@ -60,6 +59,8 @@ router.get('/auction/:auctionId', async (req, res) => {
         const { auctionId } = req.params;
         const limit = parseInt(req.query.limit) || 20;
 
+        const Bid = getModel(req, 'Bid');
+        const SiteSettings = getModel(req, 'SiteSettings');
         const settings = await SiteSettings.getSettings().catch(() => null);
         const auctionMultiplier = normalizeMultiplier(settings?.currencySettings?.auctionMultiplier || 1);
 
@@ -95,6 +96,10 @@ router.post('/', requireAuthAPI, async (req, res) => {
         if (!auctionId || !amount) {
             return res.status(400).json({ success: false, error: 'معرف المزاد والمبلغ مطلوبان' });
         }
+
+        const Bid = getModel(req, 'Bid');
+        const Auction = getModel(req, 'Auction');
+        const SiteSettings = getModel(req, 'SiteSettings');
 
         // التحقق من وجود المزاد
         const auction = await Auction.findOne(addTenantFilter(req, { _id: auctionId }));
@@ -158,6 +163,8 @@ router.get('/highest/:auctionId', async (req, res) => {
     try {
         const { auctionId } = req.params;
 
+        const Bid = getModel(req, 'Bid');
+        const SiteSettings = getModel(req, 'SiteSettings');
         const settings = await SiteSettings.getSettings().catch(() => null);
         const auctionMultiplier = normalizeMultiplier(settings?.currencySettings?.auctionMultiplier || 1);
 

@@ -589,6 +589,17 @@ export const api = {
             method: 'POST'
         }),
     },
+    // ── نظام الاستيراد المتقدم من الروابط ──
+    import: {
+        preview: (url: string, type: 'car' | 'part') => fetchAPI('/api/v2/import/preview', {
+            method: 'POST',
+            body: JSON.stringify({ url, type })
+        }),
+        save: (data: any, type: 'car' | 'part') => fetchAPI('/api/v2/import/save', {
+            method: 'POST',
+            body: JSON.stringify({ data, type })
+        })
+    },
     // ── الإشعارات (Notifications) ──
     notifications: {
         list: () => fetchAPI('/api/v2/notifications'),
@@ -664,5 +675,27 @@ export const api = {
                 body: JSON.stringify({ ids, action }),
             }),
         deleteDevice: (id: string) => fetchAPI(`/api/v2/security/devices/${id}`, { method: 'DELETE' }),
+    },
+    // ── نظام الاستيراد الذكي (Import System) ──
+    import: {
+        // [[ARABIC_COMMENT]] معاينة بيانات سيارة أو قطعة غيار من رابط خارجي قبل الحفظ
+        preview: (url: string, type: 'car' | 'part') =>
+            fetchAPI('/api/v2/import/preview', {
+                method: 'POST',
+                body: JSON.stringify({ url, type }),
+                timeout: 60000,
+            }),
+        // [[ARABIC_COMMENT]] حفظ البيانات المستوردة كمسودة في قاعدة البيانات
+        save: (data: Record<string, unknown>, type: 'car' | 'part') =>
+            fetchAPI('/api/v2/import/save', {
+                method: 'POST',
+                body: JSON.stringify({ data, type }),
+                timeout: 30000,
+            }),
+        // [[ARABIC_COMMENT]] جلب تاريخ عمليات الاستيراد السابقة
+        getHistory: (params: Record<string, string | number> = {}) => {
+            const query = new URLSearchParams(params as Record<string, string>).toString();
+            return fetchAPI(`/api/v2/import/history?${query}`);
+        },
     },
 };

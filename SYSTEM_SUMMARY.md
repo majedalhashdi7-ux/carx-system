@@ -69,8 +69,8 @@
 ## 🌐 الدومينات والنشر
 
 ### الدومين الرئيسي
-- **الإنتاج**: https://daood.okigo.net
-- **التطوير**: https://carx-system.vercel.app
+- **الإنتاج**: https://hmcar-system-two.vercel.app
+- **التطوير**: https://carx-system-five.vercel.app
 - **المحلي**: http://localhost:3001
 
 ### النشر
@@ -175,7 +175,7 @@
 ### معلومات التواصل
 - **الواتساب**: +967781007805
 - **الإيميل**: dawoodalhash@gmail.com
-- **الدومين**: https://daood.okigo.net
+- **الدومين**: https://hmcar-system-two.vercel.app
 
 ### الدعم الفني
 - **GitHub Issues** للمشاكل التقنية

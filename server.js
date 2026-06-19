@@ -19,21 +19,21 @@ async function startServer() {
     console.log('-------------------------------------------');
 
     // إنشاء كائن التطبيق وبدء التشغيل
-    const app = new App();
-    await app.start();
+    const app = new App(); 
+    await app.start(); 
 
-    console.log('✅ تم تشغيل جميع الوحدات والخدمات بنجاح.');
-  } catch (error) {
-    console.error('❌ خطأ فادح أثناء تشغيل النظام:');
-    console.error(error.message);
-    console.log('-------------------------------------------');
-    process.exit(1); // إغلاق النظام في حال وجود خطأ فادح
+    console.log('✅ تم تشغيل جميع الوحدات والخدمات بنجاح.'); 
+  } catch (error) { 
+    console.error('❌ خطأ فادح أثناء تشغيل النظام:'); 
+    console.error(error.message); 
+    console.log('-------------------------------------------');  
+    process.exit(1); // إغلاق النظام في حال وجود خطأ فادح 
   }
 }
 
-// البدء الفعلي للتطبيق
-if (require.main === module) {
+// البدء الفعلي للتطبيق 
+if (require.main === module) {  
   startServer();
-}
+} 
 
-module.exports = { startServer };
+module.exports = { startServer };  

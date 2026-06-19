@@ -124,8 +124,8 @@ const security = {
 
       // في بيئة الإنتاج: السماح لـ Vercel + OKIGO + ALLOWED_ORIGINS
       const allowedProd = [
-        'https://daood.okigo.net',
-        'https://www.daood.okigo.net',
+        'https://hmcar-system-two.vercel.app',
+        'https://www.hmcar-system-two.vercel.app',
         'https://hmcar.xyz',
         'https://www.hmcar.xyz',
         'https://hmcar.okigo.net',
@@ -285,10 +285,11 @@ module.exports = {
   redis,
   development,
 
-  // دالة مساعدة للتحقق من البيئة
-  isProduction: () => process.env.NODE_ENV === 'production',
-  isDevelopment: () => process.env.NODE_ENV === 'development',
-  isTest: () => process.env.NODE_ENV === 'test',
+  // متغيرات البيئة كـ Boolean للتوافق الموحد
+  isProduction: isProduction,
+  isDevelopment: !isProduction && !isTestEnv,
+  isVercel: !!process.env.VERCEL,
+  isTest: isTestEnv,
 
   // دالة مساعدة للحصول على المسار
   getPath: (relativePath) => path.join(__dirname, '..', '..', relativePath),
@@ -300,5 +301,18 @@ module.exports = {
       throw new Error(`متغير البيئة ${varName} مطلوب`);
     }
     return value;
-  }
+  },
+
+  // الحصول على معلومات البيئة للفاحص
+  getEnvironmentInfo: () => ({
+    environment: process.env.NODE_ENV || 'development',
+    isDevelopment: !isProduction && !isTestEnv,
+    isProduction: isProduction,
+    isVercel: !!process.env.VERCEL,
+    port: process.env.PORT || 4001,
+    databaseUri: database.uri
+      ? database.uri.replace(/\/\/.+@/, '//****:****@')
+      : '(not set)',
+    nodeVersion: process.version
+  })
 };

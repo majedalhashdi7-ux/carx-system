@@ -13,7 +13,7 @@ describe('Tenant Resolver Security', () => {
 
     const req = {
       headers: {
-        host: 'daood.okigo.net',
+        host: 'hmcar-system-two.vercel.app',
         'x-tenant-id': 'carx',
       },
       query: {},
@@ -29,7 +29,7 @@ describe('Tenant Resolver Security', () => {
 
     const req = {
       headers: {
-        host: 'daood.okigo.net',
+        host: 'hmcar-system-two.vercel.app',
       },
       query: {
         tenant: 'carx',

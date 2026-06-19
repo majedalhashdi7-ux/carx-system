@@ -20,14 +20,11 @@ export const TENANT_DOMAIN_MAP: Record<string, string> = {
   'hmcar-system-two.vercel.app': 'hmcar',
   'hmcar.xyz': 'hmcar',
   'www.hmcar.xyz': 'hmcar',
-  'daood.okigo.net': 'hmcar',
   
   // CAR X domains
   'localhost:3001': 'carx',
   'carx.localhost': 'carx',
-  'carx-system.vercel.app': 'carx',
   'carx-system-five.vercel.app': 'carx',
-  'carx-system-psi.vercel.app': 'carx',
 };
 
 // Complete tenant configurations - mirrors backend tenants.json
@@ -45,7 +42,6 @@ export const TENANT_CONFIGS: Record<string, TenantData> = {
       'hmcar-system-two.vercel.app',
       'hmcar.xyz',
       'www.hmcar.xyz',
-      'daood.okigo.net',
     ],
     logo: '/uploads/tenants/hmcar/logo.png',
     favicon: '/uploads/tenants/hmcar/favicon.ico',
@@ -76,9 +72,7 @@ export const TENANT_CONFIGS: Record<string, TenantData> = {
     domains: [
       'localhost:3001',
       'carx.localhost',
-      'carx-system.vercel.app',
       'carx-system-five.vercel.app',
-      'carx-system-psi.vercel.app',
     ],
     logo: '/uploads/tenants/carx/logo.png',
     favicon: '/uploads/tenants/carx/favicon.ico',
@@ -159,12 +153,12 @@ export function getTenantIdFromHostname(hostname: string): string {
   }
   
   // Check for Vercel preview deployments (they have random suffixes)
-  // e.g., carx-system-abc123.vercel.app should match carx-system.vercel.app pattern
+  // e.g., carx-system-abc123.vercel.app should match carx-system-five.vercel.app pattern
   if (hostname.includes('vercel.app')) {
     // Try to match base pattern
     for (const [domain, tenantId] of Object.entries(TENANT_DOMAIN_MAP)) {
       if (domain.includes('vercel.app')) {
-        const basePattern = domain.split('.')[0]; // e.g., "carx-system" from "carx-system.vercel.app"
+        const basePattern = domain.split('.')[0]; // e.g., "carx-system" from "carx-system-five.vercel.app"
         if (hostname.includes(basePattern)) {
           return tenantId;
         }

@@ -2,9 +2,8 @@
 
 const express = require('express');
 const router = express.Router();
-const Review = require('../../../models/Review');
 const { requireAuthAPI, requireAdmin } = require('../../../middleware/auth');
-const { addTenantFilter, getTenantId } = require('../../../tenants/tenant-model-helper');
+const { getModel, addTenantFilter, getTenantId } = require('../../../tenants/tenant-model-helper');
 
 // الحصول على جميع التقييمات المعتمدة
 router.get('/', async (req, res) => {
@@ -13,6 +12,7 @@ router.get('/', async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
+        const Review = getModel(req, 'Review');
         const [reviews, total] = await Promise.all([
             Review.find(addTenantFilter(req, { status: 'approved' }))
                 .populate('user', 'name')
@@ -51,6 +51,7 @@ router.get('/car/:carId', async (req, res) => {
     try {
         const { carId } = req.params;
 
+        const Review = getModel(req, 'Review');
         const reviews = await Review.find(addTenantFilter(req, { car: carId, status: 'approved' }))
             .populate('user', 'name')
             .sort({ createdAt: -1 });
@@ -95,6 +96,7 @@ router.post('/', requireAuthAPI, async (req, res) => {
             return res.status(400).json({ success: false, error: 'التقييم يجب أن يكون بين 1 و 5' });
         }
 
+        const Review = getModel(req, 'Review');
         // التحقق من عدم وجود تقييم سابق
         const existing = await Review.findOne(addTenantFilter(req, { user: userId, car: carId }));
         if (existing) {
@@ -131,6 +133,7 @@ router.patch('/:id/status', requireAuthAPI, requireAdmin, async (req, res) => {
             return res.status(400).json({ success: false, error: 'حالة غير صالحة' });
         }
 
+        const Review = getModel(req, 'Review');
         const review = await Review.findOneAndUpdate(
             addTenantFilter(req, { _id: id }),
             { status },
@@ -159,6 +162,7 @@ router.delete('/:id', requireAuthAPI, async (req, res) => {
         const { id } = req.params;
         const isAdmin = req.user.role === 'admin' || req.user.role === 'super_admin';
 
+        const Review = getModel(req, 'Review');
         const query = isAdmin ? { _id: id } : { _id: id, user: userId };
         const review = await Review.findOneAndDelete(addTenantFilter(req, query));
 
@@ -186,6 +190,7 @@ router.get('/admin/all', requireAuthAPI, requireAdmin, async (req, res) => {
 
         const query = status !== 'all' ? { status } : {};
 
+        const Review = getModel(req, 'Review');
         const [reviews, total] = await Promise.all([
             Review.find(addTenantFilter(req, query))
                 .populate('user', 'name email')

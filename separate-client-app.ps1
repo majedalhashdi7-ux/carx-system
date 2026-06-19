@@ -23,7 +23,7 @@ Copy-Item -Path $clientAppPath -Destination $newRepoPath -Recurse -Force
 Write-Host "✅ تم النسخ بنجاح" -ForegroundColor Green
 Write-Host ""
 
-# الخطوة 2: حذف مجلد .git القديم
+# الخطوة 2: حذف مجلد .git القديم 
 Write-Host "📁 الخطوة 2: إزالة ارتباط Git القديم..." -ForegroundColor Cyan
 $oldGitPath = Join-Path $newRepoPath ".git"
 if (Test-Path $oldGitPath) {
@@ -33,7 +33,7 @@ if (Test-Path $oldGitPath) {
 Write-Host ""
 
 # الخطوة 3: تهيئة Git جديد
-Write-Host "📁 الخطوة 3: تهيئة Git جديد..." -ForegroundColor Cyan
+Write-Host "📁 الخطوة 3: تهيئة Git جديد..." -ForegroundColor Cyan 
 Set-Location $newRepoPath
 git init
 Write-Host "✅ تم تهيئة Git" -ForegroundColor Green

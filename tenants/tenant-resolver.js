@@ -172,6 +172,7 @@ function getAllTenants() {
       nameEn: t.nameEn,
       domains: t.domains,
       theme: t.theme,
+      mongoUri: resolveMongoUri(t.mongoUri),
       enabled: t.enabled,
     }));
 }

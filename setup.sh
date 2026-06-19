@@ -35,7 +35,7 @@ if [ $? -eq 0 ]; then
     echo "1. Create GitHub repository: carx-system"
     echo "2. Push code to GitHub"
     echo "3. Deploy to Vercel"
-    echo "4. Connect domain: daood.okigo.net"
+    echo "4. Connect domain: hmcar-system-two.vercel.app"
 else
     echo "❌ Build failed. Please check the errors above."
     exit 1

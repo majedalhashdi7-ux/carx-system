@@ -54,7 +54,7 @@
 {
   "id": "carx",
   "name": "CAR X",
-  "domains": ["carx-motors.com", "carx-system.vercel.app"],
+  "domains": ["carx-motors.com", "carx-system-five.vercel.app"],
   "mongoUri": "ENV:MONGO_URI_CARX",
   "theme": {
     "primaryColor": "#000000",  // أسود

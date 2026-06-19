@@ -203,4 +203,48 @@ router.get('/fix-data', requireAuthAPI, async (req, res) => {
     }
 });
 
+// POST /api/v2/system/force-seed
+// مسار حقن البيانات الحقيقية (محمي بـ JWT ودور الآدمن + مفتاح سري)
+router.post('/force-seed', requireAuthAPI, async (req, res) => {
+    try {
+        if (req.user.role !== 'super_admin' && req.user.role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'غير مصرح' });
+        }
+
+        const { secret } = req.body;
+        const expectedSecret = process.env.SEED_SECRET;
+        
+        // منع استخدام سر افتراضي ضعيف غير مهيأ بالكامل في البيئة
+        if (!expectedSecret) {
+            logger.warn('SEED_SECRET is not configured in environment variables.');
+            return res.status(500).json({ success: false, message: 'Seed secret configuration error' });
+        }
+
+        if (secret !== expectedSecret) {
+            return res.status(403).json({ success: false, message: 'Forbidden' });
+        }
+
+        const tenant = req.tenant;
+        if (!tenant) return res.status(400).json({ error: 'Tenant not resolved' });
+
+        const { getConnection } = require('../../../tenants/tenant-db-manager');
+        const SeedService = require('../../../services/SeedService');
+
+        const { models } = await getConnection(tenant.id, tenant.mongoUri);
+
+        // حذف البيانات القديمة التابعة للمعرض الحالي
+        await models.Car.deleteMany({ tenantId: tenant.id });
+        if (models.Auction) await models.Auction.deleteMany({ tenantId: tenant.id });
+        if (models.Brand) await models.Brand.deleteMany({ tenantId: tenant.id });
+
+        // زرع البيانات الجديدة
+        await SeedService.seedRealData(models, tenant.id);
+
+        res.json({ success: true, message: `✅ Real data seeded for ${tenant.id}` });
+    } catch (e) {
+        logger.error('[force-seed] Error:', e);
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
 module.exports = router;

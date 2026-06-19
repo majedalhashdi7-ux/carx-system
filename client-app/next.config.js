@@ -6,7 +6,7 @@ const nextConfig = {
   images: {
     remotePatterns: [
       { protocol: 'http', hostname: 'localhost' },
-      { protocol: 'https', hostname: 'daood.okigo.net' },
+      { protocol: 'https', hostname: 'hmcar-system-two.vercel.app' },
       { protocol: 'https', hostname: 'hmcar-system-two.vercel.app' },
       { protocol: 'https', hostname: 'carx-system-five.vercel.app' },
       { protocol: 'https', hostname: 'res.cloudinary.com' },
@@ -14,9 +14,9 @@ const nextConfig = {
       { protocol: 'https', hostname: 'www.hmcar.vercel.app' },
       { protocol: 'https', hostname: 'hmcar.xyz' },
       { protocol: 'https', hostname: 'www.hmcar.xyz' },
-      { protocol: 'https', hostname: 'carx-system.vercel.app' },
-      { protocol: 'https', hostname: 'www.carx-system.vercel.app' },
-      { protocol: 'https', hostname: 'carx-system-psi.vercel.app' },
+      { protocol: 'https', hostname: 'carx-system-five.vercel.app' },
+      { protocol: 'https', hostname: 'www.carx-system-five.vercel.app' },
+      { protocol: 'https', hostname: 'carx-system-five.vercel.app' },
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'ci.encar.com' },
       { protocol: 'https', hostname: 'img.encar.com' },
@@ -49,7 +49,7 @@ const nextConfig = {
 
   env: {
     SYSTEM_NAME: 'HM CAR',
-    SYSTEM_DOMAIN: process.env.VERCEL_URL || 'daood.okigo.net',
+    SYSTEM_DOMAIN: process.env.VERCEL_URL || 'hmcar-system-two.vercel.app',
     SYSTEM_VERSION: '2.0.0',
   },
 

@@ -50,8 +50,8 @@ describe('Orders API Integration Tests', () => {
                 .expect(200);
 
             expect(res.body).to.have.property('success', true);
-            expect(res.body.data).to.be.an('array');
-            expect(res.body.data).to.have.lengthOf(2);
+            expect(res.body.data.orders).to.be.an('array');
+            expect(res.body.data.orders).to.have.lengthOf(2);
         });
 
         it('should fail without authentication', async () => {
@@ -67,7 +67,14 @@ describe('Orders API Integration Tests', () => {
         it('should create order successfully', async () => {
             const orderData = {
                 items: [
-                    { part: part._id, quantity: 2, price: part.price }
+                    {
+                        part: part._id,
+                        quantity: 2,
+                        price: part.price,
+                        titleSnapshot: part.name || 'Test Part',
+                        refId: part._id,
+                        itemType: 'sparePart'
+                    }
                 ]
             };
 
