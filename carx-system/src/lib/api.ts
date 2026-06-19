@@ -102,9 +102,9 @@ export const api = {
     }),
   },
   auth: {
+    // استخدام /auth/login الموحَّد لكل الأدوار - يقبل admin و buyer
     login: (identifier: string, password: string, role = 'buyer') => {
-      const endpoint = role === 'buyer' ? '/auth/client-login' : '/auth/login';
-      return fetchAPI(endpoint, {
+      return fetchAPI('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ identifier, email: identifier, password, role }),
       });
@@ -124,6 +124,14 @@ export const api = {
     resetPassword: (token: string, newPassword: string) => fetchAPI('/auth/reset-password', {
       method: 'POST',
       body: JSON.stringify({ token, newPassword }),
+    }),
+    updateProfile: (data: { name?: string; email?: string; phone?: string }) => fetchAPI('/auth/update-profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+    changePassword: (currentPassword: string, newPassword: string) => fetchAPI('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
     }),
   },
   admin: {

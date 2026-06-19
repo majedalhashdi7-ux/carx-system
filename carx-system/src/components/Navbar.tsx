@@ -134,15 +134,26 @@ export default function Navbar() {
                           <div className="px-4 py-3 border-b border-white/5 text-right">
                             <p className="text-xs text-white/40">مرحباً بك</p>
                             <p className="text-sm font-bold text-white truncate mt-0.5">{user?.name || 'مستخدم CAR X'}</p>
+                            <p className="text-xs text-luxury-gold/60 mt-0.5">{user?.email}</p>
                           </div>
                           
+                          {/* Profile link - for all users */}
+                          <Link 
+                            href="/profile" 
+                            className="flex items-center gap-2 w-full text-right px-4 py-2.5 text-sm text-white/70 hover:text-luxury-gold hover:bg-white/5 rounded-xl transition-colors font-bold mt-1"
+                            onClick={() => setShowUserDropdown(false)}
+                          >
+                            <User className="w-4 h-4" />
+                            الملف الشخصي
+                          </Link>
+
                           {(user?.role === 'admin' || user?.role === 'super_admin') && (
                             <Link 
                               href="/admin" 
-                              className="block w-full text-right px-4 py-2.5 text-sm text-white/70 hover:text-luxury-gold hover:bg-white/5 rounded-xl transition-colors font-bold mt-1"
+                              className="block w-full text-right px-4 py-2.5 text-sm text-luxury-gold hover:text-white hover:bg-luxury-gold/10 rounded-xl transition-colors font-bold"
                               onClick={() => setShowUserDropdown(false)}
                             >
-                              لوحة التحكم
+                              👑 لوحة التحكم
                             </Link>
                           )}
 
@@ -155,6 +166,7 @@ export default function Navbar() {
                         </motion.div>
                       )}
                     </AnimatePresence>
+
                   </>
                 ) : (
                   <Link 

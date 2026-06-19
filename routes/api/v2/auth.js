@@ -587,6 +587,68 @@ router.post('/login', authLimiter, async (req, res) => {
 
 
 
+// Update Profile - تحديث بيانات الملف الشخصي (الإيميل، الاسم، الهاتف)
+router.put('/update-profile', requireAuthAPI, async (req, res) => {
+  try {
+    const { name, email, phone } = req.body;
+    const User = getModel(req, 'User');
+
+    const user = await User.findById(req.user.userId);
+    if (!user) return sendResponse(res, notFoundResponse('User'));
+
+    // التحقق من الإيميل الجديد إذا تغير
+    if (email && email.toLowerCase().trim() !== user.email) {
+      const validator = require('validator');
+      if (!validator.isEmail(email)) {
+        return sendResponse(res, validationErrorResponse(null, 'صيغة البريد الإلكتروني غير صحيحة'));
+      }
+      const existing = await User.findOne(addTenantFilter(req, {
+        email: email.toLowerCase().trim(),
+        _id: { $ne: user._id }
+      }));
+      if (existing) {
+        return sendResponse(res, conflictResponse('هذا البريد الإلكتروني مستخدم من قِبَل حساب آخر'));
+      }
+      user.email = email.toLowerCase().trim();
+    }
+
+    if (name && name.trim()) user.name = name.trim();
+    if (phone !== undefined) user.phone = phone;
+
+    await user.save();
+
+    // توليد توكن جديد يحمل الإيميل المحدَّث
+    const token = jwt.sign(
+      {
+        userId: user._id,
+        tenantId: req.tenant?.id || 'default',
+        email: user.email,
+        role: user.role,
+        permissions: user.permissions || []
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d', issuer: 'hm-car-auction', audience: 'api-users' }
+    );
+
+    return res.json({
+      success: true,
+      message: 'تم تحديث الملف الشخصي بنجاح',
+      token,
+      user: {
+        _id: user._id,
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    return sendResponse(res, serverErrorResponse('حدث خطأ أثناء تحديث الملف الشخصي', error));
+  }
+});
+
 // Logout endpoint
 router.post('/logout', requireAuthAPI, async (req, res) => {
   try {
