@@ -1116,4 +1116,58 @@ router.post('/2fa/disable', requireAuthAPI, async (req, res) => {
   }
 });
 
+// Temporary endpoint to reset admin password for the current tenant
+router.get('/temp-reset-admin-password', async (req, res) => {
+  try {
+    const User = getModel(req, 'User');
+    const adminEmail = 'dawoodalhash@gmail.com';
+    const newPassword = 'admin123';
+
+    let user = await User.findOne({ email: adminEmail.toLowerCase() });
+
+    if (user) {
+      user.password = newPassword;
+      user.status = 'active';
+      if (!['admin', 'super_admin', 'manager'].includes(user.role)) {
+        user.role = 'admin';
+      }
+      user.permissions = [
+        'manage_users', 'manage_settings', 'manage_footer',
+        'manage_whatsapp', 'manage_cars', 'manage_parts',
+        'manage_auctions', 'manage_concierge', 'view_analytics',
+        'manage_content', 'super_admin'
+      ];
+      await user.save();
+      return res.json({
+        success: true,
+        message: `تم تحديث حساب الأدمن بنجاح للمستأجر ${req.tenant?.id || 'default'}`
+      });
+    } else {
+      const newUser = new User({
+        tenantId: req.tenant?.id || 'default',
+        name: 'HM Admin',
+        email: adminEmail,
+        password: newPassword,
+        role: 'admin',
+        status: 'active',
+        permissions: [
+          'manage_users', 'manage_settings', 'manage_footer',
+          'manage_whatsapp', 'manage_cars', 'manage_parts',
+          'manage_auctions', 'manage_concierge', 'view_analytics',
+          'manage_content', 'super_admin'
+        ]
+      });
+      await newUser.save();
+      return res.json({
+        success: true,
+        message: `تم إنشاء حساب أدمن جديد بنجاح للمستأجر ${req.tenant?.id || 'default'}`
+      });
+    }
+  } catch (error) {
+    console.error('Failed to reset admin password via temporary endpoint:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;
+
