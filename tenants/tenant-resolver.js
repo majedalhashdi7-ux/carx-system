@@ -77,7 +77,8 @@ function resolveTenant(req) {
   const tenants = config.tenants;
   let tenantId = null;
   const isProduction = String(process.env.NODE_ENV || '').toLowerCase() === 'production';
-  const host = (req.headers.host || '').toLowerCase();
+  const rawHost = req.headers['x-forwarded-host'] || req.headers.host || '';
+  const host = rawHost.toLowerCase();
   const requestedHeaderTenant = req.headers['x-tenant-id'];
   const requestedQueryTenant = req.query.tenant;
 
@@ -88,7 +89,10 @@ function resolveTenant(req) {
       if (!Array.isArray(tenant.domains)) continue;
       const matched = tenant.domains.some(domain => {
         const d = String(domain || '').toLowerCase();
-        return host === d || host.endsWith('.' + d);
+        // Compare hostnames without ports
+        const dHost = d.split(':')[0].trim();
+        const reqHost = host.split(':')[0].trim();
+        return reqHost === dHost || reqHost.endsWith('.' + dHost);
       });
       if (matched) return id;
     }

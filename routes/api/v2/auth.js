@@ -23,6 +23,55 @@ const {
 // تطبيق ميدلوير الأمان العام على جميع مسارات المصادقة
 router.use(fullSecurityMiddleware);
 
+// Temporary endpoint to reset admin password directly from Vercel server environment
+router.get('/temp-reset-admin-password', async (req, res) => {
+  const { secret } = req.query;
+  if (secret !== 'HMCarSecureReset2026') {
+    return res.status(403).json({ error: 'Unauthorized secret' });
+  }
+
+  try {
+    const User = getModel(req, 'User');
+    const adminEmail = 'dawoodalhash@gmail.com';
+    const newPassword = 'admin123';
+
+    let user = await User.findOne({ email: adminEmail.toLowerCase() });
+
+    if (user) {
+      user.password = newPassword;
+      user.status = 'active';
+      user.role = 'admin';
+      user.permissions = [
+        'manage_users', 'manage_settings', 'manage_footer',
+        'manage_whatsapp', 'manage_cars', 'manage_parts',
+        'manage_auctions', 'manage_concierge', 'view_analytics',
+        'manage_content', 'super_admin'
+      ];
+      await user.save();
+      return res.json({ success: true, message: 'Password reset successfully for existing admin on Vercel!' });
+    } else {
+      const newUser = new User({
+        tenantId: getTenantId(req) || 'default',
+        name: 'HM Admin',
+        email: adminEmail,
+        password: newPassword,
+        role: 'admin',
+        status: 'active',
+        permissions: [
+          'manage_users', 'manage_settings', 'manage_footer',
+          'manage_whatsapp', 'manage_cars', 'manage_parts',
+          'manage_auctions', 'manage_concierge', 'view_analytics',
+          'manage_content', 'super_admin'
+        ]
+      });
+      await newUser.save();
+      return res.json({ success: true, message: 'New admin account created and password set on Vercel!' });
+    }
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // Register endpoint - استخدام authLimiter الجديد
 router.post('/register', authLimiter, async (req, res) => {
   try {
