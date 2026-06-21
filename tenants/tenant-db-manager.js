@@ -106,6 +106,36 @@ function loadSchemas() {
 }
 
 /**
+ * إنشاء URI بديل للمعرض باستخدام MONGO_URI الرئيسي مع استبدال اسم قاعدة البيانات بـ tenantId.
+ * @param {string} baseUri - الـ URI الرئيسي للموقع (مثل MONGO_URI)
+ * @param {string} dbName - اسم قاعدة البيانات البديلة (tenantId)
+ * @returns {string} الـ URI المعدل
+ */
+function constructFallbackUri(baseUri, dbName) {
+  if (!baseUri) return baseUri;
+  try {
+    const [mainPart, options] = baseUri.split('?');
+    const protoIndex = mainPart.indexOf('://');
+    if (protoIndex === -1) return baseUri;
+    
+    const searchStart = protoIndex + 3;
+    const firstSlashIndex = mainPart.indexOf('/', searchStart);
+    
+    let hostPart;
+    if (firstSlashIndex === -1) {
+      hostPart = mainPart;
+    } else {
+      hostPart = mainPart.substring(0, firstSlashIndex);
+    }
+    
+    return hostPart + '/' + dbName + (options ? '?' + options : '');
+  } catch (e) {
+    console.error('Error constructing fallback URI:', e.message);
+    return baseUri;
+  }
+}
+
+/**
  * إنشاء أو استرجاع اتصال قاعدة بيانات لمعرض معين
  * @param {string} tenantId - معرف المعرض
  * @param {string} mongoUri - URI قاعدة البيانات
@@ -136,13 +166,39 @@ async function getConnection(tenantId, mongoUri) {
 
   console.log(`🔗 إنشاء اتصال جديد للمعرض: ${tenantId}`);
 
-  // إنشاء اتصال مستقل لهذا المعرض
-  const connection = await mongoose.createConnection(mongoUri, {
-    maxPoolSize: 5, // حجم Pool أصغر لكل معرض (بدلاً من 10 للكل)
-    serverSelectionTimeoutMS: 10000,
-    socketTimeoutMS: 45000,
-    bufferCommands: true,
-  }).asPromise();
+  // إنشاء اتصال مستقل لهذا المعرض مع إمكانية التراجع الذاتي (Self-Healing Fallback)
+  let connection;
+  try {
+    connection = await mongoose.createConnection(mongoUri, {
+      maxPoolSize: 5, // حجم Pool أصغر لكل معرض (بدلاً من 10 للكل)
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+      bufferCommands: true,
+    }).asPromise();
+  } catch (error) {
+    console.error(`⚠️ [CONN FAILED] Failed connecting to ${tenantId} using primary URI:`, error.message);
+    
+    // التحقق من وجود URI بديل (MONGO_URI الرئيسي للمنصة) ومحاولة استخدامه مع تعديل اسم قاعدة البيانات
+    const baseUri = process.env.MONGO_URI || process.env.MONGODB_URI;
+    if (baseUri && baseUri !== mongoUri) {
+      console.log(`🔄 [FALLBACK] Attempting connection to ${tenantId} using fallback parsed from main MONGO_URI`);
+      try {
+        const fallbackUri = constructFallbackUri(baseUri, tenantId);
+        connection = await mongoose.createConnection(fallbackUri, {
+          maxPoolSize: 5,
+          serverSelectionTimeoutMS: 10000,
+          socketTimeoutMS: 45000,
+          bufferCommands: true,
+        }).asPromise();
+        console.log(`✅ [CONN SUCCESS] Connected to ${tenantId} via fallback URI`);
+      } catch (fallbackError) {
+        console.error(`❌ [CONN FAILED] Fallback connection also failed for ${tenantId}:`, fallbackError.message);
+        throw error; // رمي الخطأ الأصلي إذا فشل الاتصال البديل أيضاً
+      }
+    } else {
+      throw error;
+    }
+  }
 
   // تسجيل كل الـ Models على هذا الاتصال
   const schemas = loadSchemas();
