@@ -18,7 +18,8 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Download
 } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
@@ -71,6 +72,7 @@ export default function AdminDashboard() {
     { label: 'إدارة الوكالات',  icon: Award,           active: false, href: '/admin/brands' },
     { label: 'الطلبات',         icon: ShoppingBag,     active: false, href: '/admin/orders' },
     { label: 'العملاء',         icon: Users,           active: false, href: '/admin/users' },
+    { label: 'الاستيراد الذكي', icon: Download,        active: false, href: '/admin/import' },
     { label: 'الإعدادات',       icon: Settings,        active: false, href: '/admin/settings' },
   ];
 
@@ -276,6 +278,7 @@ export default function AdminDashboard() {
                 { label: 'إدارة الوكالات',       href: '/admin/brands',      icon: Award,     color: 'from-purple-500/20 to-purple-500/5'   },
                 { label: 'مراجعة الطلبات',       href: '/admin/orders',      icon: ShoppingBag, color: 'from-green-500/20 to-green-500/5'   },
                 { label: 'قاعدة العملاء',        href: '/admin/users',       icon: Users,     color: 'from-pink-500/20 to-pink-500/5'       },
+                { label: 'الاستيراد الذكي',      href: '/admin/import',      icon: Download,  color: 'from-teal-500/20 to-teal-500/5'       },
                 { label: 'إعدادات المنصة',       href: '/admin/settings',    icon: Settings,  color: 'from-orange-500/20 to-orange-500/5'   },
               ].map((action, idx) => (
                 <motion.div

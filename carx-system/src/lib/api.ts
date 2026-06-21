@@ -137,6 +137,16 @@ export const api = {
   admin: {
     getStats: () => fetchAPI('/dashboard/admin'),
   },
+  import: {
+    preview: (url: string, type: 'car' | 'part') => fetchAPI<{ success: boolean; data: any; images: string[]; duplicate: boolean; error?: string }>('/import/preview', {
+      method: 'POST',
+      body: JSON.stringify({ url, type })
+    }),
+    save: (data: any, type: 'car' | 'part') => fetchAPI<{ success: boolean; data: any; error?: string }>('/import/save', {
+      method: 'POST',
+      body: JSON.stringify({ data, type })
+    })
+  },
   users: {
     getAll: () => fetchAPI('/users'),
   },

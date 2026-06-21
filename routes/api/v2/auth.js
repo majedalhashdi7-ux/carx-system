@@ -59,7 +59,7 @@ router.post('/register', authLimiter, async (req, res) => {
     const user = new User({
       name,
       email,
-      phone,
+      phone: phone ? phone.trim() : undefined,
       password,
       role: 'buyer',
       status: 'active',
@@ -237,10 +237,11 @@ router.post('/client-register', authLimiter, async (req, res) => {
       email: normalizedEmail,
       password: password,
       name: name || normalizedEmail.split('@')[0],
-      phone: phone || '',
+      phone: phone ? phone.trim() : undefined,
       role: 'buyer',
       status: 'active',
-      createdVia: 'client-registration'
+      createdVia: 'auto-registration',
+      tenantId: getTenantId(req)
     });
 
     await newUser.save();
@@ -249,8 +250,10 @@ router.post('/client-register', authLimiter, async (req, res) => {
     const token = jwt.sign(
       {
         userId: newUser._id,
+        tenantId: req.tenant?.id || 'default',
         email: newUser.email,
         role: newUser.role,
+        permissions: newUser.permissions || []
       },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
