@@ -706,4 +706,28 @@ router.get('/me/export', requireAuthAPI, async (req, res) => {
   }
 });
 
+// ── Heartbeat ──────────────────────────────────────────────
+// Called by the client every 60 seconds to mark the user as "online".
+// Requires a valid JWT token (any authenticated user — no special role needed).
+router.post('/heartbeat', requireAuthAPI, async (req, res) => {
+  try {
+    const User = getModel(req, 'User');
+    const userId = req.user?.id || req.user?._id || req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    await User.updateOne(
+      { _id: userId },
+      { $set: { lastActiveAt: new Date(), isOnline: true } }
+    );
+
+    return res.json({ success: true, ts: new Date().toISOString() });
+  } catch (error) {
+    console.error('Heartbeat error:', error);
+    return res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 module.exports = router;

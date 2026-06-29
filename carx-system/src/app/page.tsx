@@ -20,6 +20,7 @@ import Footer from '../components/Footer';
 import CarCard3D from '../components/CarCard3D';
 import CarCardSkeleton from '../components/CarCardSkeleton';
 import CinematicSplash from '../components/CinematicSplash';
+import InstallPWAButton from '../components/InstallPWAButton';
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../lib/api';
 
@@ -95,6 +96,8 @@ export default function Home() {
     <main className="min-h-screen bg-black text-white selection:bg-luxury-gold selection:text-black">
       {showSplash && <CinematicSplash onComplete={handleSplashComplete} />}
       <Navbar />
+      {/* PWA Install Button - Home page only */}
+      <InstallPWAButton />
 
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center pt-20 overflow-hidden">

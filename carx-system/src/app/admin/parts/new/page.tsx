@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { ArrowLeft, Save, Wrench, Image, Plus, Trash } from 'lucide-react';
+import { ArrowLeft, Save, Wrench } from 'lucide-react';
 import { api } from '../../../../lib/api';
-import Navbar from '../../../../components/Navbar';
+import MultiImageUploader from '../../../../components/admin/MultiImageUploader';
 
 export default function AdminNewPartPage() {
   const [name, setName] = useState('');
@@ -20,8 +20,8 @@ export default function AdminNewPartPage() {
   const [inStock, setInStock] = useState(true);
   const [description, setDescription] = useState('');
   
-  // Image links management
-  const [imageUrls, setImageUrls] = useState<string[]>(['']);
+  // Multi-image upload
+  const [images, setImages] = useState<string[]>([]);
   
   const [brands, setBrands] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -43,24 +43,6 @@ export default function AdminNewPartPage() {
     fetchBrands();
   }, []);
 
-  const handleAddImageUrlField = () => {
-    setImageUrls([...imageUrls, '']);
-  };
-
-  const handleRemoveImageUrlField = (index: number) => {
-    if (imageUrls.length === 1) {
-      setImageUrls(['']);
-    } else {
-      setImageUrls(imageUrls.filter((_, i) => i !== index));
-    }
-  };
-
-  const handleImageUrlChange = (index: number, val: string) => {
-    const updated = [...imageUrls];
-    updated[index] = val;
-    setImageUrls(updated);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !price) {
@@ -71,8 +53,7 @@ export default function AdminNewPartPage() {
     setLoading(true);
     setError('');
     
-    // Filter out empty image URLs
-    const finalImages = imageUrls.filter(url => url.trim() !== '');
+    const finalImages = images;
 
     const partData = {
       name,
@@ -110,28 +91,21 @@ export default function AdminNewPartPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white">
-      <Navbar />
-
-      <div className="pt-32 pb-20 px-4 md:px-8 max-w-4xl mx-auto">
-        {/* Back Link */}
-        <div className="mb-6">
-          <Link href="/admin/parts" className="inline-flex items-center gap-2 text-white/40 hover:text-luxury-gold transition-colors text-sm font-bold">
-            <ArrowLeft className="w-4 h-4 rotate-180" />
-            العودة لإدارة قطع الغيار
-          </Link>
-        </div>
-
-        {/* Title */}
-        <div className="mb-10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-luxury-gold/10 border border-luxury-gold/20 flex items-center justify-center text-luxury-gold">
-              <Wrench className="w-5 h-5" />
-            </div>
-            <h1 className="text-3xl font-bold">إضافة قطعة غيار جديدة</h1>
+    <div className="space-y-6" dir="rtl">
+      {/* Header */}
+      <div>
+        <Link href="/admin/parts" className="inline-flex items-center gap-2 text-white/40 hover:text-luxury-gold transition-colors text-sm font-bold mb-4">
+          <ArrowLeft className="w-4 h-4 rotate-180" />
+          العودة لإدارة قطع الغيار
+        </Link>
+        <div className="flex items-center gap-3 mt-2">
+          <div className="w-10 h-10 rounded-xl bg-luxury-gold/10 border border-luxury-gold/20 flex items-center justify-center text-luxury-gold">
+            <Wrench className="w-5 h-5" />
           </div>
-          <p className="text-white/40 text-sm mt-2">قم بملء البيانات أدناه لإدخال قطعة غيار جديدة في المعرض</p>
+          <h1 className="text-3xl font-bold">إضافة قطعة غيار جديدة</h1>
         </div>
+        <p className="text-white/40 text-sm mt-2">قم بملء البيانات أدناه لإدخال قطعة غيار جديدة في المعرض</p>
+      </div>
 
         {success ? (
           <motion.div 
@@ -152,7 +126,7 @@ export default function AdminNewPartPage() {
             )}
 
             {/* Basic Info Card */}
-            <div className="glass-panel p-8 rounded-3xl space-y-6">
+            <div className="bg-white/5 border border-white/10 rounded-3xl p-8 space-y-6 backdrop-blur-xl">
               <h2 className="text-lg font-bold border-b border-white/5 pb-3">المعلومات الأساسية</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -217,7 +191,7 @@ export default function AdminNewPartPage() {
             </div>
 
             {/* Target Car Info Card */}
-            <div className="glass-panel p-8 rounded-3xl space-y-6">
+            <div className="bg-white/5 border border-white/10 rounded-3xl p-8 space-y-6 backdrop-blur-xl">
               <h2 className="text-lg font-bold border-b border-white/5 pb-3">السيارات المتوافقة (اختياري)</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -260,7 +234,7 @@ export default function AdminNewPartPage() {
             </div>
 
             {/* Price & Stock Card */}
-            <div className="glass-panel p-8 rounded-3xl space-y-6">
+            <div className="bg-white/5 border border-white/10 rounded-3xl p-8 space-y-6 backdrop-blur-xl">
               <h2 className="text-lg font-bold border-b border-white/5 pb-3">الأسعار والتوافر</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -304,7 +278,7 @@ export default function AdminNewPartPage() {
             </div>
 
             {/* Description Card */}
-            <div className="glass-panel p-8 rounded-3xl space-y-6">
+            <div className="bg-white/5 border border-white/10 rounded-3xl p-8 space-y-6 backdrop-blur-xl">
               <h2 className="text-lg font-bold border-b border-white/5 pb-3">وصف وتفاصيل القطعة</h2>
               <div>
                 <label className="block text-xs font-bold text-white/40 mb-2 uppercase tracking-widest">وصف تفصيلي</label>
@@ -318,44 +292,16 @@ export default function AdminNewPartPage() {
               </div>
             </div>
 
-            {/* Image URLs Card */}
-            <div className="glass-panel p-8 rounded-3xl space-y-6">
-              <div className="flex justify-between items-center border-b border-white/5 pb-3">
-                <h2 className="text-lg font-bold">صور القطعة</h2>
-                <button 
-                  type="button" 
-                  onClick={handleAddImageUrlField}
-                  className="flex items-center gap-1 text-xs text-luxury-gold hover:text-white transition-colors font-bold"
-                >
-                  <Plus className="w-4 h-4" />
-                  إضافة رابط صورة
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                {imageUrls.map((url, idx) => (
-                  <div key={idx} className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 text-white/20">
-                      <Image className="w-5 h-5" />
-                    </div>
-                    <input 
-                      type="url"
-                      value={url}
-                      onChange={(e) => handleImageUrlChange(idx, e.target.value)}
-                      placeholder="https://example.com/image.jpg"
-                      className="flex-1 bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-sm text-white focus:outline-none focus:border-luxury-gold/40 text-left"
-                      dir="ltr"
-                    />
-                    <button 
-                      type="button"
-                      onClick={() => handleRemoveImageUrlField(idx)}
-                      className="p-3 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-xl transition-all border border-red-500/20"
-                    >
-                      <Trash className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
+            {/* Multi-Image Upload Card */}
+            <div className="bg-white/5 border border-white/10 rounded-3xl p-8 space-y-4 backdrop-blur-xl">
+              <h2 className="text-lg font-bold border-b border-white/5 pb-3">صور قطعة الغيار</h2>
+              <MultiImageUploader
+                images={images}
+                onChange={setImages}
+                maxImages={6}
+                label="صور القطعة"
+                hint="اسحب وأفلت أو اضغط لاختيار صور القطعة من جهازك"
+              />
             </div>
 
             {/* Submit Button */}
@@ -375,7 +321,6 @@ export default function AdminNewPartPage() {
             </button>
           </form>
         )}
-      </div>
-    </main>
+    </div>
   );
 }

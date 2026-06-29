@@ -8,7 +8,6 @@ import {
   Award, CheckCircle2, XCircle, ArrowLeft 
 } from 'lucide-react';
 import { api } from '../../../lib/api';
-import Navbar from '../../../components/Navbar';
 
 export default function AdminBrandsPage() {
   const [brands, setBrands] = useState<any[]>([]);
@@ -61,18 +60,7 @@ export default function AdminBrandsPage() {
   );
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white">
-      <Navbar />
-
-      <div className="pt-32 pb-20 px-4 md:px-8 max-w-7xl mx-auto">
-        {/* Back Link */}
-        <div className="mb-6">
-          <Link href="/admin" className="inline-flex items-center gap-2 text-white/40 hover:text-luxury-gold transition-colors text-sm font-bold">
-            <ArrowLeft className="w-4 h-4 rotate-180" />
-            العودة للوحة الرئيسية
-          </Link>
-        </div>
-
+    <div className="space-y-6" dir="rtl">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
           <div>
             <div className="flex items-center gap-3">
@@ -239,6 +227,6 @@ export default function AdminBrandsPage() {
           </div>
         )}
       </div>
-    </main>
   );
 }
+

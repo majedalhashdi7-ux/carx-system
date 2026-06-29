@@ -101,40 +101,27 @@ function resolveTenant(req) {
 
   const hostTenantId = findTenantByHost();
 
-  // في الإنتاج: نعتمد الـ Host كأساس لمنع tenant hopping.
-  if (isProduction && hostTenantId) {
-    tenantId = hostTenantId;
-  } else if (!isProduction) {
-    // ──────────────────────────────────────────────
-    // الطريقة 1: Header مخصص (للتطوير)
-    // ──────────────────────────────────────────────
-    if (requestedHeaderTenant && tenants[requestedHeaderTenant]) {
-      tenantId = requestedHeaderTenant;
-    }
-
-    // ──────────────────────────────────────────────
-    // الطريقة 2: Query parameter (للتطوير)
-    // ──────────────────────────────────────────────
-    if (!tenantId && requestedQueryTenant && tenants[requestedQueryTenant]) {
-      tenantId = requestedQueryTenant;
-    }
+  // ──────────────────────────────────────────────
+  // الطريقة 1: X-Tenant-ID header (الأولوية العليا إذا كانت قيمة صحيحة)
+  // ──────────────────────────────────────────────
+  // في الإنتاج: نقبل X-Tenant-ID إذا أرسله frontend موثوق (مثل carx-system)
+  // ويكون المعرّف موجودًا في tenants.json ومفعّلاً.
+  if (requestedHeaderTenant && tenants[requestedHeaderTenant] && tenants[requestedHeaderTenant].enabled) {
+    tenantId = requestedHeaderTenant;
   }
 
   // ──────────────────────────────────────────────
-  // الطريقة 3: الدومين من Host header
+  // الطريقة 2: القيمة من الدومين (Host / x-forwarded-host)
   // ──────────────────────────────────────────────
-  if (!tenantId) {
+  if (!tenantId && hostTenantId) {
     tenantId = hostTenantId;
   }
 
-  // إذا تم تحديد tenant من header/query في الإنتاج وكان مختلفاً عن host، تجاهله بالكامل.
-  if (isProduction && hostTenantId) {
-    if (
-      (requestedHeaderTenant && requestedHeaderTenant !== hostTenantId) ||
-      (requestedQueryTenant && requestedQueryTenant !== hostTenantId)
-    ) {
-      tenantId = hostTenantId;
-    }
+  // ──────────────────────────────────────────────
+  // الطريقة 3: Query parameter
+  // ──────────────────────────────────────────────
+  if (!tenantId && requestedQueryTenant && tenants[requestedQueryTenant]) {
+    tenantId = requestedQueryTenant;
   }
 
   // ──────────────────────────────────────────────

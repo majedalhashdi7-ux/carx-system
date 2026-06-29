@@ -4,6 +4,14 @@
   "outputDirectory": ".next",
   "installCommand": "npm install",
   "regions": ["cdg1"],
+  "headers": [
+    {
+      "source": "/api/:path*",
+      "headers": [
+        { "key": "X-Tenant-ID", "value": "carx" }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/:path*",

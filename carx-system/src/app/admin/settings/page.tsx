@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Save, Settings, Globe, Shield, CreditCard, Bell, Share2, Upload, Sparkles, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
-import Navbar from '../../../components/Navbar';
+
 import { api } from '../../../lib/api';
 import { uploadImage } from '../../../lib/cloudinary';
 
@@ -195,17 +195,14 @@ export default function AdminSettingsPage() {
 
   if (initialLoading) {
     return (
-      <main className="min-h-screen bg-[#050505] text-white flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-[60vh]">
         <div className="w-10 h-10 border-4 border-luxury-gold/30 border-t-luxury-gold rounded-full animate-spin" />
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white">
-      <Navbar />
-
-      <div className="pt-32 pb-20 px-4 md:px-8 max-w-6xl mx-auto">
+    <div className="space-y-6" dir="rtl">
         
         {/* Toast Messages */}
         {successMsg && (
@@ -506,7 +503,6 @@ export default function AdminSettingsPage() {
             </form>
           </div>
         </div>
-      </div>
-    </main>
+    </div>
   );
 }

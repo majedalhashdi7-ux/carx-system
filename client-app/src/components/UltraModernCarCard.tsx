@@ -14,6 +14,9 @@ import {
 import { useLanguage } from "@/lib/LanguageContext";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useTenant } from "@/lib/TenantContext";
+import { getTenantApiUrl } from "@/lib/tenant-config";
+
 
 interface UltraModernCarCardProps {
     car: {
@@ -53,6 +56,8 @@ export default function UltraModernCarCard({
     const { isRTL } = useLanguage();
     const router = useRouter();
     const cardRef = useRef<HTMLDivElement>(null);
+    const { tenant } = useTenant();
+    const tenantApiUrl = getTenantApiUrl();
     
     // Motion values للتأثيرات ثلاثية الأبعاد المتقدمة
     const x = useMotionValue(0);
@@ -224,6 +229,28 @@ export default function UltraModernCarCard({
                                 </div>
                             </div>
                         )}
+                        
+                        {/* Watermark Overlay */}
+                        {!imageError && (
+                            tenant?.logo ? (
+                                <div 
+                                    className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center opacity-[0.15] select-none mix-blend-overlay filter drop-shadow-md"
+                                    style={{
+                                        backgroundImage: `url(${tenant.logo.startsWith('http') ? tenant.logo : tenantApiUrl + tenant.logo})`,
+                                        backgroundRepeat: 'no-repeat',
+                                        backgroundPosition: 'center',
+                                        backgroundSize: '45% auto',
+                                    }}
+                                />
+                            ) : (
+                                <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center opacity-[0.08] select-none">
+                                    <span className="text-white text-xl font-bold tracking-widest uppercase rotate-12">
+                                        {tenant?.name || 'HM CAR'}
+                                    </span>
+                                </div>
+                            )
+                        )}
+
                     </div>
 
                     {/* شبكة نيون متحركة */}

@@ -4,6 +4,14 @@
 const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
+const dns = require('dns');
+
+// Fix for Windows DNS resolution issues with MongoDB Atlas SRV records in Node.js
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (e) {
+  console.warn('⚠️ Could not set DNS servers:', e.message);
+}
 
 // Load default .env
 dotenv.config();

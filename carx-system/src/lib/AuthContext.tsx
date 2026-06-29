@@ -111,6 +111,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('storage', handleStorage);
   }, [refreshUser]);
 
+  // ---- Heartbeat: keeps the user marked as "online" on the backend ----
+  // Fires every 60 seconds while the user is logged in
+  useEffect(() => {
+    if (!user) return; // Only run when logged in
+    
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api/v2';
+    
+    const ping = () => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('carx_token') : null;
+      if (!token) return;
+      fetch(`${API_BASE}/users/heartbeat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Tenant-ID': 'carx',
+          Authorization: `Bearer ${token}`,
+        },
+      }).catch(() => {}); // Silent — never block UI
+    };
+
+    // Ping immediately on mount/login, then every 60 seconds
+    ping();
+    const interval = setInterval(ping, 60_000);
+    return () => clearInterval(interval);
+  }, [user]);
+
   return (
     <AuthContext.Provider
       value={{

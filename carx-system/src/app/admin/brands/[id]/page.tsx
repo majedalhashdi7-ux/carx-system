@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Award, Image, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Save, Award, AlertCircle } from 'lucide-react';
 import { api } from '../../../../lib/api';
-import Navbar from '../../../../components/Navbar';
+import CircleLogoUploader from '../../../../components/admin/CircleLogoUploader';
 
 export default function AdminEditBrandPage() {
   const router = useRouter();
@@ -123,35 +123,27 @@ export default function AdminEditBrandPage() {
 
   if (initialLoading) {
     return (
-      <main className="min-h-screen bg-[#050505] text-white flex items-center justify-center">
+      <div className="flex items-center justify-center py-32">
         <div className="w-12 h-12 border-2 border-luxury-gold/30 border-t-luxury-gold rounded-full animate-spin" />
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white">
-      <Navbar />
-
-      <div className="pt-32 pb-20 px-4 md:px-8 max-w-4xl mx-auto">
-        {/* Back Link */}
-        <div className="mb-6">
-          <Link href="/admin/brands" className="inline-flex items-center gap-2 text-white/40 hover:text-luxury-gold transition-colors text-sm font-bold">
-            <ArrowLeft className="w-4 h-4 rotate-180" />
-            العودة لإدارة الوكالات
-          </Link>
-        </div>
-
-        {/* Title */}
-        <div className="mb-10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-luxury-gold/10 border border-luxury-gold/20 flex items-center justify-center text-luxury-gold">
-              <Award className="w-5 h-5" />
-            </div>
-            <h1 className="text-3xl font-bold">تعديل بيانات الوكالة</h1>
+    <div className="space-y-6" dir="rtl">
+      <div>
+        <Link href="/admin/brands" className="inline-flex items-center gap-2 text-white/40 hover:text-luxury-gold transition-colors text-sm font-bold mb-4">
+          <ArrowLeft className="w-4 h-4 rotate-180" />
+          العودة لإدارة الوكالات
+        </Link>
+        <div className="flex items-center gap-3 mt-2">
+          <div className="w-10 h-10 rounded-xl bg-luxury-gold/10 border border-luxury-gold/20 flex items-center justify-center text-luxury-gold">
+            <Award className="w-5 h-5" />
           </div>
-          <p className="text-white/40 text-sm mt-2">قم بتعديل بيانات علامة تجارية أو وكالة حالية في النظام</p>
+          <h1 className="text-3xl font-bold">تعديل بيانات الوكالة</h1>
         </div>
+        <p className="text-white/40 text-sm mt-2">قم بتعديل بيانات علامة تجارية أو وكالة حالية في النظام</p>
+      </div>
 
         {success ? (
           <motion.div 
@@ -173,7 +165,7 @@ export default function AdminEditBrandPage() {
             )}
 
             {/* Basic Info Card */}
-            <div className="glass-panel p-8 rounded-3xl space-y-6">
+            <div className="bg-white/5 border border-white/10 rounded-3xl p-8 space-y-6 backdrop-blur-xl">
               <h2 className="text-lg font-bold border-b border-white/5 pb-3">المعلومات الأساسية للوكالة</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -234,25 +226,13 @@ export default function AdminEditBrandPage() {
                   </select>
                 </div>
 
+                {/* Circular Logo Uploader */}
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-white/40 mb-2 uppercase tracking-widest">رابط الشعار (Logo Image URL)</label>
-                  <div className="flex gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 text-white/20">
-                      {logoUrl ? (
-                        <img src={logoUrl} alt="Preview" className="w-full h-full object-contain p-1" />
-                      ) : (
-                        <Image className="w-5 h-5" />
-                      )}
-                    </div>
-                    <input 
-                      type="url"
-                      value={logoUrl}
-                      onChange={(e) => setLogoUrl(e.target.value)}
-                      placeholder="https://example.com/logo.png"
-                      className="flex-1 bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-sm text-white focus:outline-none focus:border-luxury-gold/40 text-left"
-                      dir="ltr"
-                    />
-                  </div>
+                  <CircleLogoUploader
+                    value={logoUrl}
+                    onChange={setLogoUrl}
+                    placeholder="شعار الوكالة"
+                  />
                 </div>
 
                 <div className="flex items-center gap-3 pt-3">
@@ -269,8 +249,8 @@ export default function AdminEditBrandPage() {
               </div>
             </div>
 
-            {/* Premium Profiling Card */}
-            <div className="glass-panel p-8 rounded-3xl space-y-6">
+            {/* Contact Info Card */}
+            <div className="bg-white/5 border border-white/10 rounded-3xl p-8 space-y-6 backdrop-blur-xl">
               <h2 className="text-lg font-bold border-b border-white/5 pb-3">بيانات الاتصال وموقع الفرع (اختياري)</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -357,7 +337,6 @@ export default function AdminEditBrandPage() {
             </button>
           </form>
         )}
-      </div>
-    </main>
+    </div>
   );
 }

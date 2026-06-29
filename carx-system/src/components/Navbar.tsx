@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Menu, X, User, Search, ShoppingCart, ShoppingBag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CurrencySelector from './CurrencySelector';
@@ -9,6 +10,11 @@ import AdvancedCart from './AdvancedCart';
 import { useAuth } from '../lib/AuthContext';
 
 export default function Navbar() {
+  const pathname = usePathname();
+
+  // إخفاء Navbar في جميع صفحات الأدمن — لوحة الأدمن لها sidebar خاص
+  if (pathname?.startsWith('/admin')) return null;
+
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);

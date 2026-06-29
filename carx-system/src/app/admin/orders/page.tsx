@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Search, Filter, Eye, X, CheckCircle2, Clock, XCircle, AlertCircle, ShoppingBag, User, Calendar, CreditCard, ChevronRight, Loader2 } from 'lucide-react';
-import Navbar from '../../../components/Navbar';
+
 import { api } from '../../../lib/api';
 
 export default function AdminOrdersPage() {
@@ -96,10 +96,7 @@ export default function AdminOrdersPage() {
   });
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white">
-      <Navbar />
-
-      <div className="pt-32 pb-20 px-4 md:px-8 max-w-7xl mx-auto">
+    <div className="space-y-6" dir="rtl">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
           <div>
             <h1 className="text-3xl font-black">إدارة الطلبات</h1>
@@ -197,7 +194,6 @@ export default function AdminOrdersPage() {
               </tbody>
             </table>
           </div>
-        </div>
       </div>
 
       {/* Premium Order Details Modal */}
@@ -368,6 +364,6 @@ export default function AdminOrdersPage() {
           </div>
         </div>
       )}
-    </main>
+    </div>
   );
 }

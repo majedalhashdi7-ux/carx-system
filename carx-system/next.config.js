@@ -1,9 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  // أُزيل ignoreBuildErrors لضمان اكتشاف الأخطاء في الإنتاج
   images: {
     remotePatterns: [
       {
@@ -19,3 +15,4 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
+

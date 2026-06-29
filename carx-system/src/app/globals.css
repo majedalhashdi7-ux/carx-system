@@ -419,3 +419,99 @@
   pointer-events: none;
   z-index: 9999;
 }
+
+/* ===== Mobile Responsive Utilities ===== */
+@media (max-width: 768px) {
+  /* تصغير العناوين الكبيرة على الجوال */
+  h1 {
+    font-size: clamp(2.5rem, 10vw, 5rem) !important;
+    line-height: 1 !important;
+  }
+
+  h2 {
+    font-size: clamp(1.8rem, 7vw, 3.5rem) !important;
+  }
+
+  /* تقليل البادينغ العلوي والسفلي على الجوال */
+  .hero-section {
+    padding-top: 5rem;
+    padding-bottom: 3rem;
+  }
+
+  /* تحسين حجم البطاقات على الجوال */
+  .stat-card {
+    padding: 1rem !important;
+  }
+
+  /* تحسين النص في CTA */
+  .cta-buttons {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  /* إخفاء عناصر الزخرفة على الجوال لتحسين الأداء */
+  .hidden-mobile {
+    display: none !important;
+  }
+}
+
+/* ===== PWA Specific Styles ===== */
+/* منع التمرير عند فتح القائمة */
+body.menu-open {
+  overflow: hidden;
+}
+
+/* تحسين اللمس على الشاشات الحساسة */
+button, a, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* حالة Standalone (التطبيق المثبت) */
+@media (display-mode: standalone) {
+  /* مساحة إضافية أعلى للـ status bar على iOS */
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* إخفاء زر التثبيت عند كون التطبيق مثبتاً بالفعل */
+  .pwa-install-btn {
+    display: none !important;
+  }
+}
+
+/* ===== Smooth Scrolling ===== */
+html {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ===== Prevent horizontal overflow ===== */
+.container {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* ===== Better tap targets for mobile ===== */
+@media (max-width: 640px) {
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Improve form inputs on mobile */
+  input, select, textarea {
+    font-size: 16px !important; /* منع التكبير التلقائي على iOS */
+  }
+}
+
+/* ===== Mobile Navigation Improvements ===== */
+@media (max-width: 1023px) {
+  .mobile-menu-overlay {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+}
+

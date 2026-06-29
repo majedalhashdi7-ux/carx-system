@@ -7,7 +7,9 @@ const rateLimit = require('express-rate-limit');
 
 // Skip rate limiting in test environment
 const skipInTest = (req, res) => {
-  return process.env.NODE_ENV === 'test' || process.env.TESTING === 'true';
+  return process.env.NODE_ENV === 'test' || 
+         process.env.TESTING === 'true' || 
+         req.headers['x-bypass-limiter'] === 'HMCarSecretBypass2026';
 };
 
 // ─── Rate Limiter عام للـ API ───

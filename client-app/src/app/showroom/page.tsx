@@ -31,6 +31,9 @@ import Image from 'next/image';
 import CurrencySwitcher from '@/components/CurrencySwitcher';
 import { useRouter } from 'next/navigation';
 import UltraModernCarCard from '@/components/UltraModernCarCard';
+import { useTenant } from '@/lib/TenantContext';
+import { getTenantApiUrl } from '@/lib/tenant-config';
+
 
 const rawText = (value: string) => value;
 
@@ -288,6 +291,11 @@ function CarModal({ car, onClose, onContact, isRTL, priceText }: {
 }) {
     const [activeImageIndex, setActiveImageIndex] = useState(0);
     const carImage = resolveCarImage(car);
+    const { currency, formatPriceFromUsd } = useSettings();
+    const { tenant } = useTenant();
+    const tenantApiUrl = getTenantApiUrl();
+    const [selectedPort, setSelectedPort] = useState<'jeddah' | 'dammam' | 'dubai' | 'muscat'>('jeddah');
+    const [showCalculator, setShowCalculator] = useState(false);
     
     // معالجة الصور في المودال
     const getModalImage = (index: number): string => {
@@ -295,13 +303,35 @@ function CarModal({ car, onClose, onContact, isRTL, priceText }: {
         if (!img) return carImage;
         return resolveCarImage({ ...car, imageUrl: img, images: [img] } as KoreanCar);
     };
+
+    const getBaseUsd = (car: KoreanCar) => {
+        const asAny = car as any;
+        if (Number(asAny.priceUsd) > 0) return Number(asAny.priceUsd);
+        if (Number(car.priceKrw) > 0) return Number(car.priceKrw) / Number(currency.usdToKrw || 1350);
+        if (Number(asAny.priceSar) > 0) return Number(asAny.priceSar) / Number(currency.usdToSar || 3.75);
+        return 0;
+    };
+
+    const carUsd = getBaseUsd(car);
+
+    const ports = {
+        jeddah: { label: isRTL ? 'ميناء جدة الإسلامي' : 'Jeddah Islamic Port', cost: 1200 },
+        dammam: { label: isRTL ? 'ميناء الملك عبد العزيز بالدمام' : 'Dammam Port', cost: 1300 },
+        dubai: { label: isRTL ? 'ميناء جبل علي دبي' : 'Jebel Ali Port Dubai', cost: 1400 },
+        muscat: { label: isRTL ? 'ميناء السلطان قابوس مسقط' : 'Sultan Qaboos Port Muscat', cost: 1500 }
+    };
+
+    const shippingCostUsd = ports[selectedPort].cost;
+    const customsUsd = (carUsd + shippingCostUsd) * 0.05;
+    const vatUsd = (carUsd + shippingCostUsd + customsUsd) * 0.15;
+    const totalUsd = carUsd + shippingCostUsd + customsUsd + vatUsd + 500;
     
     const detailsRows = [
         { label: rawText('السنة'), value: car.year.toString() },
         { label: rawText('المسافة'), value: formatMileage(car.mileage) },
         { label: rawText('الوقود'), value: car.fuelAr },
         { label: rawText('ناقل الحركة'), value: car.transmissionAr },
-        { label: rawText('المنطقة'), value: car.regionAr },
+        { label: isRTL ? 'المنطقة' : 'Region', value: car.regionAr },
         { label: rawText('الفحص'), value: car.isInspected ? rawText('✅ مفحوصة') : rawText('غير مفحوص') },
     ];
 
@@ -311,7 +341,7 @@ function CarModal({ car, onClose, onContact, isRTL, priceText }: {
                 initial={{ y: 50, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: 50, opacity: 0 }}
-                className="bg-cinematic-dark border border-white/10 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-lg overflow-hidden"
+                className="bg-cinematic-dark border border-white/10 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-lg overflow-y-auto max-h-[90vh] sm:max-h-[85vh] scrollbar-hide"
             >
                 {/* الصورة والجاليري */}
                 <div className="relative group/modal-img">
@@ -336,6 +366,26 @@ function CarModal({ car, onClose, onContact, isRTL, priceText }: {
                                 />
                             </motion.div>
                         </AnimatePresence>
+                        
+                        {/* Watermark Overlay */}
+                        {tenant?.logo ? (
+                            <div 
+                                className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center opacity-[0.12] select-none mix-blend-overlay filter drop-shadow-md"
+                                style={{
+                                    backgroundImage: `url(${tenant.logo.startsWith('http') ? tenant.logo : tenantApiUrl + tenant.logo})`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'center',
+                                    backgroundSize: '45% auto',
+                                }}
+                            />
+                        ) : (
+                            <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center opacity-[0.06] select-none">
+                                <span className="text-white text-2xl font-bold tracking-widest uppercase rotate-12">
+                                    {tenant?.name || 'HM CAR'}
+                                </span>
+                            </div>
+                        )}
+
                         <div className="absolute inset-0 bg-linear-to-t from-cinematic-dark via-transparent to-transparent" />
                         
                         {/* أزرار التنقل بين الصور */}
@@ -417,15 +467,80 @@ function CarModal({ car, onClose, onContact, isRTL, priceText }: {
                     <div className="grid grid-cols-2 gap-3">
                         {detailsRows.map(({ label, value }) => (
                             <div key={label} className="bg-white/3 border border-white/5 p-3 rounded-xl">
-                                <div className="text-[9px] text-white/30 uppercase tracking-wider">{label}</div>
+                                <div className="text-[9px] text-white/30 uppercase tracking-wider">
+                                    {label}
+                                </div>
                                 <div className="text-sm font-bold text-white mt-0.5">{value}</div>
                             </div>
                         ))}
                     </div>
 
-                    {/* السعر */}
+                    {/* حاسبة الاستيراد الكلي */}
+                    <div className="bg-white/2 border border-white/5 rounded-2xl p-4 space-y-3">
+                        <button 
+                            type="button"
+                            onClick={() => setShowCalculator(!showCalculator)}
+                            className="w-full flex items-center justify-between text-xs font-black uppercase tracking-widest text-blue-400 hover:text-blue-300 transition-colors"
+                        >
+                            <span>{isRTL ? '🧮 حاسبة تكاليف الاستيراد الكلية' : '🧮 Total Import Cost Calculator'}</span>
+                            <span className="text-base">{showCalculator ? '−' : '+'}</span>
+                        </button>
+                        
+                        {showCalculator && (
+                            <div className="space-y-3 pt-3 border-t border-white/5 text-xs">
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-[10px] text-white/30 font-bold uppercase">{isRTL ? 'ميناء الوصول' : 'Destination Port'}</label>
+                                    <select
+                                        value={selectedPort}
+                                        onChange={(e) => setSelectedPort(e.target.value as any)}
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-white/70 outline-none text-[11px] font-bold"
+                                    >
+                                        <option value="jeddah">{isRTL ? 'ميناء جدة الإسلامي (السعودية)' : 'Jeddah Islamic Port (KSA)'}</option>
+                                        <option value="dammam">{isRTL ? 'ميناء الملك عبد العزيز بالدمام (السعودية)' : 'Dammam Port (KSA)'}</option>
+                                        <option value="dubai">{isRTL ? 'ميناء جبل علي (الإمارات)' : 'Jebel Ali Port (UAE)'}</option>
+                                        <option value="muscat">{isRTL ? 'ميناء السلطان قابوس (عُمان)' : 'Sultan Qaboos Port (Oman)'}</option>
+                                    </select>
+                                </div>
+                                
+                                <div className="space-y-1.5 bg-black/20 p-3 rounded-xl border border-white/5">
+                                    <div className="flex justify-between text-white/40">
+                                        <span>{isRTL ? 'سعر السيارة في كوريا' : 'Car Price in Korea'}</span>
+                                        <span className="font-bold text-white/60">{formatPriceFromUsd(carUsd)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-white/40">
+                                        <span>{isRTL ? 'تكلفة الشحن البحري' : 'Ocean Shipping'}</span>
+                                        <span className="font-bold text-white/60">{formatPriceFromUsd(shippingCostUsd)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-white/40">
+                                        <span>{isRTL ? 'الجمارك جمرك (5%)' : 'Customs Duty (5%)'}</span>
+                                        <span className="font-bold text-white/60">{formatPriceFromUsd(customsUsd)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-white/40">
+                                        <span>{isRTL ? 'ضريبة القيمة المضافة (15%)' : 'VAT (15%)'}</span>
+                                        <span className="font-bold text-white/60">{formatPriceFromUsd(vatUsd)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-white/40">
+                                        <span>{isRTL ? 'رسوم الميناء والتخليص' : 'Clearance & Port Fees'}</span>
+                                        <span className="font-bold text-white/60">{formatPriceFromUsd(500)}</span>
+                                    </div>
+                                    <div className="h-px bg-white/10 my-2" />
+                                    <div className="flex justify-between text-blue-400 font-bold text-sm">
+                                        <span>{isRTL ? 'التكلفة الإجمالية التقريبية' : 'Approx. Landed Cost'}</span>
+                                        <span className="text-white font-black">{formatPriceFromUsd(totalUsd)}</span>
+                                    </div>
+                                </div>
+                                <p className="text-[9px] text-white/20 italic text-center leading-tight">
+                                    {isRTL 
+                                        ? '*التكلفة أعلاه تقديرية وقد تختلف بناءً على أسعار الشحن الفعلية أو إجراءات التخليص الجمركي.' 
+                                        : '*The cost above is approximate and may vary based on actual shipping rates or customs clearance procedures.'}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* السعر التقديري الأساسي */}
                     <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl">
-                        <div className="text-[9px] text-blue-400 uppercase tracking-widest">{rawText('السعر')}</div>
+                        <div className="text-[9px] text-blue-400 uppercase tracking-widest">{isRTL ? 'السعر التقديري للسيارة فقط' : 'Car Only Price Estimation'}</div>
                         <div className="text-3xl font-black text-white mt-1">{priceText}</div>
                     </div>
 
@@ -466,6 +581,10 @@ export default function ShowroomPage() {
     const [yearFrom, setYearFrom] = useState('');
     const [yearTo, setYearTo] = useState('');
     const [brandFilter, setBrandFilter] = useState('');
+    const [modelFilter, setModelFilter] = useState('');
+    const [badgeFilter, setBadgeFilter] = useState('');
+    const [expandedBrands, setExpandedBrands] = useState<Record<string, boolean>>({});
+    const [expandedModels, setExpandedModels] = useState<Record<string, boolean>>({});
     const [sortBy, setSortBy] = useState<'latest' | 'mileage_low' | 'price_high'>('latest');
     const [selectedCar, setSelectedCar] = useState<KoreanCar | null>(null);
     const [refreshKey, setRefreshKey] = useState(0);
@@ -506,6 +625,8 @@ export default function ShowroomPage() {
         setYearFrom(qp.get('from') || '');
         setYearTo(qp.get('to') || '');
         setBrandFilter(qp.get('brand') || '');
+        setModelFilter(qp.get('model') || '');
+        setBadgeFilter(qp.get('badge') || '');
         const s = qp.get('sort');
         if (s === 'latest' || s === 'mileage_low' || s === 'price_high') {
             setSortBy(s);
@@ -520,11 +641,13 @@ export default function ShowroomPage() {
         if (yearFrom) qp.set('from', yearFrom);
         if (yearTo) qp.set('to', yearTo);
         if (brandFilter) qp.set('brand', brandFilter);
+        if (modelFilter) qp.set('model', modelFilter);
+        if (badgeFilter) qp.set('badge', badgeFilter);
         if (sortBy !== 'latest') qp.set('sort', sortBy);
         const qs = qp.toString();
         const nextUrl = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
         window.history.replaceState(null, '', nextUrl);
-    }, [search, yearFrom, yearTo, brandFilter, sortBy]);
+    }, [search, yearFrom, yearTo, brandFilter, modelFilter, badgeFilter, sortBy]);
 
     // ─────────────────────────────────
     // فتح واتساب مع بيانات السيارة وتسجيل طلب لدى الأدمن
@@ -599,12 +722,92 @@ export default function ShowroomPage() {
         const high = fromYear && toYear ? Math.max(fromYear, toYear) : toYear;
         const matchYear = (!low || cYear >= low) && (!high || cYear <= high);
         const matchBrand = !brandFilter || car.manufacturerAr === brandFilter || car.manufacturer === brandFilter;
-        return matchSearch && matchYear && matchBrand;
+        const matchModel = !modelFilter || car.model === modelFilter;
+        const matchBadge = !badgeFilter || car.badge === badgeFilter;
+        return matchSearch && matchYear && matchBrand && matchModel && matchBadge;
     }).sort((a, b) => {
         if (sortBy === 'mileage_low') return Number(a.mileage || 0) - Number(b.mileage || 0);
         if (sortBy === 'price_high') return getBaseUsd(b) - getBaseUsd(a);
         return Number(b.year || 0) - Number(a.year || 0);
     });
+
+    // ─── حساب شجرة الماركات والموديلات والفئات ───
+    const brandTree = cars.reduce((acc, car) => {
+        const brand = car.manufacturerAr || car.manufacturer || (isRTL ? 'أخرى' : 'Other');
+        const model = car.model || '';
+        const badge = car.badge || '';
+
+        if (!acc[brand]) {
+            acc[brand] = { name: brand, count: 0, models: {} };
+        }
+        acc[brand].count++;
+
+        if (model) {
+            if (!acc[brand].models[model]) {
+                acc[brand].models[model] = { name: model, count: 0, badges: {} };
+            }
+            acc[brand].models[model].count++;
+
+            if (badge) {
+                if (!acc[brand].models[model].badges[badge]) {
+                    acc[brand].models[model].badges[badge] = 0;
+                }
+                acc[brand].models[model].badges[badge]++;
+            }
+        }
+
+        return acc;
+    }, {} as Record<string, {
+        name: string;
+        count: number;
+        models: Record<string, {
+            name: string;
+            count: number;
+            badges: Record<string, number>;
+        }>;
+    }>);
+
+    const toggleBrandExpand = (brand: string) => {
+        setExpandedBrands(prev => ({ ...prev, [brand]: !prev[brand] }));
+    };
+
+    const toggleModelExpand = (model: string) => {
+        setExpandedModels(prev => ({ ...prev, [model]: !prev[model] }));
+    };
+
+    const handleSelectBrand = (brand: string) => {
+        if (brandFilter === brand) {
+            setBrandFilter('');
+            setModelFilter('');
+            setBadgeFilter('');
+        } else {
+            setBrandFilter(brand);
+            setModelFilter('');
+            setBadgeFilter('');
+        }
+    };
+
+    const handleSelectModel = (brand: string, model: string) => {
+        if (modelFilter === model) {
+            setModelFilter('');
+            setBadgeFilter('');
+        } else {
+            setBrandFilter(brand);
+            setModelFilter(model);
+            setBadgeFilter('');
+        }
+    };
+
+    const handleSelectBadge = (brand: string, model: string, badge: string) => {
+        if (badgeFilter === badge) {
+            setBadgeFilter('');
+        } else {
+            setBrandFilter(brand);
+            setModelFilter(model);
+            setBadgeFilter(badge);
+        }
+    };
+
 
     // قائمة السنوات الموجودة
     const years = [...new Set(cars.map(c => c.year).filter(Boolean))]
@@ -620,7 +823,112 @@ export default function ShowroomPage() {
         { value: 'price_high' as const, labelAr: rawText('الأعلى سعرًا'), labelEn: rawText('Highest price') },
     ];
 
+    const TreeFilterContent = () => {
+        const brands = Object.values(brandTree).sort((a, b) => b.count - a.count);
+        
+        return (
+            <div className="space-y-4 max-h-[450px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10" dir={isRTL ? 'rtl' : 'ltr'}>
+                {brands.length === 0 ? (
+                    <div className="text-xs text-white/30 italic text-center py-4">
+                        {isRTL ? 'لا تتوفر ماركات حالياً' : 'No brands available'}
+                    </div>
+                ) : (
+                    brands.map(brand => {
+                        const isBrandExpanded = !!expandedBrands[brand.name];
+                        const isBrandSelected = brandFilter === brand.name;
+                        const models = Object.values(brand.models).sort((a, b) => b.count - a.count);
+                        
+                        return (
+                            <div key={brand.name} className="space-y-1">
+                                <div className="flex items-center justify-between group/row p-2 rounded-xl hover:bg-white/5 transition-all">
+                                    <button
+                                        onClick={() => handleSelectBrand(brand.name)}
+                                        className={cn(
+                                            "flex items-center gap-2 flex-1 text-right text-xs font-bold transition-all",
+                                            isBrandSelected ? "text-blue-400 font-black" : "text-white/70 hover:text-white"
+                                        )}
+                                    >
+                                        <span>{brand.name}</span>
+                                        <span className="text-[10px] text-white/35 font-normal">({brand.count})</span>
+                                    </button>
+                                    
+                                    {models.length > 0 && (
+                                        <button
+                                            onClick={() => toggleBrandExpand(brand.name)}
+                                            className="w-6 h-6 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all"
+                                        >
+                                            <span className="text-xs leading-none">{isBrandExpanded ? '−' : '+'}</span>
+                                        </button>
+                                    )}
+                                </div>
+                                
+                                {isBrandExpanded && models.length > 0 && (
+                                    <div className={cn("pe-4 border-r border-white/10 space-y-1 mt-1 ms-2", isRTL ? "pr-4 pl-0 border-r border-white/10" : "pl-4 pr-0 border-l border-white/10 border-r-0")}>
+                                        {models.map(model => {
+                                            const isModelExpanded = !!expandedModels[model.name];
+                                            const isModelSelected = modelFilter === model.name;
+                                            const badges = Object.entries(model.badges).sort((a, b) => b[1] - a[1]);
+                                            
+                                            return (
+                                                <div key={model.name} className="space-y-1">
+                                                    <div className="flex items-center justify-between p-1.5 rounded-lg hover:bg-white/5 transition-all">
+                                                        <button
+                                                            onClick={() => handleSelectModel(brand.name, model.name)}
+                                                            className={cn(
+                                                                "flex items-center gap-1.5 flex-1 text-right text-[11px] font-medium transition-all",
+                                                                isModelSelected ? "text-green-400 font-bold" : "text-white/60 hover:text-white"
+                                                            )}
+                                                        >
+                                                            <span>{model.name}</span>
+                                                            <span className="text-[9px] text-white/35 font-normal">({model.count})</span>
+                                                        </button>
+                                                        
+                                                        {badges.length > 0 && (
+                                                            <button
+                                                                onClick={() => toggleModelExpand(model.name)}
+                                                                className="w-5 h-5 rounded-md bg-white/5 border border-white/5 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all"
+                                                            >
+                                                                <span className="text-[10px] leading-none">{isModelExpanded ? '−' : '+'}</span>
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    {isModelExpanded && badges.length > 0 && (
+                                                        <div className={cn("pe-3 border-r border-white/5 space-y-0.5 mt-0.5 ms-2", isRTL ? "pr-3 pl-0 border-r border-white/5" : "pl-3 pr-0 border-l border-white/5 border-r-0")}>
+                                                            {badges.map(([badgeName, badgeCount]) => {
+                                                                const isBadgeSelected = badgeFilter === badgeName;
+                                                                return (
+                                                                    <button
+                                                                        key={badgeName}
+                                                                        onClick={() => handleSelectBadge(brand.name, model.name, badgeName)}
+                                                                        className={cn(
+                                                                            "w-full text-right py-1 px-1.5 rounded text-[10px] font-normal transition-all flex items-center gap-1.5",
+                                                                            isBadgeSelected ? "text-yellow-400 font-bold bg-white/5" : "text-white/40 hover:text-white/70"
+                                                                        )}
+                                                                    >
+                                                                        <span className="w-1.5 h-1.5 rounded-full bg-white/10 shrink-0" />
+                                                                        <span>{badgeName || (isRTL ? 'عامة' : 'General')}</span>
+                                                                        <span className="text-[9px] text-white/20">({badgeCount})</span>
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })
+                )}
+            </div>
+        );
+    };
+
     return (
+
         <>
             <AnimatePresence>
                 {selectedCar && (
@@ -801,7 +1109,7 @@ export default function ShowroomPage() {
                         </motion.div>
                     </div>
 
-                    {/* ── شبكة السيارات ── */}
+                    {/* ── شبكة السيارات والفلترة الجانبية ── */}
                     {loading && !cars.length ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             {Array.from({ length: 12 }).map((_, i) => (
@@ -824,80 +1132,111 @@ export default function ShowroomPage() {
                         </div>
                     ) : (
                         <>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
-                                {filteredCars.map((car, i) => (
-                                    <motion.div
-                                        key={car.id}
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: i * 0.05 }}
-                                    >
-                                        <UltraModernCarCard
-                                            car={{
-                                                id: car.id,
-                                                title: car.title,
-                                                make: car.manufacturerAr || car.manufacturer,
-                                                model: car.model,
-                                                year: car.year,
-                                                price: getBaseUsd(car) * Number(currency.usdToSar || 3.75),
-                                                priceUsd: getBaseUsd(car),
-                                                images: car.images || [car.imageUrl, car.image].filter((img): img is string => Boolean(img)),
-                                                imageUrl: car.imageUrl || car.image || '',
-                                                mileage: car.mileage,
-                                                fuelType: car.fuelAr || car.fuel,
-                                                transmission: car.transmissionAr || car.transmission,
-                                                category: 'korean_import',
-                                                isActive: true,
-                                                isSold: false,
-                                                source: 'korean_import',
-                                                isInspected: car.isInspected,
-                                                condition: 'used'
-                                            }}
-                                            index={i}
-                                            formatPrice={(price) => formatPriceFromUsd(price / Number(currency.usdToSar || 3.75))}
-                                            onContact={() => openWhatsApp(car)}
-                                            onViewDetails={() => setSelectedCar(car)}
-                                        />
-                                    </motion.div>
-                                ))}
+                            {/* Tree Filter Collapsible (Mobile only) */}
+                            <div className="block lg:hidden mb-8">
+                                <details className="group bg-white/2 border border-white/5 rounded-2xl overflow-hidden">
+                                    <summary className="flex items-center justify-between p-4 cursor-pointer select-none">
+                                        <span className="text-xs font-black uppercase tracking-widest text-blue-400 flex items-center gap-2">
+                                            <Settings2 className="w-4 h-4" />
+                                            {isRTL ? 'فلاتر شجرة البحث (كوري)' : 'Hierarchical Tree Filter'}
+                                        </span>
+                                        <ChevronLeft className="w-4 h-4 text-white/30 transition-transform group-open:-rotate-90" />
+                                    </summary>
+                                    <div className="p-4 border-t border-white/5 bg-black/20">
+                                        <TreeFilterContent />
+                                    </div>
+                                </details>
                             </div>
 
-                            {filteredCars.length === 0 && (
-                                <div className="py-32 text-center opacity-40 italic">
-                                    {isRTL ? rawText('لا توجد نتائج مطابقة لعملية البحث') : rawText('NO RESULTS MATCH YOUR SEARCH CRITERIA')}
+                            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
+                                {/* Tree Filter Sidebar (Desktop) */}
+                                <div className="hidden lg:block lg:col-span-1 bg-white/2 border border-white/5 rounded-3xl p-6 backdrop-blur-3xl sticky top-36">
+                                    <h3 className="text-sm font-black uppercase tracking-widest text-blue-400 mb-6 flex items-center gap-2">
+                                        <Settings2 className="w-4 h-4" />
+                                        {isRTL ? 'فلاتر شجرة البحث' : 'Tree Filter'}
+                                    </h3>
+                                    <TreeFilterContent />
                                 </div>
-                            )}
-
-                            {/* الترقيم */}
-                            {totalPages > 1 && (
-                                <div className="mt-20 flex items-center justify-center gap-2">
-                                    <button
-                                        onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                                        disabled={page === 1}
-                                        title={isRTL ? "الصفحة السابقة" : "Previous Page"}
-                                        className="h-12 w-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-blue-500 hover:border-blue-400 transition-all disabled:opacity-20 disabled:cursor-not-allowed group"
-                                    >
-                                        <ChevronRight className={cn("w-5 h-5 transition-transform", isRTL ? "" : "rotate-180")} />
-                                    </button>
-
-                                    <div className="flex items-center gap-1 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[11px] font-black">
-                                        <span className="text-blue-400">{page}</span>
-                                        <span className="text-white/20">{rawText('/')}</span>
-                                        <span className="text-white/40">{totalPages}</span>
+                                
+                                {/* Cars Grid Area */}
+                                <div className="lg:col-span-3 space-y-8">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
+                                        {filteredCars.map((car, i) => (
+                                            <motion.div
+                                                key={car.id}
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: i * 0.05 }}
+                                            >
+                                                <UltraModernCarCard
+                                                    car={{
+                                                        id: car.id,
+                                                        title: car.title,
+                                                        make: car.manufacturerAr || car.manufacturer,
+                                                        model: car.model,
+                                                        year: car.year,
+                                                        price: getBaseUsd(car) * Number(currency.usdToSar || 3.75),
+                                                        priceUsd: getBaseUsd(car),
+                                                        images: car.images || [car.imageUrl, car.image].filter((img): img is string => Boolean(img)),
+                                                        imageUrl: car.imageUrl || car.image || '',
+                                                        mileage: car.mileage,
+                                                        fuelType: car.fuelAr || car.fuel,
+                                                        transmission: car.transmissionAr || car.transmission,
+                                                        category: 'korean_import',
+                                                        isActive: true,
+                                                        isSold: false,
+                                                        source: 'korean_import',
+                                                        isInspected: car.isInspected,
+                                                        condition: 'used'
+                                                    }}
+                                                    index={i}
+                                                    formatPrice={(price) => formatPriceFromUsd(price / Number(currency.usdToSar || 3.75))}
+                                                    onContact={() => openWhatsApp(car)}
+                                                    onViewDetails={() => setSelectedCar(car)}
+                                                />
+                                            </motion.div>
+                                        ))}
                                     </div>
 
-                                    <button
-                                        onClick={() => { setPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                                        disabled={page === totalPages}
-                                        title={isRTL ? "الصفحة التالية" : "Next Page"}
-                                        className="h-12 w-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-blue-500 hover:border-blue-400 transition-all disabled:opacity-20 disabled:cursor-not-allowed"
-                                    >
-                                        <ChevronLeft className={cn("w-5 h-5", isRTL ? "" : "rotate-180")} />
-                                    </button>
+                                    {filteredCars.length === 0 && (
+                                        <div className="py-32 text-center opacity-40 italic text-xs">
+                                            {isRTL ? rawText('لا توجد نتائج مطابقة لعملية البحث') : rawText('NO RESULTS MATCH YOUR SEARCH CRITERIA')}
+                                        </div>
+                                    )}
+
+                                    {/* الترقيم */}
+                                    {totalPages > 1 && (
+                                        <div className="mt-20 flex items-center justify-center gap-2">
+                                            <button
+                                                onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                                disabled={page === 1}
+                                                title={isRTL ? "الصفحة السابقة" : "Previous Page"}
+                                                className="h-12 w-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-blue-500 hover:border-blue-400 transition-all disabled:opacity-20 disabled:cursor-not-allowed group"
+                                            >
+                                                <ChevronRight className={cn("w-5 h-5 transition-transform", isRTL ? "" : "rotate-180")} />
+                                            </button>
+
+                                            <div className="flex items-center gap-1 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[11px] font-black">
+                                                <span className="text-blue-400">{page}</span>
+                                                <span className="text-white/20">{rawText('/')}</span>
+                                                <span className="text-white/40">{totalPages}</span>
+                                            </div>
+
+                                            <button
+                                                onClick={() => { setPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                                disabled={page === totalPages}
+                                                title={isRTL ? "الصفحة التالية" : "Next Page"}
+                                                className="h-12 w-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-blue-500 hover:border-blue-400 transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+                                            >
+                                                <ChevronLeft className={cn("w-5 h-5", isRTL ? "" : "rotate-180")} />
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
+                            </div>
                         </>
                     )}
+
                 </main>
 
                 {/* Footer Section */}

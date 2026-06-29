@@ -90,22 +90,27 @@ export default function ImportSystem({ type, onImportComplete }: ImportSystemPro
 
     setLoading(true);
     try {
-      const res = await api.import.save(previewData, type);
+      // حفظ كسيارة نشطة ومرئية للعملاء فوراً
+      const dataToSave = {
+        ...previewData,
+        isActive: true,
+        status: 'available',
+      };
+      const res = await api.import.save(dataToSave, type);
 
       if (res.data?.success) {
         setResult({
           success: true,
-          message: 'تم الحفظ بنجاح كمسودة!'
+          message: `✅ تم النشر في المعرض! السيارة ظاهرة الآن للعملاء.`
         });
         onImportComplete?.(res.data.data);
         
-        // إغلاق المعاينة بعد نجاح الحفظ
         setTimeout(() => {
           setUrl('');
           setPreviewData(null);
           setShowPreview(false);
           setResult(null);
-        }, 2000);
+        }, 3000);
       } else {
         setResult({
           success: false,
@@ -175,14 +180,17 @@ export default function ImportSystem({ type, onImportComplete }: ImportSystemPro
       <div className="glass-panel p-6 rounded-3xl border border-white/5 space-y-4">
         <div className="space-y-2">
           <label className="block text-xs font-black text-white/60 uppercase tracking-widest">
-            رابط {type === 'car' ? 'السيارة المعروضة' : 'القطعة'}
+            رابط {type === 'car' ? 'السيارة أو موقع المعرض' : 'القطعة أو موقع القطع'}
           </label>
+          <p className="text-[11px] text-white/30">
+            💡 رابط سيارة محددة → يستورد سيارة واحدة &nbsp;|&nbsp; رابط موقع معرض → يستورد قائمة السيارات
+          </p>
           <div className="relative group">
             <input
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://example.com/item/12345"
+              placeholder="https://www.encar.com/dc/dc_cardetail.do?carid=123 أو https://encar.com/cars/list"
               disabled={loading}
               className="w-full bg-black/50 border border-white/10 rounded-xl py-3.5 pr-4 pl-12 text-sm text-white focus:outline-none focus:border-luxury-gold/50 focus:bg-white/[0.03] transition-all font-mono"
               dir="ltr"
@@ -233,10 +241,10 @@ export default function ImportSystem({ type, onImportComplete }: ImportSystemPro
             <button
               onClick={handleSave}
               disabled={loading}
-              className="flex items-center gap-2 px-6 py-3.5 rounded-xl bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white font-black text-sm transition-all cursor-pointer"
+              className="flex items-center gap-2 px-6 py-3.5 rounded-xl bg-luxury-gold hover:bg-white disabled:opacity-50 text-black font-black text-sm transition-all cursor-pointer shadow-[0_0_20px_rgba(212,175,55,0.2)]"
             >
               <CheckCircle className="w-4 h-4" />
-              <span>حفظ كمسودة في المعرض</span>
+              <span>نشر في المعرض</span>
             </button>
           )}
         </div>
@@ -295,7 +303,7 @@ export default function ImportSystem({ type, onImportComplete }: ImportSystemPro
             </div>
 
             {type === 'car' ? (
-              <CarPreview data={previewData} />
+              <CarPreview data={previewData} onDataChange={(updated) => setPreviewData(updated)} />
             ) : (
               <PartPreview data={previewData} />
             )}
@@ -307,7 +315,12 @@ export default function ImportSystem({ type, onImportComplete }: ImportSystemPro
 }
 
 // مكون معاينة السيارة المستخرجة
-function CarPreview({ data }: { data: any }) {
+function CarPreview({ data, onDataChange }: { data: any; onDataChange?: (updated: any) => void }) {
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseFloat(e.target.value);
+    onDataChange?.({ ...data, price: isNaN(val) ? data.price : val });
+  };
+
   return (
     <div className="space-y-6 text-right">
       {/* عرض الصور */}
@@ -324,14 +337,27 @@ function CarPreview({ data }: { data: any }) {
         </div>
       )}
 
+      {/* تعديل السعر قبل النشر */}
+      <div className="p-4 rounded-2xl bg-luxury-gold/5 border border-luxury-gold/20">
+        <p className="text-xs font-black text-luxury-gold mb-2">💰 تعديل السعر قبل النشر (ريال سعودي)</p>
+        <input
+          type="number"
+          defaultValue={data.price || ''}
+          onChange={handlePriceChange}
+          placeholder="أدخل السعر بالريال السعودي..."
+          className="w-full bg-black/50 border border-luxury-gold/30 rounded-xl py-3 px-4 text-sm text-white focus:outline-none focus:border-luxury-gold transition-all font-mono text-left"
+          dir="ltr"
+        />
+      </div>
+
       {/* تفاصيل السيارة */}
       <div className="grid grid-cols-2 gap-4">
         <InfoItem label="عنوان السيارة" value={data.title} />
         <InfoItem label="الشركة المصنعة" value={data.make} />
         <InfoItem label="الموديل" value={data.model} />
         <InfoItem label="سنة الصنع" value={data.year} />
-        <InfoItem label="السعر التقديري" value={data.price ? `${data.price.toLocaleString('ar-SA')} ر.س` : 'سيتم تحديده لاحقاً'} />
-        <InfoItem label="ناقل الحركة" value={data.transmission === 'Automatic' ? 'تماتيك' : 'عادي'} />
+        <InfoItem label="السعر المحدد" value={data.price ? `${Number(data.price).toLocaleString('ar-SA')} ر.س` : 'لم يحدد بعد'} />
+        <InfoItem label="ناقل الحركة" value={data.transmission === 'Automatic' ? 'أوتوماتيك' : data.transmission || '—'} />
         <InfoItem label="نوع الوقود" value={data.fuelType} />
         <InfoItem label="رابط المصدر" value={data.sourceUrl} isLink />
       </div>

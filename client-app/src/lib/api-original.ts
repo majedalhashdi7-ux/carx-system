@@ -589,17 +589,7 @@ export const api = {
             method: 'POST'
         }),
     },
-    // ── نظام الاستيراد المتقدم من الروابط ──
-    import: {
-        preview: (url: string, type: 'car' | 'part') => fetchAPI('/api/v2/import/preview', {
-            method: 'POST',
-            body: JSON.stringify({ url, type })
-        }),
-        save: (data: any, type: 'car' | 'part') => fetchAPI('/api/v2/import/save', {
-            method: 'POST',
-            body: JSON.stringify({ data, type })
-        })
-    },
+
     // ── الإشعارات (Notifications) ──
     notifications: {
         list: () => fetchAPI('/api/v2/notifications'),
