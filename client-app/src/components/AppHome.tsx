@@ -75,7 +75,6 @@ export default function AppHome({ isRTL, latestCars, formatPrice }: { isRTL: boo
     const quickActions = [
         { href: '/auctions/live', labelAr: 'المزاد المباشر', labelEn: 'Live Auction', icon: Gavel, color: 'bg-[#00f0ff]/10 text-[#00f0ff] border-[#00f0ff]/20' },
         { href: '/gallery', labelAr: 'المعرض', labelEn: 'Showroom', icon: Car, color: 'bg-accent-gold/10 text-accent-gold border-accent-gold/20' },
-        { href: '/parts', labelAr: 'قطع الغيار', labelEn: 'Parts Store', icon: ShoppingBag, color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
         { href: '/concierge', labelAr: 'طلب خاص', labelEn: 'Concierge', icon: Send, color: 'bg-purple-500/10 text-purple-400 border-purple-500/20' },
         { href: '/orders', labelAr: 'طلباتي', labelEn: 'My Orders', icon: Package, color: 'bg-orange-500/10 text-orange-400 border-orange-500/20' },
         { href: '/favorites', labelAr: 'المفضلة', labelEn: 'Favorites', icon: Heart, color: 'bg-pink-500/10 text-pink-400 border-pink-500/20' },

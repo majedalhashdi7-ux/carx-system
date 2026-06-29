@@ -37,15 +37,15 @@ export default function BentoGrid() {
 
                 {/* ── شبكة بينتو (Bento Grid) ── */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 h-auto md:h-[600px]">
-                    {/* Item 1: Spare Parts (Large - 2x2) */}
+                    {/* Item 1: Cars for Sale (Showroom) - Large 3x2 */}
                     <motion.div
-                        className="md:col-span-2 md:row-span-2 relative group overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-gray-900 to-black border border-white/10"
+                        className="md:col-span-3 md:row-span-2 relative group overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-gray-900 to-black border border-white/10"
                         initial={{ opacity: 0, scale: 0.95 }}
                         whileInView={{ opacity: 1, scale: 1 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.5 }}
                     >
-                        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=2600&auto=format&fit=crop')] bg-cover bg-center opacity-60 group-hover:opacity-80 transition-opacity duration-700 md:group-hover:scale-110 md:transition-transform md:duration-1000" />
+                        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1583121274602-3e2820c69888?q=80&w=2600&auto=format&fit=crop')] bg-cover bg-center opacity-60 group-hover:opacity-80 transition-opacity duration-700 md:group-hover:scale-110 md:transition-transform md:duration-1000" />
                         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
 
                         <div className="absolute top-8 right-8 p-4 bg-white/10 backdrop-blur-md rounded-full border border-white/10 group-hover:bg-[#c9a96e] group-hover:text-black transition-colors duration-300">
@@ -55,60 +55,30 @@ export default function BentoGrid() {
                         <div className="absolute bottom-0 left-0 p-10 w-full">
                             <div className="flex items-center gap-4 mb-4">
                                 <div className="w-12 h-12 rounded-xl bg-[#c9a96e] flex items-center justify-center">
-                                    <Wrench className="w-6 h-6 text-black" />
+                                    <Car className="w-6 h-6 text-black" />
                                 </div>
                                 <span className="text-[#c9a96e] text-xs font-bold uppercase tracking-widest">
-                                    {isRTL ? "الأكثر طلباً" : "Most Popular"}
+                                    {isRTL ? "معرض السيارات الكورية" : "Korean Car Showroom"}
                                 </span>
                             </div>
                             <h3 className="text-4xl font-black text-white mb-4 group-hover:translate-x-2 transition-transform duration-300">
-                                {isRTL ? "قطع الغيار الأصلية" : "Genuine Spare Parts"}
+                                {isRTL ? "أحدث الموديلات المستوردة مباشرة" : "Latest Directly Imported Vehicles"}
                             </h3>
                             <p className="text-white/60 mb-6 max-w-md line-clamp-2 md:line-clamp-none group-hover:text-white/80 transition-colors">
                                 {isRTL
-                                    ? "اكتشف آلاف قطع الغيار الأصلية لمحركاتك. جودة مضمونة وشحن مباشر."
-                                    : "Discover thousands of genuine parts for your engines. Guaranteed quality and direct shipping."}
+                                    ? "تصفح واشترِ أحدث السيارات المستوردة من كوريا الجنوبية مباشرة وبأفضل الأسعار."
+                                    : "Browse and buy the latest cars imported directly from South Korea at the best rates."}
                             </p>
-                            <Link href="/parts">
+                            <Link href="/showroom">
                                 <button className="px-8 py-3 bg-white/10 hover:bg-[#c9a96e] hover:text-black text-white font-bold rounded-xl backdrop-blur-md border border-white/20 hover:border-[#c9a96e] transition-all duration-300 flex items-center gap-2 group-hover:translate-x-2">
-                                    {isRTL ? "تصفح القطع" : "Browse Parts"}
+                                    {isRTL ? "عرض المعرض الكوري" : "View Korean Showroom"}
                                     <ArrowRight className="w-4 h-4 group-hover:ml-2 transition-all" />
                                 </button>
                             </Link>
                         </div>
-
-                        {/* 3D Effect Placeholder */}
-                        <div className="hidden md:block absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-[#c9a96e]/20 blur-[100px] pointer-events-none group-hover:scale-150 transition-transform duration-1000" />
                     </motion.div>
 
-                    {/* Item 2: Cars (Tall - 1x2) */}
-                    <motion.div
-                        className="md:col-span-1 md:row-span-2 relative group overflow-hidden rounded-[2.5rem] bg-black border border-white/10"
-                        initial={{ opacity: 0, y: 30 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: 0.2, duration: 0.5 }}
-                    >
-                        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1583121274602-3e2820c69888?q=80&w=2600&auto=format&fit=crop')] bg-cover bg-center opacity-50 group-hover:opacity-70 transition-opacity duration-700 group-hover:scale-105 transition-transform" />
-                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black" />
-
-                        <div className="absolute bottom-0 left-0 p-8 w-full">
-                            <div className="w-10 h-10 rounded-lg bg-white/10 backdrop-blur-md flex items-center justify-center mb-4 text-[#c9a96e]">
-                                <Car className="w-5 h-5" />
-                            </div>
-                            <h3 className="text-2xl font-bold text-white mb-2 group-hover:-translate-y-1 transition-transform">
-                                {isRTL ? "سيارات للبيع" : "Cars for Sale"}
-                            </h3>
-                            <p className="text-white/50 text-sm mb-4 line-clamp-3">
-                                {isRTL ? "سيارات فاخرة بأسعار تنافسية." : "Luxury cars at competitive prices."}
-                            </p>
-                            <Link href="/showroom" className="text-[#c9a96e] text-xs font-bold uppercase tracking-widest hover:text-white transition-colors flex items-center gap-2">
-                                {isRTL ? "عرض السيارات" : "View Cars"} <ArrowRight className="w-3 h-3" />
-                            </Link>
-                        </div>
-                    </motion.div>
-
-                    {/* Item 3: Offers (Wide - 1x1) */}
+                    {/* Item 2: Special VIP request (Concierge) - 1x1 */}
                     <motion.div
                         className="md:col-span-1 relative group overflow-hidden rounded-[2.5rem] bg-[#c9a96e] border border-[#c9a96e]"
                         initial={{ opacity: 0, x: 30 }}
@@ -122,22 +92,22 @@ export default function BentoGrid() {
                             <div className="flex justify-between items-start">
                                 <Tag className="w-8 h-8 text-black" />
                                 <span className="px-3 py-1 bg-black text-[#c9a96e] text-[10px] font-bold uppercase rounded-full">
-                                    {isRTL ? "محدود" : "Limited"}
+                                    {isRTL ? "طلب خاص" : "VIP"}
                                 </span>
                             </div>
 
                             <div>
-                                <h3 className="text-3xl font-black text-black mb-1">
-                                    -20%
+                                <h3 className="text-xl font-black text-black mb-1">
+                                    {isRTL ? "طلب سيارة خاصة" : "Custom Request"}
                                 </h3>
-                                <p className="text-black/70 font-bold uppercase text-xs tracking-wider">
-                                    {isRTL ? "على أول طلب" : "On First Order"}
-                                </p>
+                                <Link href="/concierge" className="text-black/70 font-bold uppercase text-[10px] tracking-wider hover:text-black flex items-center gap-1.5 transition-colors">
+                                    {isRTL ? "اطلب الآن" : "Request Now"} <ArrowRight className="w-3.5 h-3.5" />
+                                </Link>
                             </div>
                         </div>
                     </motion.div>
 
-                    {/* العنصر 4: المزادات الحية (Live Auctions) */}
+                    {/* Item 3: Live Auctions (1x1) */}
                     <motion.div
                         className="md:col-span-1 relative group overflow-hidden rounded-[2.5rem] bg-black/40 backdrop-blur-xl border border-white/5"
                         initial={{ opacity: 0, x: 30 }}
@@ -145,7 +115,8 @@ export default function BentoGrid() {
                         viewport={{ once: true }}
                         transition={{ delay: 0.5, duration: 0.5 }}
                     >
-                        <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.03)_0,rgba(255,255,255,0.03)_1px,transparent_1px,transparent_10px)]" />
+                        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1563986768609-322da13575f3?q=80&w=2600&auto=format&fit=crop')] bg-cover bg-center opacity-20 group-hover:opacity-35 transition-opacity" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
 
                         <div className="relative p-8 h-full flex flex-col justify-end">
                             <div className="absolute top-8 right-8">

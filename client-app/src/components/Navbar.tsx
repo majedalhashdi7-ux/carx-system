@@ -70,11 +70,9 @@ export default function Navbar() {
         return () => clearTimeout(timer);
     }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // روابط التنقل الرئيسية
     const navLinks = [
         { href: '/gallery', label: isRTL ? 'المعرض' : 'SHOWROOM', icon: Car },
         { href: '/auctions', label: isRTL ? 'المزادات' : 'AUCTIONS', icon: Gavel },
-        { href: '/parts', label: isRTL ? 'القطع' : 'PARTS', icon: ShoppingBag },
         { href: '/concierge', label: isRTL ? 'طلبات خاصة' : 'REQUESTS', icon: Settings },
         { href: '/support', label: isRTL ? 'الدعم' : 'SUPPORT', icon: Headphones },
         { href: '/contact', label: isRTL ? 'تواصل' : 'CONTACT', icon: MessageCircle },

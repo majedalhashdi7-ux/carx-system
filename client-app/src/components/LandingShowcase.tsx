@@ -26,7 +26,6 @@ export default function LandingShowcase({ isRTL }: LandingShowcaseProps) {
     const router = useRouter();
     const { homeContent } = useSettings();
 
-    // إعداد البطاقات الثلاث الرئيسية (السيارات، قطع الغيار، المزادات)
     const cards = [
         {
             title: isRTL ? "سيارات للبيع" : "Cars for Sale",
@@ -37,16 +36,6 @@ export default function LandingShowcase({ isRTL }: LandingShowcaseProps) {
             border: "group-hover:border-blue-500/50",
             glow: "group-hover:shadow-[0_0_30px_rgba(59,130,246,0.3)]",
             iconColor: "text-blue-400"
-        },
-        {
-            title: isRTL ? "قطع الغيار" : "Spare Parts",
-            description: isRTL ? "قطع غيار أصلية ومضمونة" : "Genuine and guaranteed parts",
-            icon: Wrench,
-            key: "parts",
-            color: "from-purple-500/20 to-purple-600/5",
-            border: "group-hover:border-purple-500/50",
-            glow: "group-hover:shadow-[0_0_30px_rgba(168,85,247,0.3)]",
-            iconColor: "text-purple-400"
         },
         {
             title: isRTL ? "دخول المزادات" : "Enter Auctions",

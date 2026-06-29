@@ -92,14 +92,7 @@ export default function ClientDashboard() {
             color: '#ef4444',
             bg: 'rgba(239, 68, 68, 0.08)',
         },
-        {
-            icon: Package,
-            label: isRTL ? 'قطع الغيار' : 'Spare Parts',
-            desc: isRTL ? 'تسوق القطع الأصلية' : 'Shop genuine parts',
-            href: '/parts',
-            color: '#10b981',
-            bg: 'rgba(16, 185, 129, 0.08)',
-        },
+
         {
             icon: FileText,
             label: isRTL ? 'طلب VIP' : 'VIP Request',

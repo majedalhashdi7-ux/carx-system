@@ -24,14 +24,7 @@ const TABS = [
         matchPaths: ['/gallery', '/showroom', '/cars'],
         badgeKey: null,
     },
-    {
-        href: '/parts',
-        icon: Wrench,
-        labelAr: 'قطع الغيار',
-        labelEn: 'Parts',
-        matchPaths: ['/parts'],
-        badgeKey: null,
-    },
+
     {
         href: '/',
         icon: Home,

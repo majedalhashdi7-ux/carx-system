@@ -81,14 +81,6 @@ export default function ModernCarXHome() {
             href: '/auctions',
             color: 'from-gray-700 to-gray-900',
             hoverColor: 'hover:from-gray-600 hover:to-gray-800',
-        },
-        {
-            title: isRTL ? 'قطع الغيار' : 'Spare Parts',
-            desc: isRTL ? 'قطع غيار أصلية محلية وقطع مستوردة' : 'Genuine local & imported spare parts',
-            icon: Wrench,
-            href: '/parts',
-            color: 'from-gray-700 to-gray-900',
-            hoverColor: 'hover:from-gray-600 hover:to-gray-800',
         }
     ];
 

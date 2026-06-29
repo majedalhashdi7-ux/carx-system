@@ -42,7 +42,6 @@ const NAV_ITEMS = [
 const QUICK_LINKS = [
     { href: '/gallery', icon: Car, labelAr: 'المعرض', labelEn: 'Showroom' },
     { href: '/auctions', icon: Gavel, labelAr: 'المزادات', labelEn: 'Auctions' },
-    { href: '/parts', icon: Wrench, labelAr: 'قطع الغيار', labelEn: 'Parts' },
     { href: '/notifications', icon: Bell, labelAr: 'الإشعارات', labelEn: 'Notifications' },
     { href: '/client/profile', icon: User, labelAr: 'الملف الشخصي', labelEn: 'Profile' },
 ];

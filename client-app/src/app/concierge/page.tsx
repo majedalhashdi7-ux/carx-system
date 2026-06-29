@@ -382,17 +382,16 @@ export default function ConciergePage() {
                         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
                             <div className="p-7 bg-white/2 border border-white/8 rounded-3xl space-y-5">
                                 <h3 className="text-xl font-black tracking-tight">
-                                    {isRTL ? rawText('اطلب ما تريد') : rawText('Request Anything')}
+                                    {isRTL ? rawText('طلب استيراد سيارة خاصة') : rawText('Custom Car Sourcing')}
                                 </h3>
                                 <p className="text-sm text-white/40 leading-relaxed">
                                     {isRTL
-                                        ? rawText('سواء كنت تبحث عن سيارة بمواصفات محددة أو قطعة غيار نادرة، فريقنا جاهز لمساعدتك.')
-                                        : rawText('Whether you need a specific car or a rare part, our team is ready to help.')}
+                                        ? rawText('فريقنا جاهز ومستعد لمساعدتك في توريد سيارة أحلامك من كوريا الجنوبية بأدق التفاصيل والخيارات المطلوبة.')
+                                        : rawText('Our team is ready to help you source your dream car from South Korea with the exact specifications you desire.')}
                                 </p>
                                 <div className="space-y-3 pt-2">
                                     {[
                                         { icon: Car, title: isRTL ? rawText('توريد السيارات') : rawText('Vehicle Sourcing'), desc: isRTL ? rawText('بالمواصفات الدقيقة') : rawText('Exact specifications') },
-                                        { icon: Settings, title: isRTL ? rawText('قطع الغيار') : rawText('Parts & Accessories'), desc: isRTL ? rawText('أصلية ومعدّلة') : rawText('OEM & Aftermarket') },
                                         { icon: Shield, title: isRTL ? rawText('فحص معتمد') : rawText('Certified Inspection'), desc: isRTL ? rawText('فحص شامل بكل التفاصيل') : rawText('Full detailed checks') },
                                     ].map((item) => (
                                         <div key={item.title} className="flex items-center gap-4 p-4 bg-white/2 rounded-xl border border-white/5 hover:border-amber-500/20 transition-all">
@@ -414,29 +413,6 @@ export default function ConciergePage() {
                     <div className="lg:col-span-8">
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
                             <div className="bg-white/2 border border-white/8 rounded-3xl p-8 md:p-10">
-
-                                {/* ── TABS ── */}
-                                <div className="flex mb-8 p-1.5 bg-black/40 rounded-2xl border border-white/8 gap-2">
-                                    {[
-                                        { id: TAB_CAR, icon: Car, label: isRTL ? rawText('طلب سيارة') : rawText('CAR REQUEST') },
-                                        { id: TAB_PARTS, icon: Settings, label: isRTL ? rawText('طلب قطع غيار') : rawText('PARTS REQUEST') },
-                                    ].map((tab) => (
-                                        <button
-                                            key={tab.id}
-                                            type="button"
-                                            onClick={() => setActiveTab(tab.id as 'car' | 'parts')}
-                                            className={cn(
-                                                'flex-1 flex items-center justify-center gap-2.5 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300',
-                                                activeTab === tab.id
-                                                    ? 'bg-amber-500 text-black shadow-[0_0_20px_rgba(245,158,11,0.3)]'
-                                                    : 'text-white/30 hover:text-white/60 hover:bg-white/5'
-                                            )}
-                                        >
-                                            <tab.icon className="w-3.5 h-3.5" />
-                                            {tab.label}
-                                        </button>
-                                    ))}
-                                </div>
 
                                 {/* ── نموذج طلب سيارة ── */}
                                 <AnimatePresence mode="wait">
