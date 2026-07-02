@@ -106,7 +106,6 @@ function CarsContent() {
                 limit: 12,
                 search: q,
                 make: brand,
-                source: 'hm_local',
             };
 
             if (minPrice !== undefined) listParams.minPrice = minPrice;
@@ -133,7 +132,7 @@ function CarsContent() {
     useEffect(() => {
         const fetchBrands = async () => {
             try {
-                const res = await api.brands.list('cars', { targetShowroom: 'hm_local' });
+                const res = await api.brands.list('cars');
                 if (res.success) setBrands(res.brands || []);
             } catch (err) {
                 console.error("Failed to fetch brands", err);
