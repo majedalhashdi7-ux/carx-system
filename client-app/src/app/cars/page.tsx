@@ -141,27 +141,48 @@ function CarsContent() {
                 <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-size-[6rem_6rem] mask-[radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
             </div>
 
-            <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-32 pb-24">
+            <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-24">
 
-                {/* Top Banner Block - سيارات كورية مستوردة */}
-                <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-r from-luxury-gold/15 via-luxury-gold/5 to-transparent border border-luxury-gold/20 p-8 md:p-12 mb-12 flex flex-col md:flex-row items-center justify-between gap-8">
-                    <div className="space-y-4 max-w-2xl text-center md:text-right">
-                        <h2 className="text-2xl md:text-3xl font-black text-luxury-gold tracking-wide">
-                            {isRTL ? "سيارات كورية مستوردة" : "Imported Korean Cars"}
-                        </h2>
-                        <p className="text-xs text-white/60 leading-relaxed">
-                            {isRTL 
-                                ? "الأسعار المعروضة هي السعر الفعلي للسيارة. وتبقى رسوم إضافية (شحن وجمارك). استخدم حاسبة الاستيراد لمعرفة التكلفة الكاملة." 
-                                : "Prices shown are the actual car prices. Additional fees (shipping & customs) apply. Use the import calculator for full cost."}
-                        </p>
-                        <div className="inline-flex items-center gap-2 bg-luxury-gold/10 border border-luxury-gold/25 px-4 py-1.5 rounded-full">
-                            <span className="text-[10px] font-black text-luxury-gold tracking-wider">
-                                {isRTL ? "5,500 أضيفت اليوم" : "5,500 Added Today"}
-                            </span>
+                {/* ═══ البانر الإعلاني الرئيسي ═══ */}
+                <div className="relative overflow-hidden rounded-2xl mb-6" style={{background: 'linear-gradient(135deg, #8B6914 0%, #D4AF37 40%, #a88520 70%, #6B4F0A 100%)'}}>
+                    {/* نقش خلفي */}
+                    <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 11px)'}} />
+                    
+                    <div className={`relative flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6 p-5 sm:p-7 ${isRTL ? 'sm:flex-row-reverse' : ''}`}>
+                        {/* النص */}
+                        <div className={`space-y-2 ${isRTL ? 'text-right' : 'text-left'} flex-1`}>
+                            <div className="flex items-center gap-2">
+                                <span className="inline-block px-2.5 py-0.5 rounded-full bg-black/20 text-[10px] font-black text-white/90 tracking-widest uppercase">
+                                    HM CAR
+                                </span>
+                                <span className="inline-block px-2.5 py-0.5 rounded-full bg-white/20 text-[10px] font-bold text-white/80">
+                                    {isRTL ? 'استيراد مباشر من كوريا' : 'Direct Import from Korea'}
+                                </span>
+                            </div>
+                            <h2 className="text-xl sm:text-2xl font-black text-white drop-shadow-md">
+                                {isRTL ? 'سيارات كورية مستوردة' : 'Imported Korean Cars'}
+                            </h2>
+                            <p className="text-xs text-white/75 leading-relaxed max-w-md">
+                                {isRTL
+                                    ? 'الأسعار المعروضة هي السعر الفعلي للسيارة. وتبقى رسوم إضافية (شحن وجمارك). استخدم حاسبة الاستيراد لمعرفة التكلفة الكاملة.'
+                                    : 'Prices shown are the actual vehicle price. Additional fees (shipping & customs) apply. Use the import calculator for total cost.'}
+                            </p>
+                            <div className="flex items-center gap-3 pt-1">
+                                <div className="flex items-center gap-1.5 bg-black/20 rounded-full px-3 py-1">
+                                    <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                                    <span className="text-[11px] font-black text-white">
+                                        {isRTL ? rawText('٥٬٥٠٠ سيارة') : rawText('5,500 Cars')}
+                                    </span>
+                                </div>
+                                <span className="text-[10px] text-white/60">{isRTL ? 'متوفرة اليوم' : 'Available Today'}</span>
+                            </div>
                         </div>
-                    </div>
-                    <div className="flex items-center gap-4 shrink-0 overflow-hidden rounded-2xl border border-white/5 bg-white/5 p-2">
-                        <Image src="/images/hmcar.jpg" alt="Korean Cars" width={180} height={100} className="object-cover rounded-xl" />
+                        {/* الصور */}
+                        <div className="flex items-center gap-2 shrink-0">
+                            <div className="overflow-hidden rounded-xl border-2 border-white/20 shadow-xl shadow-black/40">
+                                <Image src="/images/hmcar.jpg" alt="HM CAR Korean Cars" width={160} height={90} className="object-cover" />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -300,14 +321,24 @@ function CarsContent() {
 
                     {/* Cars Listing Area */}
                     <div className="flex-1 w-full">
-                        {/* Mobile Filter Button */}
-                        <div className="lg:hidden mb-6">
+                        {/* شريط الإحصاءات + الترتيب - Mobile */}
+                        <div className="flex items-center justify-between mb-4 lg:hidden">
+                            <div className="flex items-center gap-2">
+                                <button className="px-3 py-1.5 rounded-lg bg-luxury-gold text-black text-xs font-black">
+                                    {isRTL ? rawText('سيارات') : rawText('Cars')}
+                                    <span className="mr-1 ml-1 opacity-70">{rawText('165,700')}</span>
+                                </button>
+                                <button className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-bold text-white/60">
+                                    {isRTL ? rawText('مزادات') : rawText('Auctions')}
+                                    <span className="mr-1 ml-1 opacity-70">{rawText('1,405')}</span>
+                                </button>
+                            </div>
                             <button
                                 onClick={() => setShowFilters(!showFilters)}
-                                className="w-full py-3 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-luxury-gold"
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-luxury-gold"
                             >
-                                <SlidersHorizontal className="w-4 h-4" />
-                                {isRTL ? "تصفية النتائج" : "Filter Results"}
+                                <SlidersHorizontal className="w-3.5 h-3.5" />
+                                {isRTL ? 'ابحث سيارة مخصصة' : 'Filter Cars'}
                             </button>
                         </div>
 

@@ -589,28 +589,29 @@ function HMCarLogin() {
                                 )}
                             </div>
 
-                            {/* Submit Button - Start Engine Style */}
+                            {/* زر الإرسال */}
                             <button
                                 type="submit"
                                 disabled={loading}
                                 className={cn(
-                                    "w-full btn-start-engine py-5 rounded-xl group mt-4 flex items-center justify-center gap-3",
+                                    "w-full py-4 rounded-xl font-black text-sm tracking-widest mt-4 flex items-center justify-center gap-3 transition-all duration-300",
+                                    role === 'admin'
+                                        ? "bg-accent-red hover:bg-red-700 text-white shadow-lg shadow-red-500/20"
+                                        : "bg-[#D4AF37] hover:bg-[#c9a030] text-black shadow-lg shadow-[#D4AF37]/20",
                                     loading && "opacity-50 pointer-events-none"
                                 )}
                             >
                                 {loading ? (
                                     <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                                 ) : (
-                                    <>
-                                        <Power className="w-5 h-5 group-hover:animate-pulse" />
-                                        <span className="text-sm font-bold tracking-widest">
-                                            {role === 'buyer' && isRegister
-                                                ? (isRTL ? "بدء المحرك (تسجيل)" : "START ENGINE (REGISTER)")
-                                                : (isRTL ? "بدء المحرك (دخول)" : "START ENGINE (LOGIN)")
-                                            }
-                                        </span>
-                                        <ArrowRight className={cn("w-4 h-4 transition-transform opacity-50 group-hover:opacity-100", isRTL ? "rotate-180 group-hover:-translate-x-1" : "group-hover:translate-x-1")} />
-                                    </>
+                                    <span className="text-sm font-black tracking-wider">
+                                        {role === 'buyer' && isRegister
+                                            ? (isRTL ? 'إنشاء الحساب' : 'Create Account')
+                                            : role === 'admin'
+                                            ? (isRTL ? 'دخول النظام' : 'System Access')
+                                            : (isRTL ? 'تسجيل الدخول' : 'Sign In')
+                                        }
+                                    </span>
                                 )}
                             </button>
                         </form>
