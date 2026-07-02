@@ -1,11 +1,11 @@
 'use client';
 
-import { Suspense, useEffect, useState, useCallback } from 'react';
+import { Suspense, useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, ArrowRight, X, SlidersHorizontal, ArrowLeft, Car,
-    Bell, BellPlus, CheckCircle, Fuel, Palette, CalendarRange
+    Bell, BellPlus, CheckCircle, Fuel, Palette, CalendarRange, Sparkles, HelpCircle
 } from "lucide-react";
 import Navbar from '@/components/Navbar';
 import CarCard from '@/components/CarCard';
@@ -38,7 +38,6 @@ interface BrandModel {
     logoUrl?: string;
 }
 
-/* ═══ Skeleton card للتحميل ═══ */
 function CarSkeletonCard() {
     return (
         <div className="rounded-2xl bg-white/3 border border-white/8 overflow-hidden animate-pulse">
@@ -84,7 +83,7 @@ function CarsContent() {
     const [page, setPage] = useState(1);
     const [alertSaved, setAlertSaved] = useState(false);
 
-    // ── Filters state ──
+    // Filters state
     const [q, setQ] = useState(searchParams.get('q') || '');
     const [brand, setBrand] = useState(searchParams.get('brand') || '');
     const [priceRange, setPriceRange] = useState(searchParams.get('price') || '');
@@ -92,7 +91,6 @@ function CarsContent() {
     const [yearMax, setYearMax] = useState('');
     const [fuelType, setFuelType] = useState('');
     const [colorFilter, setColorFilter] = useState('');
-    const [showFilters, setShowFilters] = useState(false);
 
     const fetchCars = useCallback(async (isInitial = false) => {
         setLoading(true);
@@ -194,349 +192,331 @@ function CarsContent() {
         { id: 'red', label: isRTL ? 'أحمر' : 'Red', hex: '#dc2626' },
         { id: 'blue', label: isRTL ? 'أزرق' : 'Blue', hex: '#2563eb' },
         { id: 'green', label: isRTL ? 'أخضر' : 'Green', hex: '#16a34a' },
-        { id: 'brown', label: isRTL ? 'بني' : 'Brown', hex: '#92400e' },
     ];
 
     const currentYear = new Date().getFullYear();
     const years = Array.from({ length: 15 }, (_, i) => currentYear - i);
 
-    /* ── مكون الفلتر المشترك للسايدبار والجوال ── */
-    const FilterPanel = ({ mobile = false }: { mobile?: boolean }) => (
-        <div className={cn("space-y-5", mobile ? "p-5" : "")}>
-            {/* بحث نصي */}
-            <div className="space-y-2">
-                <label className="text-[9px] font-black text-white/40 uppercase tracking-widest flex items-center gap-1.5">
-                    <Search className="w-3 h-3" />
-                    {isRTL ? "ابحث بالاسم" : "Search Name"}
-                </label>
-                <div className="relative">
-                    <Search className={cn("absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30", isRTL ? "right-3" : "left-3")} />
-                    <input
-                        type="text" value={q} onChange={handleSearchChange}
-                        placeholder={isRTL ? "اسم السيارة..." : "Car name..."}
-                        className={cn("w-full bg-black/40 border border-white/10 rounded-xl py-2.5 text-xs font-bold outline-none focus:border-luxury-gold/50 transition-all text-white placeholder:text-white/25", isRTL ? "pr-9 pl-3" : "pl-9 pr-3")}
-                    />
-                </div>
-            </div>
-
-            {/* الشركة المصنعة */}
-            <div className="space-y-2">
-                <label className="text-[9px] font-black text-white/40 uppercase tracking-widest">{isRTL ? "الشركة المصنعة" : "Manufacturer"}</label>
-                <select value={brand} onChange={e => { setBrand(e.target.value); setPage(1); }}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl py-2.5 px-3 text-xs font-bold outline-none focus:border-luxury-gold/50 text-white">
-                    <option value="">{isRTL ? "كل الشركات" : "All Manufacturers"}</option>
-                    {brands.map(b => <option key={b.name} value={b.name}>{b.name}</option>)}
-                </select>
-            </div>
-
-            {/* السنة من/إلى */}
-            <div className="space-y-2">
-                <label className="text-[9px] font-black text-white/40 uppercase tracking-widest flex items-center gap-1.5">
-                    <CalendarRange className="w-3 h-3" />
-                    {isRTL ? "السنة" : "Year Range"}
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                    <select value={yearMin} onChange={e => { setYearMin(e.target.value); setPage(1); }}
-                        className="w-full bg-black/40 border border-white/10 rounded-xl py-2.5 px-3 text-xs font-bold outline-none focus:border-luxury-gold/50 text-white">
-                        <option value="">{isRTL ? "من" : "From"}</option>
-                        {years.map(y => <option key={y} value={y}>{y}</option>)}
-                    </select>
-                    <select value={yearMax} onChange={e => { setYearMax(e.target.value); setPage(1); }}
-                        className="w-full bg-black/40 border border-white/10 rounded-xl py-2.5 px-3 text-xs font-bold outline-none focus:border-luxury-gold/50 text-white">
-                        <option value="">{isRTL ? "إلى" : "To"}</option>
-                        {years.map(y => <option key={y} value={y}>{y}</option>)}
-                    </select>
-                </div>
-            </div>
-
-            {/* نوع الوقود */}
-            <div className="space-y-2">
-                <label className="text-[9px] font-black text-white/40 uppercase tracking-widest flex items-center gap-1.5">
-                    <Fuel className="w-3 h-3" />
-                    {isRTL ? "نوع الوقود" : "Fuel Type"}
-                </label>
-                <div className="grid grid-cols-2 gap-1.5">
-                    {fuelTypes.map(f => (
-                        <button key={f.id} onClick={() => { setFuelType(fuelType === f.id ? '' : f.id); setPage(1); }}
-                            className={cn("py-2 rounded-lg text-[10px] font-bold border transition-all",
-                                fuelType === f.id
-                                    ? "bg-luxury-gold/15 border-luxury-gold/50 text-luxury-gold"
-                                    : "bg-black/30 border-white/8 text-white/50 hover:border-white/20 hover:text-white/80"
-                            )}>
-                            {f.label}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* اللون */}
-            <div className="space-y-2">
-                <label className="text-[9px] font-black text-white/40 uppercase tracking-widest flex items-center gap-1.5">
-                    <Palette className="w-3 h-3" />
-                    {isRTL ? "اللون" : "Color"}
-                </label>
-                <div className="flex flex-wrap gap-2">
-                    {colors.map(c => (
-                        <button key={c.id} onClick={() => { setColorFilter(colorFilter === c.id ? '' : c.id); setPage(1); }}
-                            title={c.label}
-                            className={cn("w-7 h-7 rounded-full border-2 transition-all relative",
-                                colorFilter === c.id ? "border-luxury-gold scale-110 shadow-lg shadow-luxury-gold/30" : "border-white/20 hover:border-white/60"
-                            )}
-                            style={{ backgroundColor: c.hex }}>
-                            {colorFilter === c.id && (
-                                <span className="absolute inset-0 flex items-center justify-center">
-                                    <CheckCircle className="w-3 h-3 text-luxury-gold drop-shadow" />
-                                </span>
-                            )}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* النطاق السعري */}
-            <div className="space-y-2">
-                <label className="text-[9px] font-black text-white/40 uppercase tracking-widest">{isRTL ? "النطاق السعري" : "Price Range"}</label>
-                <div className="space-y-1.5">
-                    {priceRanges.map(r => (
-                        <button key={r.id} onClick={() => { setPriceRange(priceRange === r.id ? '' : r.id); setPage(1); }}
-                            className={cn("w-full py-2 rounded-lg text-[10px] font-bold border text-right px-3 transition-all",
-                                priceRange === r.id
-                                    ? "bg-luxury-gold/15 border-luxury-gold/50 text-luxury-gold"
-                                    : "bg-black/30 border-white/8 text-white/50 hover:border-white/20 hover:text-white/80"
-                            )}>
-                            {r.label}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* أزرار الأكشن */}
-            <div className="space-y-2 pt-1">
-                <button onClick={() => { fetchCars(); if (mobile) setShowFilters(false); }}
-                    className="w-full py-3 bg-luxury-gold hover:bg-luxury-gold/90 text-black font-black uppercase tracking-wider text-xs rounded-xl transition-all shadow-[0_8px_20px_rgba(212,175,55,0.2)]">
-                    {isRTL ? "عرض النتائج" : "Show Results"}
-                </button>
-
-                {/* زر حفظ التنبيه الذكي */}
-                <button onClick={saveAsAlert}
-                    className={cn("w-full py-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2",
-                        alertSaved
-                            ? "bg-green-500/15 border-green-500/50 text-green-400"
-                            : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white"
-                    )}>
-                    {alertSaved ? <CheckCircle className="w-3.5 h-3.5" /> : <BellPlus className="w-3.5 h-3.5" />}
-                    {alertSaved
-                        ? (isRTL ? "تم حفظ التنبيه ✓" : "Alert Saved ✓")
-                        : (isRTL ? "حفظ كتنبيه ذكي" : "Save as Smart Alert")
-                    }
-                </button>
-
-                {hasActiveFilters && (
-                    <button onClick={clearFilters}
-                        className="w-full py-2 text-xs font-bold text-red-400 hover:text-red-300 transition-colors flex items-center justify-center gap-1">
-                        <X className="w-3 h-3" />
-                        {isRTL ? "مسح كل الفلاتر" : "Clear All Filters"}
-                    </button>
-                )}
-            </div>
-        </div>
-    );
-
     return (
-        <div className={cn("min-h-screen bg-cinematic-darker text-white selection:bg-luxury-gold selection:text-black", isRTL && "font-arabic")} dir={isRTL ? 'rtl' : 'ltr'}>
+        <div className={cn("min-h-screen bg-[#06060c] text-white selection:bg-luxury-gold selection:text-black", isRTL && "font-arabic")} dir={isRTL ? 'rtl' : 'ltr'}>
             <Navbar />
 
-            {/* خلفية سينمائية */}
+            {/* خلفية بصرية */}
             <div className="fixed inset-0 pointer-events-none z-0">
-                <div className="absolute top-0 right-0 w-full h-[50vh] bg-gradient-to-b from-luxury-gold/5 via-transparent to-transparent opacity-40" />
+                <div className="absolute top-0 right-0 w-full h-[60vh] bg-gradient-to-b from-luxury-gold/5 via-transparent to-transparent opacity-40" />
                 <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:6rem_6rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
             </div>
 
-            <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-28">
+            <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-24 sm:pt-28 pb-28">
 
-                {/* ═══ البانر الإعلاني ═══ */}
-                <div className="relative overflow-hidden rounded-2xl mb-6" style={{ background: 'linear-gradient(135deg, #8B6914 0%, #D4AF37 40%, #a88520 70%, #6B4F0A 100%)' }}>
-                    <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 11px)' }} />
-                    <div className={`relative flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6 p-5 sm:p-7 ${isRTL ? 'sm:flex-row-reverse' : ''}`}>
-                        <div className={`space-y-2 ${isRTL ? 'text-right' : 'text-left'} flex-1`}>
-                            <div className="flex items-center gap-2">
-                                <span className="inline-block px-2.5 py-0.5 rounded-full bg-black/20 text-[10px] font-black text-white/90 tracking-widest uppercase">HM CAR</span>
-                                <span className="inline-block px-2.5 py-0.5 rounded-full bg-white/20 text-[10px] font-bold text-white/80">{isRTL ? 'استيراد مباشر من كوريا' : 'Direct Import from Korea'}</span>
+                {/* ═══ البانر الإعلاني المحدث مع الشعار واسم المتجر ═══ */}
+                <div className="relative overflow-hidden rounded-3xl mb-8 border border-white/10" style={{ background: 'linear-gradient(135deg, #0d0d1a 0%, #171736 100%)' }}>
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.15),transparent_60%)]" />
+                    
+                    <div className={`relative flex flex-col md:flex-row items-center justify-between gap-6 p-6 sm:p-10 ${isRTL ? 'md:flex-row-reverse' : ''}`}>
+                        
+                        {/* الشعار واسم المتجر في البانر */}
+                        <div className={`space-y-4 ${isRTL ? 'text-right' : 'text-left'} flex-1`}>
+                            <div className="flex items-center gap-3">
+                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#D4AF37] to-[#a88520] flex items-center justify-center shadow-lg shadow-[#D4AF37]/30 border border-white/10">
+                                    <Car className="w-8 h-8 text-black" strokeWidth={2.5} />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl sm:text-3xl font-black text-white italic tracking-wide uppercase">
+                                        HM <span className="text-[#D4AF37]">CAR</span>
+                                    </h2>
+                                    <p className="text-[10px] text-white/45 tracking-widest uppercase font-black">
+                                        {isRTL ? 'بوابتك لاستيراد السيارات من كورية' : 'Korea Auto Export Leader'}
+                                    </p>
+                                </div>
                             </div>
-                            <h2 className="text-xl sm:text-2xl font-black text-white drop-shadow-md">{isRTL ? 'سيارات كورية مستوردة' : 'Imported Korean Cars'}</h2>
-                            <p className="text-xs text-white/75 leading-relaxed max-w-md">
+                            
+                            <h3 className="text-xl sm:text-2xl font-black text-white italic">
+                                {isRTL ? 'من المنصة الكورية إلى باب منزلك مباشرة' : 'Direct Import From Korean Auctions'}
+                            </h3>
+                            
+                            <p className="text-xs text-white/50 leading-relaxed max-w-lg">
                                 {isRTL
-                                    ? 'الأسعار المعروضة هي السعر الفعلي للسيارة. وتبقى رسوم إضافية (شحن وجمارك).'
-                                    : 'Prices shown are the actual vehicle price. Additional fees (shipping & customs) apply.'}
+                                    ? 'نقدم لكم سيارات كورية مفحوصة بالكامل بأفضل الأسعار. الأسعار المعروضة هي سعر السيارة الفعلي، مع إمكانية التوصيل والشحن الدولي الآمن.'
+                                    : 'Fully inspected Korean cars directly to your port. We handle logistics, documents, and secure shipping.'}
                             </p>
-                            <div className="flex items-center gap-3 pt-1">
-                                <div className="flex items-center gap-1.5 bg-black/20 rounded-full px-3 py-1">
+                            
+                            <div className="flex items-center gap-4 pt-1">
+                                <div className="flex items-center gap-1.5 bg-white/5 rounded-full px-3.5 py-1.5 border border-white/5">
                                     <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                                     <span className="text-[11px] font-black text-white">
-                                        {totalCars > 0 ? `${totalCars.toLocaleString()}` : rawText('5,500')} {isRTL ? 'سيارة' : 'Cars'}
+                                        {totalCars > 0 ? `${totalCars.toLocaleString()}` : rawText('5,500')} {isRTL ? 'سيارة متاحة' : 'Cars Available'}
                                     </span>
                                 </div>
-                                <span className="text-[10px] text-white/60">{isRTL ? 'متوفرة اليوم' : 'Available Today'}</span>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                            <div className="overflow-hidden rounded-xl border-2 border-white/20 shadow-xl shadow-black/40">
-                                <Image src="/images/hmcar.jpg" alt="HM CAR Korean Cars" width={160} height={90} className="object-cover" />
-                            </div>
+
+                        {/* جانب الشعار ثلاثي الأبعاد أو العلامة الكبيرة */}
+                        <div className="relative shrink-0 flex items-center justify-center p-4">
+                            <div className="w-48 h-48 rounded-full bg-gradient-to-tr from-luxury-gold/10 to-transparent blur-3xl absolute" />
+                            <motion.div
+                                animate={{ y: [0, -10, 0] }}
+                                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                                className="relative w-44 h-24 rounded-2xl bg-black/40 border border-white/10 flex items-center justify-center shadow-2xl p-4"
+                            >
+                                <div className="text-center">
+                                    <div className="text-3xl font-black text-[#D4AF37] tracking-widest italic">{rawText('HM')}</div>
+                                    <div className="text-[9px] text-white/40 tracking-widest uppercase font-bold">{rawText('Premium Cars')}</div>
+                                </div>
+                            </motion.div>
                         </div>
                     </div>
                 </div>
 
-                {/* ═══ شبكة الوكالات (Brands) ═══ */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-                    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
-                        {/* الكل */}
-                        <button onClick={() => { setBrand(''); setPage(1); }}
-                            className={cn("flex-shrink-0 flex flex-col items-center gap-1.5",
-                            )}>
-                            <div className={cn("w-14 h-14 rounded-full border flex items-center justify-center transition-all shadow-lg",
-                                brand === '' ? "bg-luxury-gold/20 border-luxury-gold/50 shadow-[0_0_20px_rgba(197,160,89,0.2)]" : "bg-white/[0.03] border-white/10 hover:border-luxury-gold/40"
-                            )}>
-                                <SlidersHorizontal className={cn("w-5 h-5", brand === '' ? "text-luxury-gold" : "text-white/20")} />
-                            </div>
-                            <span className={cn("text-[9px] font-black uppercase tracking-wider", brand === '' ? "text-luxury-gold" : "text-white/40")}>{isRTL ? 'الكل' : 'ALL'}</span>
-                        </button>
-
-                        {brands.map((b: any) => (
-                            <button key={b._id || b.name} onClick={() => { setBrand(b.name); setPage(1); }}
-                                className="flex-shrink-0 flex flex-col items-center gap-1.5">
-                                <div className={cn("w-14 h-14 rounded-full border flex items-center justify-center transition-all shadow-lg relative overflow-hidden",
-                                    brand === b.name ? "bg-luxury-gold/20 border-luxury-gold/50 shadow-[0_0_20px_rgba(197,160,89,0.2)]" : "bg-white/[0.03] border-white/10 hover:border-luxury-gold/40"
-                                )}>
-                                    {b.logoUrl ? (
-                                        <div className="w-9 h-9 relative">
-                                            <Image src={b.logoUrl} alt={b.name} fill
-                                                className={cn("object-contain", brand === b.name ? "" : "brightness-0 invert opacity-40")} />
+                {/* ═══ السيارات على شكل بطاقات متحركة (Showroom Slideshow) ═══ */}
+                <div className="mb-10">
+                    <div className="flex items-center gap-2 mb-4">
+                        <Sparkles className="w-4 h-4 text-[#D4AF37]" />
+                        <h3 className="text-xs font-black uppercase tracking-widest text-[#D4AF37]">
+                            {isRTL ? 'سيارات المعرض المتحركة' : 'Showroom Live Carousel'}
+                        </h3>
+                    </div>
+                    
+                    {/* شريط السيارات المتحرك تلقائياً */}
+                    <div className="relative overflow-hidden w-full py-2 bg-white/[0.02] border-y border-white/5">
+                        <div className="flex gap-6 animate-marquee whitespace-nowrap scrollbar-none py-2 px-4 hover:[animation-play-state:paused]">
+                            {cars.slice(0, 10).map((car, idx) => (
+                                <div 
+                                    key={String(car.id || idx)}
+                                    onClick={() => router.push(`/cars/${car.id || car._id}`)}
+                                    className="inline-block w-64 rounded-2xl bg-[#0d0d1a] border border-white/5 p-3 shrink-0 cursor-pointer hover:border-luxury-gold/30 transition-all select-none"
+                                >
+                                    <div className="relative h-32 rounded-xl overflow-hidden bg-white/5 mb-2.5">
+                                        {car.images?.[0] ? (
+                                            <Image src={car.images[0]} alt={car.title} fill className="object-cover" unoptimized />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center"><Car className="w-8 h-8 text-white/10" /></div>
+                                        )}
+                                        <div className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-[#D4AF37] text-black text-[9px] font-black uppercase tracking-wider">
+                                            {car.year}
                                         </div>
-                                    ) : (
-                                        <Car className={cn("w-5 h-5", brand === b.name ? "text-luxury-gold" : "text-white/20")} />
-                                    )}
+                                    </div>
+                                    <h4 className="text-xs font-black text-white truncate">{car.title}</h4>
+                                    <div className="flex justify-between items-center mt-1.5">
+                                        <span className="text-[10px] text-white/40">{car.fuel}</span>
+                                        <span className="text-xs font-black text-[#D4AF37]">
+                                            {car.priceSar ? `${Number(car.priceSar).toLocaleString()} SAR` : car.price ? `${Number(car.price).toLocaleString()} $` : '—'}
+                                        </span>
+                                    </div>
                                 </div>
-                                <span className={cn("text-[9px] font-black uppercase tracking-wider max-w-[56px] truncate text-center", brand === b.name ? "text-luxury-gold" : "text-white/40")}>{b.name}</span>
-                            </button>
-                        ))}
-                    </div>
-                </motion.div>
-
-                {/* ═══ المحتوى الرئيسي: سايدبار + شبكة السيارات ═══ */}
-                <div className="flex flex-col lg:flex-row gap-6 items-start">
-
-                    {/* سايدبار Desktop */}
-                    <div className="hidden lg:block w-64 shrink-0 bg-[#0f0f23]/80 border border-white/8 rounded-2xl overflow-hidden sticky top-20 backdrop-blur-md">
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-white/8 bg-white/2">
-                            <h3 className="text-xs font-black uppercase tracking-widest text-luxury-gold flex items-center gap-2">
-                                <SlidersHorizontal className="w-3.5 h-3.5" />
-                                {isRTL ? "فلاتر البحث" : "Filters"}
-                            </h3>
-                            {hasActiveFilters && (
-                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-luxury-gold/20 text-luxury-gold font-bold">
-                                    {isRTL ? "نشط" : "Active"}
-                                </span>
-                            )}
-                        </div>
-                        <div className="p-4 max-h-[calc(100vh-120px)] overflow-y-auto scrollbar-thin">
-                            <FilterPanel />
+                            ))}
                         </div>
                     </div>
+                </div>
 
-                    {/* منطقة السيارات */}
-                    <div className="flex-1 w-full min-w-0">
+                {/* ═══ فلاتر البحث الأفقية المحسنة (Premium Custom Header Filter) ═══ */}
+                <div className="mb-10 bg-[#0d0d1e]/90 border border-white/8 rounded-3xl p-5 sm:p-6 backdrop-blur-xl shadow-2xl relative z-20">
+                    <div className="flex flex-col gap-5">
+                        
+                        {/* الصف الأول: البحث بالاسم واختيار الشركة */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {/* حقل البحث */}
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-white/45 uppercase tracking-widest flex items-center gap-1.5">
+                                    <Search className="w-3.5 h-3.5 text-[#D4AF37]" />
+                                    {isRTL ? 'البحث بالاسم' : 'Search by Name'}
+                                </label>
+                                <input
+                                    type="text"
+                                    value={q}
+                                    onChange={handleSearchChange}
+                                    placeholder={isRTL ? 'ادخل اسم السيارة للبحث...' : 'Search car model...'}
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:border-luxury-gold/50 text-white placeholder:text-white/20"
+                                />
+                            </div>
 
-                        {/* شريط الإحصاءات + فلتر الجوال */}
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2">
-                                <button className="px-3 py-1.5 rounded-lg bg-luxury-gold text-black text-xs font-black">
-                                    {isRTL ? 'سيارات' : 'Cars'}
-                                    <span className="mr-1 ml-1 opacity-70">{totalCars > 0 ? totalCars.toLocaleString() : '—'}</span>
+                            {/* الشركة المصنعة */}
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-white/45 uppercase tracking-widest">
+                                    {isRTL ? 'الشركة المصنعة' : 'Make'}
+                                </label>
+                                <select 
+                                    value={brand}
+                                    onChange={e => { setBrand(e.target.value); setPage(1); }}
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:border-luxury-gold/50 text-white cursor-pointer"
+                                >
+                                    <option value="">{isRTL ? 'كل الشركات' : 'All Makes'}</option>
+                                    {brands.map(b => <option key={b.name} value={b.name}>{b.name}</option>)}
+                                </select>
+                            </div>
+
+                            {/* النطاق السعري */}
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-white/45 uppercase tracking-widest">
+                                    {isRTL ? 'النطاق السعري' : 'Price Range'}
+                                </label>
+                                <select
+                                    value={priceRange}
+                                    onChange={e => { setPriceRange(e.target.value); setPage(1); }}
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:border-luxury-gold/50 text-white cursor-pointer"
+                                >
+                                    <option value="">{isRTL ? 'كل الأسعار' : 'All Prices'}</option>
+                                    {priceRanges.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* الصف الثاني: فلاتر تفصيلية (سنة، نوع وقود، لون) */}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                            {/* السنة من وإلى */}
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-white/45 uppercase tracking-widest">
+                                    {isRTL ? 'السنة (من - إلى)' : 'Year (From - To)'}
+                                </label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <select value={yearMin} onChange={e => { setYearMin(e.target.value); setPage(1); }}
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl py-2.5 px-3 text-xs font-bold outline-none focus:border-luxury-gold/50 text-white cursor-pointer">
+                                        <option value="">{isRTL ? 'من' : 'From'}</option>
+                                        {years.map(y => <option key={y} value={y}>{y}</option>)}
+                                    </select>
+                                    <select value={yearMax} onChange={e => { setYearMax(e.target.value); setPage(1); }}
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl py-2.5 px-3 text-xs font-bold outline-none focus:border-luxury-gold/50 text-white cursor-pointer">
+                                        <option value="">{isRTL ? 'إلى' : 'To'}</option>
+                                        {years.map(y => <option key={y} value={y}>{y}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* نوع الوقود */}
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-white/45 uppercase tracking-widest">
+                                    {isRTL ? 'نوع الوقود' : 'Fuel Type'}
+                                </label>
+                                <select
+                                    value={fuelType}
+                                    onChange={e => { setFuelType(e.target.value); setPage(1); }}
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:border-luxury-gold/50 text-white cursor-pointer"
+                                >
+                                    <option value="">{isRTL ? 'كل الأنواع' : 'All Fuels'}</option>
+                                    {fuelTypes.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+                                </select>
+                            </div>
+
+                            {/* فلتر اللون */}
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-white/45 uppercase tracking-widest">
+                                    {isRTL ? 'اللون الخارجي' : 'Color'}
+                                </label>
+                                <select
+                                    value={colorFilter}
+                                    onChange={e => { setColorFilter(e.target.value); setPage(1); }}
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:border-luxury-gold/50 text-white cursor-pointer"
+                                >
+                                    <option value="">{isRTL ? 'كل الألوان' : 'All Colors'}</option>
+                                    {colors.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                                </select>
+                            </div>
+
+                            {/* أزرار الإجراءات */}
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => fetchCars()}
+                                    className="flex-1 py-3.5 bg-[#D4AF37] hover:bg-[#c9a030] text-black font-black uppercase text-xs rounded-xl transition-all shadow-md shadow-[#D4AF37]/15 flex items-center justify-center gap-1.5"
+                                >
+                                    <SlidersHorizontal className="w-3.5 h-3.5" />
+                                    {isRTL ? 'تطبيق الفلاتر' : 'Filter'}
                                 </button>
                                 {hasActiveFilters && (
-                                    <button onClick={clearFilters} className="px-2.5 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-xs font-bold text-red-400 flex items-center gap-1">
-                                        <X className="w-3 h-3" />
-                                        {isRTL ? 'مسح' : 'Clear'}
+                                    <button
+                                        onClick={clearFilters}
+                                        className="py-3.5 px-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 text-white transition-all"
+                                        title={isRTL ? 'تصفير الفلاتر' : 'Clear Filters'}
+                                    >
+                                        <X className="w-4 h-4 text-red-400" />
                                     </button>
                                 )}
                             </div>
-                            <button onClick={() => setShowFilters(!showFilters)}
-                                className="lg:hidden flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-luxury-gold">
-                                <SlidersHorizontal className="w-3.5 h-3.5" />
-                                {isRTL ? 'ابحث سيارة مخصصة' : 'Advanced Filter'}
-                                {hasActiveFilters && <span className="w-2 h-2 rounded-full bg-luxury-gold animate-pulse" />}
-                            </button>
                         </div>
 
-                        {/* فلاتر الجوال المنسدلة */}
-                        <AnimatePresence>
-                            {showFilters && (
-                                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                                    className="overflow-hidden mb-4 lg:hidden">
-                                    <div className="bg-[#0f0f23]/90 border border-white/8 rounded-2xl backdrop-blur-md">
-                                        <FilterPanel mobile />
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        {/* شبكة السيارات */}
-                        {loading && page === 1 ? (
-                            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
-                                {Array.from({ length: 9 }).map((_, i) => <CarSkeletonCard key={i} />)}
-                            </div>
-                        ) : cars.length === 0 ? (
-                            <div className="py-24 text-center bg-white/1 border border-dashed border-white/10 rounded-2xl">
-                                <Car className="w-10 h-10 text-white/10 mx-auto mb-4" />
-                                <h2 className="text-lg font-black uppercase tracking-tight mb-2">{isRTL ? 'لا توجد نتائج' : 'No Results Found'}</h2>
-                                <p className="text-white/40 text-xs mb-6">{isRTL ? 'جرب تعديل خيارات البحث أو مسح الفلاتر' : 'Try adjusting your filters or clear all'}</p>
-                                <button onClick={clearFilters} className="px-6 py-2.5 rounded-xl bg-luxury-gold text-black text-xs font-black">{isRTL ? 'مسح الفلاتر' : 'Clear Filters'}</button>
-                            </div>
-                        ) : (
-                            <>
-                                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
-                                    {cars.map((car, i) => (
-                                        <CarCard
-                                            key={String(car.id || car._id || `car-${i}`)}
-                                            car={car}
-                                            index={i}
-                                            onClick={() => {
-                                                if (!isLoggedIn) router.push('/login');
-                                                else router.push(`/cars/${car.id || car._id}`);
-                                            }}
-                                            onLoginRequired={() => router.push('/login')}
-                                        />
-                                    ))}
-                                </div>
-
-                                {/* Pagination */}
-                                {totalPages > 1 && (
-                                    <div className="mt-12 flex items-center justify-center gap-4">
-                                        <button
-                                            onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                                            disabled={page === 1}
-                                            className="px-4 py-2.5 rounded-xl border border-white/10 text-xs font-black uppercase tracking-wider hover:bg-white/5 disabled:opacity-20 transition-all flex items-center gap-2">
-                                            <ArrowLeft className={cn("w-3.5 h-3.5", isRTL && "rotate-180")} />
-                                            {isRTL ? 'السابق' : 'Prev'}
-                                        </button>
-                                        <div className="flex items-center gap-2 text-sm font-black">
-                                            <span className="text-luxury-gold">{page}</span>
-                                            <span className="text-white/20">/</span>
-                                            <span className="text-white/40">{totalPages}</span>
-                                        </div>
-                                        <button
-                                            onClick={() => { setPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                                            disabled={page === totalPages}
-                                            className="px-4 py-2.5 rounded-xl border border-white/10 text-xs font-black uppercase tracking-wider hover:bg-white/5 disabled:opacity-20 transition-all flex items-center gap-2">
-                                            {isRTL ? 'التالي' : 'Next'}
-                                            <ArrowRight className={cn("w-3.5 h-3.5", isRTL && "rotate-180")} />
-                                        </button>
-                                    </div>
+                        {/* صف حفظ التنبيه */}
+                        <div className="flex items-center justify-between border-t border-white/5 pt-3 text-xs text-white/40">
+                            <div>{isRTL ? 'تخصيص البحث الخاص بك للحصول على التحديثات' : 'Save your criteria for alerts'}</div>
+                            <button
+                                onClick={saveAsAlert}
+                                className={cn(
+                                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all text-[11px] font-bold",
+                                    alertSaved
+                                        ? "bg-green-500/10 border-green-500/20 text-green-400"
+                                        : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"
                                 )}
-                            </>
-                        )}
+                            >
+                                <Bell className="w-3.5 h-3.5" />
+                                {alertSaved ? (isRTL ? 'تم الحفظ ✓' : 'Saved ✓') : (isRTL ? 'حفظ كتنبيه ذكي' : 'Save Alert')}
+                            </button>
+                        </div>
                     </div>
+                </div>
+
+                {/* ═══ قائمة السيارات ═══ */}
+                <div className="w-full">
+                    {/* الإحصاءات */}
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="text-xs font-black uppercase tracking-wider text-white/50">
+                            {isRTL ? 'جميع الموديلات المعروضة' : 'ALL SHOWROOM CARS'}
+                            <span className="mx-2 text-[#D4AF37] font-bold">({totalCars})</span>
+                        </div>
+                    </div>
+
+                    {/* شبكة السيارات */}
+                    {loading && page === 1 ? (
+                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                            {Array.from({ length: 8 }).map((_, i) => <CarSkeletonCard key={i} />)}
+                        </div>
+                    ) : cars.length === 0 ? (
+                        <div className="py-24 text-center bg-white/[0.02] border border-dashed border-white/10 rounded-2xl">
+                            <Car className="w-12 h-12 text-white/10 mx-auto mb-4" />
+                            <h2 className="text-lg font-black uppercase tracking-tight mb-2">{isRTL ? 'لا توجد نتائج مطابقة' : 'No Cars Found'}</h2>
+                            <p className="text-white/40 text-xs mb-6">{isRTL ? 'جرب تعديل خيارات البحث أو تصفير الفلاتر' : 'Try adjusting your search query or reset filters'}</p>
+                            <button onClick={clearFilters} className="px-6 py-2.5 bg-[#D4AF37] text-black text-xs font-black rounded-xl">{isRTL ? 'مسح الفلاتر' : 'Reset Filters'}</button>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                                {cars.map((car, i) => (
+                                    <CarCard
+                                        key={String(car.id || car._id || `car-${i}`)}
+                                        car={car}
+                                        index={i}
+                                        onClick={() => {
+                                            if (!isLoggedIn) router.push('/login');
+                                            else router.push(`/cars/${car.id || car._id}`);
+                                        }}
+                                        onLoginRequired={() => router.push('/login')}
+                                    />
+                                ))}
+                            </div>
+
+                            {/* التصفح الصفحات */}
+                            {totalPages > 1 && (
+                                <div className="mt-16 flex items-center justify-center gap-4">
+                                    <button
+                                        onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                        disabled={page === 1}
+                                        className="px-4 py-2.5 rounded-xl border border-white/10 text-xs font-black uppercase hover:bg-white/5 disabled:opacity-20 transition-all flex items-center gap-2">
+                                        <ArrowLeft className={cn("w-3.5 h-3.5", isRTL && "rotate-180")} />
+                                        {isRTL ? 'السابق' : 'Prev'}
+                                    </button>
+                                    <div className="flex items-center gap-2 text-sm font-black">
+                                        <span className="text-[#D4AF37]">{page}</span>
+                                        <span className="text-white/20">/</span>
+                                        <span className="text-white/40">{totalPages}</span>
+                                    </div>
+                                    <button
+                                        onClick={() => { setPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                        disabled={page === totalPages}
+                                        className="px-4 py-2.5 rounded-xl border border-white/10 text-xs font-black uppercase hover:bg-white/5 disabled:opacity-20 transition-all flex items-center gap-2">
+                                        {isRTL ? 'التالي' : 'Next'}
+                                        <ArrowRight className={cn("w-3.5 h-3.5", isRTL && "rotate-180")} />
+                                    </button>
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
             </main>
         </div>

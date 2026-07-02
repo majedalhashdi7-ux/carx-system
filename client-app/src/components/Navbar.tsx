@@ -11,8 +11,7 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Menu, X, User, ChevronDown,
-    Car, ShoppingBag, Settings, MessageCircle,
-    Heart, ShoppingCart, Bell, LogIn, UserPlus, Home, Gavel, Headphones, Wrench
+    Car, MessageCircle, Bell, LogIn, UserPlus, Home
 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -34,31 +33,14 @@ export default function Navbar() {
     const isStandalone = useStandalone();
     const [isOpen, setIsOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
-    const [cartCount, setCartCount] = useState(0);
     const [currencyOpen, setCurrencyOpen] = useState(false);
     const currencyRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
 
-    useEffect(() => {
-        const updateCart = () => {
-            try {
-                const cart = JSON.parse(localStorage.getItem('hm_cart') || '[]');
-                setCartCount(Array.isArray(cart) ? cart.length : 0);
-            } catch { setCartCount(0); }
-        };
-        updateCart();
-        window.addEventListener('hm_cart_updated', updateCart);
-        window.addEventListener('storage', updateCart);
-        return () => {
-            window.removeEventListener('hm_cart_updated', updateCart);
-            window.removeEventListener('storage', updateCart);
-        };
-    }, []);
-
     const { isLoggedIn } = useAuth();
     const { isRTL, toggleLanguage } = useLanguage();
     const { siteInfo, displayCurrency, setDisplayCurrency } = useSettings();
-    const { setFavoritesOpen, setNotificationsOpen } = useUI();
+    const { setNotificationsOpen } = useUI();
     const { tenant } = useTenant();
     const isCarX = tenant?.id === 'carx';
 
@@ -84,11 +66,10 @@ export default function Navbar() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    // روابط التنقل (بعد إزالة قطع الغيار والاكسسوارات)
     const navLinks = [
         { href: '/', label: isRTL ? 'الرئيسية' : 'Home', icon: Home },
         { href: '/cars', label: isRTL ? 'السيارات' : 'Cars', icon: Car },
-        { href: '/parts', label: isRTL ? 'قطع غيار' : 'Parts', icon: ShoppingBag },
-        { href: '/concierge', label: isRTL ? 'إكسسوارات' : 'Accessories', icon: Settings },
         { href: '/contact', label: isRTL ? 'تواصل معنا' : 'Contact', icon: MessageCircle },
     ];
 
@@ -152,20 +133,20 @@ export default function Navbar() {
                 className={cn(
                     "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
                     scrolled
-                        ? "bg-[#0f0f23]/95 backdrop-blur-2xl border-b border-white/8 shadow-[0_4px_30px_rgba(0,0,0,0.4)]"
-                        : "bg-[#0f0f23]/85 backdrop-blur-xl border-b border-white/5"
+                        ? "bg-[#0A0A14]/95 backdrop-blur-2xl border-b border-white/10 shadow-lg shadow-black/80"
+                        : "bg-[#0A0A14]/80 backdrop-blur-xl border-b border-white/5"
                 )}
                 dir={isRTL ? 'rtl' : 'ltr'}
             >
                 <div className="max-w-7xl mx-auto px-4 sm:px-6">
-                    <div className="flex items-center h-14 sm:h-16 gap-4">
+                    <div className="flex items-center h-16 sm:h-18 gap-4">
 
                         {/* ── شعار HM CAR (يمين في RTL) ── */}
-                        <Link href="/" className="group flex items-center gap-2 shrink-0">
-                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#D4AF37] to-[#a88520] flex items-center justify-center shadow-lg shadow-[#D4AF37]/20">
-                                <Car className="w-4 h-4 text-black" />
+                        <Link href="/" className="group flex items-center gap-2.5 shrink-0">
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#a88520] flex items-center justify-center shadow-lg shadow-[#D4AF37]/35 border border-white/20 group-hover:scale-105 transition-transform duration-300">
+                                <Car className="w-5 h-5 text-black" strokeWidth={2.5} />
                             </div>
-                            <span className="text-base font-black tracking-wide text-white group-hover:text-[#D4AF37] transition-colors">
+                            <span className="text-lg font-black tracking-wide text-white group-hover:text-[#D4AF37] transition-colors italic">
                                 {siteName}
                             </span>
                         </Link>
@@ -177,39 +158,31 @@ export default function Navbar() {
                                     key={link.href}
                                     href={link.href}
                                     className={cn(
-                                        "px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 relative group",
+                                        "px-5 py-2.5 rounded-xl text-sm font-black transition-all duration-300 relative group tracking-wide",
                                         isActive(link.href)
-                                            ? "text-[#D4AF37] bg-[#D4AF37]/10"
-                                            : "text-white/65 hover:text-white hover:bg-white/5"
+                                            ? "text-[#D4AF37] bg-[#D4AF37]/8 border border-[#D4AF37]/20"
+                                            : "text-white/60 hover:text-white hover:bg-white/5"
                                     )}
                                 >
                                     {link.label}
                                     {isActive(link.href) && (
-                                        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#D4AF37]" />
+                                        <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#D4AF37]" />
                                     )}
                                 </Link>
                             ))}
-
-                            {/* المفضلة */}
-                            <button
-                                onClick={() => setFavoritesOpen(true)}
-                                className="px-4 py-2 rounded-lg text-sm font-semibold text-white/65 hover:text-white hover:bg-white/5 transition-all duration-200"
-                            >
-                                {isRTL ? 'قائمة الأمنيات' : 'Favorites'}
-                            </button>
                         </nav>
 
-                        {/* ── أدوات اليسار (Desktop) ── */}
-                        <div className="hidden lg:flex items-center gap-2 shrink-0">
+                        {/* ── أدوات اليسار (Desktop) - تصميم أيقونات فاخر وموحد ── */}
+                        <div className="hidden lg:flex items-center gap-3 shrink-0">
 
                             {/* مبدل العملة */}
                             <div className="relative" ref={currencyRef}>
                                 <button
                                     onClick={() => setCurrencyOpen(!currencyOpen)}
-                                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-xs font-bold text-white/80 hover:bg-white/10 hover:border-white/20 transition-all"
+                                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 hover:border-[#D4AF37]/30 text-xs font-black text-white/80 hover:bg-white/10 transition-all cursor-pointer"
                                 >
                                     <span>{displayCurrency || 'SAR'}</span>
-                                    <ChevronDown className={cn("w-3 h-3 text-white/40 transition-transform", currencyOpen && "rotate-180")} />
+                                    <ChevronDown className={cn("w-3.5 h-3.5 text-white/40 transition-transform", currencyOpen && "rotate-180")} />
                                 </button>
                                 <AnimatePresence>
                                     {currencyOpen && (
@@ -219,7 +192,7 @@ export default function Navbar() {
                                             exit={{ opacity: 0, y: -8, scale: 0.96 }}
                                             transition={{ duration: 0.15 }}
                                             className={cn(
-                                                "absolute top-full mt-2 w-36 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50",
+                                                "absolute top-full mt-2 w-36 bg-[#0f0f23] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50",
                                                 isRTL ? "right-0" : "left-0"
                                             )}
                                         >
@@ -243,50 +216,37 @@ export default function Navbar() {
                             {/* مبدل اللغة */}
                             <button
                                 onClick={toggleLanguage}
-                                className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-xs font-bold text-white/80 hover:bg-white/10 hover:border-white/20 transition-all"
+                                className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:border-[#D4AF37]/30 flex items-center justify-center text-xs font-black text-white/80 hover:bg-white/10 transition-all cursor-pointer"
                                 title={isRTL ? 'English' : 'العربية'}
                             >
                                 {isRTL ? 'EN' : 'عر'}
                             </button>
 
-                            {/* الإشعارات (للمستخدمين المسجلين) */}
+                            {/* الإشعارات */}
                             {isLoggedIn && (
                                 <button
                                     onClick={() => setNotificationsOpen(true)}
-                                    className="relative p-2 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-all"
+                                    className="relative w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:border-[#D4AF37]/30 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
                                 >
-                                    <Bell className="w-4 h-4" />
-                                    <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                                    <Bell className="w-4.5 h-4.5" />
+                                    <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                                 </button>
                             )}
 
-                            {/* سلة المشتريات */}
-                            <Link
-                                href="/cart"
-                                className="relative p-2 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-all"
-                            >
-                                <ShoppingCart className="w-4 h-4" />
-                                {cartCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#D4AF37] text-black text-[8px] font-black rounded-full flex items-center justify-center">
-                                        {cartCount > 9 ? '9+' : cartCount}
-                                    </span>
-                                )}
-                            </Link>
-
-                            {/* تسجيل الدخول أو حسابي */}
+                            {/* حسابي أو تسجيل الدخول */}
                             {isLoggedIn ? (
                                 <Link
                                     href="/client/dashboard"
-                                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-sm font-semibold text-white/80 hover:text-white hover:bg-white/10 transition-all"
+                                    className="flex items-center gap-2 px-4.5 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-[#D4AF37]/30 text-xs font-black text-white/80 hover:text-white hover:bg-white/10 transition-all"
                                 >
-                                    <User className="w-4 h-4" />
+                                    <User className="w-4.5 h-4.5" />
                                     <span>{isRTL ? 'حسابي' : 'Account'}</span>
                                 </Link>
                             ) : (
                                 <div className="flex items-center gap-2">
                                     <Link
                                         href="/login"
-                                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white/70 hover:text-white transition-all"
+                                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black text-white/70 hover:text-white transition-all"
                                     >
                                         <LogIn className="w-4 h-4" />
                                         <span>{isRTL ? 'دخول' : 'Sign In'}</span>
@@ -295,10 +255,10 @@ export default function Navbar() {
                                         <motion.div
                                             whileHover={{ scale: 1.03 }}
                                             whileTap={{ scale: 0.97 }}
-                                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#D4AF37] text-black text-sm font-bold hover:bg-[#c9a030] transition-all shadow-lg shadow-[#D4AF37]/20 cursor-pointer"
+                                            className="flex items-center gap-1.5 px-4.5 py-2.5 rounded-xl bg-[#D4AF37] text-black text-xs font-black hover:bg-[#c9a030] transition-all shadow-md shadow-[#D4AF37]/15 cursor-pointer"
                                         >
                                             <UserPlus className="w-4 h-4" />
-                                            <span>{isRTL ? 'حساب جديد' : 'Register'}</span>
+                                            <span>{isRTL ? 'تسجيل' : 'Register'}</span>
                                         </motion.div>
                                     </Link>
                                 </div>
@@ -307,19 +267,10 @@ export default function Navbar() {
 
                         {/* ── أزرار الجوال ── */}
                         <div className="flex lg:hidden items-center gap-2 ml-auto">
-                            {/* سلة للجوال */}
-                            <Link href="/cart" className="relative p-2 rounded-lg bg-white/5 border border-white/10 text-white/60">
-                                <ShoppingCart className="w-4 h-4" />
-                                {cartCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#D4AF37] text-black text-[8px] font-black rounded-full flex items-center justify-center">
-                                        {cartCount > 9 ? '9+' : cartCount}
-                                    </span>
-                                )}
-                            </Link>
                             {/* زر القائمة */}
                             <button
                                 onClick={() => setIsOpen(true)}
-                                className="p-2 rounded-lg bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all"
+                                className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all flex items-center justify-center"
                                 aria-label="Open Menu"
                             >
                                 <Menu className="w-5 h-5" />
@@ -353,7 +304,7 @@ export default function Navbar() {
                             exit={{ x: isRTL ? '-100%' : '100%' }}
                             transition={{ type: 'spring', damping: 28, stiffness: 280 }}
                             className={cn(
-                                "absolute top-0 bottom-0 w-80 max-w-[85vw] bg-[#0f0f23] border-white/10 flex flex-col shadow-2xl",
+                                "absolute top-0 bottom-0 w-80 max-w-[85vw] bg-[#0A0A14] border-white/10 flex flex-col shadow-2xl",
                                 isRTL ? "left-0 border-r" : "right-0 border-l"
                             )}
                             dir={isRTL ? 'rtl' : 'ltr'}
@@ -398,15 +349,6 @@ export default function Navbar() {
                                         </Link>
                                     </motion.div>
                                 ))}
-
-                                {/* المفضلة */}
-                                <button
-                                    onClick={() => { setFavoritesOpen(true); setIsOpen(false); }}
-                                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold text-white/60 hover:text-white hover:bg-white/5 transition-all"
-                                >
-                                    <Heart className="w-4.5 h-4.5 shrink-0" />
-                                    {isRTL ? 'قائمة الأمنيات' : 'Favorites'}
-                                </button>
                             </div>
 
                             {/* أدوات أسفل القائمة */}
@@ -451,7 +393,7 @@ export default function Navbar() {
                                         <Link href="/register" onClick={() => setIsOpen(false)}>
                                             <div className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-[#D4AF37] text-black text-sm font-black hover:bg-[#c9a030] transition-all cursor-pointer">
                                                 <UserPlus className="w-4 h-4" />
-                                                {isRTL ? 'حساب جديد' : 'Register'}
+                                                {isRTL ? 'سجل' : 'Register'}
                                             </div>
                                         </Link>
                                     </div>

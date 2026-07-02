@@ -94,7 +94,7 @@ export default function ClientDashboard() {
         { label: isRTL ? 'سيارات متاحة' : 'Available Cars', value: stats.availableCars, icon: Car, color: '#D4AF37', href: '/cars' },
         { label: isRTL ? 'مزادات مباشرة' : 'Live Auctions', value: stats.liveAuctions, icon: Gavel, color: '#ef4444', href: '/auctions' },
         { label: isRTL ? 'طلباتي' : 'My Orders', value: stats.myOrders, icon: ShoppingBag, color: '#3b82f6', href: '/orders' },
-        { label: isRTL ? 'المفضلة' : 'Favorites', value: stats.myFavorites, icon: Heart, color: '#ec4899', href: '/favorites' },
+        { label: isRTL ? 'التنبيهات المحفوظة' : 'Saved Alerts', value: savedAlerts.length, icon: Sparkles, color: '#a78bfa', href: '/client/smart-alerts' },
     ];
 
     const quickActions = [

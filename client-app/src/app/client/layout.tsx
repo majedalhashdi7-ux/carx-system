@@ -33,7 +33,6 @@ const NAV_ITEMS = [
     { href: '/client/dashboard', icon: LayoutGrid, labelAr: 'الرئيسية', labelEn: 'Home', match: ['/client/dashboard'] },
     { href: '/orders', icon: ShoppingBag, labelAr: 'طلباتي', labelEn: 'Orders', match: ['/orders'] },
     { href: '/client/smart-alerts', icon: Sparkles, labelAr: 'تنبيهاتي', labelEn: 'Alerts', match: ['/client/smart-alerts'], highlight: true },
-    { href: '/favorites', icon: Heart, labelAr: 'المفضلة', labelEn: 'Favorites', match: ['/favorites'] },
     { href: '/client/settings', icon: Settings, labelAr: 'الإعدادات', labelEn: 'Settings', match: ['/client/settings'] },
     { href: '/client/messages', icon: MessageCircle, labelAr: 'الرسائل', labelEn: 'Messages', match: ['/client/messages'] },
 ];
