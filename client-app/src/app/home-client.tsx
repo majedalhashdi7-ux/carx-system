@@ -16,6 +16,7 @@ import {
   Mail, Search, Gavel, Cog, Info, User, LogOut, Menu, X, Plus
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import CinematicVideoBackground from "@/components/CinematicVideoBackground";
 import { useLanguage } from "@/lib/LanguageContext";
@@ -494,7 +495,14 @@ export default function HomeClient({ latestCars: initialLatestCars }: HomeClient
               {loadingCars ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                   {[...Array(4)].map((_, i) => (
-                    <div key={i} className="h-[400px] rounded-[2.5rem] bg-white/5 animate-pulse border border-white/10" />
+                    <div key={i} className="rounded-2xl bg-white/5 border border-white/8 overflow-hidden animate-pulse">
+                      <div className="h-52 bg-white/8" />
+                      <div className="p-5 space-y-3">
+                        <div className="h-4 bg-white/8 rounded-lg w-3/4" />
+                        <div className="h-3 bg-white/5 rounded-lg w-1/2" />
+                        <div className="h-8 bg-white/8 rounded-xl w-full mt-3" />
+                      </div>
+                    </div>
                   ))}
                 </div>
               ) : (
@@ -506,6 +514,74 @@ export default function HomeClient({ latestCars: initialLatestCars }: HomeClient
               )}
             </div>
           </section>
+
+          {/* ── شريط "وصل حديثاً" - آخر 7 أيام ── */}
+          {latestCars.length > 0 && (
+            <section className="relative z-10 py-12 px-4">
+              <div className="max-w-7xl mx-auto">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20">
+                      <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                      <span className="text-xs font-black text-green-400 uppercase tracking-widest">
+                        {isRTL ? 'وصل حديثاً' : 'New Arrivals'}
+                      </span>
+                    </div>
+                    <span className="text-white/30 text-xs">{isRTL ? 'آخر 7 أيام' : 'Last 7 days'}</span>
+                  </div>
+                  <Link href="/cars" className="text-xs font-bold text-accent-gold hover:text-white transition-colors flex items-center gap-1">
+                    {isRTL ? 'عرض الكل' : 'View All'}
+                    <ArrowRight className={cn("w-3.5 h-3.5", isRTL && "rotate-180")} />
+                  </Link>
+                </div>
+
+                {/* شريط أفقي قابل للتمرير */}
+                <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-none snap-x snap-mandatory">
+                  {latestCars.slice(0, 12).map((car: any, i) => (
+                    <motion.div
+                      key={car.id || i}
+                      initial={{ opacity: 0, x: 20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: i * 0.05 }}
+                      className="snap-start shrink-0 w-52 sm:w-60 group cursor-pointer"
+                      onClick={() => router.push(`/cars/${car.id || car._id}`)}
+                    >
+                      <div className="relative overflow-hidden rounded-xl border border-white/8 bg-white/3 hover:border-luxury-gold/30 transition-all duration-300 group-hover:shadow-[0_8px_30px_rgba(212,175,55,0.1)]">
+                        {/* صورة السيارة */}
+                        <div className="relative h-36 overflow-hidden bg-white/5">
+                          {car.images?.[0] ? (
+                            <Image src={car.images[0]} alt={car.title || car.name || ''} fill className="object-cover transition-transform duration-500 group-hover:scale-105" unoptimized />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Car className="w-10 h-10 text-white/10" />
+                            </div>
+                          )}
+                          {/* شارة جديد */}
+                          <div className="absolute top-2 right-2">
+                            <span className="px-2 py-0.5 rounded-full bg-green-500 text-[9px] font-black text-black uppercase tracking-widest">
+                              {isRTL ? 'جديد' : 'New'}
+                            </span>
+                          </div>
+                        </div>
+                        {/* بيانات السيارة */}
+                        <div className="p-3 space-y-1.5">
+                          <p className="text-xs font-black text-white truncate">{car.title || car.name}</p>
+                          <div className="flex items-center gap-2 text-[9px] text-white/40 font-bold">
+                            {car.year && <span>{car.year}</span>}
+                            {car.mileage && <><span>·</span><span>{Number(car.mileage).toLocaleString()} km</span></>}
+                          </div>
+                          <div className="text-sm font-black text-luxury-gold">
+                            {car.priceSar ? `${Number(car.priceSar).toLocaleString()} SAR` : car.price ? `${Number(car.price).toLocaleString()}` : '—'}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
 
           {/* 2.5 ANNOUNCEMENT RIBBON REMOVED: Replaced fully by SmartAdBanner */}
 

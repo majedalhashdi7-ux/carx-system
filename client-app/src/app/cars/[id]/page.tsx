@@ -330,6 +330,28 @@ export default function LocalCarDetail() {
                 </div>
             </main>
 
+            {/* ══ زر واتساب ثابت في الأسفل ══ */}
+            {car && (
+                <motion.div
+                    initial={{ y: 100, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.5, type: 'spring', damping: 20 }}
+                    className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-t from-black/90 via-black/60 to-transparent pointer-events-none"
+                >
+                    <div className="max-w-lg mx-auto pointer-events-auto">
+                        <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.97 }}
+                            onClick={handleWhatsappPurchase}
+                            className="w-full py-4 bg-[#25D366] hover:bg-[#20c05a] rounded-2xl text-black font-black uppercase text-sm tracking-widest shadow-[0_8px_30px_rgba(37,211,102,0.4)] flex items-center justify-center gap-3 transition-all"
+                        >
+                            <MessageCircle className="w-5 h-5" />
+                            {isRTL ? rawText('تواصل واتساب للشراء') : rawText('Buy via WhatsApp')}
+                        </motion.button>
+                    </div>
+                </motion.div>
+            )}
+
             <AnimatePresence>
                 {showInvoice && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-100 bg-black/90 backdrop-blur-xl flex items-center justify-center p-6" onClick={() => setShowInvoice(false)}>
