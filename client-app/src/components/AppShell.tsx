@@ -94,10 +94,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
     // ── وضع الموقع العادي (Browser Mode) ──
     return (
-        <>
+        <div className="relative min-h-screen pb-[80px] lg:pb-0">
             {children}
+            {!pathname?.startsWith('/admin') && <BottomTabBar />}
             <GlobalDrawers /> {/* الحاويات الجانبية تعمل في الموقع أيضاً */}
             <SmartIslandNotification /> {/* تحذيرات النظام */}
-        </>
+        </div>
     );
 }

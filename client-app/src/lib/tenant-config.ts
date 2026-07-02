@@ -46,11 +46,11 @@ export const TENANT_CONFIGS: Record<string, TenantData> = {
     logo: '/uploads/tenants/hmcar/logo.png',
     favicon: '/uploads/tenants/hmcar/favicon.ico',
     theme: {
-      primaryColor: '#c8860a',
-      secondaryColor: '#7a4a1e',
-      accentColor: '#e9a832',
-      backgroundColor: '#f5e9d0',
-      textColor: '#3d2408',
+      primaryColor: '#D4AF37',
+      secondaryColor: '#1a1a2e',
+      accentColor: '#e94560',
+      backgroundColor: '#0f0f23',
+      textColor: '#ffffff',
     },
     contact: {
       whatsapp: '+967781007805',

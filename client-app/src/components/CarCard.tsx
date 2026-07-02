@@ -89,7 +89,7 @@ export default function CarCard({ car, index = 0, onClick, onLoginRequired }: Ca
                 className="relative overflow-hidden rounded-3xl bg-black border border-white/8 hover:border-white/20 transition-all duration-500 cursor-pointer shadow-xl hover:shadow-2xl hover:shadow-black/60"
             >
                 {/* ── صورة السيارة ── */}
-                <div className="relative h-56 w-full bg-zinc-900 overflow-hidden">
+                <div className="relative h-32 sm:h-56 w-full bg-zinc-900 overflow-hidden">
                     {!imgError && imageSrc ? (
                         <Image
                             src={imageSrc}
@@ -175,40 +175,40 @@ export default function CarCard({ car, index = 0, onClick, onLoginRequired }: Ca
                 </div>
 
                 {/* ── معلومات السيارة ── */}
-                <div className="p-5 space-y-4">
+                <div className="p-3 sm:p-5 space-y-2 sm:space-y-4">
                     {/* الماركة والعنوان */}
                     <div>
                         <p className="text-[9px] font-black text-amber-400/60 tracking-[0.35em] uppercase mb-1">
                             {car.make || ''}
                         </p>
-                        <h3 className="text-base font-black tracking-tight leading-tight line-clamp-1 group-hover:text-amber-400 transition-colors duration-300">
+                        <h3 className="text-xs sm:text-base font-black tracking-tight leading-tight line-clamp-1 group-hover:text-amber-400 transition-colors duration-300">
                             {car.title || car.model || ''}
                         </h3>
                     </div>
 
                     {/* المواصفات */}
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-1.5 text-[10px] text-white/35 font-bold">
+                    <div className="flex items-center gap-2 sm:gap-4 flex-wrap sm:flex-nowrap">
+                        <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] text-white/35 font-bold">
                             <Gauge className="w-3 h-3 text-amber-400/40" />
                             <span>{car.mileage?.toLocaleString() || '—'} km</span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-[10px] text-white/35 font-bold">
+                        <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] text-white/35 font-bold">
                             <Fuel className="w-3 h-3 text-amber-400/40" />
                             <span>{car.fuelType || car.fuel || '—'}</span>
                         </div>
                     </div>
 
                     {/* السعر وزر الشراء والعملة */}
-                    <div className="flex items-center justify-between pt-3 border-t border-white/10 gap-2">
+                    <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-white/10 gap-2">
                         <div className="flex-1 overflow-hidden">
-                            <p className="text-[8px] text-white/40 font-bold uppercase tracking-widest mb-0.5">
+                            <p className="text-[7px] sm:text-[8px] text-white/40 font-bold uppercase tracking-widest mb-0.5">
                                 {isRTL ? 'السعر' : 'PRICE'}
                             </p>
-                            <p className="text-xl font-black text-amber-400 leading-none truncate">
+                            <p className="text-xs sm:text-xl font-black text-amber-400 leading-none truncate">
                                 {displayPrice}
                             </p>
                         </div>
-                        <div onClick={e => e.stopPropagation()}>
+                        <div className="hidden sm:block" onClick={e => e.stopPropagation()}>
                             <CurrencySwitcher variant="minimal" />
                         </div>
                         <motion.button 
@@ -217,10 +217,11 @@ export default function CarCard({ car, index = 0, onClick, onLoginRequired }: Ca
                             onClick={(e) => { e.stopPropagation(); onClick?.(); }}
                             title={isRTL ? 'شراء الآن' : 'Buy Now'}
                             className={cn(
-                                "h-10 px-4 rounded-xl border border-white/10 flex items-center justify-center gap-2",
+                                "h-8 sm:h-10 px-2 sm:px-4 rounded-xl border border-white/10 flex items-center justify-center gap-2",
                                 "bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400",
                                 "hover:from-amber-500 hover:to-orange-500 hover:text-black hover:border-amber-400",
-                                "transition-all duration-400 shadow-[0_0_15px_rgba(245,158,11,0.1)] hover:shadow-[0_0_20px_rgba(245,158,11,0.5)]"
+                                "transition-all duration-400 shadow-[0_0_15px_rgba(245,158,11,0.1)] hover:shadow-[0_0_20px_rgba(245,158,11,0.5)]",
+                                "hidden sm:flex"
                         )}>
                             <span className="text-[10px] font-black uppercase tracking-widest">{isRTL ? 'شراء' : 'BUY'}</span>
                             <ArrowRight className={cn("w-3.5 h-3.5 transition-transform", isRTL && "rotate-180")} />
