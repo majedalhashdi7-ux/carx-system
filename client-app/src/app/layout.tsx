@@ -12,11 +12,12 @@ const tajawal = Tajawal({
 });
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import { Suspense } from "react";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import AppShell from "@/components/AppShell";
 import SmartPrefetchProvider from "@/components/SmartPrefetchProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import NetworkStatus from "@/components/NetworkStatus";
+import { getTenantConfigForHostname } from "@/lib/tenant-config";
 
 // إعدادات نافذة العرض (Viewport) للجوال والحاسوب
 export const viewport: Viewport = {
@@ -28,44 +29,45 @@ export const viewport: Viewport = {
   colorScheme: "dark",
 };
 
-// البيانات الوصفية (SEO Metadata) لتحسين ظهور الموقع في محركات البحث ومشاركات التواصل الاجتماعي
-export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://hmcar.okigo.net'),
-  title: {
-    template: '%s | CAR X',
-    default: 'CAR X | Premium Auto Solutions & Global Export',
-  },
-  description: "CAR X - منصتك المتكاملة لتجارة السيارات وقطع الغيار العالمية. مزادات مباشرة، فحص فني، وشحن دولي سريع.",
-  keywords: "car export, luxury cars, spare parts, auto auction, سيارات كورية, قطع غيار, مزاد سيارات, تصدير, CAR X, HM CAR",
-  authors: [{ name: 'CAR X Team' }],
-  creator: 'CAR X',
-  publisher: 'CAR X System',
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
-  alternates: {
-    canonical: '/',
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-  icons: {
-    icon: [
-      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-96x96.png", sizes: "96x96", type: "image/png" },
-    ],
-    apple: [{ url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" }],
-  },
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "CAR X",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const headersList = await headers();
+  const host = headersList.get("host") || "localhost:3000";
+  const tenantConfig = getTenantConfigForHostname(host);
+
+  const name = tenantConfig?.name || "HM CAR";
+  const description = tenantConfig?.description || "منصة مزادات ومبيعات السيارات الفاخرة";
+
+  return {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://hmcar-system-two.vercel.app'),
+    title: {
+      template: `%s | ${name}`,
+      default: `${name} | ${description}`,
+    },
+    description: description,
+    keywords: "car export, luxury cars, spare parts, auto auction, سيارات كورية, قطع غيار, مزاد سيارات, تصدير, HM CAR, CAR X",
+    authors: [{ name: `${name} Team` }],
+    creator: name,
+    publisher: `${name} System`,
+    formatDetection: {
+      email: false,
+      address: false,
+      telephone: false,
+    },
+    alternates: {
+      canonical: '/',
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
+    manifest: "/manifest.json",
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "black-translucent",
+      title: name,
+    },
+  };
+}
 
 export default async function RootLayout({
   children,
@@ -76,10 +78,15 @@ export default async function RootLayout({
   const lang = cookieLang === "EN" ? "en" : "ar";
   const dir = lang === "ar" ? "rtl" : "ltr";
 
+  const headersList = await headers();
+  const host = headersList.get("host") || "localhost:3000";
+  const tenantConfig = getTenantConfigForHostname(host);
+  const favicon = tenantConfig?.favicon || "/icons/icon-96x96.png";
+
   return (
     <html lang={lang} dir={dir}>
       <head>
-        <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-96x96.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href={favicon} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://res.cloudinary.com" />
