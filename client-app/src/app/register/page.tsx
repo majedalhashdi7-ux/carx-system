@@ -12,7 +12,7 @@ import CinematicVideoBackground from "@/components/CinematicVideoBackground";
 
 export default function Register() {
     const { isRTL } = useLanguage();
-    const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '', phone: '', password: '' });
+    const [formData, setFormData] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
@@ -35,36 +35,40 @@ export default function Register() {
         setLoading(true);
         setError('');
 
-        const firstName = formData.firstName.trim();
-        const lastName = formData.lastName.trim();
-
-        if (!firstName || !lastName) {
-            setError(isRTL ? 'الاسم الأول واسم العائلة مطلوبان' : 'First name and last name are required');
+        if (formData.password !== formData.confirmPassword) {
+            setError(isRTL ? 'كلمتا المرور غير متطابقتين' : 'Passwords do not match');
             setLoading(false);
             return;
         }
 
-        const fullName = `${firstName} ${lastName}`;
-
         try {
-            const response = await api.auth.register({
-                name: fullName,
+            const response = await api.auth.clientRegister({
                 email: formData.email,
-                phone: formData.phone || undefined,
-                password: formData.password
+                password: formData.password,
+                confirmPassword: formData.confirmPassword,
+                name: formData.name.trim() || undefined,
+                phone: formData.phone.trim() || undefined
             });
 
             if (response.success) {
+                // حفظ التوكن والدخول التلقائي
+                localStorage.setItem('hm_token', response.token);
+                localStorage.setItem('hm_user', JSON.stringify(response.user));
+                const savedRole = response.user?.role || 'buyer';
+                localStorage.setItem('hm_user_role', savedRole);
+
+                document.cookie = `hm_token=${response.token}; path=/; max-age=86400; SameSite=Lax`;
+                document.cookie = `hm_user_role=${savedRole}; path=/; max-age=86400; SameSite=Lax`;
+
                 setSuccess(true);
                 setTimeout(() => {
-                    window.location.href = "/login";
-                }, 2000);
+                    const isApp = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
+                    window.location.href = isApp ? "/" : "/client/dashboard";
+                }, 1000);
             } else {
                 const msg = response.message || response.error || '';
                 if (msg.includes('already exists') || msg.includes('Conflict')) {
                     setError(isRTL ? 'البريد الإلكتروني مستخدم بالفعل' : 'Email already in use');
-                } else if (msg.includes('two names') || msg.includes('Full name')) {
-                    setError(isRTL ? 'يجب إدخال الاسم الأول واسم العائلة' : 'Please enter first and last name');
                 } else {
                     setError(isRTL ? 'فشل إنشاء الحساب، حاول مرة أخرى' : 'Registration failed, please try again');
                 }
@@ -134,37 +138,18 @@ export default function Register() {
                                 </div>
                             )}
 
-                            {/* الاسم الأول واسم العائلة */}
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="relative">
-                                    <User className="absolute start-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
-                                    <input
-                                        id="firstName"
-                                        type="text"
-                                        required
-                                        autoComplete="given-name"
-                                        value={formData.firstName}
-                                        onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl py-4 ps-12 pe-4 outline-none focus:border-[#c9a96e]/50 focus:bg-white/10 transition-all text-sm"
-                                        placeholder={isRTL ? "الاسم الأول" : "First Name"}
-                                    />
-                                </div>
-                                <div className="relative">
-                                    <input
-                                        id="lastName"
-                                        type="text"
-                                        required
-                                        autoComplete="family-name"
-                                        value={formData.lastName}
-                                        onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 outline-none focus:border-[#c9a96e]/50 focus:bg-white/10 transition-all text-sm"
-                                        placeholder={isRTL ? "اسم العائلة" : "Last Name"}
-                                    />
-                                </div>
+                            {/* الاسم بالكامل - اختياري */}
+                            <div className="relative">
+                                <User className="absolute start-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+                                <input
+                                    id="name"
+                                    type="text"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-4 ps-12 pe-4 outline-none focus:border-[#c9a96e]/50 focus:bg-white/10 transition-all"
+                                    placeholder={isRTL ? "الاسم بالكامل (اختياري)" : "Full Name (Optional)"}
+                                />
                             </div>
-                            <p className="text-[9px] text-white/25 text-center tracking-wider -mt-1">
-                                {isRTL ? "مثال: محمد الشمري  •  John Smith" : "e.g.  John Smith  •  محمد الشمري"}
-                            </p>
 
                             {/* البريد الإلكتروني */}
                             <div className="relative">
@@ -211,6 +196,22 @@ export default function Register() {
                                 />
                             </div>
 
+                            {/* تأكيد كلمة المرور */}
+                            <div className="relative">
+                                <Lock className="absolute start-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+                                <input
+                                    id="confirmPassword"
+                                    type="password"
+                                    required
+                                    minLength={6}
+                                    autoComplete="new-password"
+                                    value={formData.confirmPassword}
+                                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-4 ps-12 pe-4 outline-none focus:border-[#c9a96e]/50 focus:bg-white/10 transition-all"
+                                    placeholder={isRTL ? "تأكيد كلمة المرور" : "Confirm Password"}
+                                />
+                            </div>
+
                             <button
                                 type="submit"
                                 disabled={loading}
@@ -220,7 +221,7 @@ export default function Register() {
                                     <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
                                 ) : (
                                     <>
-                                        <span className="uppercase tracking-widest">{isRTL ? "إنشاء الحساب" : "CREATE ACCOUNT"}</span>
+                                        <span className="uppercase tracking-widest">{isRTL ? "إنشاء الحساب ودخول" : "CREATE ACCOUNT & LOGIN"}</span>
                                         <ArrowRight className="w-4 h-4" />
                                     </>
                                 )}

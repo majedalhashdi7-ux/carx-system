@@ -8,7 +8,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
-import { User, ShieldCheck, Lock, ArrowRight, ChevronLeft, ChevronRight, Key, UserCheck, Sparkles, Power, Eye, EyeOff, Phone, AlertOctagon, Copy, MessageCircle } from "lucide-react";
+import { User, ShieldCheck, Lock, ArrowRight, ChevronLeft, ChevronRight, Key, UserCheck, Sparkles, Power, Eye, EyeOff, Phone, AlertOctagon, Copy, MessageCircle, Mail } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/LanguageContext";
@@ -46,23 +46,9 @@ function HMCarLogin() {
     const [rememberMe, setRememberMe] = useState(false); // خيار "تذكرني"
     const [successMessage, setSuccessMessage] = useState(''); // رسائل النجاح
     const [showPassword, setShowPassword] = useState(false); // إظهار أو إخفاء كلمة المرور
-    const [method, setMethod] = useState<'name' | 'phone'>('name'); // طريقة الدخول: بالاسم أو الهاتف
     const [banInfo, setBanInfo] = useState<{ banned: boolean, banCode: string, message: string } | null>(null); // معلومات الحظر في حال تم حظر الجهاز
-    
-    // --- معالجة الدول والأرقام ---
-    const countryList = countryDialCodes.map(c => ({ 
-        code: c.code, 
-        dial: c.dial, 
-        name: isRTL ? (c.nameAr || c.nameEn) : c.nameEn 
-    }));
-    const [countrySearch, setCountrySearch] = useState(''); // البحث عن دولة
-    const [selectedCountry, setSelectedCountry] = useState(countryList[0]); // الدولة المختارة للرمز الدولي
-    const [phoneNumber, setPhoneNumber] = useState(''); // رقم الهاتف المدخل
-    const [showCountry, setShowCountry] = useState(false); // إظهار قائمة الدول
-    
-    // --- التحقق عبر OTP ---
-    const [otpRequested, setOtpRequested] = useState(false); // هل تم طلب رمز التحقق؟
-    const [otpCode, setOtpCode] = useState(''); // الرمز المدخل من المستخدم
+    const [isRegister, setIsRegister] = useState(false); // هل نحن في وضع إنشاء حساب؟
+    const [confirmPassword, setConfirmPassword] = useState(''); // تأكيد كلمة المرور لإنشاء الحساب
     const [showRoleSwitcher, setShowRoleSwitcher] = useState(false); // إظهار محول الأدوار (عميل/مدير)
 
     const { socket, isConnected } = useSocket();
@@ -128,62 +114,31 @@ function HMCarLogin() {
                     deviceId
                 });
             } else {
-                // --- ثانياً: معالجة دخول العميل ---
-
-                // التحقق من صحة الاسم إذا كانت الطريقة بالاسم
-                if (method === 'name') {
-                    const parts = identifier.split(/\s+/).filter(Boolean);
-                    if (parts.length < 2) {
-                        throw new Error('الاسم يجب أن يكون على الأقل اسمين');
-                    }
-                } else {
-                    // التحقق من صحة رقم الهاتف
-                    const digits = phoneNumber.replace(/\D/g, '');
-                    if (digits.length < 8 || digits.length > 15) {
-                        throw new Error('رقم الهاتف غير صالح');
-                    }
+                // --- ثانياً: معالجة دخول أو تسجيل العميل بالإيميل ---
+                if (!identifier) {
+                    throw new Error(isRTL ? 'الرجاء إدخال البريد الإلكتروني' : 'Please enter your email');
                 }
                 
-                // التحقق من طول كلمة المرور
                 if (formData.password.length < 6) {
-                    throw new Error('كلمة المرور يجب أن تكون 6 خانات على الأقل');
+                    throw new Error(isRTL ? 'كلمة المرور يجب أن تكون 6 خانات على الأقل' : 'Password must be at least 6 characters');
                 }
 
-                const phoneE164 = `${selectedCountry.dial}${phoneNumber.replace(/\D/g, '')}`;
-
-                // معالجة طلب رمز OTP إذا لم يطلب بعد (في حال الدخول بالهاتف)
-                if (method === 'phone' && !otpRequested) {
-                    try {
-                        await api.auth.sendOtp({ phone: phoneE164 });
-                        setSuccessMessage(isRTL ? 'تهانينا، تم إرسال رمز التحقق إلى هاتفك' : 'Verification code sent to your phone');
-                        setOtpRequested(true);
-                        setLoading(false);
-                        return;
-                    } catch (err: unknown) {
-                        setError(err instanceof Error ? err.message : (isRTL ? 'فشل إرسال رمز التحقق' : 'Failed to send OTP'));
-                        setLoading(false);
-                        return;
+                if (isRegister) {
+                    if (formData.password !== confirmPassword) {
+                        throw new Error(isRTL ? 'كلمتا المرور غير متطابقتين' : 'Passwords do not match');
                     }
+                    response = await api.auth.clientRegister({
+                        email: identifier,
+                        password: formData.password,
+                        confirmPassword
+                    });
+                } else {
+                    response = await api.auth.clientLogin({
+                        email: identifier,
+                        password: formData.password,
+                        rememberMe
+                    });
                 }
-
-                // التحقق من رمز OTP إذا كان مطلوباً
-                if (method === 'phone' && otpRequested) {
-                    if (!otpCode || otpCode.replace(/\D/g, '').length < 4) {
-                        throw new Error(isRTL ? 'أدخل رمز التحقق الصحيح' : 'Enter valid verification code');
-                    }
-                    try {
-                        await api.auth.verifyOtp({ phone: phoneE164, code: otpCode });
-                    } catch (err: unknown) {
-                        throw new Error(err instanceof Error ? err.message : (isRTL ? 'رمز التحقق غير صحيح، أو انتهت صلاحيته' : 'Invalid or expired verification code'));
-                    }
-                }
-
-                // تنفيذ تسجيل الدخول التلقائي أو العادي للعميل
-                response = await api.auth.autoLogin({
-                    name: method === 'name' ? identifier : phoneE164,
-                    password: formData.password,
-                    deviceId
-                });
             }
 
             if (response.success) {
@@ -197,7 +152,8 @@ function HMCarLogin() {
                 const maxAge = rememberMe ? 604800 : 86400; // أسبوع في حال تذكرني، أو يوم واحد
                 document.cookie = `hm_token=${response.token}; path=/; max-age=${maxAge}; SameSite=Lax`;
                 document.cookie = `hm_user_role=${savedRole}; path=/; max-age=${maxAge}; SameSite=Lax`;
-                if (response.isNewUser) {
+                
+                if (isRegister && role === 'buyer') {
                     setSuccessMessage(isRTL ? 'تم إنشاء حسابك بنجاح! جاري الدخول...' : 'Account created! Logging in...');
                 } else {
                     setSuccessMessage(isRTL ? 'تم تسجيل الدخول بنجاح ✓' : 'Login successful ✓');
@@ -220,7 +176,7 @@ function HMCarLogin() {
                 }, 400);
 
             } else {
-                setError(response.error || (isRTL ? 'فشل تسجيل الدخول' : 'Login failed'));
+                setError(response.error || response.message || (isRTL ? 'فشل العملية' : 'Operation failed'));
                 setLoading(false);
             }
         } catch (err: unknown) {
@@ -231,8 +187,7 @@ function HMCarLogin() {
                 return;
             }
 
-            // All other login failures show the error - no local bypass allowed
-            setError(e.message || (isRTL ? 'فشل تسجيل الدخول. تحقق من البيانات أو تواصل مع الدعم.' : 'Login failed. Check your credentials or contact support.'));
+            setError(e.message || (isRTL ? 'فشل العملية. تحقق من البيانات أو تواصل مع الدعم.' : 'Failed. Check your credentials or contact support.'));
             setLoading(false);
         }
     };
@@ -385,7 +340,7 @@ function HMCarLogin() {
 
                         {/* محول الأدوار - Role Switcher */}
                         {showRoleSwitcher && (
-                            <div className="flex bg-black/20 p-1 rounded-xl border border-white/5 mb-8 backdrop-blur-md">
+                            <div className="flex bg-black/20 p-1 rounded-xl border border-white/5 mb-6 backdrop-blur-md">
                                 <button
                                     onClick={() => setRole('buyer')}
                                     className={cn(
@@ -418,6 +373,36 @@ function HMCarLogin() {
                             </div>
                         )}
 
+                        {/* تبويب تسجيل الدخول / إنشاء حساب للعميل */}
+                        {role === 'buyer' && (
+                            <div className="flex bg-black/20 p-1 rounded-xl border border-white/5 mb-8 backdrop-blur-md">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsRegister(false)}
+                                    className={cn(
+                                        "flex-1 py-3 rounded-lg flex items-center justify-center gap-2 transition-all duration-300 text-[10px] font-bold uppercase tracking-wider",
+                                        !isRegister
+                                            ? "bg-[#c9a96e] text-black shadow-lg"
+                                            : "text-white/40 hover:text-white/60"
+                                    )}
+                                >
+                                    {isRTL ? "تسجيل الدخول" : "SIGN IN"}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsRegister(true)}
+                                    className={cn(
+                                        "flex-1 py-3 rounded-lg flex items-center justify-center gap-2 transition-all duration-300 text-[10px] font-bold uppercase tracking-wider",
+                                        isRegister
+                                            ? "bg-[#c9a96e] text-black shadow-lg"
+                                            : "text-white/40 hover:text-white/60"
+                                    )}
+                                >
+                                    {isRTL ? "حساب جديد" : "REGISTER"}
+                                </button>
+                            </div>
+                        )}
+
                         {/* نموذج البيانات - Form */}
                         <form onSubmit={handleLogin} className="space-y-6">
                             {/* Alert Messages */}
@@ -446,99 +431,30 @@ function HMCarLogin() {
                             {/* Identifier */}
                             <div className="space-y-2">
                                 {role === 'buyer' ? (
-                                    <div className="space-y-3">
-                                        <div className="flex gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => setMethod('name')}
-                                                className={cn("flex-1 px-3 py-2 rounded-lg border text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2",
-                                                    method === 'name' ? "border-blue-500/40 bg-blue-500/10 text-white" : "border-white/10 text-white/40 hover:text-white/70")}
-                                            >
-                                                <User className="w-3.5 h-3.5" />
-                                                {isRTL ? "بالاسم" : "Name"}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setMethod('phone')}
-                                                className={cn("flex-1 px-3 py-2 rounded-lg border text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2",
-                                                    method === 'phone' ? "border-blue-500/40 bg-blue-500/10 text-white" : "border-white/10 text-white/40 hover:text-white/70")}
-                                            >
-                                                <Phone className="w-3.5 h-3.5" />
-                                                {isRTL ? "بالرقم" : "Phone"}
-                                            </button>
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-bold text-white/30 uppercase tracking-[0.3em] block px-1">
+                                            {isRTL ? "البريد الإلكتروني" : "EMAIL ADDRESS"}
+                                        </label>
+                                        <div className="relative group">
+                                            <span className="pointer-events-none absolute inset-0 -m-px rounded-xl blur-xl opacity-50 -z-10 bg-blue-500/25" />
+                                            <Mail className={cn(
+                                                "absolute top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-[#c9a96e] transition-colors",
+                                                isRTL ? "right-4" : "left-4"
+                                            )} />
+                                            <input
+                                                type="email"
+                                                required
+                                                value={formData.email}
+                                                name="client_email_field"
+                                                autoComplete="email"
+                                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                                className={cn(
+                                                    "w-full glass-input bg-white/5 focus:bg-white/10 outline-none border border-blue-500/30 ring-1 ring-blue-500/20",
+                                                    isRTL ? "pr-12 pl-4" : "pl-12 pr-4"
+                                                )}
+                                                placeholder={isRTL ? "اكتب البريد الإلكتروني" : "Enter email address"}
+                                            />
                                         </div>
-                                        {method === 'name' ? (
-                                            <div className="relative group">
-                                                <span className="pointer-events-none absolute inset-0 -m-px rounded-xl blur-xl opacity-50 -z-10 bg-blue-500/25" />
-                                                <User className={cn(
-                                                    "absolute top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-blue-400 transition-colors",
-                                                    isRTL ? "right-4" : "left-4"
-                                                )} />
-                                                <input
-                                                    type="text"
-                                                    required
-                                                    value={formData.email}
-                                                    name="client_name_field"
-                                                    autoComplete="off"
-                                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                                    className={cn(
-                                                        "w-full glass-input bg-white/5 focus:bg-white/10 outline-none border border-blue-500/30 ring-1 ring-blue-500/20",
-                                                        isRTL ? "pr-12 pl-4" : "pl-12 pr-4"
-                                                    )}
-                                                    placeholder={isRTL ? "اكتب الاسم الكامل" : "Enter full name"}
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-2">
-                                                <div className="flex gap-2">
-                                                    <div className="relative">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setShowCountry((v) => !v)}
-                                                            className="flex items-center px-3 py-2 rounded-lg border border-blue-500/30 bg-blue-500/10 text-white"
-                                                        >
-                                                            {selectedCountry.dial}
-                                                        </button>
-                                                        {showCountry && (
-                                                            <div className={cn("absolute top-full mt-2 w-64 bg-[#0a0a0a]/95 border border-white/10 rounded-xl z-50 shadow-2xl backdrop-blur-2xl", isRTL ? "right-0" : "left-0")}>
-                                                                <div className="p-2 border-b border-white/10">
-                                                                    <input
-                                                                        type="text"
-                                                                        value={countrySearch}
-                                                                        onChange={(e) => setCountrySearch(e.target.value)}
-                                                                        placeholder={isRTL ? "بحث الدولة..." : "Search country..."}
-                                                                        className={cn("w-full bg-white/5 border border-white/10 focus:border-blue-500/40 focus:bg-white/10 outline-none px-3 py-2 rounded-lg text-xs text-white", isRTL ? "text-right" : "text-left")}
-                                                                    />
-                                                                </div>
-                                                                <div className="max-h-40 overflow-auto">
-                                                                    {countryList
-                                                                        .filter(c => c.name.toLowerCase().includes(countrySearch.toLowerCase()) || c.dial.includes(countrySearch))
-                                                                        .map((c) => (
-                                                                            <button
-                                                                                key={c.code}
-                                                                                type="button"
-                                                                                onClick={() => { setSelectedCountry(c); setCountrySearch(''); setShowCountry(false); }}
-                                                                                className={cn("w-full px-4 py-3 text-white/80 hover:bg-white/10 flex items-center justify-between transition-colors border-b border-white/[0.03] last:border-0", isRTL ? "flex-row-reverse" : "flex-row")}
-                                                                            >
-                                                                                <span className="text-[11px] font-medium">{c.name}</span>
-                                                                                <span className="text-[11px] font-bold text-blue-400">{c.dial}</span>
-                                                                            </button>
-                                                                        ))}
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <input
-                                                        type="tel"
-                                                        value={phoneNumber}
-                                                        onChange={(e) => setPhoneNumber(e.target.value)}
-                                                        required
-                                                        placeholder={isRTL ? "رقم الهاتف" : "Phone number"}
-                                                        className="flex-1 glass-input bg-white/5 border-blue-500/30 focus:bg-white/10 outline-none px-3 py-2 rounded-lg"
-                                                    />
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
                                 ) : (
                                     <div className="space-y-2">
@@ -605,35 +521,34 @@ function HMCarLogin() {
                                 </div>
                             </div>
 
-                            {method === 'phone' && otpRequested && (
+                            {/* Confirm Password Field (Only for client registration) */}
+                            {role === 'buyer' && isRegister && (
                                 <div className="space-y-2">
                                     <label className="text-[9px] font-bold text-white/30 uppercase tracking-[0.3em] block px-1">
-                                        {isRTL ? "رمز التحقق" : "Verification Code"}
+                                        {isRTL ? "تأكيد كلمة المرور" : "CONFIRM PASSWORD"}
                                     </label>
-                                    <div className="flex gap-2">
+                                    <div className="relative group">
+                                        <span className="pointer-events-none absolute inset-0 -m-px rounded-xl blur-xl opacity-50 -z-10 bg-blue-500/25" />
+                                        <Lock className={cn(
+                                            "absolute top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-[#c9a96e] transition-colors",
+                                            isRTL ? "right-4" : "left-4"
+                                        )} />
                                         <input
-                                            type="text"
-                                            inputMode="numeric"
-                                            value={otpCode}
-                                            onChange={(e) => setOtpCode(e.target.value.replace(/\s/g, ''))}
-                                            placeholder={isRTL ? "أدخل الرمز" : "Enter code"}
-                                            className="flex-1 glass-input bg-white/5 border-white/10 focus:bg-white/10 outline-none px-3 py-2 rounded-lg"
+                                            type={showPassword ? "text" : "password"}
+                                            required
+                                            minLength={6}
+                                            autoCapitalize="none"
+                                            autoComplete="new-password"
+                                            name="user_confirm_password_field"
+                                            autoCorrect="off"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            className={cn(
+                                                "w-full glass-input bg-white/5 focus:bg-white/10 outline-none border border-blue-500/30 ring-1 ring-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.25)]",
+                                                isRTL ? "pr-12 pl-4" : "pl-12 pr-4"
+                                            )}
+                                            placeholder="••••••••"
                                         />
-                                        <button
-                                            type="button"
-                                            onClick={async () => {
-                                                const phoneE164 = `${selectedCountry.dial}${phoneNumber.replace(/\D/g, '')}`;
-                                                try {
-                                                    await api.auth.sendOtp({ phone: phoneE164 });
-                                                    setSuccessMessage(isRTL ? 'تم إرسال الرمز مرة أخرى' : 'Code resent');
-                                                } catch {
-                                                    setSuccessMessage(isRTL ? 'فشل إرسال الرمز مرة أخرى' : 'Failed to resend code');
-                                                }
-                                            }}
-                                            className="px-4 py-2 rounded-lg border border-white/10 text-white/80 hover:text-white hover:bg-white/10"
-                                        >
-                                            {isRTL ? "إعادة الإرسال" : "Resend"}
-                                        </button>
                                     </div>
                                 </div>
                             )}
@@ -653,12 +568,25 @@ function HMCarLogin() {
                                         {isRTL ? "تذكرني" : "REMEMBER ME"}
                                     </span>
                                 </div>
-                                <Link
-                                    href="/register"
-                                    className="text-[9px] font-bold text-[#c9a96e]/70 uppercase tracking-[0.15em] hover:text-[#c9a96e] transition-colors hover:underline underline-offset-4 decoration-[#c9a96e]/30"
-                                >
-                                    {isRTL ? "حساب جديد" : "NEW ACCOUNT"}
-                                </Link>
+                                {role === 'buyer' ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsRegister(!isRegister)}
+                                        className="text-[9px] font-bold text-[#c9a96e]/70 uppercase tracking-[0.15em] hover:text-[#c9a96e] transition-colors hover:underline underline-offset-4 decoration-[#c9a96e]/30"
+                                    >
+                                        {isRegister 
+                                            ? (isRTL ? "لديك حساب؟ دخول" : "HAVE ACCOUNT? LOGIN") 
+                                            : (isRTL ? "حساب جديد" : "NEW ACCOUNT")
+                                        }
+                                    </button>
+                                ) : (
+                                    <Link
+                                        href="/register"
+                                        className="text-[9px] font-bold text-[#c9a96e]/70 uppercase tracking-[0.15em] hover:text-[#c9a96e] transition-colors hover:underline underline-offset-4 decoration-[#c9a96e]/30"
+                                    >
+                                        {isRTL ? "حساب جديد" : "NEW ACCOUNT"}
+                                    </Link>
+                                )}
                             </div>
 
                             {/* Submit Button - Start Engine Style */}
@@ -675,7 +603,12 @@ function HMCarLogin() {
                                 ) : (
                                     <>
                                         <Power className="w-5 h-5 group-hover:animate-pulse" />
-                                        <span className="text-sm font-bold tracking-widest">{isRTL ? "بدء المحرك (دخول)" : "START ENGINE (LOGIN)"}</span>
+                                        <span className="text-sm font-bold tracking-widest">
+                                            {role === 'buyer' && isRegister
+                                                ? (isRTL ? "بدء المحرك (تسجيل)" : "START ENGINE (REGISTER)")
+                                                : (isRTL ? "بدء المحرك (دخول)" : "START ENGINE (LOGIN)")
+                                            }
+                                        </span>
                                         <ArrowRight className={cn("w-4 h-4 transition-transform opacity-50 group-hover:opacity-100", isRTL ? "rotate-180 group-hover:-translate-x-1" : "group-hover:translate-x-1")} />
                                     </>
                                 )}

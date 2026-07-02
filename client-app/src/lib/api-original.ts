@@ -107,6 +107,14 @@ export const api = {
             method: 'POST',
             body: JSON.stringify(credentials),
         }),
+        clientLogin: (credentials: object) => fetchAPI('/api/v2/auth/client-login', {
+            method: 'POST',
+            body: JSON.stringify(credentials),
+        }),
+        clientRegister: (data: object) => fetchAPI('/api/v2/auth/client-register', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
         // التسجيل/الدخول التلقائي للعملاء
         autoLogin: (data: { name: string; password: string; deviceId?: string }) =>
             fetchAPI('/api/v2/auth/auto-login', {

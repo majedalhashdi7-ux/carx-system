@@ -80,7 +80,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
       // Apply domain config immediately for better UX
       setTenant(domainConfig);
       if (typeof document !== 'undefined') {
-        applyTheme(domainConfig.theme);
+        applyTheme(domainConfig.theme, domainConfig.id);
         updateFavicon(domainConfig.favicon);
         document.title = domainConfig.name || 'HM CAR';
       }
@@ -107,7 +107,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
         setTenant(mergedTenant);
         
         // تطبيق الثيم على المتصفح
-        applyTheme(mergedTenant.theme);
+        applyTheme(mergedTenant.theme, mergedTenant.id);
         
         // تحديث favicon
         updateFavicon(mergedTenant.favicon);
@@ -151,10 +151,14 @@ export function useTenant() {
 
 // ── Helper Functions ──
 
-function applyTheme(theme: TenantTheme) {
+function applyTheme(theme: TenantTheme, tenantId?: string) {
   if (typeof document === 'undefined') return;
 
   const root = document.documentElement;
+  
+  if (tenantId) {
+    root.setAttribute('data-tenant', tenantId);
+  }
   
   // تطبيق CSS Variables
   root.style.setProperty('--color-primary', theme.primaryColor);
