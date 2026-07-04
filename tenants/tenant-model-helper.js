@@ -33,18 +33,12 @@ function getModel(req, modelName) {
     return req.tenantModels[modelName];
   }
 
-  const isProduction = String(process.env.NODE_ENV || '').toLowerCase() === 'production';
-  const requestPath = String(req.originalUrl || req.path || '');
-  const isApiRequest = requestPath.startsWith('/api') || requestPath.startsWith('/v2');
-  if (isProduction && isApiRequest) {
-    throw new Error(`Tenant model "${modelName}" unavailable in production API context`);
-  }
-
-  // التوافق العكسي: استخدم Model الافتراضي
+  // التوافق العكسي: استخدم Model الافتراضي من mongoose
+  // (يعمل في الإنتاج وفي التطوير إذا لم تكن tenantModels متوفرة)
   try {
     return require(`../models/${modelName}`);
   } catch (err) {
-    throw new Error(`Model "${modelName}" غير موجود. تأكد من صحة الاسم.`);
+    throw new Error(`Model "${modelName}" غير موجود. تأكد من صحة الاسم. (tenant models missing for req: ${req.originalUrl})`);
   }
 }
 

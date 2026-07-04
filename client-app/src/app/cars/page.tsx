@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, ArrowRight, X, SlidersHorizontal, ArrowLeft, Car,
-    Bell, BellPlus, CheckCircle, Fuel, Palette, CalendarRange, Sparkles, HelpCircle
+    CheckCircle, Fuel, Palette, CalendarRange, Sparkles, HelpCircle
 } from "lucide-react";
 import Navbar from '@/components/Navbar';
 import CarCard from '@/components/CarCard';
@@ -81,7 +81,6 @@ function CarsContent() {
     const [totalPages, setTotalPages] = useState(1);
     const [totalCars, setTotalCars] = useState(0);
     const [page, setPage] = useState(1);
-    const [alertSaved, setAlertSaved] = useState(false);
 
     // Filters state
     const [q, setQ] = useState(searchParams.get('q') || '');
@@ -156,19 +155,9 @@ function CarsContent() {
         setPage(1);
     };
 
-    const saveAsAlert = () => {
-        if (!isLoggedIn) { router.push('/login'); return; }
-        const alert = { q, brand, priceRange, yearMin, yearMax, fuelType, colorFilter, savedAt: new Date().toISOString() };
-        try {
-            const existing = JSON.parse(localStorage.getItem('hm_smart_alerts') || '[]');
-            existing.unshift(alert);
-            localStorage.setItem('hm_smart_alerts', JSON.stringify(existing.slice(0, 10)));
-            setAlertSaved(true);
-            setTimeout(() => setAlertSaved(false), 3000);
-        } catch { }
-    };
 
     const hasActiveFilters = q || brand || priceRange || yearMin || yearMax || fuelType || colorFilter;
+
 
     const priceRanges = [
         { id: '0-100k', label: isRTL ? 'تحت ١٠٠ ألف' : '< 100K' },
@@ -432,22 +421,8 @@ function CarsContent() {
                             </div>
                         </div>
 
-                        {/* صف حفظ التنبيه */}
-                        <div className="flex items-center justify-between border-t border-white/5 pt-3 text-xs text-white/40">
-                            <div>{isRTL ? 'تخصيص البحث الخاص بك للحصول على التحديثات' : 'Save your criteria for alerts'}</div>
-                            <button
-                                onClick={saveAsAlert}
-                                className={cn(
-                                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all text-[11px] font-bold",
-                                    alertSaved
-                                        ? "bg-green-500/10 border-green-500/20 text-green-400"
-                                        : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"
-                                )}
-                            >
-                                <Bell className="w-3.5 h-3.5" />
-                                {alertSaved ? (isRTL ? 'تم الحفظ ✓' : 'Saved ✓') : (isRTL ? 'حفظ كتنبيه ذكي' : 'Save Alert')}
-                            </button>
-                        </div>
+
+
                     </div>
                 </div>
 
