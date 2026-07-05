@@ -40,7 +40,7 @@ function HMCarLogin() {
     
     // --- حالات الواجهة (States) ---
     const [role, setRole] = useState<'buyer' | 'admin'>('buyer'); // دور المستخدم الحالي
-    const [formData, setFormData] = useState({ email: '', password: '' }); // بيانات النموذج الأساسية
+    const [formData, setFormData] = useState({ email: '', password: '', name: '' }); // بيانات النموذج الأساسية
     const [loading, setLoading] = useState(false); // حالة التحميل أثناء الإرسال
     const [error, setError] = useState(''); // رسائل الخطأ
     const [rememberMe, setRememberMe] = useState(false); // خيار "تذكرني"
@@ -124,13 +124,17 @@ function HMCarLogin() {
                 }
 
                 if (isRegister) {
+                    if (!formData.name.trim()) {
+                        throw new Error(isRTL ? 'الرجاء إدخال الاسم الكامل' : 'Please enter your full name');
+                    }
                     if (formData.password !== confirmPassword) {
                         throw new Error(isRTL ? 'كلمتا المرور غير متطابقتين' : 'Passwords do not match');
                     }
                     response = await api.auth.clientRegister({
                         email: identifier,
                         password: formData.password,
-                        confirmPassword
+                        confirmPassword,
+                        name: formData.name.trim()
                     });
                 } else {
                     response = await api.auth.clientLogin({
@@ -211,7 +215,13 @@ function HMCarLogin() {
         } catch { }
     }, []);
 
-    // تم حذف التعبئة التلقائية لبيانات الأدمن لأسباب أمنية
+    // عند تغيير وضع التسجيل/الدخول، امسح الحقول
+    useEffect(() => {
+        setError('');
+        setSuccessMessage('');
+        setConfirmPassword('');
+        setFormData(prev => ({ ...prev, name: '' }));
+    }, [isRegister]);
 
     return (
         <div className={`relative min-h-screen bg-black text-white flex items-center justify-center p-6 overflow-hidden ${isRTL ? 'font-arabic' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
@@ -463,6 +473,10 @@ function HMCarLogin() {
                                         </label>
                                         <div className="relative">
                                             <span className="pointer-events-none absolute inset-0 -m-px rounded-xl blur-xl opacity-50 -z-10 bg-red-500/25" />
+                                            <User className={cn(
+                                                "absolute top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 transition-colors",
+                                                isRTL ? "right-4" : "left-4"
+                                            )} />
                                             <input
                                                 type="text"
                                                 required
@@ -473,8 +487,8 @@ function HMCarLogin() {
                                                 autoCorrect="off"
                                                 spellCheck="false"
                                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                                className={cn("w-full glass-input bg-white/5 focus:bg-white/10 outline-none border border-red-500/30 ring-1 ring-red-500/20", isRTL ? "pr-4 pl-4" : "pl-4 pr-4")}
-                                                placeholder={isRTL ? "ايميل   (ACCESS ID)" : "SECRET ACCESS ID"}
+                                                className={cn("w-full glass-input bg-white/5 focus:bg-white/10 outline-none border border-red-500/30 ring-1 ring-red-500/20", isRTL ? "pr-12 pl-4" : "pl-12 pr-4")}
+                                                placeholder={isRTL ? "ايميل المدير" : "Admin Email"}
                                             />
                                         </div>
                                     </div>
@@ -520,6 +534,35 @@ function HMCarLogin() {
                                     </button>
                                 </div>
                             </div>
+
+                            {/* Name field - only for registration */}
+                            {role === 'buyer' && isRegister && (
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-bold text-white/30 uppercase tracking-[0.3em] block px-1">
+                                        {isRTL ? "الاسم الكامل" : "FULL NAME"}
+                                    </label>
+                                    <div className="relative group">
+                                        <span className="pointer-events-none absolute inset-0 -m-px rounded-xl blur-xl opacity-50 -z-10 bg-blue-500/25" />
+                                        <User className={cn(
+                                            "absolute top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-[#c9a96e] transition-colors",
+                                            isRTL ? "right-4" : "left-4"
+                                        )} />
+                                        <input
+                                            type="text"
+                                            required
+                                            value={formData.name}
+                                            name="client_name_field"
+                                            autoComplete="name"
+                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                            className={cn(
+                                                "w-full glass-input bg-white/5 focus:bg-white/10 outline-none border border-blue-500/30 ring-1 ring-blue-500/20",
+                                                isRTL ? "pr-12 pl-4" : "pl-12 pr-4"
+                                            )}
+                                            placeholder={isRTL ? "اكتب اسمك الكامل" : "Enter your full name"}
+                                        />
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Confirm Password Field (Only for client registration) */}
                             {role === 'buyer' && isRegister && (

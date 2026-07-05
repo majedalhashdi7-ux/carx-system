@@ -8,7 +8,7 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Home, Car, User } from 'lucide-react';
+import { Home, Car, User, Wrench } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { useSettings } from '@/lib/SettingsContext';
@@ -65,6 +65,7 @@ export default function BottomTabBar() {
             matchPaths: ['/'],
             isWhatsapp: false,
             isCurrency: false,
+            isSpareParts: false,
         },
         {
             href: '/cars',
@@ -75,6 +76,7 @@ export default function BottomTabBar() {
             matchPaths: ['/cars', '/gallery', '/showroom'],
             isWhatsapp: false,
             isCurrency: false,
+            isSpareParts: false,
         },
         {
             href: '',
@@ -85,6 +87,18 @@ export default function BottomTabBar() {
             matchPaths: [],
             isWhatsapp: true,
             isCurrency: false,
+            isSpareParts: false,
+        },
+        {
+            href: '/parts',
+            icon: Wrench,
+            labelAr: 'قطع الغيار',
+            labelEn: 'Parts',
+            exact: false,
+            matchPaths: ['/parts'],
+            isWhatsapp: false,
+            isCurrency: false,
+            isSpareParts: true,
         },
         {
             href: '',
@@ -95,6 +109,7 @@ export default function BottomTabBar() {
             matchPaths: [],
             isWhatsapp: false,
             isCurrency: true,
+            isSpareParts: false,
         },
         {
             href: isLoggedIn ? '/client/dashboard' : '/login',
@@ -105,6 +120,7 @@ export default function BottomTabBar() {
             matchPaths: ['/client', '/login', '/register'],
             isWhatsapp: false,
             isCurrency: false,
+            isSpareParts: false,
         }
     ];
 

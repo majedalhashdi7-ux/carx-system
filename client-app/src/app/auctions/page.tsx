@@ -1,17 +1,11 @@
 'use client';
 
-/**
- * صفحة المزادات (Auctions Page)
- * تعرض جميع جلسات المزايدة المتاحة للمستخدم.
- * تنقسم الجلسات إلى:
- * 1. مباشر (LIVE): مزادات تجري في الوقت الحالي.
- * 2. المعرض (SHOWROOM): سيارات معروضة للمزايدة يدوياً.
- * 3. قادمة (UPCOMING): مزادات ستبدأ قريباً.
- */
-
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
-import { Gavel, AlertCircle, Radio, Car } from "lucide-react";
+import {
+    Gavel, AlertCircle, Radio, Car, Clock, Users,
+    ChevronLeft, ChevronRight, MessageCircle, ExternalLink
+} from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/LanguageContext";
@@ -19,9 +13,16 @@ import { api } from "@/lib/api-original";
 import { useSettings } from "@/lib/SettingsContext";
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
-import ClientPageHeader from "@/components/ClientPageHeader";
+import Image from "next/image";
 
-export default function Auctions() {
+/* ── Tabs ── */
+const TABS = [
+    { id: 'LIVE', labelAr: 'مباشر الآن', labelEn: 'LIVE', icon: Radio },
+    { id: 'SHOWROOM', labelAr: 'قاعة العرض', labelEn: 'SHOWROOM', icon: Gavel },
+    { id: 'UPCOMING', labelAr: 'القادمة', labelEn: 'UPCOMING', icon: Clock },
+];
+
+export default function AuctionsPage() {
     const router = useRouter();
     const { isRTL } = useLanguage();
     const { formatPrice } = useSettings();
@@ -34,23 +35,19 @@ export default function Auctions() {
     const normalizeImage = (src?: string) => (typeof src === 'string' ? src.trim() : '');
 
     useEffect(() => {
-        // تحميل البيانات بناءً على التبويب المختار (LIVE, SHOWROOM, UPCOMING)
         const loadData = async () => {
             setLoading(true);
             try {
                 if (activeTab === 'SHOWROOM') {
-                    // جلب المزادات المباشرة اليدوية من قاعدة البيانات
                     const data = await api.liveAuctions.list();
                     if (data.success) setAuctions(data.data || []);
                 } else {
-                    // الحالات الصحيحة للـ API: 'live' للمباشر و 'upcoming' للقادم
                     const status = activeTab === 'LIVE' ? 'live' : 'upcoming';
                     const data = await api.auctions.list({ status });
                     if (data.success) setAuctions(data.data || []);
                 }
-
             } catch (err) {
-                console.error("Failed to load data", err);
+                console.error("Failed to load auctions", err);
             } finally {
                 setLoading(false);
             }
@@ -58,248 +55,208 @@ export default function Auctions() {
         loadData();
     }, [activeTab]);
 
+    const handleJoin = (item: any) => {
+        if (!isLoggedIn) { router.push('/login'); return; }
+        if (activeTab === 'SHOWROOM') router.push(`/auctions/live/${item._id || item.id}`);
+        else router.push(`/auctions/${item.id || item._id}`);
+    };
+
     return (
-        <div className={`relative min-h-screen bg-black text-white overflow-x-hidden ${isRTL ? 'font-arabic' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
+        <div className={cn("min-h-screen bg-[#08080f] text-white", isRTL && "font-arabic")} dir="rtl">
             <Navbar />
 
-            <div className="pt-24 px-6 max-w-[1500px] mx-auto">
-                <ClientPageHeader
-                    title={isRTL ? "المزادات" : "AUCTIONS"}
-                    subtitle={activeTab === 'SHOWROOM' ? (isRTL ? "المعرض المباشر" : "LIVE SHOWROOM") : (isRTL ? "بث مباشر" : "LIVE FEED")}
-                    icon={Gavel}
-                />
-            </div>
-
-            {/* ── VIDEO HERO ── */}
-            <div className="relative h-[85vh] md:h-[60vh] overflow-hidden mt-8 mx-6 rounded-3xl border border-white/5">
-                <video
-                    autoPlay loop muted playsInline
-                    className="absolute inset-0 w-full h-full object-cover brightness-[0.45] contrast-[1.25] saturate-[1.1]"
-                >
-                    <source src="/videos/video_2026-02-07_22-24-50.mp4" type="video/mp4" />
-                </video>
-                <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/70" />
-
-                {/* Hero Content */}
-                <div className="absolute inset-0 flex items-end z-10">
-                    <div className="max-w-[1500px] mx-auto w-full px-6 pb-16">
-                        <motion.div
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.8 }}
-                            className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8"
-                        >
-                            <div>
-                                <span className="text-[9px] font-bold uppercase tracking-[0.5em] text-accent-red/80 block mb-3">
-                                    {isRTL ? "بث مباشر" : "LIVE FEED"}
+            {/* ── Page Header ── */}
+            <div className="pt-20">
+                <div className="h-1.5 bg-gradient-to-r from-transparent via-[#C9A96E] to-transparent opacity-60" />
+                <div className="bg-gradient-to-b from-[#0e0e1a] to-[#08080f] py-8 px-4">
+                    <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div>
+                            <h1 className="text-3xl sm:text-4xl font-black italic tracking-tighter uppercase text-white">
+                                {isRTL ? 'المزادات' : 'AUCTIONS'}
+                                <span className="block text-sm not-italic font-light tracking-[0.4em] text-white/25 mt-1">
+                                    Live · Showroom · Upcoming
                                 </span>
-                                <h1 className="text-4xl md:text-5xl font-black tracking-[-0.04em] uppercase italic">
-                                    {activeTab === 'SHOWROOM' ? (isRTL ? "المعرض المباشر" : "SHOW SHOWROOM") : (isRTL ? "المزادات" : "AUCTIONS")}
-                                </h1>
-                            </div>
+                            </h1>
+                        </div>
 
-                            {/* Tabs */}
-                            <div className="flex bg-white/[0.04] p-1.5 rounded-xl border border-white/5 backdrop-blur-xl">
-                                <button
-                                    onClick={() => setActiveTab('LIVE')}
-                                    className={cn(
-                                        "px-8 py-3.5 rounded-lg text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-400 flex items-center gap-3",
-                                        activeTab === 'LIVE'
-                                            ? "bg-accent-red text-white shadow-[0_8px_25px_rgba(232,54,78,0.25)]"
-                                            : "text-white/30 hover:text-white/50"
-                                    )}
-                                >
-                                    <Radio className={cn("w-3.5 h-3.5", activeTab === 'LIVE' && "animate-pulse")} />
-                                    {isRTL ? "مباشر" : "LIVE"}
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('SHOWROOM')}
-                                    className={cn(
-                                        "px-8 py-3.5 rounded-lg text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-400 flex items-center gap-3",
-                                        activeTab === 'SHOWROOM'
-                                            ? "bg-cinematic-neon-blue text-black shadow-lg"
-                                            : "text-white/30 hover:text-white/50"
-                                    )}
-                                >
-                                    <Gavel className="w-3.5 h-3.5" />
-                                    {isRTL ? "المعرض" : "SHOWROOM"}
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('UPCOMING')}
-                                    className={cn(
-                                        "px-8 py-3.5 rounded-lg text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-400",
-                                        activeTab === 'UPCOMING'
-                                            ? "bg-white text-black shadow-lg"
-                                            : "text-white/30 hover:text-white/50"
-                                    )}
-                                >
-                                    {isRTL ? "قادمة" : "UPCOMING"}
-                                </button>
-                            </div>
-                        </motion.div>
+                        {/* Tabs */}
+                        <div className="flex bg-[#111118] border border-white/8 rounded-2xl p-1.5 gap-1">
+                            {TABS.map(tab => {
+                                const Icon = tab.icon;
+                                const isActive = activeTab === tab.id;
+                                return (
+                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                                        className={cn(
+                                            "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all",
+                                            isActive
+                                                ? "bg-[#C9A96E] text-black shadow-[0_0_16px_rgba(201,169,110,0.3)]"
+                                                : "text-white/30 hover:text-white/60"
+                                        )}>
+                                        <Icon className={cn("w-3.5 h-3.5", tab.id === 'LIVE' && isActive && "animate-pulse")} />
+                                        {isRTL ? tab.labelAr : tab.labelEn}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <main className="relative z-10 pt-16 pb-32 px-6 max-w-[1500px] mx-auto">
-                <div className="grid grid-cols-1 gap-8">
-                    <AnimatePresence mode="popLayout">
-                        {auctions.map((item, i) => (
-                            <motion.div key={item._id || item.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-                                className="group obsidian-card overflow-hidden flex flex-col lg:flex-row"
-                            >
-                                {activeTab === 'SHOWROOM' ? (
-                                    <>
-                                        <div className="lg:w-[40%] h-64 lg:h-auto overflow-hidden relative">
-                                            {(() => {
-                                                const imageKey = `${item._id || item.id}-live`;
-                                                const imageSrc = normalizeImage((item.cars && item.cars[0]?.images?.[0]) || '');
-                                                const showFallback = !imageSrc || imageErrors[imageKey];
-                                                return showFallback ? (
-                                                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-white/5 via-black/40 to-black/80">
-                                                        <div className="text-center">
-                                                            <Car className="w-10 h-10 text-white/15 mx-auto mb-2" />
-                                                            <div className="text-[9px] font-black uppercase tracking-[0.3em] text-white/30">No Image</div>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <>
-                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                    <img
-                                                        src={imageSrc}
-                                                        className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
-                                                        alt=""
-                                                        onError={() => setImageErrors(prev => ({ ...prev, [imageKey]: true }))}
-                                                    />
-                                                    </>
-                                                );
-                                            })()}
-                                            {item.status === 'live' && (
-                                                <div className="absolute top-6 left-6 px-4 py-2 bg-cinematic-neon-red/20 border border-cinematic-neon-red/40 rounded-lg backdrop-blur-md">
-                                                    <span className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2">
-                                                        <div className="w-2 h-2 rounded-full bg-cinematic-neon-red animate-pulse" /> {isRTL ? 'بث مباشر' : 'LIVE'}
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="flex-1 p-10 space-y-8 flex flex-col justify-center">
-                                            <div>
-                                                <h2 className="text-4xl font-black italic uppercase tracking-tighter">{item.title}</h2>
-                                                <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest mt-2">{item.externalUrl ? 'Linked to Official Platform' : 'Internal Selection'}</p>
-                                            </div>
-                                            <div className="flex items-center gap-10">
-                                                <div>
-                                                    <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.3em] block mb-1">Cars Available</span>
-                                                    <div className="text-2xl font-black">{item.cars?.length || 0}</div>
-                                                </div>
-                                                <div>
-                                                    <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.3em] block mb-1">Session Status</span>
-                                                    <div className={cn("text-xs font-black uppercase tracking-widest", item.status === 'live' ? "text-cinematic-neon-blue" : "text-white/40")}>{item.status}</div>
-                                                </div>
-                                            </div>
-                                            <div 
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    if (!isLoggedIn) router.push('/login');
-                                                    else router.push(`/auctions/live/${item._id || item.id}`);
-                                                }}
-                                                className="cursor-pointer"
-                                            >
-                                                <button className="w-full lg:w-fit px-12 py-5 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.5em] hover:bg-cinematic-neon-blue hover:text-black hover:shadow-[0_0_30px_rgba(0,240,255,0.4)] transition-all">
-                                                    {isRTL ? 'دخول قاعة العرض' : 'ENTER SHOWROOM'}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="lg:w-[40%] h-64 lg:h-auto overflow-hidden relative">
-                                            {(() => {
-                                                const imageKey = `${item._id || item.id}-classic`;
-                                                const imageSrc = normalizeImage(item.car?.images?.[0]);
-                                                const showFallback = !imageSrc || imageErrors[imageKey];
-                                                return showFallback ? (
-                                                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-white/5 via-black/40 to-black/80">
-                                                        <div className="text-center">
-                                                            <Car className="w-10 h-10 text-white/15 mx-auto mb-2" />
-                                                            <div className="text-[9px] font-black uppercase tracking-[0.3em] text-white/30">No Image</div>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <>
-                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                    <img
-                                                        src={imageSrc}
-                                                        className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
-                                                        alt=""
-                                                        onError={() => setImageErrors(prev => ({ ...prev, [imageKey]: true }))}
-                                                    />
-                                                    </>
-                                                );
-                                            })()}
-                                            {item.status === 'running' && (
-                                                <div className="absolute top-6 left-6 flex items-center gap-2.5 px-3.5 py-1.5 bg-black/60 backdrop-blur-xl border border-accent-red/30 rounded-lg">
-                                                    <div className="w-2 h-2 rounded-full bg-accent-red animate-pulse" />
-                                                    <span className="text-[9px] font-bold text-white uppercase tracking-[0.2em]">{isRTL ? "مباشر" : "LIVE"}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="flex-1 p-10 space-y-8 flex flex-col justify-center">
-                                            <div>
-                                                <span className="text-[10px] font-black text-accent-red/60 uppercase tracking-widest">{item.car?.make}</span>
-                                                <h2 className="text-4xl font-black italic uppercase tracking-tighter">{item.car?.title}</h2>
-                                            </div>
-                                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-8 border-y border-white/5 py-6">
-                                                <div>
-                                                    <span className="text-[9px] font-black text-white/20 uppercase mb-1 block">Current Bid</span>
-                                                    <div className="text-2xl font-black text-cinematic-neon-blue">{formatPrice(Number(item.currentBid))}</div>
-                                                </div>
-                                                <div>
-                                                    <span className="text-[9px] font-black text-white/20 uppercase mb-1 block">Ends On</span>
-                                                    <div className="text-xl font-black">{new Date(item.endsAt).toLocaleDateString()}</div>
-                                                </div>
-                                                <div className="hidden lg:block">
-                                                    <span className="text-[9px] font-black text-white/20 uppercase mb-1 block">Total Bids</span>
-                                                    <div className="text-xl font-black">{item.bidders || 0}</div>
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-4">
-                                                <div 
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        if (!isLoggedIn) router.push('/login');
-                                                        else router.push(`/auctions/${item.id}`);
-                                                    }}
-                                                    className="flex-1 cursor-pointer"
-                                                >
-                                                    <button className="w-full py-5 bg-accent-red text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.5em] hover:shadow-[0_0_30px_rgba(232,54,78,0.4)] transition-all">
-                                                        {isRTL ? 'زايد الآن' : 'PLACE BID'}
-                                                    </button>
-                                                </div>
-                                                <button className="px-10 py-5 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10">WATCH</button>
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
-                            </motion.div>
-                        ))}
-                    </AnimatePresence>
-                </div>
+            <main className="max-w-7xl mx-auto px-4 pb-28 pt-8">
 
-                {auctions.length === 0 && !loading && (
-                    <div className="py-32 text-center space-y-4">
-                        <AlertCircle className="w-16 h-16 text-white/5 mx-auto" />
-                        <h3 className="text-2xl font-black text-white/20 uppercase tracking-widest">{isRTL ? "لا توجد نتائج حالياً" : "NO SESSIONS FOUND"}</h3>
-                    </div>
-                )}
-
+                {/* Loading */}
                 {loading && (
-                    <div className="space-y-8">
-                        {[1, 2].map((n) => (
-                            <div key={n} className="h-80 rounded-3xl bg-white/[0.02] animate-pulse border border-white/5" />
+                    <div className="space-y-4">
+                        {[1, 2, 3].map(n => (
+                            <div key={n} className="h-56 rounded-2xl bg-white/3 border border-white/5 animate-pulse" />
                         ))}
                     </div>
                 )}
+
+                {/* Empty */}
+                {!loading && auctions.length === 0 && (
+                    <div className="py-28 text-center border border-dashed border-white/8 rounded-2xl">
+                        <Gavel className="w-14 h-14 text-white/8 mx-auto mb-4" />
+                        <h2 className="text-lg font-black text-white/25 uppercase tracking-widest">
+                            {isRTL ? "لا توجد جلسات حالياً" : "NO SESSIONS FOUND"}
+                        </h2>
+                    </div>
+                )}
+
+                {/* Auction Cards */}
+                <AnimatePresence mode="popLayout">
+                    {!loading && auctions.map((item, i) => {
+                        const isShowroom = activeTab === 'SHOWROOM';
+                        const imgSrc = normalizeImage(
+                            isShowroom
+                                ? (item.cars?.[0]?.images?.[0] || '')
+                                : (item.car?.images?.[0] || '')
+                        );
+                        const imgKey = `${item._id || item.id}-${i}`;
+                        const hasImg = imgSrc && !imageErrors[imgKey];
+
+                        return (
+                            <motion.div key={item._id || item.id}
+                                initial={{ opacity: 0, y: 16 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -16 }}
+                                transition={{ delay: i * 0.06 }}
+                                className="group mb-4 bg-[#111118] border border-white/6 rounded-2xl overflow-hidden flex flex-col sm:flex-row hover:border-[#C9A96E]/25 hover:shadow-[0_8px_32px_rgba(201,169,110,0.06)] transition-all duration-300"
+                            >
+                                {/* Image */}
+                                <div className="sm:w-72 h-52 sm:h-auto relative bg-[#0a0a12] shrink-0 overflow-hidden">
+                                    {hasImg ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img src={imgSrc} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                            onError={() => setImageErrors(p => ({ ...p, [imgKey]: true }))} />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center">
+                                            <Car className="w-12 h-12 text-white/8" />
+                                        </div>
+                                    )}
+                                    <div className="absolute inset-0 bg-gradient-to-l from-[#111118]/80 to-transparent" />
+
+                                    {/* Status badge */}
+                                    {(item.status === 'live' || item.status === 'running') && (
+                                        <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-red-500/20 border border-red-500/40 rounded-lg px-2.5 py-1">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                                            <span className="text-[9px] font-black text-white uppercase tracking-widest">LIVE</span>
+                                        </div>
+                                    )}
+                                    {item.status === 'upcoming' && (
+                                        <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-blue-500/20 border border-blue-500/30 rounded-lg px-2.5 py-1">
+                                            <Clock className="w-3 h-3 text-blue-400" />
+                                            <span className="text-[9px] font-black text-blue-300 uppercase">قادم</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Content */}
+                                <div className="flex-1 p-6 flex flex-col justify-between gap-4">
+                                    <div>
+                                        {isShowroom ? (
+                                            <>
+                                                <div className="text-[10px] font-black text-[#C9A96E]/60 uppercase tracking-widest mb-1">
+                                                    {isRTL ? 'قاعة عرض مباشر' : 'LIVE SHOWROOM'}
+                                                </div>
+                                                <h2 className="text-2xl font-black italic uppercase tracking-tight text-white">
+                                                    {item.title}
+                                                </h2>
+                                                <div className="flex items-center gap-4 mt-3 text-xs text-white/30">
+                                                    <span className="flex items-center gap-1.5">
+                                                        <Car className="w-3.5 h-3.5" />
+                                                        {item.cars?.length || 0} {isRTL ? 'سيارة' : 'cars'}
+                                                    </span>
+                                                    <span className={cn(
+                                                        "font-black uppercase tracking-wider",
+                                                        item.status === 'live' ? "text-red-400" : "text-white/30"
+                                                    )}>{item.status}</span>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="text-[10px] font-black text-[#C9A96E]/60 uppercase tracking-widest mb-1">
+                                                    {item.car?.make}
+                                                </div>
+                                                <h2 className="text-2xl font-black italic uppercase tracking-tight text-white line-clamp-2">
+                                                    {item.car?.title || item.title}
+                                                </h2>
+                                            </>
+                                        )}
+                                    </div>
+
+                                    {/* Stats row */}
+                                    {!isShowroom && (
+                                        <div className="flex flex-wrap gap-6 border-y border-white/5 py-4">
+                                            <div>
+                                                <div className="text-[9px] font-black text-white/20 uppercase tracking-[0.3em] mb-1">
+                                                    {isRTL ? 'المزايدة الحالية' : 'CURRENT BID'}
+                                                </div>
+                                                <div className="text-xl font-black text-[#C9A96E]">
+                                                    {formatPrice(Number(item.currentBid || 0))}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="text-[9px] font-black text-white/20 uppercase tracking-[0.3em] mb-1">
+                                                    {isRTL ? 'تنتهي في' : 'ENDS'}
+                                                </div>
+                                                <div className="text-sm font-black text-white/60">
+                                                    {item.endsAt ? new Date(item.endsAt).toLocaleDateString('ar-SA') : '—'}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="text-[9px] font-black text-white/20 uppercase tracking-[0.3em] mb-1">
+                                                    {isRTL ? 'المزايدون' : 'BIDDERS'}
+                                                </div>
+                                                <div className="text-sm font-black text-white/60 flex items-center gap-1.5">
+                                                    <Users className="w-3.5 h-3.5" />{item.bidders || 0}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Action buttons */}
+                                    <div className="flex items-center gap-3">
+                                        <button onClick={() => handleJoin(item)}
+                                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-[#C9A96E] hover:bg-[#b8934d] text-black font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-[0_4px_20px_rgba(201,169,110,0.2)]">
+                                            <Gavel className="w-4 h-4" />
+                                            {isShowroom
+                                                ? (isRTL ? 'دخول قاعة العرض' : 'ENTER SHOWROOM')
+                                                : (isRTL ? 'زايد الآن' : 'PLACE BID')}
+                                        </button>
+                                        {item.externalUrl && (
+                                            <a href={item.externalUrl} target="_blank" rel="noopener noreferrer"
+                                                className="flex items-center gap-1.5 px-4 py-3 bg-white/4 border border-white/8 rounded-xl text-xs font-bold text-white/40 hover:text-white transition-all">
+                                                <ExternalLink className="w-3.5 h-3.5" />
+                                                {isRTL ? 'رابط خارجي' : 'Link'}
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                            </motion.div>
+                        );
+                    })}
+                </AnimatePresence>
             </main>
         </div>
     );
