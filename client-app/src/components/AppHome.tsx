@@ -10,7 +10,7 @@ import { motion } from 'framer-motion';
 import {
     Gavel, Car, ShoppingBag,
     Bell, User, ChevronRight, MessageCircle, Star, Send,
-    Package, Heart, TrendingUp, Loader2, Search, Building2, Truck
+    Package, Heart, TrendingUp, Loader2
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -18,7 +18,6 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 import { api } from '@/lib/api-original';
 import PullToRefresh from './PullToRefresh';
-import { cn } from '@/lib/utils';
 
 export default function AppHome({ isRTL, latestCars, formatPrice }: { isRTL: boolean; latestCars: any[]; formatPrice: (p: number) => string }) {
     const { user, isLoggedIn } = useAuth();
@@ -31,30 +30,9 @@ export default function AppHome({ isRTL, latestCars, formatPrice }: { isRTL: boo
     const [unreadNotifications, setUnreadNotifications] = useState(0);
     const [loadingStats, setLoadingStats] = useState(true);
 
-    // الشركات المصنعة
-    const [brands, setBrands] = useState<any[]>([]);
-    const [loadingBrands, setLoadingBrands] = useState(true);
-
     const handleRefresh = async () => {
         router.refresh();
-        await Promise.all([
-            fetchClientStats(),
-            fetchBrands()
-        ]);
-    };
-
-    const fetchBrands = async () => {
-        setLoadingBrands(true);
-        try {
-            const res = await api.brands.list('cars');
-            if (res?.success && Array.isArray(res.brands)) {
-                setBrands(res.brands);
-            }
-        } catch (err) {
-            console.error("Error fetching brands:", err);
-        } finally {
-            setLoadingBrands(false);
-        }
+        await fetchClientStats();
     };
 
     const fetchClientStats = async () => {
@@ -91,13 +69,13 @@ export default function AppHome({ isRTL, latestCars, formatPrice }: { isRTL: boo
 
     useEffect(() => {
         fetchClientStats();
-        fetchBrands();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isLoggedIn]);
 
     const quickActions = [
         { href: '/auctions/live', labelAr: 'المزاد المباشر', labelEn: 'Live Auction', icon: Gavel, color: 'bg-[#00f0ff]/10 text-[#00f0ff] border-[#00f0ff]/20' },
         { href: '/gallery', labelAr: 'المعرض', labelEn: 'Showroom', icon: Car, color: 'bg-accent-gold/10 text-accent-gold border-accent-gold/20' },
+        { href: '/parts', labelAr: 'قطع الغيار', labelEn: 'Parts Store', icon: ShoppingBag, color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
         { href: '/concierge', labelAr: 'طلب خاص', labelEn: 'Concierge', icon: Send, color: 'bg-purple-500/10 text-purple-400 border-purple-500/20' },
         { href: '/orders', labelAr: 'طلباتي', labelEn: 'My Orders', icon: Package, color: 'bg-orange-500/10 text-orange-400 border-orange-500/20' },
         { href: '/favorites', labelAr: 'المفضلة', labelEn: 'Favorites', icon: Heart, color: 'bg-pink-500/10 text-pink-400 border-pink-500/20' },
@@ -120,17 +98,10 @@ export default function AppHome({ isRTL, latestCars, formatPrice }: { isRTL: boo
 
     return (
         <PullToRefresh onRefresh={handleRefresh}>
-            <div className="flex flex-col gap-6 pb-20 px-4 pt-6 max-w-lg mx-auto overflow-x-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
-
-                {/* 0. Brand Header Logo */}
-                <div className="flex justify-center items-center py-2">
-                    <span className="text-white text-3xl font-light tracking-widest relative">
-                        <span className="text-white/30 font-thin mr-2">|</span>The
-                    </span>
-                </div>
+            <div className="flex flex-col gap-6 pb-10 px-4 pt-6 max-w-lg mx-auto overflow-x-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
 
                 {/* 1. Header */}
-                <header className="flex items-center justify-between bg-white/[0.02] border border-white/5 p-4 rounded-3xl">
+                <header className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
                             {isLoggedIn && userProfileImage ? (
@@ -171,73 +142,7 @@ export default function AppHome({ isRTL, latestCars, formatPrice }: { isRTL: boo
                     </div>
                 </header>
 
-                {/* 2. Search Section */}
-                <div className="relative w-full">
-                    <form action="/cars" method="GET" className="relative group">
-                        <input
-                            type="text"
-                            name="q"
-                            placeholder={isRTL ? "ما هي السيارة التي تبحث عنها؟" : "What car are you looking for?"}
-                            className={cn(
-                                "w-full bg-[#3D2C1B]/35 hover:bg-[#3D2C1B]/45 focus:bg-[#3D2C1B]/50 text-white rounded-2xl py-4 px-6 outline-none transition-all duration-300 placeholder:text-white/40 text-sm font-bold border border-[#C9A96E]/20 focus:border-[#C9A96E]/50 shadow-[0_0_20px_rgba(201,169,110,0.15)]",
-                                isRTL ? "pr-6 pl-12 text-right" : "pl-6 pr-12 text-left"
-                            )}
-                        />
-                        <button
-                            type="submit"
-                            className={cn(
-                                "absolute top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors",
-                                isRTL ? "left-4" : "right-4"
-                            )}
-                        >
-                            <Search className="w-5 h-5 text-[#C9A96E]" />
-                        </button>
-                    </form>
-                </div>
-
-                {/* 3. Circular Live Badges & Stats */}
-                <div className="grid grid-cols-3 gap-4 py-2 border-b border-white/5 pb-4">
-                    {/* Soon our cars */}
-                    <Link href="/cars?source=local" className="flex flex-col items-center gap-2">
-                        <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 relative hover:scale-105 transition-transform shadow-[0_0_15px_rgba(16,185,129,0.1)]">
-                            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                            <Building2 className="w-6 h-6" />
-                        </div>
-                        <span className="text-[10px] font-black text-center text-white/70 leading-tight">
-                            {isRTL ? "قريباً سياراتنا" : "Our Cars Soon"}
-                        </span>
-                    </Link>
-
-                    {/* Auctions (Circular Live Auction) */}
-                    <Link href="/auctions" className="flex flex-col items-center gap-2">
-                        <div className="w-16 h-16 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 relative hover:scale-105 transition-transform shadow-[0_0_15px_rgba(168,85,247,0.1)]">
-                            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.7)]" />
-                            <Gavel className="w-6 h-6" />
-                        </div>
-                        <div className="text-center">
-                            <span className="block text-xs font-black text-white">1,074</span>
-                            <span className="text-[10px] font-black text-white/70 leading-tight">
-                                {isRTL ? "مزادات" : "Auctions"}
-                            </span>
-                        </div>
-                    </Link>
-
-                    {/* Korean Showrooms */}
-                    <Link href="/cars?source=korean" className="flex flex-col items-center gap-2">
-                        <div className="w-16 h-16 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 relative hover:scale-105 transition-transform shadow-[0_0_15px_rgba(59,130,246,0.1)]">
-                            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-green-400" />
-                            <Truck className="w-6 h-6" />
-                        </div>
-                        <div className="text-center">
-                            <span className="block text-xs font-black text-white">164,836</span>
-                            <span className="text-[10px] font-black text-white/70 leading-tight">
-                                {isRTL ? "المعارض الكورية" : "Korean Showrooms"}
-                            </span>
-                        </div>
-                    </Link>
-                </div>
-
-                {/* 4. Status Card (للمسجلين فقط) */}
+                {/* 2. Status Card (للمسجلين فقط) */}
                 {isLoggedIn && (
                     <motion.section
                         initial={{ opacity: 0, y: 10 }}
@@ -266,57 +171,7 @@ export default function AppHome({ isRTL, latestCars, formatPrice }: { isRTL: boo
                     </motion.section>
                 )}
 
-                {/* 5. الشركات المصنعة (Manufacturers Section) */}
-                <section className="space-y-4">
-                    <div className="text-right">
-                        <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#C9A96E]" />
-                            {isRTL ? 'الشركات المصنعة' : 'MANUFACTURERS'}
-                        </h2>
-                        <p className="text-[9px] text-white/30 font-bold uppercase tracking-widest mt-1">
-                            {isRTL ? 'اختر من أشهر الشركات المصنعة للسيارات' : 'Choose from top car manufacturers'}
-                        </p>
-                    </div>
-
-                    <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-none snap-x snap-mandatory">
-                        {loadingBrands ? (
-                            Array.from({ length: 5 }).map((_, i) => (
-                                <div key={i} className="snap-start shrink-0 flex flex-col items-center gap-2">
-                                    <div className="w-16 h-16 rounded-full bg-white/5 animate-pulse border border-white/10" />
-                                    <div className="w-10 h-2 bg-white/5 rounded animate-pulse" />
-                                </div>
-                            ))
-                        ) : brands.length === 0 ? (
-                            <p className="text-xs text-white/30 text-center w-full py-4">
-                                {isRTL ? 'لا توجد شركات مصنعة مضافة' : 'No manufacturers added'}
-                            </p>
-                        ) : (
-                            brands.map((brand, i) => (
-                                <Link key={brand._id || brand.id || i} href={`/cars?brand=${brand.name}`} className="snap-start shrink-0 flex flex-col items-center gap-2 group">
-                                    <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center p-2.5 border border-white/10 group-hover:border-accent-gold/50 shadow-md transition-all duration-300 relative overflow-hidden">
-                                        {brand.logoUrl ? (
-                                            <Image
-                                                src={brand.logoUrl}
-                                                alt={brand.name}
-                                                width={48}
-                                                height={48}
-                                                className="object-contain"
-                                                unoptimized
-                                            />
-                                        ) : (
-                                            <Car className="w-6 h-6 text-black/40" />
-                                        )}
-                                    </div>
-                                    <span className="text-[9px] font-black text-white/60 group-hover:text-accent-gold transition-colors">
-                                        {isRTL ? (brand.nameAr || brand.name) : brand.name}
-                                    </span>
-                                </Link>
-                            ))
-                        )}
-                    </div>
-                </section>
-
-                {/* 6. Quick Actions Grid */}
+                {/* 3. Quick Actions Grid */}
                 <section>
                     <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30 mb-4 flex items-center gap-2">
                         <span className="w-1 h-1 rounded-full bg-accent-gold" />
@@ -342,7 +197,7 @@ export default function AppHome({ isRTL, latestCars, formatPrice }: { isRTL: boo
                     </div>
                 </section>
 
-                {/* 7. آخر السيارات مع المزاد المباشر الدائري في الأسفل */}
+                {/* 4. آخر السيارات */}
                 {latestCars.length > 0 && (
                     <section className="space-y-4">
                         <div className="flex items-center justify-between">
@@ -353,26 +208,6 @@ export default function AppHome({ isRTL, latestCars, formatPrice }: { isRTL: boo
                             <Link href="/gallery" className="text-[9px] font-black text-accent-gold/70 uppercase tracking-widest flex items-center gap-1 hover:text-accent-gold">
                                 {isRTL ? 'عرض الكل' : 'ALL'}
                                 <ChevronRight className={`w-3 h-3 ${isRTL ? 'rotate-180' : ''}`} />
-                            </Link>
-                        </div>
-
-                        {/* المزاد المباشر الدائري بجانب السيارات */}
-                        <div className="p-4 bg-gradient-to-r from-purple-500/10 to-red-500/5 rounded-3xl border border-purple-500/20 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 rounded-full bg-purple-500 text-black flex items-center justify-center shadow-[0_0_15px_rgba(168,85,247,0.4)] animate-pulse">
-                                    <Gavel className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <h3 className="text-xs font-black text-white">
-                                        {isRTL ? 'المزادات الحية المباشرة' : 'LIVE AUCTIONS'}
-                                    </h3>
-                                    <p className="text-[9px] font-bold text-white/40">
-                                        {isRTL ? 'انضم وزايد الآن على أفضل السيارات' : 'Join and bid now on top cars'}
-                                    </p>
-                                </div>
-                            </div>
-                            <Link href="/auctions/live" className="px-3 py-1.5 bg-purple-500 text-black text-[9px] font-black rounded-lg hover:scale-105 transition-transform animate-bounce">
-                                {isRTL ? 'دخول' : 'ENTER'}
                             </Link>
                         </div>
 
@@ -415,7 +250,7 @@ export default function AppHome({ isRTL, latestCars, formatPrice }: { isRTL: boo
                     </section>
                 )}
 
-                {/* 8. تواصل سريع */}
+                {/* 5. تواصل سريع */}
                 <a
                     href="https://wa.me/967781007805"
                     target="_blank"

@@ -8,7 +8,7 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Home, Car, User, Wrench } from 'lucide-react';
+import { Home, Car, User, Wrench, Gavel } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { useSettings } from '@/lib/SettingsContext';
@@ -66,6 +66,7 @@ export default function BottomTabBar() {
             isWhatsapp: false,
             isCurrency: false,
             isSpareParts: false,
+            isAuctions: false,
         },
         {
             href: '/cars',
@@ -77,6 +78,19 @@ export default function BottomTabBar() {
             isWhatsapp: false,
             isCurrency: false,
             isSpareParts: false,
+            isAuctions: false,
+        },
+        {
+            href: '/parts',
+            icon: Wrench,
+            labelAr: 'الغيار',
+            labelEn: 'Parts',
+            exact: false,
+            matchPaths: ['/parts'],
+            isWhatsapp: false,
+            isCurrency: false,
+            isSpareParts: true,
+            isAuctions: false,
         },
         {
             href: '',
@@ -88,28 +102,19 @@ export default function BottomTabBar() {
             isWhatsapp: true,
             isCurrency: false,
             isSpareParts: false,
+            isAuctions: false,
         },
         {
-            href: '/parts',
-            icon: Wrench,
-            labelAr: 'قطع الغيار',
-            labelEn: 'Parts',
+            href: '/auctions',
+            icon: Gavel,
+            labelAr: 'المزاد',
+            labelEn: 'Auction',
             exact: false,
-            matchPaths: ['/parts'],
+            matchPaths: ['/auctions'],
             isWhatsapp: false,
             isCurrency: false,
-            isSpareParts: true,
-        },
-        {
-            href: '',
-            icon: undefined,
-            labelAr: '',
-            labelEn: '',
-            exact: false,
-            matchPaths: [],
-            isWhatsapp: false,
-            isCurrency: true,
             isSpareParts: false,
+            isAuctions: true,
         },
         {
             href: isLoggedIn ? '/client/dashboard' : '/login',
@@ -121,6 +126,7 @@ export default function BottomTabBar() {
             isWhatsapp: false,
             isCurrency: false,
             isSpareParts: false,
+            isAuctions: false,
         }
     ];
 

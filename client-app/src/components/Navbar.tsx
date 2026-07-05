@@ -11,7 +11,7 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Menu, X, User, ChevronDown,
-    Car, MessageCircle, Bell, LogIn, UserPlus, Home
+    Car, MessageCircle, Bell, LogIn, UserPlus, Home, Wrench, Gavel
 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -66,10 +66,12 @@ export default function Navbar() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // روابط التنقل (بعد إزالة قطع الغيار والاكسسوارات)
+    // روابط التنقل الرئيسية
     const navLinks = [
         { href: '/', label: isRTL ? 'الرئيسية' : 'Home', icon: Home },
         { href: '/cars', label: isRTL ? 'السيارات' : 'Cars', icon: Car },
+        { href: '/parts', label: isRTL ? 'قطع الغيار' : 'Parts', icon: Wrench },
+        { href: '/auctions', label: isRTL ? 'المزادات' : 'Auctions', icon: Gavel },
         { href: '/contact', label: isRTL ? 'تواصل معنا' : 'Contact', icon: MessageCircle },
     ];
 

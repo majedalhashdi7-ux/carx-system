@@ -206,7 +206,8 @@ function HMCarLogin() {
                     const isSystemAccount = data.role === 'admin' || data.identifier.toLowerCase().includes('admin');
                     setFormData({
                         email: isSystemAccount ? '' : data.identifier,
-                        password: data.password
+                        password: data.password,
+                        name: ''
                     });
                     setRememberMe(true);
                     if (data.role) setRole(data.role);
@@ -294,7 +295,7 @@ function HMCarLogin() {
                             </a>
 
                             <button
-                                onClick={() => { setBanInfo(null); setFormData({ email: '', password: '' }); setError(''); }}
+                                onClick={() => { setBanInfo(null); setFormData({ email: '', password: '', name: '' }); setError(''); }}
                                 className="w-full py-3 text-xs font-bold text-white/30 hover:text-white/70 tracking-wider uppercase transition-colors"
                             >
                                 {isRTL ? "العودة لتسجيل الدخول" : "BACK TO LOGIN"}
