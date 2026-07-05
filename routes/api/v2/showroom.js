@@ -118,7 +118,8 @@ async function fetchExternal(url, redirectCount = 0) {
                 'Cache-Control': 'no-cache',
             },
             timeout: 15000,
-            maxRedirects: 3
+            maxRedirects: 3,
+            httpsAgent: new https.Agent({ rejectUnauthorized: false })
         });
         return res.data;
     } catch (err) {

@@ -87,105 +87,108 @@ function CarCard({ car, onWhatsApp }: { car: CarItem; onWhatsApp: (car: CarItem)
         : { label: 'معرض HM', color: 'bg-purple-500/20 text-purple-300 border-purple-500/30' };
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={{ y: -2 }}
-            className="group relative bg-[#111118] border border-white/6 rounded-xl sm:rounded-2xl overflow-hidden hover:border-[#C9A96E]/30 hover:shadow-[0_8px_32px_rgba(201,169,110,0.08)] transition-all duration-300 flex flex-col cursor-pointer"
-        >
-            {/* Image */}
-            <div className="relative h-36 sm:h-48 bg-[#0a0a12] overflow-hidden shrink-0">
-                <Image
-                    src={img} alt={car.title} fill sizes="(max-width:640px) 50vw, 33vw"
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    onError={() => setImgErr(true)}
-                    unoptimized
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+        <Link href={`/cars/${car.id}`} className="block h-full">
+            <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileHover={{ y: -2 }}
+                className="group relative bg-[#111118] border border-white/6 rounded-xl sm:rounded-2xl overflow-hidden hover:border-[#C9A96E]/30 hover:shadow-[0_8px_32px_rgba(201,169,110,0.08)] transition-all duration-300 flex flex-col cursor-pointer h-full"
+            >
+                {/* Image */}
+                <div className="relative h-36 sm:h-48 bg-[#0a0a12] overflow-hidden shrink-0">
+                    <Image
+                        src={img} alt={car.title} fill sizes="(max-width:640px) 50vw, 33vw"
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        onError={() => setImgErr(true)}
+                        unoptimized
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
 
-                {/* Year badge */}
-                <div className="absolute top-2 right-2 bg-[#C9A96E] text-black text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-md tracking-wide">
-                    {car.year}
-                </div>
-
-                {/* Source badge */}
-                <div className={cn("absolute top-2 left-2 text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded-md border tracking-wide", sourceBadge.color)}>
-                    {sourceBadge.label}
-                </div>
-
-                {/* Like button */}
-                <button
-                    onClick={(e) => { e.stopPropagation(); setLiked(p => !p); }}
-                    className="absolute bottom-2 left-2 w-7 h-7 rounded-full bg-black/50 backdrop-blur-sm border border-white/10 flex items-center justify-center transition-all hover:scale-110"
-                >
-                    <Heart className={cn("w-3.5 h-3.5 transition-colors", liked ? "fill-red-500 text-red-500" : "text-white/50")} />
-                </button>
-
-                {/* Inspected badge */}
-                {car.isInspected && (
-                    <div className="absolute bottom-2 right-2 bg-green-500/20 border border-green-500/30 text-green-400 text-[8px] font-black px-1.5 py-0.5 rounded-md">
-                        ✓ مفحوصة
+                    {/* Year badge */}
+                    <div className="absolute top-2 right-2 bg-[#C9A96E] text-black text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-md tracking-wide">
+                        {car.year}
                     </div>
-                )}
-            </div>
 
-            {/* Content */}
-            <div className="p-2.5 sm:p-3.5 flex flex-col flex-1 gap-1.5 sm:gap-2.5">
-                {/* Title */}
-                <div>
-                    <div className="flex items-center gap-1 mb-0.5">
-                        {(car.source === 'korean' ? <Globe className="w-2.5 h-2.5 text-blue-400/70 shrink-0" /> : <Building2 className="w-2.5 h-2.5 text-purple-400/70 shrink-0" />)}
-                        <span className="text-[8px] text-white/30 font-bold uppercase tracking-widest truncate">{displayName}</span>
+                    {/* Source badge */}
+                    <div className={cn("absolute top-2 left-2 text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded-md border tracking-wide", sourceBadge.color)}>
+                        {sourceBadge.label}
                     </div>
-                    <h3 className="text-xs sm:text-sm font-black text-white leading-tight line-clamp-2 group-hover:text-[#C9A96E] transition-colors">
-                        {car.model} {car.badge || ''}
-                    </h3>
-                </div>
 
-                {/* Specs tags - simplified on mobile */}
-                <div className="hidden sm:flex flex-wrap gap-1.5">
-                    {fuelLabel && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white/50 bg-white/4 border border-white/8 px-2 py-1 rounded-lg">
-                            <Fuel className="w-2.5 h-2.5 text-[#C9A96E]/60" />{fuelLabel}
-                        </span>
-                    )}
-                    {transLabel && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white/50 bg-white/4 border border-white/8 px-2 py-1 rounded-lg">
-                            <Settings2 className="w-2.5 h-2.5 text-[#C9A96E]/60" />{transLabel}
-                        </span>
-                    )}
-                    {car.mileage > 0 && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white/50 bg-white/4 border border-white/8 px-2 py-1 rounded-lg">
-                            <Gauge className="w-2.5 h-2.5 text-[#C9A96E]/60" />{fmtKm(car.mileage)}
-                        </span>
-                    )}
-                </div>
-                {/* Mobile: compact mileage only */}
-                <div className="sm:hidden">
-                    {car.mileage > 0 && (
-                        <span className="inline-flex items-center gap-1 text-[9px] font-bold text-white/40">
-                            <Gauge className="w-2.5 h-2.5 text-[#C9A96E]/50" />{fmtKm(car.mileage)}
-                        </span>
-                    )}
-                </div>
-
-                {/* Price + CTA */}
-                <div className="flex items-center justify-between mt-auto pt-2 border-t border-white/5">
-                    <div>
-                        <div className="text-base sm:text-base font-black text-[#C9A96E] leading-none">
-                            {displayPrice > 0 ? fmtPrice(displayPrice) : <span className="text-[10px] text-white/30">تواصل</span>}
-                        </div>
-                    </div>
+                    {/* Like button */}
                     <button
-                        onClick={(e) => { e.stopPropagation(); onWhatsApp(car); }}
-                        className="flex items-center gap-1 bg-green-600 hover:bg-green-500 text-white text-[9px] sm:text-[10px] font-black px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all shadow-[0_0_12px_rgba(22,163,74,0.3)]"
+                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); setLiked(p => !p); }}
+                        className="absolute bottom-2 left-2 w-7 h-7 rounded-full bg-black/50 backdrop-blur-sm border border-white/10 flex items-center justify-center transition-all hover:scale-110"
                     >
-                        <MessageCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                        <span className="hidden sm:inline">تواصل</span>
+                        <Heart className={cn("w-3.5 h-3.5 transition-colors", liked ? "fill-red-500 text-red-500" : "text-white/50")} />
                     </button>
+
+                    {/* Inspected badge */}
+                    {car.isInspected && (
+                        <div className="absolute bottom-2 right-2 bg-green-500/20 border border-green-500/30 text-green-400 text-[8px] font-black px-1.5 py-0.5 rounded-md">
+                            ✓ مفحوصة
+                        </div>
+                    )}
                 </div>
-            </div>
-        </motion.div>
+
+                {/* Content */}
+                <div className="p-2.5 sm:p-3.5 flex flex-col flex-1 gap-1.5 sm:gap-2.5">
+                    {/* Title */}
+                    <div>
+                        <div className="flex items-center gap-1 mb-0.5">
+                            {(car.source === 'korean' ? <Globe className="w-2.5 h-2.5 text-blue-400/70 shrink-0" /> : <Building2 className="w-2.5 h-2.5 text-purple-400/70 shrink-0" />)}
+                            <span className="text-[8px] text-white/30 font-bold uppercase tracking-widest truncate">{displayName}</span>
+                        </div>
+                        <h3 className="text-xs sm:text-sm font-black text-white leading-tight line-clamp-2 group-hover:text-[#C9A96E] transition-colors">
+                            {car.model} {car.badge || ''}
+                        </h3>
+                    </div>
+
+                    {/* Specs tags - simplified on mobile */}
+                    <div className="hidden sm:flex flex-wrap gap-1.5">
+                        {fuelLabel && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white/50 bg-white/4 border border-white/8 px-2 py-1 rounded-lg">
+                                <Fuel className="w-2.5 h-2.5 text-[#C9A96E]/60" />{fuelLabel}
+                            </span>
+                        )}
+                        {transLabel && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white/50 bg-white/4 border border-white/8 px-2 py-1 rounded-lg">
+                                <Settings2 className="w-2.5 h-2.5 text-[#C9A96E]/60" />{transLabel}
+                            </span>
+                        )}
+                        {car.mileage > 0 && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white/50 bg-white/4 border border-white/8 px-2 py-1 rounded-lg">
+                                <Gauge className="w-2.5 h-2.5 text-[#C9A96E]/60" />{fmtKm(car.mileage)}
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Mobile: compact mileage only */}
+                    <div className="sm:hidden">
+                        {car.mileage > 0 && (
+                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-white/40">
+                                <Gauge className="w-2.5 h-2.5 text-[#C9A96E]/50" />{fmtKm(car.mileage)}
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Price + CTA */}
+                    <div className="flex items-center justify-between mt-auto pt-2 border-t border-white/5">
+                        <div>
+                            <div className="text-base sm:text-base font-black text-[#C9A96E] leading-none">
+                                {displayPrice > 0 ? fmtPrice(displayPrice) : <span className="text-[10px] text-white/30">تواصل</span>}
+                            </div>
+                        </div>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); e.preventDefault(); onWhatsApp(car); }}
+                            className="flex items-center gap-1 bg-green-600 hover:bg-green-500 text-white text-[9px] sm:text-[10px] font-black px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all shadow-[0_0_12px_rgba(22,163,74,0.3)]"
+                        >
+                            <MessageCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                            <span className="hidden sm:inline">تواصل</span>
+                        </button>
+                    </div>
+                </div>
+            </motion.div>
+        </Link>
     );
 }
 
@@ -396,11 +399,8 @@ function CarsContent() {
     const hasFilters = search || brandFilters.length || yearFrom || yearTo || fuelFilters.length || transFilters.length || sourceFilter !== 'all' || priceMax || kmMax;
 
     const handleWhatsApp = (car: CarItem) => {
-        const phone = socialLinks?.whatsapp || '';
-        const msg = isRTL
-            ? `السلام عليكم، أنا مهتم بسيارة:\n${car.title} - ${car.year}\nالسعر: ${fmtPrice(car.priceSar || car.price)}`
-            : `Hello, I'm interested in:\n${car.title} - ${car.year}\nPrice: ${fmtPrice(car.priceSar || car.price)}`;
-        const url = `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`;
+        const phone = socialLinks?.whatsapp || '+821080880014';
+        const url = WhatsAppService.generateCarLink(car as any, phone, isRTL, (p) => fmtPrice(p));
         window.open(url, '_blank');
     };
 
@@ -499,7 +499,7 @@ function CarsContent() {
     );
 
     return (
-        <div className={cn('min-h-screen bg-[#08080f] text-white', isRTL && 'font-arabic')} dir="rtl">
+        <div className={cn('min-h-screen bg-[#08080f] text-white', isRTL && 'font-arabic')} dir={isRTL ? 'rtl' : 'ltr'}>
             <Navbar />
 
             {/* ── Hero Banner ── */}
@@ -511,7 +511,7 @@ function CarsContent() {
                             <h1 className="text-3xl sm:text-4xl font-black italic tracking-tighter text-white uppercase">
                                 HM <span className="text-[#C9A96E]">CAR</span>
                                 <span className="block text-sm sm:text-base not-italic font-light tracking-[0.4em] text-white/25 mt-1">
-                                    المعرض الكوري · سيارات HM CAR
+                                    {isRTL ? 'المعرض الكوري · سيارات HM CAR' : 'Korean Showroom · HM CAR'}
                                 </span>
                             </h1>
                         </div>

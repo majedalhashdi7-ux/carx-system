@@ -1,5 +1,5 @@
-import CarsBrowserPage from "./cars/page";
+import HomeClient from "./home-client";
 
 export default function Page() {
-  return <CarsBrowserPage />;
+  return <HomeClient latestCars={[]} />;
 }

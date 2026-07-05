@@ -62,7 +62,7 @@ export default function AuctionsPage() {
     };
 
     return (
-        <div className={cn("min-h-screen bg-[#08080f] text-white", isRTL && "font-arabic")} dir="rtl">
+        <div className={cn("min-h-screen bg-[#08080f] text-white", isRTL && "font-arabic")} dir={isRTL ? 'rtl' : 'ltr'}>
             <Navbar />
 
             {/* ── Page Header ── */}
