@@ -117,6 +117,18 @@ export default function BottomTabBar() {
             isAuctions: true,
         },
         {
+            href: '',
+            icon: undefined,
+            labelAr: '',
+            labelEn: '',
+            exact: false,
+            matchPaths: [],
+            isWhatsapp: false,
+            isCurrency: true,
+            isSpareParts: false,
+            isAuctions: false,
+        },
+        {
             href: isLoggedIn ? '/client/dashboard' : '/login',
             icon: User,
             labelAr: isLoggedIn ? 'حسابي' : 'دخول',
