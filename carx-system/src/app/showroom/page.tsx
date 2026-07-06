@@ -137,26 +137,26 @@ export default function ShowroomPage() {
       <Navbar />
 
       {/* Hero Header */}
-      <section className="relative pt-36 pb-16 overflow-hidden">
+      <section className="relative pt-28 md:pt-36 pb-10 md:pb-16 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-luxury-gold/5 via-transparent to-transparent pointer-events-none" />
         <div className="absolute top-20 left-1/4 w-[600px] h-[600px] bg-luxury-gold/5 rounded-full blur-[150px] pointer-events-none" />
         
         <div className="container mx-auto px-6 relative z-10">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-6 mb-16">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-4 md:space-y-6 mb-10 md:mb-16">
             <div className="inline-flex items-center gap-2 bg-luxury-gold/10 border border-luxury-gold/20 px-5 py-2 rounded-full">
               <Sparkles className="w-4 h-4 text-luxury-gold" />
               <span className="text-luxury-gold text-xs font-black uppercase tracking-widest">معرض حصري</span>
             </div>
-            <h1 className="text-5xl md:text-7xl font-black tracking-tighter">
+            <h1 className="text-3xl sm:text-5xl md:text-7xl font-black tracking-tighter">
               صالة العرض <span className="text-luxury-gold">الفاخرة</span>
             </h1>
-            <p className="text-white/40 text-lg max-w-2xl mx-auto">
+            <p className="text-white/40 text-sm md:text-lg max-w-2xl mx-auto">
               تصفح مجموعتنا الحصرية مع إمكانيات بحث متقدمة وفلاتر ذكية للوصول لسيارة أحلامك.
             </p>
           </motion.div>
 
           {/* Search & Controls Bar */}
-          <div className="glass-panel p-4 rounded-[2.5rem]">
+          <div className="glass-panel p-4 rounded-3xl md:rounded-[2.5rem]">
             <div className="flex flex-col lg:flex-row items-center gap-4">
               {/* Search */}
               <div className="relative flex-1 w-full">
@@ -166,7 +166,7 @@ export default function ShowroomPage() {
                   placeholder="ابحث عن سيارة أحلامك... (مثال: مرسيدس G-Class 2024)"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-white/5 border border-white/5 rounded-2xl py-5 pr-14 pl-6 text-lg text-white focus:outline-none focus:border-luxury-gold/30 focus:bg-white/10 transition-all placeholder:text-white/15"
+                  className="w-full bg-white/5 border border-white/5 rounded-xl md:rounded-2xl py-3.5 md:py-5 pr-14 pl-6 text-sm md:text-lg text-white focus:outline-none focus:border-luxury-gold/30 focus:bg-white/10 transition-all placeholder:text-white/15"
                   dir="rtl"
                 />
               </div>
@@ -175,7 +175,7 @@ export default function ShowroomPage() {
               <div className="flex items-center gap-3 w-full lg:w-auto">
                 <button 
                   onClick={() => setShowFilters(!showFilters)}
-                  className={`flex-1 lg:flex-none flex items-center justify-center gap-3 px-8 py-5 rounded-2xl border font-bold transition-all ${
+                  className={`flex-1 lg:flex-none flex items-center justify-center gap-3 px-4 md:px-8 py-3.5 md:py-5 rounded-xl md:rounded-2xl border font-bold transition-all text-xs md:text-sm ${
                     showFilters ? 'bg-luxury-gold text-black border-luxury-gold' : 'bg-white/5 border-white/5 hover:border-luxury-gold/30'
                   }`}
                 >
@@ -189,8 +189,8 @@ export default function ShowroomPage() {
                 </button>
 
                 {/* Sort */}
-                <div className="relative group">
-                  <button className="flex items-center gap-2 px-6 py-5 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-all font-bold text-sm">
+                <div className="relative group flex-1 lg:flex-none">
+                  <button className="w-full flex items-center justify-center gap-2 px-4 md:px-6 py-3.5 md:py-5 rounded-xl md:rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-all font-bold text-xs md:text-sm">
                     <ArrowUpDown className="w-4 h-4 text-luxury-gold" />
                     ترتيب
                     <ChevronDown className="w-4 h-4 text-white/30" />

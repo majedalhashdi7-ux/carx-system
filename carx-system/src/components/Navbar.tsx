@@ -52,6 +52,7 @@ export default function Navbar() {
   const navLinks = [
     { name: 'الرئيسية', href: '/' },
     { name: 'المعرض', href: '/showroom' },
+    { name: 'المزاد المباشر', href: '/auctions' },
     { name: 'قطع الغيار', href: '/parts' },
     { name: 'الماركات', href: '/brands' },
     { name: 'من نحن', href: '/about' },

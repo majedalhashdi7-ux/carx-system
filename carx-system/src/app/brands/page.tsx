@@ -49,7 +49,7 @@ export default function BrandsPage() {
       <Navbar />
 
       {/* ===== Hero ===== */}
-      <section className="relative pt-44 pb-24 overflow-hidden">
+      <section className="relative pt-28 md:pt-44 pb-12 md:pb-24 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-luxury-gold/5 via-transparent to-transparent" />
         <div className="absolute top-20 right-1/3 w-[500px] h-[500px] bg-luxury-gold/5 rounded-full blur-[150px]" />
 
@@ -64,13 +64,13 @@ export default function BrandsPage() {
               <span className="text-luxury-gold text-xs font-black uppercase tracking-widest">شركاء النجاح</span>
             </div>
 
-            <h1 className="text-5xl md:text-8xl font-black tracking-tighter leading-[0.9]">
+            <h1 className="text-3xl sm:text-5xl md:text-8xl font-black tracking-tighter leading-[0.95] md:leading-[0.9]">
               وكالات <span className="text-luxury-gold">عالمية</span>
               <br />
               <span className="text-white/20">بمعايير استثنائية</span>
             </h1>
 
-            <p className="text-white/40 max-w-2xl mx-auto text-lg leading-relaxed">
+            <p className="text-white/40 max-w-2xl mx-auto text-sm md:text-lg leading-relaxed">
               نفخر بشراكتنا مع أرقى وأفخم العلامات التجارية في عالم السيارات
               لنقدم لعملائنا الأفضل دائماً وأبداً.
             </p>

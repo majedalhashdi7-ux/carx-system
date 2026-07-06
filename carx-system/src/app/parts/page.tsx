@@ -40,7 +40,7 @@ export default function PartsPage() {
     <main className="min-h-screen bg-black text-white selection:bg-luxury-gold selection:text-black">
       <Navbar />
 
-      <section className="relative pt-40 pb-20 overflow-hidden">
+      <section className="relative pt-28 md:pt-40 pb-10 md:pb-20 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-luxury-gold/5 to-transparent pointer-events-none" />
         
         <div className="container mx-auto px-6 space-y-8 relative z-10">
@@ -52,9 +52,9 @@ export default function PartsPage() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
               <div>
                 <h2 className="text-luxury-gold font-black uppercase tracking-[0.4em] text-sm">قطع الغيار الأصلية</h2>
-                <h1 className="text-4xl md:text-6xl font-black tracking-tighter mt-2">الأداء <span className="text-white/20">المثالي</span></h1>
+                <h1 className="text-3xl md:text-6xl font-black tracking-tighter mt-2">الأداء <span className="text-white/20">المثالي</span></h1>
               </div>
-              <p className="text-white/40 max-w-md text-lg">
+              <p className="text-white/40 max-w-md text-sm md:text-lg">
                 اكتشف مجموعتنا من قطع الغيار الأصلية المعتمدة لضمان أداء سيارتك بأعلى كفاءة ممكنة.
               </p>
             </div>
@@ -64,7 +64,7 @@ export default function PartsPage() {
 
       <section className="pb-32">
         <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row gap-6 mb-12">
+          <div className="flex flex-col md:flex-row gap-4 md:gap-6 mb-12">
             <div className="relative flex-1">
               <Search className="absolute right-6 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
               <input 
@@ -72,11 +72,11 @@ export default function PartsPage() {
                 placeholder="ابحث برقم القطعة أو اسمها..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pr-14 pl-6 text-lg focus:outline-none focus:border-luxury-gold/50 transition-all text-white placeholder:text-white/20"
+                className="w-full bg-white/5 border border-white/10 rounded-xl md:rounded-2xl py-3 md:py-4 pr-14 pl-6 text-sm md:text-lg focus:outline-none focus:border-luxury-gold/50 transition-all text-white placeholder:text-white/20"
                 dir="rtl"
               />
             </div>
-            <button className="px-8 py-4 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center gap-3 hover:bg-white/10 transition-all font-bold">
+            <button className="px-4 md:px-8 py-3 md:py-4 bg-white/5 border border-white/10 rounded-xl md:rounded-2xl flex items-center justify-center gap-3 hover:bg-white/10 transition-all text-sm font-bold">
               <Filter className="w-5 h-5" />
               الفلاتر
             </button>

@@ -62,155 +62,108 @@ interface HomeClientProps {
 function PWAFloatingButton({ isRTL, deferredInstall, onInstall }: { isRTL: boolean; deferredInstall: any; onInstall: () => void }) {
   const [showPopup, setShowPopup] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    // إظهار البطاقة تلقائياً بعد 2.5 ثانية لجذب انتباه العميل
-    const timer = setTimeout(() => {
-      const dismissed = localStorage.getItem('pwa_popup_dismissed');
-      if (!dismissed) {
-        setShowPopup(true);
-      }
-    }, 2500);
+    // إظهار البطاقة تلقائياً بعد 3 ثوانٍ
+    const alreadyDismissed = localStorage.getItem('pwa_popup_dismissed');
+    if (alreadyDismissed) return;
+    const timer = setTimeout(() => setShowPopup(true), 3000);
     return () => clearTimeout(timer);
   }, []);
 
-  const handleMinimize = () => {
-    setIsMinimized(true);
-    setShowPopup(false);
-  };
-
+  // إغلاق نهائي عند الضغط على X
   const handleClose = () => {
     setShowPopup(false);
-    setIsMinimized(false);
+    setDismissed(true);
     localStorage.setItem('pwa_popup_dismissed', 'true');
   };
 
+  if (dismissed) return null;
 
   return (
     <div className="relative">
       {/* أيقونة الهاتف الثابتة */}
       <motion.button
         id="pwa-float-btn"
-        onClick={() => {
-          setShowPopup(!showPopup);
-          setIsMinimized(false);
-        }}
+        onClick={() => setShowPopup(!showPopup)}
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         whileTap={{ scale: 0.9 }}
-        className="w-12 h-12 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center hover:scale-110 hover:border-accent-gold/50 transition-transform text-accent-gold shadow-[0_0_15px_rgba(201,169,110,0.2)]"
+        className="w-10 h-10 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center hover:scale-110 hover:border-accent-gold/50 transition-transform text-accent-gold shadow-[0_0_15px_rgba(201,169,110,0.2)]"
         title={isRTL ? 'تطبيق HM CAR' : 'HM CAR App'}
       >
-        <Smartphone className="w-5 h-5" />
-        {isMinimized && (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="absolute -top-1 -right-1 w-3 h-3 bg-accent-gold rounded-full"
-          />
-        )}
+        <Smartphone className="w-4 h-4" />
       </motion.button>
 
-      {/* Popup النافذة المنبثقة المميزة */}
-      {showPopup && (
-        <div className="fixed inset-0 z-[199] pointer-events-none flex items-end justify-start sm:items-start p-4 pb-24 sm:pb-4">
+      {/* Popup مصغّر وأنيق */}
+      <AnimatePresence>
+        {showPopup && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.8, x: isRTL ? -30 : 30, y: 20 }}
-            animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, x: isRTL ? -20 : 20, y: 10 }}
-            transition={{ type: "spring", damping: 20, stiffness: 200 }}
-            className={`pointer-events-auto relative w-80 sm:w-80 rounded-[2rem] bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-accent-gold/40 p-1 shadow-[0_20px_60px_rgba(201,169,110,0.25)] overflow-hidden ${isRTL ? 'self-start' : 'self-end'} sm:self-start sm:mt-16 sm:ms-16`}
+            initial={{ opacity: 0, scale: 0.85, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.85, y: 10 }}
+            transition={{ type: "spring", damping: 22, stiffness: 220 }}
+            className="fixed bottom-24 left-4 z-[199] w-64 rounded-2xl bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-accent-gold/30 shadow-[0_16px_40px_rgba(201,169,110,0.2)] overflow-hidden"
             dir={isRTL ? 'rtl' : 'ltr'}
           >
-            {/* لمعان ذهبي متحرك في الخلفية */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-accent-gold/0 via-accent-gold/10 to-transparent opacity-50 pointer-events-none" />
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-accent-gold/20 blur-[60px] rounded-full pointer-events-none" />
-
-            {/* زر تصغير (X) */}
-            <button 
-              onClick={handleMinimize}
-              aria-label={isRTL ? "تصغير" : "Minimize"}
-              title={isRTL ? "تصغير" : "Minimize"}
-              className={`absolute top-4 ${isRTL ? 'left-4' : 'right-4'} z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white/50 hover:text-white transition-all`}
+            {/* زر الإغلاق X في الركن */}
+            <button
+              onClick={handleClose}
+              aria-label={isRTL ? "إغلاق" : "Close"}
+              title={isRTL ? "إغلاق" : "Close"}
+              className={`absolute top-2 ${isRTL ? 'left-2' : 'right-2'} z-10 w-6 h-6 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/50 hover:text-white transition-all`}
             >
-              <X className="w-4 h-4" />
+              <X className="w-3 h-3" />
             </button>
 
-            <div className="relative z-10 p-5">
-              {/* Header */}
-              <div className="flex items-center gap-4 mb-5">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-accent-gold to-[#a98544] text-black flex items-center justify-center flex-shrink-0 shadow-[0_0_20px_rgba(201,169,110,0.4)] relative overflow-hidden">
-                  <div className="absolute inset-0 bg-white/20 animate-pulse" />
-                  <Smartphone className="w-7 h-7 relative z-10" />
+            <div className="p-4">
+              {/* Header مصغّر */}
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-gold to-[#a98544] text-black flex items-center justify-center shrink-0">
+                  <Smartphone className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-white font-black text-lg uppercase tracking-tight leading-tight">HM CAR</h3>
-                  <div className="flex items-center gap-1 mt-1">
-                    {[1,2,3,4,5].map(i => <Star key={i} className="w-3 h-3 text-accent-gold fill-accent-gold" />)}
+                  <h3 className="text-white font-black text-sm uppercase">HM CAR</h3>
+                  <div className="flex items-center gap-0.5 mt-0.5">
+                    {[1,2,3,4,5].map(i => <Star key={i} className="w-2.5 h-2.5 text-accent-gold fill-accent-gold" />)}
                   </div>
                 </div>
               </div>
 
-              {/* Text Focus */}
-              <div className="mb-6">
-                <p className="text-white/90 text-sm font-bold leading-relaxed">
-                  {isRTL ? 'احصل على تجربة أسرع بـ 3 أضعاف وتنبيهات فورية للمزادات الحية!' : 'Get 3x faster experience & instant live auction alerts!'}
-                </p>
-                <p className="text-accent-gold/80 text-[11px] font-bold mt-2 uppercase tracking-widest">
-                  {isRTL ? 'تطبيق مجاني بالكامل' : '100% Free App'}
-                </p>
-              </div>
+              <p className="text-white/70 text-xs font-bold leading-relaxed mb-3">
+                {isRTL ? 'احصل على تنبيهات فورية للمزادات!' : 'Get instant auction alerts!'}
+              </p>
 
-              {/* Action Button */}
               <button
-                onClick={() => { 
-                  if (deferredInstall) {
-                    onInstall(); 
-                    handleClose(); 
-                  } else {
-                    // For iOS or browsers without direct install prompt support
-                    setShowIOSGuide(true);
-                  }
+                onClick={() => {
+                  if (deferredInstall) { onInstall(); handleClose(); }
+                  else setShowIOSGuide(!showIOSGuide);
                 }}
-                className="w-full py-4 bg-gradient-to-r from-accent-gold to-[#e8c97a] text-black rounded-xl font-black uppercase tracking-widest text-xs hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(201,169,110,0.3)] relative overflow-hidden group"
+                className="w-full py-2.5 bg-gradient-to-r from-accent-gold to-[#e8c97a] text-black rounded-xl font-black text-xs flex items-center justify-center gap-2"
               >
-                <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                <Download className="w-4 h-4 relative z-10" />
-                <span className="relative z-10">{isRTL ? 'تثبيت التطبيق الآن' : 'INSTALL APP NOW'}</span>
+                <Download className="w-3.5 h-3.5" />
+                {isRTL ? 'تثبيت مجاناً' : 'Install Free'}
               </button>
 
-              {/* iOS Guide Content (Appears only when clicking install on iOS) */}
               {showIOSGuide && !deferredInstall && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }} 
-                  animate={{ opacity: 1, height: 'auto' }} 
-                  className="mt-4 space-y-3 bg-black/40 p-4 rounded-xl border border-white/10"
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="mt-3 text-[10px] text-white/50 space-y-1 bg-black/30 p-3 rounded-xl"
                 >
-                  <p className="text-accent-gold text-xs font-bold mb-2 pb-2 border-b border-white/5">
-                    {isRTL ? 'لتثبيت التطبيق في الايفون (Apple):' : 'To install on iOS (Apple):'}
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-                      <ArrowUpRight className="w-4 h-4 text-accent-gold" />
-                    </div>
-                    <span className="text-white/80 text-xs font-bold leading-tight">{isRTL ? '1. اضغط زر المشاركة أسفل المتصفح' : '1. Tap Share button below'}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-                      <Plus className="w-4 h-4 text-accent-gold" />
-                    </div>
-                    <span className="text-white/80 text-xs font-bold leading-tight">{isRTL ? '2. اختر "إضافة للشاشة الرئيسية"' : '2. Select "Add To Home Screen"'}</span>
-                  </div>
+                  <p>⬆️ {isRTL ? 'اضغط زر المشاركة' : 'Tap Share button'}</p>
+                  <p>➕ {isRTL ? 'إضافة للشاشة الرئيسية' : 'Add to Home Screen'}</p>
                 </motion.div>
               )}
             </div>
           </motion.div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }
+
 
 export default function HomeClient({ latestCars: initialLatestCars }: HomeClientProps) {
   const [latestCars, setLatestCars] = useState<CarType[]>(initialLatestCars || []);

@@ -50,14 +50,14 @@ async function seedCarx() {
         // 2. إنشاء ماركات سيارات لـ CAR X
         console.log('🏎️ إضافة ماركات سيارات...');
         const brandsData = [
-            { name: 'Mercedes-Benz', nameAr: 'مرسيدس بنز', slug: 'mercedes', logo: '/uploads/brands/mercedes.png' },
-            { name: 'BMW', nameAr: 'بي إم دبليو', slug: 'bmw', logo: '/uploads/brands/bmw.png' },
-            { name: 'Porsche', nameAr: 'بورشه', slug: 'porsche', logo: '/uploads/brands/porsche.png' }
+            { name: 'مرسيدس بنز', nameEn: 'Mercedes-Benz', key: 'mercedes', logoUrl: '/uploads/brands/mercedes.png' },
+            { name: 'بي إم دبليو', nameEn: 'BMW', key: 'bmw', logoUrl: '/uploads/brands/bmw.png' },
+            { name: 'بورشه', nameEn: 'Porsche', key: 'porsche', logoUrl: '/uploads/brands/porsche.png' }
         ];
 
         for (const b of brandsData) {
             await Brand.findOneAndUpdate(
-                { slug: b.slug, tenantId: TENANT_ID },
+                { key: b.key, tenantId: TENANT_ID },
                 { ...b, tenantId: TENANT_ID },
                 { upsert: true }
             );

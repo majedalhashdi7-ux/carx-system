@@ -177,5 +177,27 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify({ carxSettings })
     })
+  },
+  liveAuctions: {
+    list: (status?: string) => fetchAPI<any>('/live-auctions' + (status ? `?status=${status}` : '')),
+    getById: (id: string) => fetchAPI<any>(`/live-auctions/${id}`),
+    create: (data: any) => fetchAPI<any>('/live-auctions', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    update: (id: string, data: any) => fetchAPI<any>(`/live-auctions/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+    delete: (id: string) => fetchAPI<any>(`/live-auctions/${id}`, { method: 'DELETE' }),
+    start: (id: string) => fetchAPI<any>(`/live-auctions/${id}/start`, { method: 'POST' }),
+    end: (id: string) => fetchAPI<any>(`/live-auctions/${id}/end`, { method: 'POST' }),
+    importExternal: (id: string) => fetchAPI<any>(`/live-auctions/${id}/import-external`, { method: 'POST' }),
+  },
+  liveAuctionRequests: {
+    create: (data: any) => fetchAPI<any>('/live-auction-requests', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
   }
 };

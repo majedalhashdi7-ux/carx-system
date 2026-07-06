@@ -100,7 +100,7 @@ export default function Home() {
       <InstallPWAButton />
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center pt-20 overflow-hidden">
+      <section className="relative min-h-[80vh] lg:min-h-screen flex items-center pt-24 lg:pt-20 overflow-hidden">
         {/* Background Elements */}
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black z-10" />
@@ -124,12 +124,12 @@ export default function Home() {
                 <span className="text-luxury-gold font-black uppercase tracking-[0.4em] text-sm">أناقة بلا حدود</span>
               </div>
               
-              <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-[0.9] uppercase">
+              <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-[0.95] md:leading-[0.9] uppercase">
                 قيادة <span className="text-luxury-gold">المستقبل</span> <br />
                 بلمسة الرفاهية
               </h1>
               
-              <p className="text-xl text-white/60 max-w-2xl leading-relaxed font-medium">
+              <p className="text-lg md:text-xl text-white/60 max-w-2xl leading-relaxed font-medium">
                 اكتشف مجموعتنا الحصرية من السيارات الفاخرة التي تجمع بين الأداء الأسطوري والتصميم المذهل. رحلتك نحو التميز تبدأ من هنا.
               </p>
 
@@ -170,10 +170,10 @@ export default function Home() {
       </section>
 
       {/* ===== Statistics Section ===== */}
-      <section className="py-24 bg-black relative overflow-hidden">
+      <section className="py-12 md:py-24 bg-black relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-luxury-gold/[0.02] to-transparent" />
         <div className="container mx-auto px-6 relative z-10">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
             {[
               { icon: Car, num: `${toArabicNumerals(totalCarsCount)}+`, label: 'سيارة فاخرة', sub: 'في معرضنا' },
               { icon: Users, num: '١٢٠٠+', label: 'عميل راضٍ', sub: 'حول العالم' },
@@ -201,16 +201,16 @@ export default function Home() {
       </section>
 
       {/* Featured Cars Section */}
-      <section className="py-32 bg-black relative overflow-hidden">
+      <section className="py-12 md:py-24 lg:py-32 bg-black relative overflow-hidden">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-luxury-gold/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2" />
         
         <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-end gap-8 mb-20">
-            <div className="space-y-4">
-              <h2 className="text-luxury-gold font-black uppercase tracking-[0.3em] text-sm">المجموعة المميزة</h2>
-              <h3 className="text-4xl md:text-5xl font-black tracking-tighter">أحدث السيارات <span className="text-white/20">في المعرض</span></h3>
+          <div className="flex flex-col md:flex-row justify-between items-end gap-6 md:gap-8 mb-12 md:mb-20">
+            <div className="space-y-3">
+              <h2 className="text-luxury-gold font-black uppercase tracking-[0.3em] text-xs md:text-sm">المجموعة المميزة</h2>
+              <h3 className="text-3xl md:text-5xl font-black tracking-tighter">أحدث السيارات <span className="text-white/20">في المعرض</span></h3>
             </div>
-            <Link href="/showroom" className="group flex items-center gap-3 text-sm font-black uppercase tracking-widest text-white/40 hover:text-luxury-gold transition-colors">
+            <Link href="/showroom" className="group flex items-center gap-3 text-xs md:text-sm font-black uppercase tracking-widest text-white/40 hover:text-luxury-gold transition-colors">
               شاهد الكل
               <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
@@ -241,15 +241,15 @@ export default function Home() {
       </section>
 
       {/* Why Choose Us / Luxury Experience */}
-      <section className="py-32 bg-[#050505]">
+      <section className="py-12 md:py-24 lg:py-32 bg-[#050505]">
         <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
             <div className="relative">
               <div className="absolute -inset-4 bg-luxury-gold/20 blur-3xl rounded-full opacity-30" />
               <img 
                 src="https://images.unsplash.com/photo-1544636331-e26879cd4d9b?auto=format&fit=crop&q=80&w=1000" 
                 alt="Interior Luxury" 
-                className="relative rounded-[3rem] border border-white/10 shadow-2xl"
+                className="relative rounded-[2rem] md:rounded-[3rem] border border-white/10 shadow-2xl w-full"
               />
               <div className="absolute -bottom-10 -right-10 glass-panel p-8 rounded-[2rem] hidden md:block">
                 <div className="flex items-center gap-4">
@@ -264,10 +264,10 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="space-y-10">
-              <div className="space-y-4">
-                <h2 className="text-luxury-gold font-black uppercase tracking-[0.3em] text-sm">لماذا نحن؟</h2>
-                <h3 className="text-4xl md:text-6xl font-black tracking-tighter leading-tight">تجربة شراء <br /> <span className="text-white/20">لا تُضاهى</span></h3>
+            <div className="space-y-8 lg:space-y-10">
+              <div className="space-y-3">
+                <h2 className="text-luxury-gold font-black uppercase tracking-[0.3em] text-xs md:text-sm">لماذا نحن؟</h2>
+                <h3 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tighter leading-tight">تجربة شراء <br /> <span className="text-white/20">لا تُضاهى</span></h3>
               </div>
 
               <div className="space-y-8">
@@ -293,17 +293,17 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-32 relative overflow-hidden">
+      <section className="py-12 md:py-24 lg:py-32 relative overflow-hidden">
         <div className="container mx-auto px-6">
-          <div className="glass-panel p-16 md:p-24 rounded-[3.5rem] relative overflow-hidden text-center space-y-8">
+          <div className="glass-panel p-8 md:p-16 lg:p-24 rounded-[2rem] md:rounded-[3.5rem] relative overflow-hidden text-center space-y-6 md:space-y-8">
             <div className="absolute inset-0 bg-gradient-to-r from-luxury-gold/10 via-transparent to-luxury-gold/10 opacity-30" />
             
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               whileInView={{ opacity: 1, scale: 1 }}
-              className="relative z-10 space-y-6"
+              className="relative z-10 space-y-4 md:space-y-6"
             >
-              <h2 className="text-4xl md:text-6xl font-black tracking-tighter">هل أنت مستعد <br /> <span className="text-luxury-gold">للانطلاق؟</span></h2>
+              <h2 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tighter">هل أنت مستعد <br /> <span className="text-luxury-gold">للانطلاق؟</span></h2>
               <p className="text-white/60 max-w-xl mx-auto text-lg">تواصل معنا اليوم لحجز تجربة قيادة أو للحصول على استشارة خاصة من خبرائنا.</p>
               <div className="flex justify-center gap-6 pt-4">
                 <Link href="/contact" className="bg-white text-black px-12 py-5 rounded-2xl font-black text-lg hover:bg-luxury-gold transition-all duration-500 shadow-2xl">

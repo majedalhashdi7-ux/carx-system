@@ -18,13 +18,17 @@ async function run() {
     }
 
     console.log('🔄 جاري الاتصال بقاعدة البيانات...');
-    await mongoose.connect(MONGO_URI, {
+    const isAtlas = MONGO_URI.includes('mongodb+srv://');
+    const connectOptions = {
         serverSelectionTimeoutMS: 30000,
         socketTimeoutMS: 45000,
         connectTimeoutMS: 30000,
-        tls: true,
-        tlsAllowInvalidCertificates: false,
-    });
+    };
+    if (isAtlas) {
+        connectOptions.tls = true;
+        connectOptions.tlsAllowInvalidCertificates = false;
+    }
+    await mongoose.connect(MONGO_URI, connectOptions);
     console.log('✅ متصل بقاعدة البيانات');
 
     // ─────────────────────────────────────────────

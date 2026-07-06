@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   LayoutDashboard, Car, Wrench, Award,
   ShoppingBag, Users, Settings, Download,
-  LogOut, X, Menu
+  LogOut, X, Menu, Radio
 } from 'lucide-react';
 import { useAuth } from '../../lib/AuthContext';
 import { useState } from 'react';
@@ -14,6 +14,7 @@ import { useState } from 'react';
 const NAV_ITEMS = [
   { label: 'لوحة القيادة',    icon: LayoutDashboard, href: '/admin' },
   { label: 'إدارة السيارات',  icon: Car,             href: '/admin/cars' },
+  { label: 'المزادات المباشرة',icon: Radio,           href: '/admin/live-auctions' },
   { label: 'قطع الغيار',      icon: Wrench,          href: '/admin/parts' },
   { label: 'إدارة الوكالات',  icon: Award,           href: '/admin/brands' },
   { label: 'الطلبات',         icon: ShoppingBag,     href: '/admin/orders' },
