@@ -83,7 +83,7 @@ export default function FavoritesPage() {
                     </div>
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-5xl md:text-7xl font-black tracking-tighter uppercase italic leading-[0.9] mb-4">
+                            <h1 className="text-3xl sm:text-5xl md:text-7xl font-black tracking-tighter uppercase italic leading-[0.9] mb-4">
                                 {isRTL ? rawText('قائمة') : rawText('MY')} <span className="text-transparent bg-clip-text bg-linear-to-b from-red-400 to-red-600">{isRTL ? rawText('المفضلة') : rawText('FAVORITES')}</span>
                             </h1>
                             <p className="text-[11px] text-white/40 uppercase tracking-[0.3em] font-bold">

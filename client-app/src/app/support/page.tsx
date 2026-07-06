@@ -78,7 +78,7 @@ export default function SupportPage() {
             <span className="text-[10px] font-black uppercase tracking-[0.5em] text-cinematic-neon-blue italic">Support Center</span>
           </div>
 
-          <h1 className="text-6xl md:text-8xl font-black tracking-tighter uppercase italic leading-[0.85] mb-8">
+          <h1 className="text-4xl md:text-8xl font-black tracking-tighter uppercase italic leading-[0.85] mb-8">
             {isRTL ? 'مركز' : 'SUPPORT'} <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-b from-white to-white/20">
               {isRTL ? 'الدعم والمساعدة' : 'CENTER'}

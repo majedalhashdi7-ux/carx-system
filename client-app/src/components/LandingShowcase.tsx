@@ -93,7 +93,7 @@ export default function LandingShowcase({ isRTL }: LandingShowcaseProps) {
                         transition={{ duration: 4, repeat: Infinity }}
                         className="absolute inset-0 bg-accent-gold/20 blur-3xl rounded-full"
                     />
-                    <h1 className="text-5xl md:text-8xl font-black font-display tracking-tighter text-white relative uppercase">
+                    <h1 className="text-3xl sm:text-6xl md:text-8xl font-black font-display tracking-tighter text-white relative uppercase">
                         {homeContent?.heroTitle || (
                             <>
                                 HM <span className="text-transparent bg-clip-text bg-gradient-to-b from-accent-gold to-[#8b7355]">CAR</span>

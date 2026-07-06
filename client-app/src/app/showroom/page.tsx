@@ -198,19 +198,11 @@ function LiveAuctionCard({ auction, isRTL }: { auction: LiveAuction; isRTL: bool
                     </div>
                 </div>
 
-                {auction.externalUrl ? (
-                    <a href={auction.externalUrl} target="_blank" rel="noopener noreferrer"
-                        className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-xs uppercase rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.3)]">
-                        <Gavel className="w-3.5 h-3.5" />
-                        {isRTL ? 'المشاركة في المزاد' : 'Join Auction'}
-                    </a>
-                ) : (
-                    <Link href={`/auctions`}
-                        className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-xs uppercase rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.3)]">
-                        <Gavel className="w-3.5 h-3.5" />
-                        {isRTL ? 'المشاركة في المزاد' : 'Join Auction'}
-                    </Link>
-                )}
+                <Link href={`/auctions/live/${auction._id}`}
+                    className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-xs uppercase rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.3)]">
+                    <Gavel className="w-3.5 h-3.5" />
+                    {isRTL ? 'عرض تفاصيل المزاد' : 'View Auction'}
+                </Link>
             </div>
         </motion.div>
     );
@@ -812,7 +804,7 @@ export default function ShowroomPage() {
                     <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:80px_80px]" style={{ maskImage: 'radial-gradient(ellipse 60% 50% at 50% 0%, #000 70%, transparent 100%)' }} />
                 </div>
 
-                <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-28 pb-32">
+                <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-20 md:pt-28 pb-20 md:pb-32">
 
                     {/* زر الرجوع */}
                     <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="mb-8">
@@ -857,10 +849,10 @@ export default function ShowroomPage() {
                     <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-12">
                         <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} className="space-y-3">
                             <div className="h-1 w-12 bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
-                            <h1 className="text-5xl md:text-7xl font-black italic tracking-tighter uppercase leading-[0.85]">
+                            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black italic tracking-tighter uppercase leading-[0.9]">
                                 {isRTL ? rawText('المعرض') : rawText('SHOWROOM')}
-                                <span className="block text-xl md:text-2xl font-light not-italic tracking-[0.3em] text-white/20 mt-2">
-                                    {isRTL ? rawText('سيارات كورية · معرض HM CAR') : rawText('KOREAN CARS · HM CAR SHOWROOM')}
+                                <span className="block text-sm md:text-base font-light not-italic tracking-[0.2em] text-white/30 mt-2">
+                                    {isRTL ? rawText('سيارات كورية · معرض HM CAR') : rawText('KOREAN CARS · HM CAR')}
                                 </span>
                             </h1>
                         </motion.div>

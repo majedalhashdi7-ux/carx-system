@@ -92,7 +92,7 @@ export default function BrandsPage() {
             className="space-y-4"
           >
             <div className="h-1 w-16 bg-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.5)]" />
-            <h1 className="text-5xl md:text-7xl font-black uppercase italic tracking-tighter leading-tight">
+            <h1 className="text-3xl sm:text-5xl md:text-7xl font-black uppercase italic tracking-tighter leading-tight">
               {isRTL ? 'الوكالات' : 'BRANDS'}
             </h1>
             <p className="text-white/40 text-lg max-w-2xl">
