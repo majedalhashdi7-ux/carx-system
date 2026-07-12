@@ -13,6 +13,10 @@
 
 const axios = require('axios');
 const cheerio = require('cheerio');
+const https = require('https');
+
+// Agent to ignore SSL certificate validation issues during external site scraping
+const httpsAgent = new https.Agent({ rejectUnauthorized: false });
 
 class ScraperService {
   /**
@@ -55,6 +59,7 @@ class ScraperService {
         },
         timeout: 15000,
         maxRedirects: 5,
+        httpsAgent,
       });
       
       const $ = cheerio.load(data);
@@ -108,6 +113,7 @@ class ScraperService {
           'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8'
         },
         timeout: 15000,
+        httpsAgent,
       });
       
       const $ = cheerio.load(data);

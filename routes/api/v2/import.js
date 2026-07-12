@@ -16,6 +16,35 @@ const router = express.Router();
 const { requireAuthAPI, requireAdmin } = require('../../../middleware/auth');
 const ScraperService = require('../../../services/ScraperService');
 const { processMany } = require('../../../services/externalImageService');
+const { getTenantId } = require('../../../tenants/tenant-model-helper');
+
+function normalizeImportPricing(payload, isKorean) {
+  const usdToSar = 3.75;
+  const usdToKrw = 1350;
+  
+  const rawPrice = Number(payload.price) || 0;
+  let priceSar = 0, priceUsd = 0, priceKrw = 0;
+  
+  if (isKorean) {
+    // If Korean, the input price is KRW
+    priceKrw = rawPrice;
+    priceUsd = Number((priceKrw / usdToKrw).toFixed(2));
+    priceSar = Number((priceUsd * usdToSar).toFixed(2));
+  } else {
+    // If not Korean, default is SAR
+    priceSar = rawPrice;
+    priceUsd = Number((priceSar / usdToSar).toFixed(2));
+    priceKrw = Math.round(priceUsd * usdToKrw);
+  }
+  
+  return {
+    priceSar,
+    priceUsd,
+    priceKrw,
+    price: priceSar,
+    basePriceUsd: priceUsd
+  };
+}
 
 /**
  * @route POST /api/v2/import/preview
@@ -117,35 +146,72 @@ router.post('/save', requireAuthAPI, requireAdmin, async (req, res, next) => {
       if (!Car) {
         return res.status(500).json({ success: false, error: 'نموذج السيارات غير متاح' });
       }
+      
+      const isEncar = data.sourceUrl && (data.sourceUrl.includes('encar.com') || data.sourceUrl.includes('encar.co.kr'));
+      const pricing = normalizeImportPricing(data, isEncar);
+
       saved = await Car.create({
+        tenantId: getTenantId(req),
         title: data.title,
         make: data.make || 'غير محدد',
         model: data.model || 'غير محدد',
         year: data.year || new Date().getFullYear(),
-        price: data.price || 0,
+        price: pricing.price,
+        priceSar: pricing.priceSar,
+        priceUsd: pricing.priceUsd,
+        priceKrw: pricing.priceKrw,
+        basePriceUsd: pricing.basePriceUsd,
         description: data.description,
         images: processedImages,
         fuelType: data.fuelType || 'Petrol',
         transmission: data.transmission || 'Automatic',
         externalUrl: data.sourceUrl,
-        status: 'draft', // يبدأ كمسودة حتى يراجعه الأدمن
+        source: isEncar ? 'korean_import' : 'hm_local',
+        listingType: isEncar ? 'showroom' : 'store',
+        isActive: true,
       });
     } else {
       const SparePart = req.tenantModels.SparePart;
       if (!SparePart) {
         return res.status(500).json({ success: false, error: 'نموذج قطع الغيار غير متاح' });
       }
+      
+      const pricing = normalizeImportPricing(data, false);
+
       saved = await SparePart.create({
+        tenantId: getTenantId(req),
         name: data.name || data.title,
         partNumber: data.partNumber,
         category: data.category || 'استيراد',
-        price: data.price || 0,
+        price: pricing.price,
+        priceSar: pricing.priceSar,
+        priceUsd: pricing.priceUsd,
+        priceKrw: pricing.priceKrw,
+        basePriceUsd: pricing.basePriceUsd,
         stockQty: data.stock || 1,
         description: data.description,
         images: processedImages,
-        externalUrl: data.sourceUrl, // Model uses externalUrl
-        status: 'draft',
+        externalUrl: data.sourceUrl,
+        inStock: true,
       });
+    }
+
+    // Log the import action in audit log
+    const AuditLog = req.tenantModels.AuditLog;
+    if (AuditLog && req.user) {
+      await AuditLog.logUserAction(
+        req.user.userId,
+        'CREATE',
+        type === 'car' ? 'Car' : 'SparePart',
+        `Imported new ${type}: ${saved.title || saved.name}`,
+        {
+          targetId: saved._id,
+          after: saved.toObject(),
+          ipAddress: req.ip,
+          userAgent: req.get('User-Agent'),
+          sessionId: req.sessionID || 'api'
+        }
+      ).catch(e => console.warn('⚠️ [Import Log] Failed:', e.message));
     }
 
     res.json({

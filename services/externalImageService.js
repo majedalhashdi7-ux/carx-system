@@ -9,6 +9,9 @@ const crypto = require('crypto');
 const config = require('../modules/core/config');
 const cloudinaryLib = require('cloudinary').v2;
 const { optimizeImage } = require('../utils/imageOptimizer');
+const https = require('https');
+
+const httpsAgent = new https.Agent({ rejectUnauthorized: false });
 
 /**
  * تحميل صورة من رابط خارجي ومعالجتها
@@ -41,7 +44,8 @@ async function downloadAndOptimize(url, folder = 'imported', options = {}) {
             timeout: 10000,
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-            }
+            },
+            httpsAgent,
         });
 
         if (!response.data) return url;
