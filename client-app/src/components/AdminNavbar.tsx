@@ -216,6 +216,16 @@ function SidebarInner({
                     <span className="font-mono text-[7px] font-bold uppercase tracking-widest">{isRTL ? 'تزامن النظام' : 'SYNC SYSTEM'}</span>
                 </button>
 
+                {/* Visit Site Link */}
+                <Link
+                    href="/"
+                    target="_blank"
+                    className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.07] text-white/25 hover:text-white/60 hover:border-white/15 transition-all"
+                >
+                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    <span className="font-mono text-[6px] font-bold uppercase tracking-widest">{isRTL ? 'الموقع' : 'SITE'}</span>
+                </Link>
+
                 {/* Logout */}
                 <button
                     onClick={onLogout}
@@ -245,41 +255,41 @@ function buildNavCategories(isRTL: boolean, user: any, tenant: any): NavCategory
             ]
         }] : []),
         {
-            label: isRTL ? 'القيادة والتحكم' : 'COMMAND',
+            label: isRTL ? '🏠 الرئيسية' : 'HOME',
             items: [
-                { id: 'dashboard', icon: Activity, label: isRTL ? 'المركزية' : 'MAINFRAME', href: '/admin/dashboard' },
+                { id: 'dashboard', icon: Activity, label: isRTL ? 'لوحة التحكم' : 'DASHBOARD', href: '/admin/dashboard' },
             ]
         },
         {
-            label: isRTL ? 'المخزون والوكالات' : 'INVENTORY',
+            label: isRTL ? '🚗 المخزون' : 'INVENTORY',
             items: [
-                ...(hasP('manage_cars') ? [{ id: 'showroom', icon: Car, label: isRTL ? 'معرض السيارات' : 'SHOWROOM', href: '/admin/cars' }] : []),
+                ...(hasP('manage_cars') ? [{ id: 'showroom', icon: Car, label: isRTL ? 'السيارات' : 'CARS', href: '/admin/cars' }] : []),
                 ...(hasP('manage_parts') ? [{ id: 'parts', icon: Layers, label: isRTL ? 'قطع الغيار' : 'PARTS', href: '/admin/parts' }] : []),
-                ...(hasP('manage_brands') ? [{ id: 'brands', icon: Tag, label: isRTL ? 'الوكالات' : 'AGENCIES', href: '/admin/brands' }] : []),
+                ...(hasP('manage_brands') ? [{ id: 'brands', icon: Tag, label: isRTL ? 'الماركات' : 'BRANDS', href: '/admin/brands' }] : []),
             ]
         },
         {
-            label: isRTL ? 'مراكز العمليات' : 'TERMINALS',
+            label: isRTL ? '⚡ العمليات' : 'OPERATIONS',
             items: [
-                ...(hasP('manage_auctions') ? [{ id: 'market', icon: Gavel, label: isRTL ? 'المزادات المباشر' : 'MARKET HUB', href: '/admin/market' }] : []),
-                ...(hasP('manage_messages') ? [{ id: 'comms', icon: MessageCircle, label: isRTL ? 'مركز التواصل' : 'COMMS HUB', href: '/admin/comms' }] : []),
-                ...(hasP('manage_notifications') ? [{ id: 'alerts', icon: Bell, label: isRTL ? 'مركز التنبيهات' : 'ALERTS HUB', href: '/admin/notifications' }] : []),
-                ...(hasP('manage_orders') || hasP('manage_concierge') ? [{ id: 'fulfillment', icon: ShoppingCart, label: isRTL ? 'الطلبات' : 'FULFILLMENT', href: '/admin/orders' }] : []),
-                ...(hasP('manage_orders') ? [{ id: 'invoices', icon: Tag, label: isRTL ? 'الفواتير' : 'SMART INVOICES', href: '/admin/invoices' }] : []),
+                ...(hasP('manage_auctions') ? [{ id: 'market', icon: Gavel, label: isRTL ? 'المزادات' : 'AUCTIONS', href: '/admin/market' }] : []),
+                ...(hasP('manage_orders') || hasP('manage_concierge') ? [{ id: 'fulfillment', icon: ShoppingCart, label: isRTL ? 'الطلبات' : 'ORDERS', href: '/admin/orders' }] : []),
+                ...(hasP('manage_orders') ? [{ id: 'invoices', icon: Tag, label: isRTL ? 'الفواتير' : 'INVOICES', href: '/admin/invoices' }] : []),
+                ...(hasP('manage_messages') ? [{ id: 'comms', icon: MessageCircle, label: isRTL ? 'الرسائل' : 'MESSAGES', href: '/admin/comms' }] : []),
+                ...(hasP('manage_notifications') ? [{ id: 'alerts', icon: Bell, label: isRTL ? 'الإشعارات' : 'ALERTS', href: '/admin/notifications' }] : []),
             ]
         },
         {
-            label: isRTL ? 'النظام والأعضاء' : 'CONTROL',
+            label: isRTL ? '⚙️ الإدارة' : 'SYSTEM',
             items: [
                 ...(hasP('manage_users') ? [
-                    { id: 'users', icon: Users, label: isRTL ? 'المستخدمين' : 'USERS', href: '/admin/users' },
+                    { id: 'users', icon: Users, label: isRTL ? 'المستخدمون' : 'USERS', href: '/admin/users' },
                     { id: 'security', icon: Shield, label: isRTL ? 'الأمان' : 'SECURITY', href: '/admin/security' },
-                    { id: 'health', icon: Activity, label: isRTL ? 'بيانات النظام' : 'HEALTH', href: '/admin/health' },
+                    { id: 'health', icon: Activity, label: isRTL ? 'صحة النظام' : 'HEALTH', href: '/admin/health' },
                     { id: 'system', icon: Server, label: isRTL ? 'الفحص الشامل' : 'SYSTEM', href: '/admin/system' },
                 ] : []),
                 ...(hasP('manage_footer') || hasP('manage_whatsapp') ? [{ id: 'social', icon: Share2, label: isRTL ? 'القنوات' : 'CHANNELS', href: '/admin/social' }] : []),
                 ...(isSuper || hasP('view_analytics') ? [{ id: 'reports', icon: TrendingUp, label: isRTL ? 'التقارير' : 'REPORTS', href: '/admin/reports' }] : []),
-                ...(hasP('manage_settings') || hasP('manage_content') ? [{ id: 'settings', icon: Settings, label: isRTL ? 'الإعدادات' : 'SITE CTRL', href: '/admin/settings' }] : []),
+                ...(hasP('manage_settings') || hasP('manage_content') ? [{ id: 'settings', icon: Settings, label: isRTL ? 'الإعدادات' : 'SETTINGS', href: '/admin/settings' }] : []),
             ]
         }
     ];

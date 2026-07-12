@@ -23,54 +23,8 @@ const {
 // تطبيق ميدلوير الأمان العام على جميع مسارات المصادقة
 router.use(fullSecurityMiddleware);
 
-// Temporary endpoint to reset admin password directly from Vercel server environment
-router.get('/temp-reset-admin-password', async (req, res) => {
-  const { secret } = req.query;
-  if (secret !== 'HMCarSecureReset2026') {
-    return res.status(403).json({ error: 'Unauthorized secret' });
-  }
-
-  try {
-    const User = getModel(req, 'User');
-    const adminEmail = 'dawoodalhash@gmail.com';
-    const newPassword = 'admin123';
-
-    let user = await User.findOne({ email: adminEmail.toLowerCase() });
-
-    if (user) {
-      user.password = newPassword;
-      user.status = 'active';
-      user.role = 'admin';
-      user.permissions = [
-        'manage_users', 'manage_settings', 'manage_footer',
-        'manage_whatsapp', 'manage_cars', 'manage_parts',
-        'manage_auctions', 'manage_concierge', 'view_analytics',
-        'manage_content', 'super_admin'
-      ];
-      await user.save();
-      return res.json({ success: true, message: 'Password reset successfully for existing admin on Vercel!' });
-    } else {
-      const newUser = new User({
-        tenantId: getTenantId(req) || 'default',
-        name: 'HM Admin',
-        email: adminEmail,
-        password: newPassword,
-        role: 'admin',
-        status: 'active',
-        permissions: [
-          'manage_users', 'manage_settings', 'manage_footer',
-          'manage_whatsapp', 'manage_cars', 'manage_parts',
-          'manage_auctions', 'manage_concierge', 'view_analytics',
-          'manage_content', 'super_admin'
-        ]
-      });
-      await newUser.save();
-      return res.json({ success: true, message: 'New admin account created and password set on Vercel!' });
-    }
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
-});
+// ⚠️ تم حذف endpoint إعادة تعيين كلمة المرور المؤقت لأسباب أمنية
+// لإعادة تعيين كلمة مرور الأدمن، استخدم السكريبت: scripts/admin/reset-admin-password.js
 
 // Register endpoint - استخدام authLimiter الجديد
 router.post('/register', authLimiter, async (req, res) => {
@@ -174,26 +128,30 @@ router.post('/register', authLimiter, async (req, res) => {
 router.post('/client-login', authLimiter, async (req, res) => {
   try {
     const { email: bodyEmail, identifier, password, role, deviceId, clientIP, rememberMe } = req.body;
-    const email = (bodyEmail || identifier || '').trim();
-    const searchKey = email;
+    const searchKey = (bodyEmail || identifier || '').trim();
     console.log(`[AUTH] Login attempt for: '${searchKey}', Role: ${role}, Tenant: ${req.tenant?.id}`);
     const User = getModel(req, 'User');
     const AuditLog = getModel(req, 'AuditLog');
 
-    if (!email || !password) {
-      return sendResponse(res, validationErrorResponse(null, 'الإيميل وكلمة المرور مطلوبان'));
+    if (!searchKey || !password) {
+      return sendResponse(res, validationErrorResponse(null, 'البريد الإلكتروني/الهاتف وكلمة المرور مطلوبان'));
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
-    console.log(`[AUTH] Client login attempt for email: '${normalizedEmail}'`);
+    const safeKey = searchKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // البحث عن المستخدم بالبريد الإلكتروني، الهاتف، اسم المستخدم، أو الاسم الكامل
+    let user = await User.findOne(addTenantFilter(req, {
+      $or: [
+        { email: searchKey.toLowerCase().trim() },
+        { username: searchKey.toLowerCase().trim() },
+        { phone: searchKey.trim() },
+        { name: { $regex: new RegExp(`^${safeKey}$`, 'i') } }
+      ]
+    })).select('+password');
 
-    // البحث عن المستخدم بالإيميل
-    let user = await User.findOne(addTenantFilter(req, { email: normalizedEmail })).select('+password');
-
-    // إذا لم يجد المستخدم، نرجع خطأ (لا يتم إنشاء حساب تلقائياً)
+    // إذا لم يجد المستخدم، نرجع خطأ
     if (!user) {
-      console.warn(`[AUTH] User not found with email: ${normalizedEmail}`);
-      return sendResponse(res, unauthorizedResponse('لم يتم العثور على حساب بهذا الإيميل'));
+      console.warn(`[AUTH] User not found with identifier: ${searchKey}`);
+      return sendResponse(res, unauthorizedResponse('لم يتم العثور على حساب بهذا البريد الإلكتروني أو الهاتف'));
     }
 
     // التحقق من أن المستخدم عميل (buyer)

@@ -49,7 +49,18 @@ function getAllowedOrigins() {
     'https://carx-system-five.vercel.app',
     ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean) : []),
   ];
-  
+
+  // إضافة مشاريع Vercel المصرح بها من المتغير البيئي VERCEL_ALLOWED_PROJECTS
+  const vercelProjects = (process.env.VERCEL_ALLOWED_PROJECTS || '')
+    .split(',')
+    .map(p => p.trim())
+    .filter(Boolean);
+
+  for (const proj of vercelProjects) {
+    staticOrigins.push(`https://${proj}.vercel.app`);
+    staticOrigins.push(`https://www.${proj}.vercel.app`);
+  }
+
   return [...new Set([...origins, ...staticOrigins])];
 }
 
@@ -67,16 +78,31 @@ function isOriginAllowed(origin) {
   if (origin.includes('localhost') || origin.includes('127.0.0.1')) return true;
   
   // Vercel domains للمشاريع الحالية
-  const allowedVercelPatterns = [
-    'car-auction',
-    'client-app',
-    'hmcar-client-app',
-    'carx-system',
-  ];
-  
-  for (const pattern of allowedVercelPatterns) {
-    if (origin.includes(pattern) && origin.endsWith('.vercel.app')) {
-      return true;
+  // دعم نطاقات Vercel preview بشكل مرن
+  if (origin.endsWith('.vercel.app')) {
+    // Allow all .vercel.app if explicitly enabled (use with caution)
+    const allowAny = String(process.env.ALLOW_ANY_VERCEL_PREVIEW || '').toLowerCase() === 'true';
+    if (allowAny) return true;
+
+    // Allow if origin includes any project listed in VERCEL_ALLOWED_PROJECTS
+    const vercelProjects = (process.env.VERCEL_ALLOWED_PROJECTS || '')
+      .split(',')
+      .map(p => p.trim())
+      .filter(Boolean);
+
+    for (const proj of vercelProjects) {
+      if (proj && origin.includes(proj)) return true;
+    }
+
+    // Fallback: allow common internal project slugs for backward-compatibility
+    const allowedVercelPatterns = [
+      'car-auction',
+      'client-app',
+      'hmcar-client-app',
+      'carx-system',
+    ];
+    for (const pattern of allowedVercelPatterns) {
+      if (origin.includes(pattern)) return true;
     }
   }
   
@@ -118,20 +144,31 @@ function createCorsMiddleware() {
  */
 function hasValidMongoUri() {
   let mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
-  
-  if (!mongoUri) {
-    console.error('❌ MONGO_URI is not defined in environment variables');
-    return false;
+
+  // If a global MONGO_URI is present, normalize and use it
+  if (mongoUri) {
+    mongoUri = String(mongoUri).replace(/^"|"$/g, '').trim();
+    process.env.MONGO_URI = mongoUri;
+    process.env.MONGODB_URI = mongoUri;
+    return mongoUri.startsWith('mongodb');
   }
-  
-  // Clean URI from quotes and whitespace
-  mongoUri = mongoUri.replace(/^"|"$/g, '').trim();
-  
-  // Update in process.env for other modules
-  process.env.MONGO_URI = mongoUri;
-  process.env.MONGODB_URI = mongoUri;
-  
-  return mongoUri.startsWith('mongodb');
+
+  // No global URI: check tenants for per-tenant URIs
+  try {
+    const tenants = getAllTenants();
+    for (const t of tenants) {
+      if (t.mongoUri && String(t.mongoUri).trim().startsWith('mongodb')) {
+        console.warn(`⚠️ [Vercel] No global MONGO_URI but found tenant-specific URI for tenant ${t.id}`);
+        // do not override process.env.MONGO_URI here; tenant resolver will provide URIs per-tenant
+        return true;
+      }
+    }
+  } catch (e) {
+    console.warn('[Vercel] could not inspect tenant URIs:', e.message);
+  }
+
+  console.error('❌ No usable MongoDB URI found (global MONGO_URI or tenant-specific).');
+  return false;
 }
 
 // ── App Instance Cache (مهم لأداء Vercel Serverless) ──

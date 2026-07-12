@@ -7,13 +7,14 @@
  */
 
 import React, { useRef, useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Shield, Truck, CreditCard, Award, Star, Zap, Globe,
   MessageCircle, Smartphone, Download, Link as LinkIcon, ArrowUpRight,
   ArrowRight, Car, Play, Check, ChevronLeft, ChevronRight,
   Quote, Phone, Instagram, Facebook, Youtube, Send, Linkedin,
-  Mail, Search, Gavel, Cog, Info, User, LogOut, Menu, X, Plus
+  Mail, Search, Gavel, Cog, Info, User, LogOut, Menu, X, Plus,
+  Layers, Clock, Tag, Package, Timer, TrendingUp, Wrench
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -583,7 +584,222 @@ export default function HomeClient({ latestCars: initialLatestCars }: HomeClient
       })()}
 
 
-      {/* ── 6. دليل الماركات: تم حذفه حسب الطلب ── */}
+      {/* ── 6. قسم المزادات الحالية ── */}
+      {!isStandalone && (
+        <section className="relative z-10 py-20 px-4 bg-gradient-to-b from-black/0 to-black/40">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center justify-between mb-10">
+              <div>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20">
+                    <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
+                    <span className="text-xs font-black text-red-400 uppercase tracking-widest">
+                      {isRTL ? 'مزادات حية' : 'LIVE AUCTIONS'}
+                    </span>
+                  </div>
+                </div>
+                <h2 className="text-4xl md:text-5xl font-black text-white italic uppercase tracking-tighter">
+                  {isRTL ? 'المزادات الجارية' : 'ACTIVE AUCTIONS'}
+                </h2>
+                <div className="h-1 w-16 bg-red-500 mt-2" />
+              </div>
+              <Link
+                href="/auctions"
+                className="group flex items-center gap-2 text-red-400 font-bold uppercase tracking-widest hover:text-white transition-colors"
+              >
+                {isRTL ? 'عرض الكل' : 'VIEW ALL'}
+                <ArrowRight className={cn("w-5 h-5 transition-transform group-hover:translate-x-2", isRTL && "rotate-180 group-hover:-translate-x-2")} />
+              </Link>
+            </div>
+
+            {/* بطاقات المزادات */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1,2,3].map((i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="group relative rounded-2xl border border-white/8 bg-white/[0.02] overflow-hidden hover:border-red-500/30 transition-all duration-300"
+                >
+                  <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/20 border border-red-500/30">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                    <span className="text-[9px] font-black text-red-400 uppercase">{isRTL ? 'جارٍ' : 'LIVE'}</span>
+                  </div>
+                  <div className="h-44 bg-gradient-to-br from-white/5 to-white/0 flex items-center justify-center">
+                    <Gavel className="w-12 h-12 text-white/10" />
+                  </div>
+                  <div className="p-5 space-y-3">
+                    <p className="text-sm font-black text-white">{isRTL ? `مزاد سيارة #${i}00${i}` : `Vehicle Auction #${i}00${i}`}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-accent-gold">
+                        <Timer className="w-3.5 h-3.5" />
+                        <span className="text-xs font-bold">24:00:00</span>
+                      </div>
+                      <span className="text-xs font-bold text-white/50">{isRTL ? 'السعر الحالي' : 'Current Bid'}</span>
+                    </div>
+                    <Link
+                      href="/auctions"
+                      className="block w-full py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-center text-xs font-black text-red-400 hover:bg-red-500/20 transition-all"
+                    >
+                      {isRTL ? 'المزايدة الآن' : 'BID NOW'}
+                    </Link>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* CTA للمزادات */}
+            <div className="mt-8 text-center">
+              <Link
+                href="/auctions"
+                className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 font-black uppercase tracking-widest hover:bg-red-500/20 hover:text-white transition-all"
+              >
+                <Gavel className="w-5 h-5" />
+                {isRTL ? 'تصفح جميع المزادات' : 'BROWSE ALL AUCTIONS'}
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── 7. قسم قطع الغيار ── */}
+      {!isStandalone && (
+        <section className="relative z-10 py-20 px-4">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center justify-between mb-10">
+              <div>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
+                    <Wrench className="w-3 h-3 text-amber-400" />
+                    <span className="text-xs font-black text-amber-400 uppercase tracking-widest">
+                      {isRTL ? 'متجر قطع الغيار' : 'PARTS STORE'}
+                    </span>
+                  </div>
+                </div>
+                <h2 className="text-4xl md:text-5xl font-black text-white italic uppercase tracking-tighter">
+                  {isRTL ? 'قطع الغيار' : 'SPARE PARTS'}
+                </h2>
+                <div className="h-1 w-16 bg-amber-500 mt-2" />
+              </div>
+              <Link
+                href="/parts"
+                className="group flex items-center gap-2 text-amber-400 font-bold uppercase tracking-widest hover:text-white transition-colors"
+              >
+                {isRTL ? 'عرض الكل' : 'VIEW ALL'}
+                <ArrowRight className={cn("w-5 h-5 transition-transform group-hover:translate-x-2", isRTL && "rotate-180 group-hover:-translate-x-2")} />
+              </Link>
+            </div>
+
+            {/* فئات قطع الغيار */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+              {[
+                { icon: Layers, label: isRTL ? 'محركات' : 'Engines', color: '#f97316' },
+                { icon: Package, label: isRTL ? 'هيكل' : 'Body Parts', color: '#eab308' },
+                { icon: Wrench, label: isRTL ? 'فرامل' : 'Brakes', color: '#ef4444' },
+                { icon: Zap, label: isRTL ? 'كهربائي' : 'Electrical', color: '#60a5fa' },
+                { icon: Cog, label: isRTL ? 'علبة تروس' : 'Transmission', color: '#a78bfa' },
+                { icon: TrendingUp, label: isRTL ? 'عروض' : 'Deals', color: '#34d399' },
+              ].map((cat, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.08 }}
+                  whileHover={{ y: -4, scale: 1.03 }}
+                  className="group cursor-pointer"
+                >
+                  <Link href="/parts">
+                    <div className="flex flex-col items-center gap-3 p-4 rounded-2xl border border-white/8 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.06] transition-all text-center">
+                      <div
+                        className="w-12 h-12 rounded-xl flex items-center justify-center transition-all group-hover:scale-110"
+                        style={{ backgroundColor: `${cat.color}15`, border: `1px solid ${cat.color}30` }}
+                      >
+                        <cat.icon className="w-5 h-5" style={{ color: cat.color }} />
+                      </div>
+                      <span className="text-xs font-bold text-white/60 group-hover:text-white transition-colors">{cat.label}</span>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* CTA قطع الغيار */}
+            <div className="p-8 rounded-3xl border border-amber-500/20 bg-amber-500/5 text-center">
+              <Wrench className="w-8 h-8 text-amber-400 mx-auto mb-3" />
+              <h3 className="text-xl font-black text-white mb-2">
+                {isRTL ? 'تحتاج قطعة غيار محددة؟' : 'Need a Specific Part?'}
+              </h3>
+              <p className="text-white/40 text-sm mb-5">
+                {isRTL ? 'استخدم نظام الاستيراد الذكي أو تواصل معنا مباشرة' : 'Use our smart import system or contact us directly'}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link
+                  href="/parts"
+                  className="px-6 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-black text-sm uppercase tracking-widest hover:bg-amber-500/20 transition-all"
+                >
+                  {isRTL ? 'تصفح المتجر' : 'Browse Store'}
+                </Link>
+                <Link
+                  href="/concierge"
+                  className="px-6 py-3 rounded-xl bg-accent-gold text-black font-black text-sm uppercase tracking-widest hover:bg-accent-gold/90 transition-all"
+                >
+                  {isRTL ? 'طلب مخصص' : 'Custom Order'}
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── 8. قسم الدعوة للانضمام ── */}
+      {!isStandalone && (
+        <section className="relative z-10 py-20 px-4">
+          <div className="max-w-4xl mx-auto text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="relative p-10 sm:p-16 rounded-[2.5rem] border border-accent-gold/20 bg-gradient-to-br from-accent-gold/5 to-transparent overflow-hidden"
+            >
+              {/* خلفية ديكورية */}
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute top-[-50px] right-[-50px] w-[200px] h-[200px] rounded-full bg-accent-gold/10 blur-[80px]" />
+                <div className="absolute bottom-[-50px] left-[-50px] w-[200px] h-[200px] rounded-full bg-accent-gold/5 blur-[80px]" />
+              </div>
+
+              <Sparkles className="w-10 h-10 text-accent-gold mx-auto mb-6" />
+              <h2 className="text-4xl md:text-5xl font-black text-white italic uppercase tracking-tighter mb-4">
+                {isRTL ? 'ابدأ اليوم' : 'START TODAY'}
+              </h2>
+              <p className="text-white/50 text-base mb-8 max-w-xl mx-auto">
+                {isRTL
+                  ? 'انضم إلى آلاف العملاء الذين يثقون في منصتنا لاستيراد سياراتهم وقطع الغيار بأفضل الأسعار'
+                  : 'Join thousands of clients who trust our platform for importing vehicles and parts at the best prices'
+                }
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link
+                  href="/register"
+                  className="px-8 py-4 rounded-xl bg-accent-gold text-black font-black text-sm uppercase tracking-widest hover:bg-accent-gold/90 transition-all shadow-lg shadow-accent-gold/20"
+                >
+                  {isRTL ? 'إنشاء حساب مجاني' : 'CREATE FREE ACCOUNT'}
+                </Link>
+                <Link
+                  href="/gallery"
+                  className="px-8 py-4 rounded-xl bg-white/5 border border-white/10 text-white font-black text-sm uppercase tracking-widest hover:bg-white/10 transition-all"
+                >
+                  {isRTL ? 'تصفح المعرض' : 'BROWSE GALLERY'}
+                </Link>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+      )}
+
+      {/* ── 9. دليل الماركات: تم حذفه حسب الطلب ── */}
 
 
 

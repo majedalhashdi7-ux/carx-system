@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     Activity, Car, Layers, Gavel, Users, ShoppingCart,
     Settings, MessageCircle, Tag, TrendingUp,
-    Database, Zap, ArrowUpRight, Shield, BarChart2, Search
+    Database, Zap, ArrowUpRight, Shield, BarChart2, Search,
+    Bell, Package, Clock, CheckCircle, AlertCircle, Plus
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -103,26 +104,28 @@ export default function AdminDashboard() {
     }, []);
 
     const statCards = [
-        { label: isRTL ? 'السيارات' : 'VEHICLES', val: stats?.totalCars ?? '—', sub: isRTL ? 'سيارات في المعرض' : 'Cars in Showroom', icon: Car, color: '#f97316', glow: 'rgba(249,115,22,0.25)' },
-        { label: isRTL ? 'قطع مستوردة' : 'PARTS', val: stats?.totalParts ?? '—', sub: isRTL ? 'قطع غيار مستوردة' : 'Imported Spare Parts', icon: Layers, color: '#fbbf24', glow: 'rgba(251,191,36,0.25)' },
-        { label: isRTL ? 'الأعضاء' : 'MEMBERS', val: stats?.totalUsers ?? '—', sub: isRTL ? 'عملاء مسجلون' : 'Registered Clients', icon: Users, color: '#60a5fa', glow: 'rgba(96,165,250,0.25)' },
-        { label: isRTL ? 'الطلبات' : 'ORDERS', val: stats?.totalOrders ?? '—', sub: isRTL ? 'طلبات الشراء' : 'Purchase Orders', icon: ShoppingCart, color: '#34d399', glow: 'rgba(52,211,153,0.25)' },
-        { label: isRTL ? 'الإيرادات' : 'REVENUE', val: stats?.totalRevenue ? `${(stats.totalRevenue / 1000).toFixed(0)}K` : '0', sub: isRTL ? 'إجمالي المبيعات' : 'Total Sales', icon: TrendingUp, color: '#a78bfa', glow: 'rgba(167,139,250,0.25)' },
+        { label: isRTL ? 'السيارات' : 'VEHICLES', val: stats?.totalCars ?? '—', sub: isRTL ? 'سيارات في المعرض' : 'Cars in Showroom', icon: Car, color: '#f97316', glow: 'rgba(249,115,22,0.25)', href: '/admin/cars' },
+        { label: isRTL ? 'قطع الغيار' : 'PARTS', val: stats?.totalParts ?? '—', sub: isRTL ? 'قطع غيار متاحة' : 'Available Parts', icon: Layers, color: '#fbbf24', glow: 'rgba(251,191,36,0.25)', href: '/admin/parts' },
+        { label: isRTL ? 'المزادات' : 'AUCTIONS', val: stats?.runningAuctions ?? '—', sub: isRTL ? 'مزادات نشطة' : 'Active Auctions', icon: Gavel, color: '#ef4444', glow: 'rgba(239,68,68,0.25)', href: '/admin/auctions' },
+        { label: isRTL ? 'الأعضاء' : 'MEMBERS', val: stats?.totalUsers ?? '—', sub: isRTL ? 'عملاء مسجلون' : 'Registered Clients', icon: Users, color: '#60a5fa', glow: 'rgba(96,165,250,0.25)', href: '/admin/users' },
+        { label: isRTL ? 'الطلبات' : 'ORDERS', val: stats?.totalOrders ?? '—', sub: isRTL ? 'طلبات الشراء' : 'Purchase Orders', icon: ShoppingCart, color: '#34d399', glow: 'rgba(52,211,153,0.25)', href: '/admin/orders' },
+        { label: isRTL ? 'الإيرادات' : 'REVENUE', val: stats?.totalRevenue ? `${(stats.totalRevenue / 1000).toFixed(0)}K` : '0', sub: isRTL ? 'إجمالي المبيعات' : 'Total Sales', icon: TrendingUp, color: '#a78bfa', glow: 'rgba(167,139,250,0.25)', href: '/admin/reports' },
     ];
 
     const quickLinks = [
-        { icon: Car, label: isRTL ? 'معرض السيارات' : 'SHOWROOM', href: '/admin/cars', color: '#f97316' },
-        { icon: Gavel, label: isRTL ? 'سوق المزادات' : 'MARKET HUB', href: '/admin/market', color: '#ef4444' },
-        { icon: ShoppingCart, label: isRTL ? 'مركز التنفيذ' : 'FULFILLMENT', href: '/admin/orders', color: '#34d399' },
-        { icon: MessageCircle, label: isRTL ? 'مركز التواصل' : 'COMMS HUB', href: '/admin/comms', color: '#60a5fa' },
-        { icon: Layers, label: isRTL ? 'قطع الغيار' : 'PARTS', href: '/admin/parts', color: '#fbbf24' },
-        { icon: Users, label: isRTL ? 'الأعضاء' : 'USERS', href: '/admin/users', color: '#8b5cf6' },
-        { icon: Shield, label: isRTL ? 'الأمان' : 'SECURITY', href: '/admin/security', color: '#f43f5e' },
-        { icon: Activity, label: isRTL ? 'الترصد والتشخيص' : 'DIAGNOSTICS', href: '/admin/health', color: '#10b981' },
-        { icon: Tag, label: isRTL ? 'الوكالات' : 'AGENCIES', href: '/admin/brands', color: '#f59e0b' },
-        { icon: BarChart2, label: isRTL ? 'التقارير' : 'REPORTS', href: '/admin/reports', color: '#10b981' },
-        { icon: Settings, label: isRTL ? 'الإعدادات' : 'SITE CTRL', href: '/admin/settings', color: '#64748b' },
-        { icon: Database, label: isRTL ? 'نسخ احتياطي' : 'BACKUP', isButton: true, onClick: handleBackup, color: '#f97316' },
+        { icon: Car, label: isRTL ? 'إدارة السيارات' : 'CARS', href: '/admin/cars', color: '#f97316', desc: isRTL ? 'عرض وإضافة السيارات' : 'Manage vehicles' },
+        { icon: Gavel, label: isRTL ? 'المزادات' : 'AUCTIONS', href: '/admin/market', color: '#ef4444', desc: isRTL ? 'إدارة المزادات الحية' : 'Live auctions hub' },
+        { icon: ShoppingCart, label: isRTL ? 'الطلبات' : 'ORDERS', href: '/admin/orders', color: '#34d399', desc: isRTL ? 'متابعة الطلبات' : 'Track orders' },
+        { icon: MessageCircle, label: isRTL ? 'الرسائل' : 'COMMS', href: '/admin/comms', color: '#60a5fa', desc: isRTL ? 'مركز التواصل' : 'Communications' },
+        { icon: Layers, label: isRTL ? 'قطع الغيار' : 'PARTS', href: '/admin/parts', color: '#fbbf24', desc: isRTL ? 'إدارة المتجر' : 'Parts store' },
+        { icon: Users, label: isRTL ? 'الأعضاء' : 'USERS', href: '/admin/users', color: '#8b5cf6', desc: isRTL ? 'إدارة الحسابات' : 'User management' },
+        { icon: Shield, label: isRTL ? 'الأمان' : 'SECURITY', href: '/admin/security', color: '#f43f5e', desc: isRTL ? 'الأجهزة والصلاحيات' : 'Access control' },
+        { icon: Activity, label: isRTL ? 'الصحة' : 'HEALTH', href: '/admin/health', color: '#10b981', desc: isRTL ? 'مراقبة الأداء' : 'System health' },
+        { icon: Tag, label: isRTL ? 'الماركات' : 'BRANDS', href: '/admin/brands', color: '#f59e0b', desc: isRTL ? 'إدارة الوكالات' : 'Brand management' },
+        { icon: BarChart2, label: isRTL ? 'التقارير' : 'REPORTS', href: '/admin/reports', color: '#10b981', desc: isRTL ? 'إحصائيات المبيعات' : 'Analytics reports' },
+        { icon: Bell, label: isRTL ? 'الإشعارات' : 'ALERTS', href: '/admin/notifications', color: '#f97316', desc: isRTL ? 'إدارة الإشعارات' : 'Notifications' },
+        { icon: Settings, label: isRTL ? 'الإعدادات' : 'SETTINGS', href: '/admin/settings', color: '#64748b', desc: isRTL ? 'إعدادات النظام' : 'Site control' },
+        { icon: Database, label: isRTL ? 'نسخ احتياطي' : 'BACKUP', isButton: true, onClick: handleBackup, color: '#f97316', desc: isRTL ? 'تنزيل نسخة احتياطية' : 'Download backup' },
     ];
 
     const getActivityIcon = (target: string) => {
@@ -229,31 +232,32 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* ── Stats Row ── */}
-                <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
                     {statCards.map((s, i) => (
                         <motion.div key={i}
                             initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
-                            className="ck-card p-5 relative overflow-hidden group cursor-default">
+                            className="ck-card p-4 relative overflow-hidden group cursor-pointer"
+                            onClick={() => s.href && router.push(s.href)}
+                        >
                             <div 
                                 className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                                 style={{ background: `radial-gradient(circle at 80% 20%, ${s.glow} 0%, transparent 60%)` }}
                             />
-                            <div className="flex items-start justify-between mb-4">
+                            <div className="flex items-start justify-between mb-3">
                                 <div 
-                                    className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/10"
+                                    className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/10"
                                     style={{ borderColor: s.color, borderStyle: 'solid', borderWidth: '1px' }}
                                 >
-                                    <s.icon className="w-4 h-4" style={{ color: s.color }} />
+                                    <s.icon className="w-3.5 h-3.5" style={{ color: s.color }} />
                                 </div>
                                 <Zap className="w-3 h-3 opacity-20 group-hover:opacity-60 transition-opacity" style={{ color: s.color }} />
                             </div>
                             {loading ? (
-                                <div className="h-8 w-16 bg-white/10 rounded-lg animate-pulse mb-1" />
+                                <div className="h-7 w-14 bg-white/10 rounded-lg animate-pulse mb-1" />
                             ) : (
-                                <div className="cockpit-num text-3xl font-black" style={{ color: s.color }}>{s.val}</div>
+                                <div className="cockpit-num text-2xl font-black" style={{ color: s.color }}>{s.val}</div>
                             )}
-                            <p className="cockpit-mono text-[9px] text-white/30 uppercase tracking-widest mt-1">{s.label}</p>
-                            <p className="text-[10px] text-white/20 mt-0.5">{s.sub}</p>
+                            <p className="cockpit-mono text-[8px] text-white/30 uppercase tracking-widest mt-1">{s.label}</p>
                         </motion.div>
                     ))}
                 </div>
@@ -263,11 +267,17 @@ export default function AdminDashboard() {
 
                     {/* Quick Access Grid */}
                     <div className="xl:col-span-2 ck-card p-6">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-1.5 h-6 rounded-full bg-orange-500" />
-                            <h2 className="cockpit-mono text-[12px] font-black uppercase tracking-widest text-white/80">
-                                {isRTL ? 'مركز التحكم والعمليات' : 'OPERATIONS TERMINAL'}
-                            </h2>
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="w-1.5 h-6 rounded-full bg-orange-500" />
+                                <h2 className="cockpit-mono text-[12px] font-black uppercase tracking-widest text-white/80">
+                                    {isRTL ? 'مركز التحكم والعمليات' : 'OPERATIONS TERMINAL'}
+                                </h2>
+                            </div>
+                            <Link href="/admin/cars" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 text-[9px] font-black uppercase tracking-widest hover:bg-orange-500/20 transition-all">
+                                <Plus className="w-3 h-3" />
+                                {isRTL ? 'إضافة سيارة' : 'ADD CAR'}
+                            </Link>
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
                             {quickLinks.map((link, i) => {
@@ -275,9 +285,9 @@ export default function AdminDashboard() {
                                     <motion.div
                                         whileHover={{ scale: 1.05, y: -4 }}
                                         whileTap={{ scale: 0.95 }}
-                                        className="relative flex flex-col items-center gap-3 p-4 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.08] hover:border-white/10 transition-all cursor-pointer group">
+                                        className="relative flex flex-col items-center gap-2 p-4 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.08] hover:border-white/10 transition-all cursor-pointer group">
                                         <div 
-                                            className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all group-hover:scale-110 shadow-lg bg-white/5"
+                                            className="w-11 h-11 rounded-2xl flex items-center justify-center transition-all group-hover:scale-110 shadow-lg bg-white/5"
                                             style={{ borderColor: `${link.color}40`, borderStyle: 'solid', borderWidth: '1px' }}
                                         >
                                             <link.icon className="w-5 h-5" style={{ color: link.color }} />
@@ -285,6 +295,11 @@ export default function AdminDashboard() {
                                         <span className="cockpit-mono text-[9px] text-white/50 uppercase font-black tracking-widest text-center leading-tight group-hover:text-white transition-colors">
                                             {link.label}
                                         </span>
+                                        {'desc' in link && (
+                                            <span className="text-[8px] text-white/20 text-center leading-tight group-hover:text-white/40 transition-colors hidden sm:block">
+                                                {link.desc}
+                                            </span>
+                                        )}
                                     </motion.div>
                                 );
                                 return link.isButton

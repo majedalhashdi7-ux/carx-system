@@ -609,10 +609,17 @@ function HMCarLogin() {
                                         {rememberMe && <Sparkles className={cn("w-2.5 h-2.5 text-black")} />}
                                     </div>
                                     <span className="text-[9px] font-bold text-white/30 uppercase tracking-[0.15em] hover:text-white/50 transition-colors">
-                                        {isRTL ? "تذكرني" : "REMEMBER ME"}
+                                        {isRTL ? 'تذكرني' : 'REMEMBER ME'}
                                     </span>
                                 </div>
-                                {role === 'buyer' ? (
+                                {role === 'buyer' && !isRegister ? (
+                                    <Link
+                                        href="/forgot-password"
+                                        className="text-[9px] font-bold text-[#c9a96e]/60 uppercase tracking-[0.15em] hover:text-[#c9a96e] transition-colors hover:underline underline-offset-4 decoration-[#c9a96e]/30"
+                                    >
+                                        {isRTL ? 'نسيت كلمة المرور؟' : 'FORGOT PASSWORD?'}
+                                    </Link>
+                                ) : role === 'buyer' ? (
                                     <button
                                         type="button"
                                         onClick={() => setIsRegister(!isRegister)}

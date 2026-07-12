@@ -1,15 +1,18 @@
 'use client';
 
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminNavbar from '@/components/AdminNavbar';
 import { useLanguage } from '@/lib/LanguageContext';
+import { motion } from 'framer-motion';
 
 const ADMIN_ROLES = ['admin', 'super_admin', 'manager'];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { isRTL } = useLanguage();
     const router = useRouter();
+    const [authorized, setAuthorized] = useState(false);
+    const [checking, setChecking] = useState(true);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -19,31 +22,56 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         })();
         if (!token || !ADMIN_ROLES.includes(role)) {
             router.replace('/login?role=admin');
+        } else {
+            setAuthorized(true);
         }
+        setChecking(false);
     }, [router]);
+
+    // شاشة التحميل أثناء التحقق من الصلاحيات
+    if (checking) {
+        return (
+            <div className="min-h-screen bg-[#070711] flex items-center justify-center">
+                <motion.div
+                    animate={{ opacity: [0.3, 1, 0.3] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                    className="flex flex-col items-center gap-4"
+                >
+                    <div className="w-10 h-10 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                    <p className="text-orange-500/60 text-xs font-bold uppercase tracking-widest">
+                        {isRTL ? 'جاري التحقق من الصلاحيات...' : 'Verifying access...'}
+                    </p>
+                </motion.div>
+            </div>
+        );
+    }
+
+    if (!authorized) return null;
 
     return (
         <div className="relative min-h-screen text-white bg-[#070711]" dir={isRTL ? 'rtl' : 'ltr'}>
 
-            {/* Cockpit background grid */}
-            <div className="fixed inset-0 pointer-events-none z-0 opacity-[0.025] bg-[linear-gradient(rgba(249,115,22,1)_1px,transparent_1px),linear-gradient(90deg,rgba(249,115,22,1)_1px,transparent_1px)] bg-[size:60px_60px]" />
+            {/* شبكة الخلفية */}
+            <div className="fixed inset-0 pointer-events-none z-0 opacity-[0.02] bg-[linear-gradient(rgba(249,115,22,1)_1px,transparent_1px),linear-gradient(90deg,rgba(249,115,22,1)_1px,transparent_1px)] bg-[size:60px_60px]" />
 
-            {/* Vignette */}
+            {/* تأثير التعتيم */}
             <div className="fixed inset-0 pointer-events-none z-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(7,7,17,0.85)_100%)]" />
 
-            {/* Cockpit Admin Sidebar */}
+            {/* شريط التنقل الجانبي */}
             <Suspense fallback={null}>
                 <AdminNavbar />
             </Suspense>
 
-            {/* Page content offset by AdminNavbar (260px) */}
-            {/* lg:ps-[260px] (padding-inline-start) handles both RTL and LTR automatically */}
+            {/* محتوى الصفحة */}
             <div className="relative z-10 pt-[64px] lg:pt-0 lg:ps-[260px] transition-all duration-300 overflow-hidden">
-                <Suspense fallback={null}>
+                <Suspense fallback={
+                    <div className="min-h-screen flex items-center justify-center">
+                        <div className="w-8 h-8 border-2 border-orange-500/40 border-t-orange-500 rounded-full animate-spin" />
+                    </div>
+                }>
                     {children}
                 </Suspense>
             </div>
         </div>
     );
 }
-

@@ -155,11 +155,14 @@ export function getTenantIdFromHostname(hostname: string): string {
   // Check for Vercel preview deployments (they have random suffixes)
   // e.g., carx-system-abc123.vercel.app should match carx-system-five.vercel.app pattern
   if (hostname.includes('vercel.app')) {
-    // Try to match base pattern
+    // Try to match by extracting a base slug from configured vercel project names
     for (const [domain, tenantId] of Object.entries(TENANT_DOMAIN_MAP)) {
       if (domain.includes('vercel.app')) {
-        const basePattern = domain.split('.')[0]; // e.g., "carx-system" from "carx-system-five.vercel.app"
-        if (hostname.includes(basePattern)) {
+        const configuredProject = domain.split('.vercel.app')[0]; // e.g., "carx-system-five"
+        // derive a short slug by taking the first 1-2 dash-separated tokens
+        const tokens = configuredProject.split('-').filter(Boolean);
+        const shortSlug = tokens.slice(0, Math.min(2, tokens.length)).join('-');
+        if (shortSlug && hostname.includes(shortSlug)) {
           return tenantId;
         }
       }
@@ -181,6 +184,14 @@ export function getTenantById(tenantId: string): TenantData {
  * This is the main function to use for getting tenant config
  */
 export function getTenantConfig(): TenantData {
+  // Allow build-time override for SSR or when explicitly set
+  if (process.env.NEXT_PUBLIC_TENANT) {
+    const envTenant = process.env.NEXT_PUBLIC_TENANT.trim();
+    if (envTenant && TENANT_CONFIGS[envTenant]) {
+      return getTenantById(envTenant);
+    }
+  }
+
   const hostname = getCurrentHostname();
   const tenantId = getTenantIdFromHostname(hostname);
   return getTenantById(tenantId);

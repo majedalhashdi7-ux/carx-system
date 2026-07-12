@@ -100,24 +100,45 @@ export default function ClientDashboard() {
     const quickActions = [
         {
             icon: Compass,
-            label: isRTL ? 'تصفح السيارات كوري' : 'Browse Korean Cars',
-            desc: isRTL ? 'أحدث الواردات المتاحة للطلب' : 'Latest available vehicles',
+            label: isRTL ? 'تصفح السيارات' : 'Browse Cars',
+            desc: isRTL ? 'أحدث الواردات المتاحة' : 'Latest available vehicles',
             href: '/cars',
             color: '#D4AF37',
         },
         {
+            icon: Gavel,
+            label: isRTL ? 'المزادات' : 'Live Auctions',
+            desc: isRTL ? 'شارك في المزادات الحية' : 'Join live vehicle auctions',
+            href: '/auctions',
+            color: '#ef4444',
+        },
+        {
+            icon: ShoppingBag,
+            label: isRTL ? 'قطع الغيار' : 'Spare Parts',
+            desc: isRTL ? 'تصفح متجر قطع الغيار' : 'Browse our parts store',
+            href: '/parts',
+            color: '#f59e0b',
+        },
+        {
             icon: Sparkles,
-            label: isRTL ? 'تنبيهاتي الذكية' : 'Smart Alerts',
-            desc: isRTL ? 'تتبع السيارات والمزادات المفضلة' : 'Track your filters and alerts',
-            href: '/client/smart-alerts',
+            label: isRTL ? 'طلب استيراد' : 'Import Request',
+            desc: isRTL ? 'اطلب سيارة مخصصة من كوريا' : 'Custom Korean car import',
+            href: '/concierge',
             color: '#a78bfa',
         },
         {
             icon: User,
             label: isRTL ? 'الملف الشخصي' : 'My Profile',
-            desc: isRTL ? 'تعديل البيانات ومعلومات الشحن' : 'Update profile & contact info',
+            desc: isRTL ? 'تعديل البيانات ومعلومات التواصل' : 'Update profile & contact info',
             href: '/client/profile',
             color: '#10b981',
+        },
+        {
+            icon: Bell,
+            label: isRTL ? 'تنبيهاتي الذكية' : 'Smart Alerts',
+            desc: isRTL ? 'تتبع السيارات والمزادات المفضلة' : 'Track your filters and alerts',
+            href: '/client/smart-alerts',
+            color: '#8b5cf6',
         }
     ];
 
@@ -228,7 +249,7 @@ export default function ClientDashboard() {
                         <h2 className="text-xs font-black uppercase tracking-widest text-white/30 mb-4">
                             {isRTL ? 'إجراءات سريعة' : 'Quick Actions'}
                         </h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                             {quickActions.map((action, i) => {
                                 const Icon = action.icon;
                                 return (

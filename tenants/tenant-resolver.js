@@ -66,6 +66,32 @@ function resolveMongoUri(value) {
 }
 
 /**
+ * Construct a fallback MongoDB URI using the main MONGO_URI and the tenant id
+ * @param {string} baseUri
+ * @param {string} dbName
+ * @returns {string}
+ */
+function constructFallbackUri(baseUri, dbName) {
+  if (!baseUri) return null;
+  try {
+    const [mainPart, options] = baseUri.split('?');
+    const protoIndex = mainPart.indexOf('://');
+    if (protoIndex === -1) return baseUri;
+    const searchStart = protoIndex + 3;
+    const firstSlashIndex = mainPart.indexOf('/', searchStart);
+    let hostPart;
+    if (firstSlashIndex === -1) {
+      hostPart = mainPart;
+    } else {
+      hostPart = mainPart.substring(0, firstSlashIndex);
+    }
+    return hostPart + '/' + dbName + (options ? '?' + options : '');
+  } catch (e) {
+    return baseUri;
+  }
+}
+
+/**
  * تحديد المعرض من الطلب الوارد
  * @param {import('express').Request} req - الطلب
  * @returns {object|null} بيانات المعرض
@@ -138,7 +164,20 @@ function resolveTenant(req) {
   }
 
   // حل URI قاعدة البيانات
-  const mongoUri = resolveMongoUri(tenant.mongoUri);
+  let mongoUri = resolveMongoUri(tenant.mongoUri);
+
+  // إذا لم يتم حل متغير الـ ENV المحدد للمعرض، نحاول بناء URI افتراضي من MONGO_URI العام
+  if (!mongoUri) {
+    const baseUri = process.env.MONGO_URI || process.env.MONGODB_URI || null;
+    if (baseUri) {
+      try {
+        console.warn(`⚠️ [TenantResolver] tenant "${tenantId}" has no specific mongoUri, using fallback from main MONGO_URI`);
+        mongoUri = constructFallbackUri(baseUri, tenantId);
+      } catch (e) {
+        // ignore and leave mongoUri null
+      }
+    }
+  }
 
   return {
     id: tenantId,
