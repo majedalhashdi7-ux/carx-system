@@ -276,6 +276,29 @@ class App {
       this.io = socketModule.init(server);
       this.app.set('io', this.io);
 
+      // تشغيل المزامنة التلقائية للمزادات كل 24 ساعة في الوضع المحلي / الخادم المستمر (local VM / VPS)
+      try {
+        const LiveAuctionSyncService = require('../services/LiveAuctionSyncService');
+        
+        // تشغيل فوري بعد 15 ثانية من إقلاع السيرفر لضمان استقرار الاتصالات
+        setTimeout(() => {
+          console.log('[Cron Sync] Running initial automated live-auction sync...');
+          LiveAuctionSyncService.syncAllSessions().catch(err => {
+              console.error('⚠️ [Cron Sync] Initial auto-sync failed:', err.message);
+          });
+        }, 15000);
+
+        // تشغيل دوري كل 24 ساعة
+        setInterval(() => {
+          console.log('[Cron Sync] Running periodic automated live-auction sync...');
+          LiveAuctionSyncService.syncAllSessions().catch(err => {
+              console.error('⚠️ [Cron Sync] Periodic auto-sync failed:', err.message);
+          });
+        }, 24 * 60 * 60 * 1000);
+      } catch (cronErr) {
+        console.error('⚠️ [Cron Sync] Failed to initialize live auction background scheduler:', cronErr.message);
+      }
+
       const shutdown = async () => {
         logger.info('⏳ جاري إغلاق النظام بأمان...');
         server.close(() => { logger.info('🛑 تم إيقاف استقبال الطلبات'); });

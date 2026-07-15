@@ -30,5 +30,11 @@
       "src": "/(.*)",
       "dest": "client-app/$1"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/v2/live-auctions/sync-all",
+      "schedule": "0 0 * * *"
+    }
   ]
 }

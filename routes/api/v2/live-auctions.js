@@ -21,6 +21,22 @@ router.get('/', async (req, res) => {
     }
 });
 
+// GET /api/v2/live-auctions/sync-all - Run sync on all live auctions across all tenants (Cron/Admin)
+router.get('/sync-all', async (req, res) => {
+    try {
+        const LiveAuctionSyncService = require('../../../services/LiveAuctionSyncService');
+        const count = await LiveAuctionSyncService.syncAllSessions();
+        res.json({
+            success: true,
+            message: `تم تحديث عدد ${count} من جلسات المزاد المباشر تلقائياً بنجاح.`,
+            syncedSessions: count
+        });
+    } catch (error) {
+        console.error('Error running live-auctions sync-all:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // GET /api/v2/live-auctions/:id - Get specific session details
 router.get('/:id', async (req, res) => {
     try {
