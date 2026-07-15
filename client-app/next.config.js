@@ -50,12 +50,8 @@ const nextConfig = {
     SYSTEM_VERSION: '2.0.0',
   },
 
-  // Fix turbopack workspace root detection
-  turbopack: {
-    root: '../',
-  },
 
-  output: 'standalone',
+
   compress: true,
   poweredByHeader: false,
   generateEtags: true,
