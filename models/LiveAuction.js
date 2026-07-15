@@ -37,6 +37,8 @@ const liveAuctionSchema = new mongoose.Schema({
     // [[ARABIC_COMMENT]] بيانات دخول المزاد الخارجي (اسم المستخدم وكلمة السر للدخول للرابط)
     auctionUsername: { type: String, default: '' }, // اسم المستخدم للموقع الخارجي
     auctionPassword: { type: String, default: '' }, // كلمة السر للموقع الخارجي
+    // [[ARABIC_COMMENT]] خيار التحديث التلقائي للمزاد كل 24 ساعة (تلقائي / يدوي)
+    autoSync: { type: Boolean, default: false },
 }, { timestamps: true });
 
 module.exports = mongoose.model('LiveAuction', liveAuctionSchema);

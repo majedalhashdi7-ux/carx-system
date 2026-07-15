@@ -186,10 +186,11 @@ async function syncAllSessions() {
                 continue;
             }
 
-            // جلب كل الجلسات الحالية أو القادمة التي تحتوي على رابط استيراد خارجي
+            // جلب كل الجلسات الحالية أو القادمة التي تحتوي على رابط استيراد خارجي ومفعل لها المزامنة التلقائية
             const activeSessions = await models.LiveAuction.find({
                 status: { $in: ['upcoming', 'live'] },
-                externalUrl: { $regex: /^https?:\/\// }
+                externalUrl: { $regex: /^https?:\/\// },
+                autoSync: true
             });
 
             console.log(`[Cron Sync] Found ${activeSessions.length} active sessions with externalUrl for tenant: ${tenant.id}`);

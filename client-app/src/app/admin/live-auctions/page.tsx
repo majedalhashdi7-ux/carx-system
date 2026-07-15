@@ -23,6 +23,7 @@ export default function AdminLiveAuctions() {
         whatsappNumber: '',
         auctionUsername: '', // [[ARABIC_COMMENT]] اسم المستخدم للمزاد الخارجي
         auctionPassword: '', // [[ARABIC_COMMENT]] كلمة السر للمزاد الخارجي
+        autoSync: false,
         cars: [] as any[]
     });
 
@@ -101,7 +102,7 @@ export default function AdminLiveAuctions() {
     };
 
     const resetForm = () => {
-        setFormData({ title: '', externalUrl: '', whatsappNumber: '', auctionUsername: '', auctionPassword: '', cars: [] });
+        setFormData({ title: '', externalUrl: '', whatsappNumber: '', auctionUsername: '', auctionPassword: '', autoSync: false, cars: [] });
         setEditingId(null);
     };
 
@@ -186,6 +187,14 @@ export default function AdminLiveAuctions() {
                                 <div className="text-[10px] uppercase tracking-widest bg-white/5 px-3 py-1 rounded border border-white/5">
                                     <span className="text-white/40">{isRTL ? "السيارات:" : "CARS:"}</span> {session.cars?.length || 0}
                                 </div>
+                                <div className={cn(
+                                    "text-[10px] uppercase tracking-widest px-3 py-1 rounded border",
+                                    session.autoSync 
+                                        ? "bg-cinematic-neon-blue/10 text-cinematic-neon-blue border-cinematic-neon-blue/20" 
+                                        : "bg-white/5 text-white/40 border-white/5"
+                                )}>
+                                    <span className="text-white/40">{isRTL ? "التحديث:" : "SYNC:"}</span> {session.autoSync ? (isRTL ? "تلقائي (24س)" : "AUTO (24h)") : (isRTL ? "يدوي" : "MANUAL")}
+                                </div>
                             </div>
                         </div>
 
@@ -268,8 +277,37 @@ export default function AdminLiveAuctions() {
                                         <input value={formData.auctionUsername} onChange={e => setFormData({ ...formData, auctionUsername: e.target.value })} className="w-full bg-white/5 border border-white/10 p-4 rounded-xl focus:outline-none focus:border-cinematic-neon-blue" placeholder={isRTL ? 'اسم المستخدم' : 'username'} />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">{isRTL ? 'كلمة السر (للمزاد الخارجي)' : 'Password (External Site)'}</label>
-                                        <input type="password" value={formData.auctionPassword} onChange={e => setFormData({ ...formData, auctionPassword: e.target.value })} className="w-full bg-white/5 border border-white/10 p-4 rounded-xl focus:outline-none focus:border-cinematic-neon-blue" placeholder="••••••••" />
+                                         <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">{isRTL ? 'كلمة السر (للمزاد الخارجي)' : 'Password (External Site)'}</label>
+                                         <input type="password" value={formData.auctionPassword} onChange={e => setFormData({ ...formData, auctionPassword: e.target.value })} className="w-full bg-white/5 border border-white/10 p-4 rounded-xl focus:outline-none focus:border-cinematic-neon-blue" placeholder="••••••••" />
+                                    </div>
+                                    <div className="space-y-2 col-span-1 md:col-span-2">
+                                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">{isRTL ? 'وضع التحديث للمزاد' : 'Auction Sync Mode'}</label>
+                                        <div className="flex items-center gap-4 bg-white/5 border border-white/10 p-4 rounded-xl">
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, autoSync: true })}
+                                                className={cn(
+                                                    "flex-1 py-2 text-center text-xs font-black uppercase tracking-widest rounded-lg border transition-all",
+                                                    formData.autoSync 
+                                                        ? "bg-cinematic-neon-blue/20 border-cinematic-neon-blue text-cinematic-neon-blue shadow-[0_0_15px_rgba(0,240,255,0.2)]" 
+                                                        : "border-white/5 bg-transparent text-white/40 hover:text-white"
+                                                )}
+                                            >
+                                                {isRTL ? "تحديث تلقائي كل 24 ساعة" : "Auto Sync (Every 24h)"}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, autoSync: false })}
+                                                className={cn(
+                                                    "flex-1 py-2 text-center text-xs font-black uppercase tracking-widest rounded-lg border transition-all",
+                                                    !formData.autoSync 
+                                                        ? "bg-white/10 border-white/20 text-white" 
+                                                        : "border-white/5 bg-transparent text-white/40 hover:text-white"
+                                                )}
+                                            >
+                                                {isRTL ? "تحديث يدوي فقط" : "Manual Sync Only"}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
