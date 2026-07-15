@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, Edit2, ChevronLeft, X, Link as LinkIcon, Play, Square, ExternalLink, Image as ImageIcon } from "lucide-react";
+import { Plus, Trash2, Edit2, ChevronLeft, X, Link as LinkIcon, Play, Square, ExternalLink, Image as ImageIcon, RefreshCw } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/LanguageContext";
@@ -14,6 +14,7 @@ export default function AdminLiveAuctions() {
     const [isLoading, setIsLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [isImporting, setIsImporting] = useState<string | null>(null);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -77,6 +78,25 @@ export default function AdminLiveAuctions() {
             loadSessions();
         } catch (e) {
             console.error(e);
+        }
+    };
+
+    const handleImport = async (id: string) => {
+        if (!confirm(isRTL ? "هل تريد بدء استيراد السيارات من هذا الرابط؟ قد يستغرق هذا دقيقة." : "Do you want to start importing cars from this link? This may take a minute.")) return;
+        setIsImporting(id);
+        try {
+            const res = await (api.liveAuctions as any).importExternal(id);
+            if (res.success) {
+                alert(isRTL ? `تم استيراد ${res.message || 'السيارات'} بنجاح!` : "Cars imported successfully!");
+                loadSessions();
+            } else {
+                alert(res.error || (isRTL ? "فشل الاستيراد، تأكد من صحة الرابط." : "Import failed, verify link."));
+            }
+        } catch (e: any) {
+            console.error(e);
+            alert(isRTL ? "حدث خطأ أثناء الاتصال بالسيرفر للاستيراد." : "Error calling import service.");
+        } finally {
+            setIsImporting(null);
         }
     };
 
@@ -169,7 +189,7 @@ export default function AdminLiveAuctions() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 w-full md:w-auto">
+                        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 w-full md:w-auto">
                             {session.status !== 'live' ? (
                                 <button onClick={() => handleStatus(session._id, 'start')} className="p-4 bg-white/5 rounded-2xl border border-white/5 text-cinematic-neon-blue hover:bg-cinematic-neon-blue/10 transition-all flex flex-col items-center gap-1">
                                     <Play className="w-5 h-5" />
@@ -181,6 +201,19 @@ export default function AdminLiveAuctions() {
                                     <span className="text-[7px] font-black uppercase">STOP</span>
                                 </button>
                             )}
+
+                            {/* زر الاستيراد التلقائي */}
+                            <button 
+                                onClick={() => handleImport(session._id)} 
+                                disabled={isImporting === session._id || !session.externalUrl}
+                                className={cn(
+                                    "p-4 bg-white/5 rounded-2xl border border-white/5 text-luxury-gold hover:bg-luxury-gold/15 transition-all flex flex-col items-center gap-1 disabled:opacity-30 disabled:hover:bg-transparent",
+                                    isImporting === session._id && "animate-pulse"
+                                )}
+                            >
+                                <RefreshCw className={cn("w-5 h-5", isImporting === session._id && "animate-spin")} />
+                                <span className="text-[7px] font-black uppercase">{isRTL ? "مزامنة" : "SYNC"}</span>
+                            </button>
 
                             <button onClick={() => { setFormData(session); setEditingId(session._id); setIsModalOpen(true); }} className="p-4 bg-white/5 rounded-2xl border border-white/5 text-white/60 hover:text-white transition-all flex flex-col items-center gap-1">
                                 <Edit2 className="w-5 h-5" />

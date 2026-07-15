@@ -469,6 +469,9 @@ export const api = {
         end: (id: string) => fetchAPI(`/api/v2/live-auctions/${id}/end`, {
             method: 'POST',
         }),
+        importExternal: (id: string) => fetchAPI(`/api/v2/live-auctions/${id}/import-external`, {
+            method: 'POST',
+        }),
     },
     liveAuctionRequests: {
         list: (params: Record<string, string | number | boolean> = {}) => {
