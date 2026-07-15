@@ -39,10 +39,10 @@ class EnvironmentChecker {
     try {
       console.log('🔍 فحص قاعدة البيانات...');
       
-      // استخدام DatabaseManager الرئيسي بدل config/database.js المحذوف
-      const DatabaseManager = require('../modules/core/database');
-      if (DatabaseManager.instance) {
-        await DatabaseManager.instance.connect();
+      // استخدام databaseManager الرئيسي بدل config/database.js المحذوف
+      const databaseManager = require('../modules/core/database');
+      if (databaseManager && typeof databaseManager.connect === 'function') {
+        await databaseManager.connect();
       }
       
       if (mongoose.connection.readyState === 1) {

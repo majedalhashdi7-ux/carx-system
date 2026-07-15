@@ -83,109 +83,100 @@ function CarCard({ car, onWhatsApp }: { car: CarItem; onWhatsApp: (car: CarItem)
     const transLabel = car.transmissionAr || car.transmission || '';
 
     const sourceBadge = car.source === 'korean'
-        ? { label: 'كوري', color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' }
-        : { label: 'معرض HM', color: 'bg-purple-500/20 text-purple-300 border-purple-500/30' };
+        ? { label: 'كوري 🇰🇷', color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' }
+        : { label: 'معرض HM', color: 'bg-[#C9A96E]/20 text-[#C9A96E] border-[#C9A96E]/30' };
 
     return (
         <Link href={`/cars/${car.id}`} className="block h-full">
             <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                whileHover={{ y: -2 }}
-                className="group relative bg-[#111118] border border-white/6 rounded-xl sm:rounded-2xl overflow-hidden hover:border-[#C9A96E]/30 hover:shadow-[0_8px_32px_rgba(201,169,110,0.08)] transition-all duration-300 flex flex-col cursor-pointer h-full"
+                whileHover={{ y: -3 }}
+                className="group relative bg-[#111118] border border-white/6 rounded-2xl overflow-hidden hover:border-[#C9A96E]/40 hover:shadow-[0_12px_40px_rgba(201,169,110,0.1)] transition-all duration-300 flex flex-col cursor-pointer h-full"
             >
                 {/* Image */}
-                <div className="relative h-36 sm:h-48 bg-[#0a0a12] overflow-hidden shrink-0">
+                <div className="relative aspect-[4/3] sm:aspect-[16/9] bg-[#0a0a12] overflow-hidden shrink-0">
                     <Image
                         src={img} alt={car.title} fill sizes="(max-width:640px) 50vw, 33vw"
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="object-cover group-hover:scale-105 transition-transform duration-700"
                         onError={() => setImgErr(true)}
                         unoptimized
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
 
-                    {/* Year badge */}
-                    <div className="absolute top-2 right-2 bg-[#C9A96E] text-black text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-md tracking-wide">
-                        {car.year}
-                    </div>
-
-                    {/* Source badge */}
-                    <div className={cn("absolute top-2 left-2 text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded-md border tracking-wide", sourceBadge.color)}>
-                        {sourceBadge.label}
+                    {/* Top badges row */}
+                    <div className="absolute top-2 inset-x-2 flex items-center justify-between">
+                        <div className={cn("text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded-md border tracking-wide backdrop-blur-sm", sourceBadge.color)}>
+                            {sourceBadge.label}
+                        </div>
+                        <div className="bg-[#C9A96E] text-black text-[9px] sm:text-[10px] font-black px-2 py-0.5 rounded-md tracking-wide">
+                            {car.year}
+                        </div>
                     </div>
 
                     {/* Like button */}
                     <button
                         onClick={(e) => { e.stopPropagation(); e.preventDefault(); setLiked(p => !p); }}
-                        className="absolute bottom-2 left-2 w-7 h-7 rounded-full bg-black/50 backdrop-blur-sm border border-white/10 flex items-center justify-center transition-all hover:scale-110"
+                        className="absolute bottom-2 left-2 w-7 h-7 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 flex items-center justify-center transition-all hover:scale-110 active:scale-95"
                     >
-                        <Heart className={cn("w-3.5 h-3.5 transition-colors", liked ? "fill-red-500 text-red-500" : "text-white/50")} />
+                        <Heart className={cn("w-3.5 h-3.5 transition-colors", liked ? "fill-red-500 text-red-500" : "text-white/60")} />
                     </button>
 
                     {/* Inspected badge */}
                     {car.isInspected && (
-                        <div className="absolute bottom-2 right-2 bg-green-500/20 border border-green-500/30 text-green-400 text-[8px] font-black px-1.5 py-0.5 rounded-md">
+                        <div className="absolute bottom-2 right-2 bg-green-500/20 border border-green-500/40 text-green-400 text-[8px] font-black px-1.5 py-0.5 rounded-md backdrop-blur-sm">
                             ✓ مفحوصة
                         </div>
                     )}
+
+                    {/* Price overlay on image bottom */}
+                    <div className="absolute bottom-0 inset-x-0 px-3 pb-2 pt-4 bg-gradient-to-t from-black/80 to-transparent">
+                        <div className="text-[15px] sm:text-base font-black text-[#C9A96E] leading-none">
+                            {displayPrice > 0 ? fmtPrice(displayPrice) : <span className="text-[11px] text-white/50">اتصل للسعر</span>}
+                        </div>
+                    </div>
                 </div>
 
                 {/* Content */}
-                <div className="p-2.5 sm:p-3.5 flex flex-col flex-1 gap-1.5 sm:gap-2.5">
-                    {/* Title */}
+                <div className="p-3 sm:p-3.5 flex flex-col flex-1 gap-2">
+                    {/* Make + Title */}
                     <div>
                         <div className="flex items-center gap-1 mb-0.5">
-                            {(car.source === 'korean' ? <Globe className="w-2.5 h-2.5 text-blue-400/70 shrink-0" /> : <Building2 className="w-2.5 h-2.5 text-purple-400/70 shrink-0" />)}
-                            <span className="text-[8px] text-white/30 font-bold uppercase tracking-widest truncate">{displayName}</span>
+                            {car.source === 'korean' ? <Globe className="w-2.5 h-2.5 text-blue-400/70 shrink-0" /> : <Building2 className="w-2.5 h-2.5 text-[#C9A96E]/60 shrink-0" />}
+                            <span className="text-[9px] text-white/35 font-bold tracking-wider truncate">{displayName}</span>
                         </div>
-                        <h3 className="text-xs sm:text-sm font-black text-white leading-tight line-clamp-2 group-hover:text-[#C9A96E] transition-colors">
+                        <h3 className="text-xs sm:text-sm font-black text-white leading-tight line-clamp-1 group-hover:text-[#C9A96E] transition-colors">
                             {car.model} {car.badge || ''}
                         </h3>
                     </div>
 
-                    {/* Specs tags - simplified on mobile */}
-                    <div className="hidden sm:flex flex-wrap gap-1.5">
+                    {/* Specs row - visible on all sizes */}
+                    <div className="flex flex-wrap gap-1">
+                        {car.mileage > 0 && (
+                            <span className="inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-bold text-white/45 bg-white/4 border border-white/8 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg">
+                                <Gauge className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-[#C9A96E]/50 shrink-0" />{fmtKm(car.mileage)}
+                            </span>
+                        )}
                         {fuelLabel && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white/50 bg-white/4 border border-white/8 px-2 py-1 rounded-lg">
-                                <Fuel className="w-2.5 h-2.5 text-[#C9A96E]/60" />{fuelLabel}
+                            <span className="inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-bold text-white/45 bg-white/4 border border-white/8 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg">
+                                <Fuel className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-[#C9A96E]/50 shrink-0" />{fuelLabel}
                             </span>
                         )}
                         {transLabel && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white/50 bg-white/4 border border-white/8 px-2 py-1 rounded-lg">
-                                <Settings2 className="w-2.5 h-2.5 text-[#C9A96E]/60" />{transLabel}
-                            </span>
-                        )}
-                        {car.mileage > 0 && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white/50 bg-white/4 border border-white/8 px-2 py-1 rounded-lg">
-                                <Gauge className="w-2.5 h-2.5 text-[#C9A96E]/60" />{fmtKm(car.mileage)}
+                            <span className="hidden sm:inline-flex items-center gap-0.5 text-[10px] font-bold text-white/45 bg-white/4 border border-white/8 px-2 py-1 rounded-lg">
+                                <Settings2 className="w-2.5 h-2.5 text-[#C9A96E]/50 shrink-0" />{transLabel}
                             </span>
                         )}
                     </div>
 
-                    {/* Mobile: compact mileage only */}
-                    <div className="sm:hidden">
-                        {car.mileage > 0 && (
-                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-white/40">
-                                <Gauge className="w-2.5 h-2.5 text-[#C9A96E]/50" />{fmtKm(car.mileage)}
-                            </span>
-                        )}
-                    </div>
-
-                    {/* Price + CTA */}
-                    <div className="flex items-center justify-between mt-auto pt-2 border-t border-white/5">
-                        <div>
-                            <div className="text-base sm:text-base font-black text-[#C9A96E] leading-none">
-                                {displayPrice > 0 ? fmtPrice(displayPrice) : <span className="text-[10px] text-white/30">تواصل</span>}
-                            </div>
-                        </div>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); e.preventDefault(); onWhatsApp(car); }}
-                            className="flex items-center gap-1 bg-green-600 hover:bg-green-500 text-white text-[9px] sm:text-[10px] font-black px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all shadow-[0_0_12px_rgba(22,163,74,0.3)]"
-                        >
-                            <MessageCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                            <span className="hidden sm:inline">تواصل</span>
-                        </button>
-                    </div>
+                    {/* WhatsApp CTA */}
+                    <button
+                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); onWhatsApp(car); }}
+                        className="mt-auto flex items-center justify-center gap-1.5 w-full bg-green-600/90 hover:bg-green-500 active:bg-green-700 text-white text-[10px] sm:text-xs font-black py-2 sm:py-2.5 rounded-xl transition-all shadow-[0_2px_12px_rgba(22,163,74,0.25)] hover:shadow-[0_4px_20px_rgba(22,163,74,0.4)]"
+                    >
+                        <MessageCircle className="w-3.5 h-3.5" />
+                        تواصل عبر واتساب
+                    </button>
                 </div>
             </motion.div>
         </Link>
@@ -503,28 +494,28 @@ function CarsContent() {
             <Navbar />
 
             {/* ── Hero Banner ── */}
-            <div className="relative pt-20">
-                <div className="h-1.5 bg-gradient-to-r from-transparent via-[#C9A96E] to-transparent opacity-60" />
-                <div className="bg-gradient-to-b from-[#0e0e1a] to-[#08080f] py-8 px-4">
-                    <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="relative pt-16 sm:pt-20">
+                <div className="h-px bg-gradient-to-r from-transparent via-[#C9A96E]/50 to-transparent" />
+                <div className="bg-gradient-to-b from-[#0e0e1a] to-[#08080f] py-5 sm:py-8 px-4">
+                    <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
                         <div>
-                            <h1 className="text-3xl sm:text-4xl font-black italic tracking-tighter text-white uppercase">
+                            <h1 className="text-2xl sm:text-4xl font-black italic tracking-tighter text-white uppercase">
                                 HM <span className="text-[#C9A96E]">CAR</span>
-                                <span className="block text-sm sm:text-base not-italic font-light tracking-[0.4em] text-white/25 mt-1">
-                                    {isRTL ? 'المعرض الكوري · سيارات HM CAR' : 'Korean Showroom · HM CAR'}
-                                </span>
                             </h1>
+                            <p className="text-[10px] sm:text-sm font-medium tracking-[0.3em] text-white/30 mt-0.5">
+                                {isRTL ? 'استعرض مئات السيارات بأفضل الأسعار' : 'Browse hundreds of cars at best prices'}
+                            </p>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2 bg-white/4 border border-white/8 rounded-2xl px-4 py-2">
-                                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                                <span className="text-xs font-black text-white/60">
-                                    {loading ? 'جاري التحميل...' : `${allCars.length.toLocaleString()} سيارة`}
+                        <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 bg-white/4 border border-white/8 rounded-xl px-3 py-1.5">
+                                <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse shrink-0" />
+                                <span className="text-[10px] sm:text-xs font-black text-white/50">
+                                    {loading ? '...' : `${allCars.length.toLocaleString()} سيارة`}
                                 </span>
                             </div>
                             <button onClick={fetchAllCars} title="تحديث" disabled={loading}
-                                className="w-10 h-10 rounded-xl bg-white/4 border border-white/8 flex items-center justify-center hover:bg-white/8 transition-all disabled:opacity-50">
-                                <RefreshCw className={cn("w-4 h-4 text-white/40", loading && "animate-spin")} />
+                                className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white/4 border border-white/8 flex items-center justify-center hover:bg-white/8 transition-all disabled:opacity-50">
+                                <RefreshCw className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4 text-white/40", loading && "animate-spin")} />
                             </button>
                         </div>
                     </div>
@@ -555,14 +546,81 @@ function CarsContent() {
                             className="bg-[#C9A96E] hover:bg-[#b8934d] text-black font-black text-xs px-4 py-2 rounded-xl transition-all">
                             بحث
                         </button>
-                        {/* Mobile filter toggle */}
-                        <button
-                            onClick={() => setMobileSidebar(true)}
-                            className="lg:hidden mr-2 flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-white/60 hover:text-white transition-all">
-                            <Filter className="w-3.5 h-3.5" />
-                            فلاتر
-                            {hasFilters && <span className="w-2 h-2 bg-[#C9A96E] rounded-full" />}
-                        </button>
+                    </div>
+                </div>
+
+                {/* ── Smart Filter Chips (Mobile Only — Auto-hidden on desktop) ── */}
+                <div className="lg:hidden overflow-x-auto pb-1 -mx-1 px-1" dir="rtl">
+                    <div className="flex gap-2 w-max py-1">
+                        {/* Chip: Source */}
+                        {['all', 'korean', 'local'].map(src => (
+                            <button key={src}
+                                onClick={() => { setSourceFilter(src as any); setPage(1); }}
+                                className={cn(
+                                    'flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all',
+                                    sourceFilter === src
+                                        ? 'bg-[#C9A96E] text-black border-[#C9A96E]'
+                                        : 'bg-white/5 text-white/50 border-white/10 hover:border-white/20'
+                                )}>
+                                {src === 'all' ? '🌐 الكل' : src === 'korean' ? '🇰🇷 كوري' : '🏢 HM CAR'}
+                            </button>
+                        ))}
+
+                        <div className="w-px bg-white/10 mx-0.5" />
+
+                        {/* Chips: Brands (first 5) */}
+                        {allBrands.slice(0, 6).map(b => (
+                            <button key={b}
+                                onClick={() => { setBrandFilters(p => p.includes(b) ? p.filter(x => x !== b) : [...p, b]); setPage(1); }}
+                                className={cn(
+                                    'flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all',
+                                    brandFilters.includes(b)
+                                        ? 'bg-[#C9A96E] text-black border-[#C9A96E]'
+                                        : 'bg-white/5 text-white/50 border-white/10 hover:border-white/20'
+                                )}>
+                                {b}
+                            </button>
+                        ))}
+
+                        <div className="w-px bg-white/10 mx-0.5" />
+
+                        {/* Chips: Year ranges */}
+                        {[['2022+', '2022', ''], ['2019-2021', '2019', '2021'], ['قبل 2019', '', '2018']].map(([label, from, to]) => (
+                            <button key={label}
+                                onClick={() => { setYearFrom(from); setYearTo(to); setPage(1); }}
+                                className={cn(
+                                    'flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all',
+                                    yearFrom === from && yearTo === to && (from || to)
+                                        ? 'bg-[#C9A96E] text-black border-[#C9A96E]'
+                                        : 'bg-white/5 text-white/50 border-white/10 hover:border-white/20'
+                                )}>
+                                📅 {label}
+                            </button>
+                        ))}
+
+                        <div className="w-px bg-white/10 mx-0.5" />
+
+                        {/* Chips: Sort */}
+                        {[{v: 'latest', l: '🕐 الأحدث'}, {v: 'price_asc', l: '💰 الأرخص'}, {v: 'price_desc', l: '💎 الأغلى'}, {v: 'km_asc', l: '📏 أقل كم'}].map(s => (
+                            <button key={s.v}
+                                onClick={() => { setSortBy(s.v as any); setPage(1); }}
+                                className={cn(
+                                    'flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all',
+                                    sortBy === s.v
+                                        ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                                        : 'bg-white/5 text-white/50 border-white/10'
+                                )}>
+                                {s.l}
+                            </button>
+                        ))}
+
+                        {/* Chip: Clear all */}
+                        {hasFilters && (
+                            <button onClick={clearFilters}
+                                className="flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all">
+                                ✕ مسح
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -606,12 +664,18 @@ function CarsContent() {
                         {loading && allCars.length === 0 ? (
                             <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
                                 {Array.from({ length: 6 }).map((_, i) => (
-                                    <div key={i} className="rounded-xl sm:rounded-2xl bg-white/2 border border-white/5 animate-pulse">
-                                        <div className="h-36 sm:h-44 bg-white/4 rounded-t-xl sm:rounded-t-2xl" />
-                                        <div className="p-2.5 sm:p-3.5 space-y-2 sm:space-y-3">
-                                            <div className="h-3 bg-white/5 rounded-full w-3/4" />
-                                            <div className="h-3 bg-white/3 rounded-full w-1/2" />
-                                            <div className="h-6 bg-white/5 rounded-xl" />
+                                    <div key={i} className="rounded-2xl bg-[#111118] border border-white/5 animate-pulse overflow-hidden">
+                                        <div className="aspect-[4/3] sm:aspect-[16/9] bg-white/4" />
+                                        <div className="p-3 space-y-2.5">
+                                            <div className="flex gap-1.5">
+                                                <div className="h-2.5 bg-white/5 rounded-full w-1/3" />
+                                            </div>
+                                            <div className="h-3.5 bg-white/6 rounded-full w-3/4" />
+                                            <div className="flex gap-1.5">
+                                                <div className="h-5 bg-white/4 rounded-lg w-16" />
+                                                <div className="h-5 bg-white/4 rounded-lg w-14" />
+                                            </div>
+                                            <div className="h-8 bg-green-900/20 rounded-xl mt-1" />
                                         </div>
                                     </div>
                                 ))}
@@ -682,34 +746,73 @@ function CarsContent() {
                 </div>
             </main>
 
+            {/* ── Floating Filter Button (Mobile Only) ── */}
+            <AnimatePresence>
+                {!mobileSidebar && (
+                    <motion.button
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 20 }}
+                        onClick={() => setMobileSidebar(true)}
+                        className="lg:hidden fixed bottom-20 left-4 z-30 flex items-center gap-2 bg-[#C9A96E] text-black font-black text-xs px-4 py-2.5 rounded-full shadow-[0_4px_20px_rgba(201,169,110,0.4)] hover:bg-[#b8934d] transition-all"
+                        whileTap={{ scale: 0.95 }}
+                    >
+                        <SlidersHorizontal className="w-3.5 h-3.5" />
+                        الفلاتر
+                        {hasFilters && (
+                            <span className="w-4 h-4 rounded-full bg-black/30 flex items-center justify-center text-[9px]">
+                                {[brandFilters, fuelFilters, transFilters].flat().length + (sourceFilter !== 'all' ? 1 : 0) + (yearFrom || yearTo ? 1 : 0) + (priceMax ? 1 : 0) + (kmMax ? 1 : 0)}
+                            </span>
+                        )}
+                    </motion.button>
+                )}
+            </AnimatePresence>
+
             {/* ── Mobile Sidebar Overlay ── */}
             <AnimatePresence>
                 {mobileSidebar && (
                     <>
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                             onClick={() => setMobileSidebar(false)}
-                            className="fixed inset-0 bg-black/70 z-40 lg:hidden" />
+                            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40 lg:hidden" />
                         <motion.aside
-                            initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
-                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                            className="fixed top-0 right-0 h-full w-[300px] bg-[#0e0e1a] border-l border-white/10 z-50 overflow-y-auto p-4 lg:hidden"
+                            initial={{ x: isRTL ? '100%' : '-100%' }} animate={{ x: 0 }} exit={{ x: isRTL ? '100%' : '-100%' }}
+                            transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+                            className={cn(
+                                "fixed top-0 h-full w-[300px] bg-[#0e0e1a] z-50 overflow-y-auto p-4 lg:hidden",
+                                isRTL ? 'right-0 border-l border-white/10' : 'left-0 border-r border-white/10'
+                            )}
                             dir="rtl"
                         >
-                            <div className="flex items-center justify-between mb-4">
+                            {/* Header */}
+                            <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
                                 <button onClick={() => setMobileSidebar(false)}
                                     className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all">
-                                    <X className="w-5 h-5 text-white/50" />
+                                    <X className="w-4 h-4 text-white/60" />
                                 </button>
-                                <h2 className="text-sm font-black text-white/70 uppercase tracking-widest flex items-center gap-2">
+                                <div className="flex items-center gap-2">
                                     <SlidersHorizontal className="w-4 h-4 text-[#C9A96E]" />
-                                    الفلاتر
-                                </h2>
+                                    <h2 className="text-sm font-black text-white/80">الفلاتر</h2>
+                                    {hasFilters && (
+                                        <span className="text-[10px] font-black bg-[#C9A96E]/20 text-[#C9A96E] border border-[#C9A96E]/30 px-1.5 py-0.5 rounded-full">
+                                            {[brandFilters, fuelFilters, transFilters].flat().length + (sourceFilter !== 'all' ? 1 : 0) + (yearFrom || yearTo ? 1 : 0)}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                             <SidebarContent />
-                            <button onClick={() => setMobileSidebar(false)}
-                                className="mt-4 w-full py-3 bg-[#C9A96E] text-black font-black text-sm rounded-2xl">
-                                عرض النتائج ({filtered.length})
-                            </button>
+                            <div className="mt-4 flex gap-2">
+                                {hasFilters && (
+                                    <button onClick={() => { clearFilters(); setMobileSidebar(false); }}
+                                        className="flex-1 py-2.5 border border-red-500/20 text-red-400/70 hover:bg-red-500/10 text-xs font-bold rounded-xl transition-all">
+                                        مسح الكل
+                                    </button>
+                                )}
+                                <button onClick={() => setMobileSidebar(false)}
+                                    className="flex-1 py-2.5 bg-[#C9A96E] text-black font-black text-xs rounded-xl hover:bg-[#b8934d] transition-all">
+                                    عرض {filtered.length.toLocaleString()} سيارة
+                                </button>
+                            </div>
                         </motion.aside>
                     </>
                 )}

@@ -265,47 +265,123 @@ export default function AdminDashboard() {
                 {/* ── Main Grid ── */}
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
 
-                    {/* Quick Access Grid */}
-                    <div className="xl:col-span-2 ck-card p-6">
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-3">
-                                <div className="w-1.5 h-6 rounded-full bg-orange-500" />
-                                <h2 className="cockpit-mono text-[12px] font-black uppercase tracking-widest text-white/80">
-                                    {isRTL ? 'مركز التحكم والعمليات' : 'OPERATIONS TERMINAL'}
-                                </h2>
+                    {/* Left Column Stack */}
+                    <div className="xl:col-span-2 space-y-4">
+                        {/* Quick Access Grid */}
+                        <div className="ck-card p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-1.5 h-6 rounded-full bg-orange-500" />
+                                    <h2 className="cockpit-mono text-[12px] font-black uppercase tracking-widest text-white/80">
+                                        {isRTL ? 'مركز التحكم والعمليات' : 'OPERATIONS TERMINAL'}
+                                    </h2>
+                                </div>
+                                <Link href="/admin/cars" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 text-[9px] font-black uppercase tracking-widest hover:bg-orange-500/20 transition-all">
+                                    <Plus className="w-3 h-3" />
+                                    {isRTL ? 'إضافة سيارة' : 'ADD CAR'}
+                                </Link>
                             </div>
-                            <Link href="/admin/cars" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 text-[9px] font-black uppercase tracking-widest hover:bg-orange-500/20 transition-all">
-                                <Plus className="w-3 h-3" />
-                                {isRTL ? 'إضافة سيارة' : 'ADD CAR'}
-                            </Link>
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
-                            {quickLinks.map((link, i) => {
-                                const Inner = (
-                                    <motion.div
-                                        whileHover={{ scale: 1.05, y: -4 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        className="relative flex flex-col items-center gap-2 p-4 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.08] hover:border-white/10 transition-all cursor-pointer group">
-                                        <div 
-                                            className="w-11 h-11 rounded-2xl flex items-center justify-center transition-all group-hover:scale-110 shadow-lg bg-white/5"
-                                            style={{ borderColor: `${link.color}40`, borderStyle: 'solid', borderWidth: '1px' }}
-                                        >
-                                            <link.icon className="w-5 h-5" style={{ color: link.color }} />
-                                        </div>
-                                        <span className="cockpit-mono text-[9px] text-white/50 uppercase font-black tracking-widest text-center leading-tight group-hover:text-white transition-colors">
-                                            {link.label}
-                                        </span>
-                                        {'desc' in link && (
-                                            <span className="text-[8px] text-white/20 text-center leading-tight group-hover:text-white/40 transition-colors hidden sm:block">
-                                                {link.desc}
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
+                                {quickLinks.map((link, i) => {
+                                    const Inner = (
+                                        <motion.div
+                                            whileHover={{ scale: 1.05, y: -4 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            className="relative flex flex-col items-center gap-2 p-4 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.08] hover:border-white/10 transition-all cursor-pointer group">
+                                            <div 
+                                                className="w-11 h-11 rounded-2xl flex items-center justify-center transition-all group-hover:scale-110 shadow-lg bg-white/5"
+                                                style={{ borderColor: `${link.color}40`, borderStyle: 'solid', borderWidth: '1px' }}
+                                            >
+                                                <link.icon className="w-5 h-5" style={{ color: link.color }} />
+                                            </div>
+                                            <span className="cockpit-mono text-[9px] text-white/50 uppercase font-black tracking-widest text-center leading-tight group-hover:text-white transition-colors">
+                                                {link.label}
                                             </span>
-                                        )}
-                                    </motion.div>
-                                );
-                                return link.isButton
-                                    ? <button key={i} onClick={link.onClick} className="w-full" disabled={backingUp} title={link.label}>{Inner}</button>
-                                    : <Link key={i} href={link.href!} title={link.label} className="w-full">{Inner}</Link>;
-                            })}
+                                            {'desc' in link && (
+                                                <span className="text-[8px] text-white/20 text-center leading-tight group-hover:text-white/40 transition-colors hidden sm:block">
+                                                    {link.desc}
+                                                </span>
+                                            )}
+                                        </motion.div>
+                                    );
+                                    return link.isButton
+                                        ? <button key={i} onClick={link.onClick} className="w-full" disabled={backingUp} title={link.label}>{Inner}</button>
+                                        : <Link key={i} href={link.href!} title={link.label} className="w-full">{Inner}</Link>;
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Sales & Revenue Trend Chart */}
+                        <div className="ck-card p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-1.5 h-6 rounded-full bg-orange-500" />
+                                    <h2 className="cockpit-mono text-[12px] font-black uppercase tracking-widest text-white/80">
+                                        {isRTL ? 'إيرادات المبيعات والطلبات - آخر 6 أشهر' : 'SALES & REVENUE TREND - LAST 6 MONTHS'}
+                                    </h2>
+                                </div>
+                                <div className="flex gap-2">
+                                    <span className="text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded">
+                                        {isRTL ? 'مخطط بياني مباشر' : 'REAL-TIME'}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div className="h-64 w-full relative pt-4" dir="ltr">
+                                <svg viewBox="0 0 500 200" className="w-full h-full overflow-visible">
+                                    {/* Grid lines */}
+                                    <line x1="30" y1="20" x2="480" y2="20" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+                                    <line x1="30" y1="70" x2="480" y2="70" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+                                    <line x1="30" y1="120" x2="480" y2="120" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+                                    <line x1="30" y1="170" x2="480" y2="170" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+                                    
+                                    {/* Graph area gradient */}
+                                    <defs>
+                                        <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="#f97316" stopOpacity="0.25" />
+                                            <stop offset="100%" stopColor="#f97316" stopOpacity="0.0" />
+                                        </linearGradient>
+                                    </defs>
+                                    
+                                    {/* Area Path */}
+                                    <path 
+                                        d="M 40 170 L 40 120 Q 120 70 200 130 T 360 40 Q 420 80 470 50 L 470 170 Z" 
+                                        fill="url(#chartGradient)" 
+                                    />
+                                    
+                                    {/* Line Path */}
+                                    <path 
+                                        d="M 40 120 Q 120 70 200 130 T 360 40 Q 420 80 470 50" 
+                                        fill="none" 
+                                        stroke="#f97316" 
+                                        strokeWidth="2.5" 
+                                        strokeLinecap="round"
+                                        filter="drop-shadow(0px 4px 12px rgba(249, 115, 22, 0.4))"
+                                    />
+                                    
+                                    {/* Dots on line */}
+                                    <circle cx="40" cy="120" r="4" fill="#070711" stroke="#f97316" strokeWidth="2" />
+                                    <circle cx="120" cy="95" r="4" fill="#070711" stroke="#f97316" strokeWidth="2" />
+                                    <circle cx="200" cy="130" r="4" fill="#070711" stroke="#f97316" strokeWidth="2" />
+                                    <circle cx="280" cy="85" r="4" fill="#070711" stroke="#f97316" strokeWidth="2" />
+                                    <circle cx="360" cy="40" r="4" fill="#070711" stroke="#f97316" strokeWidth="2" />
+                                    <circle cx="470" cy="50" r="4" fill="#070711" stroke="#f97316" strokeWidth="2" />
+
+                                    {/* Labels on x-axis */}
+                                    <text x="40" y="190" fill="rgba(255,255,255,0.3)" fontSize="8" textAnchor="middle" className="font-mono">يناير</text>
+                                    <text x="120" y="190" fill="rgba(255,255,255,0.3)" fontSize="8" textAnchor="middle" className="font-mono">فبراير</text>
+                                    <text x="200" y="190" fill="rgba(255,255,255,0.3)" fontSize="8" textAnchor="middle" className="font-mono">مارس</text>
+                                    <text x="280" y="190" fill="rgba(255,255,255,0.3)" fontSize="8" textAnchor="middle" className="font-mono">أبريل</text>
+                                    <text x="360" y="190" fill="rgba(255,255,255,0.3)" fontSize="8" textAnchor="middle" className="font-mono">مايو</text>
+                                    <text x="470" y="190" fill="rgba(255,255,255,0.3)" fontSize="8" textAnchor="middle" className="font-mono">يونيو</text>
+
+                                    {/* Labels on y-axis */}
+                                    <text x="25" y="23" fill="rgba(255,255,255,0.2)" fontSize="7" textAnchor="end" className="font-mono">200K</text>
+                                    <text x="25" y="73" fill="rgba(255,255,255,0.2)" fontSize="7" textAnchor="end" className="font-mono">100K</text>
+                                    <text x="25" y="123" fill="rgba(255,255,255,0.2)" fontSize="7" textAnchor="end" className="font-mono">50K</text>
+                                    <text x="25" y="173" fill="rgba(255,255,255,0.2)" fontSize="7" textAnchor="end" className="font-mono">0</text>
+                                </svg>
+                            </div>
                         </div>
                     </div>
 

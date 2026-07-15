@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Image from 'next/image';
+import ModernCarCard from '@/components/ModernCarCard';
 import { api } from '@/lib/api-original';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useSettings } from '@/lib/SettingsContext';
@@ -60,6 +61,60 @@ export default function LocalCarDetail() {
     const [activeImage, setActiveImage] = useState(0);
     const [whatsapp, setWhatsapp] = useState('');
     const [showInvoice, setShowInvoice] = useState(false);
+    const [similarCars, setSimilarCars] = useState<any[]>([]);
+
+    const loadSimilarCars = useCallback(async (currentMake: any, currentId: string) => {
+        try {
+            const makeName = typeof currentMake === 'object' ? currentMake?.name : currentMake;
+            const makeStr = String(makeName || '').trim();
+
+            const res = await api.cars.list({ limit: 12, isActive: true });
+            let list: any[] = [];
+            if (res?.data?.cars) {
+                list = res.data.cars;
+            } else if (res?.cars) {
+                list = res.cars;
+            } else if (Array.isArray(res)) {
+                list = res;
+            } else if (res?.data && Array.isArray(res.data)) {
+                list = res.data;
+            }
+
+            const currentIdStr = String(currentId);
+            const filtered = list
+                .filter((c: any) => {
+                    const cId = String(c._id || c.id);
+                    return cId !== currentIdStr;
+                })
+                .sort((a: any, b: any) => {
+                    const aMake = String(a.makeAr || a.make || '').toLowerCase();
+                    const bMake = String(b.makeAr || b.make || '').toLowerCase();
+                    const matchA = aMake.includes(makeStr.toLowerCase()) ? 1 : 0;
+                    const matchB = bMake.includes(makeStr.toLowerCase()) ? 1 : 0;
+                    return matchB - matchA;
+                })
+                .slice(0, 4)
+                .map((c: any) => ({
+                    id: String(c._id || c.id),
+                    title: c.title || `${c.makeAr || c.make} ${c.model} ${c.year}`,
+                    make: c.make || '',
+                    model: c.model || '',
+                    year: Number(c.year) || 0,
+                    price: Number(c.price) || Number(c.priceSar) || 0,
+                    priceSar: Number(c.price) || Number(c.priceSar) || 0,
+                    images: Array.isArray(c.images) ? c.images : [c.imageUrl].filter(Boolean),
+                    mileage: Number(c.mileage) || 0,
+                    fuelType: c.fuelType || c.fuel,
+                    transmission: c.transmission,
+                    isActive: c.isActive !== false,
+                    isSold: c.isSold === true
+                }));
+
+            setSimilarCars(filtered);
+        } catch (err) {
+            console.error('Failed to load similar cars:', err);
+        }
+    }, []);
 
     const loadCar = useCallback(async () => {
         try {
@@ -67,6 +122,9 @@ export default function LocalCarDetail() {
             const res = await api.cars.getById(id as string);
             if (res?.success && res.data) {
                 setCar(res.data);
+                const carMake = res.data.make;
+                const carId = res.data._id || res.data.id || (id as string);
+                loadSimilarCars(carMake, carId);
             } else {
                 setError(isRTL ? 'لم يتم العثور على السيارة' : 'Car not found');
             }
@@ -76,11 +134,11 @@ export default function LocalCarDetail() {
         } finally {
             setLoading(false);
         }
-    }, [id, isRTL]); // Added id and isRTL as dependencies
+    }, [id, isRTL, loadSimilarCars]);
 
     useEffect(() => {
         if (id) loadCar();
-    }, [id, loadCar]); // Added loadCar as dependency
+    }, [id, loadCar]);
 
     useEffect(() => {
         api.settings.getPublic().then((res: { success: boolean; data?: { socialLinks?: { whatsapp?: string } } }) => {
@@ -227,9 +285,10 @@ export default function LocalCarDetail() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                     <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="space-y-4">
-                        <div className="relative aspect-4/3 rounded-3xl overflow-hidden border border-white/10 bg-white/2">
+                        {/* Desktop Image Viewer */}
+                        <div className="hidden md:block relative aspect-[4/3] rounded-3xl overflow-hidden border border-white/10 bg-white/2">
                             {images.length > 0 ? (
-                                <Image src={images[activeImage]} alt={car.title} fill className="object-cover" unoptimized />
+                                <Image src={images[activeImage]} alt={car.title} fill className="object-cover animate-fade-in" unoptimized />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center">
                                     <ImageIcon className="w-20 h-20 text-white/10" />
@@ -248,8 +307,52 @@ export default function LocalCarDetail() {
                             </div>
                         </div>
 
+                        {/* Mobile Swipeable Gallery */}
+                        <div className="relative md:hidden aspect-[4/3] rounded-3xl overflow-hidden border border-white/10 bg-white/2">
+                            <div 
+                                className="flex h-full overflow-x-auto snap-x snap-mandatory scrollbar-none"
+                                onScroll={(e) => {
+                                    const target = e.currentTarget;
+                                    const index = Math.round(target.scrollLeft / target.offsetWidth);
+                                    setActiveImage(index);
+                                }}
+                            >
+                                {images.length > 0 ? (
+                                    images.map((img: string, idx: number) => (
+                                        <div key={idx} className="w-full h-full shrink-0 snap-start relative">
+                                            <Image src={img} alt={car.title} fill className="object-cover" unoptimized />
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                        <ImageIcon className="w-20 h-20 text-white/10" />
+                                    </div>
+                                )}
+                            </div>
+                            <div className="absolute top-4 right-4 flex gap-2">
+                                <span className="px-3 py-1 bg-cinematic-neon-gold/20 border border-cinematic-neon-gold/40 rounded-lg text-[10px] font-black text-cinematic-neon-gold uppercase tracking-widest backdrop-blur-md">
+                                    {isRTL ? rawText('متجرنا') : rawText('STORE')}
+                                </span>
+                            </div>
+                            
+                            {/* Dot indicators */}
+                            {images.length > 1 && (
+                                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-20 bg-black/45 backdrop-blur-md px-2.5 py-1.5 rounded-full">
+                                    {images.map((_, idx) => (
+                                        <div 
+                                            key={idx} 
+                                            className={cn(
+                                                "w-1.5 h-1.5 rounded-full transition-all duration-300",
+                                                activeImage === idx ? "bg-[#C9A96E] w-3" : "bg-white/30"
+                                            )}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
                         {images.length > 1 && (
-                            <div className="flex gap-3 overflow-x-auto pb-2">
+                            <div className="hidden md:flex gap-3 overflow-x-auto pb-2 scrollbar-none">
                                 {images.map((img: string, idx: number) => (
                                     <button
                                         key={idx}
@@ -318,7 +421,7 @@ export default function LocalCarDetail() {
                         )}
 
                         <div className="space-y-4 pt-4">
-                            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleWhatsappPurchase} className="w-full py-5 bg-green-500/90 hover:bg-green-500 rounded-2xl text-black font-black uppercase text-[13px] tracking-[0.3em] shadow-[0_0_40px_rgba(34,197,94,0.3)] flex items-center justify-center gap-3">
+                            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleWhatsappPurchase} className="w-full py-5 bg-green-600 hover:bg-green-500 rounded-2xl text-white font-black uppercase text-[13px] tracking-[0.3em] shadow-[0_0_30px_rgba(22,163,74,0.3)] flex items-center justify-center gap-3">
                                 <MessageCircle className="w-5 h-5" />
                                 {isRTL ? rawText('شراء عبر واتساب') : rawText('PURCHASE VIA WHATSAPP')}
                             </motion.button>
@@ -328,6 +431,25 @@ export default function LocalCarDetail() {
                         </div>
                     </motion.div>
                 </div>
+
+                {/* Similar Cars Section */}
+                {similarCars.length > 0 && (
+                    <div className="mt-20 border-t border-white/5 pt-12">
+                        <div className="mb-8">
+                            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white uppercase italic">
+                                {isRTL ? <><span className="text-[#C9A96E]">سيارات</span> مشابهة</> : <>SIMILAR <span className="text-[#C9A96E]">CARS</span></>}
+                            </h2>
+                            <p className="text-[10px] sm:text-xs font-medium tracking-widest text-white/30 mt-1 uppercase">
+                                {isRTL ? 'قد تثير اهتمامك هذه التشكيلة المتوفرة' : 'You might also be interested in these vehicles'}
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {similarCars.map((item, idx) => (
+                                <ModernCarCard key={item.id} car={item} index={idx} formatPrice={formatPrice} />
+                            ))}
+                        </div>
+                    </div>
+                )}
             </main>
 
             {/* ══ زر واتساب ثابت في الأسفل ══ */}
@@ -336,16 +458,16 @@ export default function LocalCarDetail() {
                     initial={{ y: 100, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.5, type: 'spring', damping: 20 }}
-                    className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-t from-black/90 via-black/60 to-transparent pointer-events-none"
+                    className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-t from-black/90 via-black/60 to-transparent pointer-events-none lg:hidden"
                 >
                     <div className="max-w-lg mx-auto pointer-events-auto">
                         <motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.97 }}
                             onClick={handleWhatsappPurchase}
-                            className="w-full py-4 bg-[#25D366] hover:bg-[#20c05a] rounded-2xl text-black font-black uppercase text-sm tracking-widest shadow-[0_8px_30px_rgba(37,211,102,0.4)] flex items-center justify-center gap-3 transition-all"
+                            className="w-full py-3.5 bg-green-600 hover:bg-green-500 active:bg-green-700 text-white font-black uppercase text-xs tracking-widest shadow-[0_8px_30px_rgba(22,163,74,0.4)] flex items-center justify-center gap-2.5 transition-all rounded-xl"
                         >
-                            <MessageCircle className="w-5 h-5" />
+                            <MessageCircle className="w-4 h-4" />
                             {isRTL ? rawText('تواصل واتساب للشراء') : rawText('Buy via WhatsApp')}
                         </motion.button>
                     </div>

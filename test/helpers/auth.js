@@ -4,13 +4,34 @@ const jwt = require('jsonwebtoken');
 /**
  * Generate test JWT token
  */
-function generateToken(userId, role = 'client') {
+function generateToken(userId, role = 'client', permissions = null) {
     const secret = process.env.JWT_SECRET || 'test-secret-key';
     
+    // Default permissions based on role if not provided
+    let userPermissions = permissions;
+    if (!userPermissions) {
+        if (role === 'admin') {
+            userPermissions = [
+                'manage_users', 'manage_settings', 'manage_footer', 
+                'manage_whatsapp', 'manage_cars', 'manage_parts', 
+                'manage_auctions', 'manage_concierge', 'manage_orders', 
+                'manage_brands', 'manage_messages', 'manage_notifications', 
+                'view_analytics', 'manage_content'
+            ];
+        } else if (role === 'super_admin') {
+            userPermissions = ['super_admin'];
+        } else {
+            userPermissions = [];
+        }
+    }
+
     return jwt.sign(
         { 
+            id: userId,
             userId, 
             role,
+            permissions: userPermissions,
+            tenantId: 'default',
             iat: Math.floor(Date.now() / 1000),
         },
         secret,
@@ -21,8 +42,8 @@ function generateToken(userId, role = 'client') {
 /**
  * Generate admin token
  */
-function generateAdminToken(userId) {
-    return generateToken(userId, 'admin');
+function generateAdminToken(userId, permissions = null) {
+    return generateToken(userId, 'admin', permissions);
 }
 
 /**
