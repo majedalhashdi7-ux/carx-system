@@ -10,9 +10,11 @@ import React, { useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Smartphone, Download, Link as LinkIcon,
-  ArrowRight, Car, X
+  ArrowRight, Car, X, Shield, Award, Globe, Truck, HelpCircle
 } from "lucide-react";
 import { SocialIconMap, SocialColorMap } from "@/components/SocialIcons";
+
+const lucideIcons = { Shield, Award, Globe, Truck, HelpCircle };
 import Link from "next/link";
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
