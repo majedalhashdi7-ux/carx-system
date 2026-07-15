@@ -2,21 +2,18 @@
 const nextConfig = {
   // Multi-Tenant Configuration
   // Supports HM CAR and CAR X tenants with dynamic domain detection
-  
+
   images: {
     remotePatterns: [
       { protocol: 'http', hostname: 'localhost' },
       { protocol: 'https', hostname: 'hmcar-system-two.vercel.app' },
-      { protocol: 'https', hostname: 'hmcar-system-two.vercel.app' },
       { protocol: 'https', hostname: 'carx-system-five.vercel.app' },
+      { protocol: 'https', hostname: 'www.carx-system-five.vercel.app' },
       { protocol: 'https', hostname: 'res.cloudinary.com' },
       { protocol: 'https', hostname: 'hmcar.vercel.app' },
       { protocol: 'https', hostname: 'www.hmcar.vercel.app' },
       { protocol: 'https', hostname: 'hmcar.xyz' },
       { protocol: 'https', hostname: 'www.hmcar.xyz' },
-      { protocol: 'https', hostname: 'carx-system-five.vercel.app' },
-      { protocol: 'https', hostname: 'www.carx-system-five.vercel.app' },
-      { protocol: 'https', hostname: 'carx-system-five.vercel.app' },
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'ci.encar.com' },
       { protocol: 'https', hostname: 'img.encar.com' },
@@ -53,6 +50,11 @@ const nextConfig = {
     SYSTEM_VERSION: '2.0.0',
   },
 
+  // Fix turbopack workspace root detection
+  turbopack: {
+    root: '../',
+  },
+
   output: 'standalone',
   compress: true,
   poweredByHeader: false,
@@ -60,9 +62,6 @@ const nextConfig = {
   pageExtensions: ['ts', 'tsx', 'js', 'jsx'],
   trailingSlash: false,
   reactStrictMode: true,
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     ignoreBuildErrors: true,
   },
