@@ -1,5 +1,5 @@
-import HomeClient from "./home-client";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <HomeClient latestCars={[]} />;
+  redirect("/cars");
 }
