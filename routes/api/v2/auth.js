@@ -137,16 +137,24 @@ router.post('/client-login', authLimiter, async (req, res) => {
       return sendResponse(res, validationErrorResponse(null, 'البريد الإلكتروني/الهاتف وكلمة المرور مطلوبان'));
     }
 
+    const normalizedEmail = searchKey.toLowerCase().trim();
     const safeKey = searchKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    
+    // السماح بالبحث في الـ tenant الحالي أو الـ default لضمان الدخول للحسابات المشتركة
+    const tenantFilter = req.tenant?.id 
+      ? { tenantId: { $in: [req.tenant.id, 'default'] } } 
+      : {};
+
     // البحث عن المستخدم بالبريد الإلكتروني، الهاتف، اسم المستخدم، أو الاسم الكامل
-    let user = await User.findOne(addTenantFilter(req, {
+    let user = await User.findOne({
+      ...tenantFilter,
       $or: [
-        { email: searchKey.toLowerCase().trim() },
-        { username: searchKey.toLowerCase().trim() },
+        { email: normalizedEmail },
+        { username: normalizedEmail },
         { phone: searchKey.trim() },
         { name: { $regex: new RegExp(`^${safeKey}$`, 'i') } }
       ]
-    })).select('+password');
+    }).select('+password');
 
     // إذا لم يجد المستخدم، نرجع خطأ
     if (!user) {
@@ -507,14 +515,21 @@ router.post('/login', authLimiter, async (req, res) => {
 
     // استخدام findOne بدل find لتفادي جلب كل المستخدمين
     const safeKey = searchKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const user = await User.findOne(addTenantFilter(req, {
+    
+    // السماح بالبحث في الـ tenant الحالي أو الـ default لضمان الدخول للحسابات المشتركة
+    const tenantFilter = req.tenant?.id 
+      ? { tenantId: { $in: [req.tenant.id, 'default'] } } 
+      : {};
+
+    const user = await User.findOne({
+      ...tenantFilter,
       $or: [
         { email: searchKey.toLowerCase() },
         { username: searchKey.toLowerCase() },
         { phone: searchKey },
         { name: { $regex: new RegExp(`.*${safeKey}.*`, 'i') } }
       ]
-    })).select('+password').lean(false);
+    }).select('+password').lean(false);
 
     if (!user) {
       console.warn(`[AUTH] User not found: ${searchKey}`);
@@ -559,8 +574,8 @@ router.post('/login', authLimiter, async (req, res) => {
       { expiresIn: rememberMe ? '30d' : '7d', issuer: 'hm-car-auction', audience: 'api-users' }
     );
 
-    // تحديث وقت الدخول + AuditLog — fire-and-forget لا ننتظرهما
-    User.updateOne(addTenantFilter(req, { _id: user._id }), { $set: { lastLoginAt: new Date() } }).catch(() => { });
+    // تحديث وقت الدخول + AuditLog — _id فريد عالمياً فلا يحتاج لتصفية tenantId
+    User.updateOne({ _id: user._id }, { $set: { lastLoginAt: new Date() } }).catch(() => { });
     AuditLog.logUserAction(user, 'LOGIN', 'User', 'Successful login', { ipAddress: req.ip, result: 'SUCCESS' }).catch(() => { });
 
     if (role === 'buyer') {
