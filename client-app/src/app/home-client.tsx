@@ -10,11 +10,12 @@ import React, { useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Smartphone, Download, Link as LinkIcon,
-  ArrowRight, Car, X, Shield, Award, Globe, Truck, HelpCircle
+  ArrowRight, Car, X, Shield, Award, Globe, Truck, HelpCircle,
+  Wrench, Layers, Package, Zap, Cog, TrendingUp, Gavel, Timer
 } from "lucide-react";
 import { SocialIconMap, SocialColorMap } from "@/components/SocialIcons";
 
-const lucideIcons = { Shield, Award, Globe, Truck, HelpCircle };
+const lucideIcons = { Shield, Award, Globe, Truck, HelpCircle, Wrench, Layers, Package, Zap, Cog, TrendingUp, Gavel, Timer };
 import Link from "next/link";
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
@@ -778,12 +779,15 @@ export default function HomeClient({ latestCars: initialLatestCars }: HomeClient
                   aria-label="WhatsApp"
                   title="WhatsApp"
                 >
-                  <SocialSVGIcons.whatsapp className="w-6 h-6" />
+                  {(() => {
+                    const WhatsAppIcon = SocialIconMap.whatsapp;
+                    return WhatsAppIcon ? <WhatsAppIcon className="w-6 h-6" /> : <LinkIcon className="w-6 h-6" />;
+                  })()}
                 </a>
               )}
               {socialConfig.links.map((link, i) => {
-                const SvgIcon = SocialSVGIcons[link.platform];
-                const colorClass = platformColors[link.platform] || 'text-white/40';
+                const SvgIcon = SocialIconMap[link.platform];
+                const colorClass = SocialColorMap[link.platform] || 'text-white/40';
                 return (
                   <a 
                     key={i} 
