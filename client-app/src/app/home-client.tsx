@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Smartphone, Download, Link as LinkIcon,
   ArrowRight, Car, X, Shield, Award, Globe, Truck, HelpCircle,
-  Wrench, Layers, Package, Zap, Cog, TrendingUp, Gavel, Timer
+  Wrench, Layers, Package, Zap, Cog, TrendingUp, Gavel, Timer, Star
 } from "lucide-react";
 import { SocialIconMap, SocialColorMap } from "@/components/SocialIcons";
 

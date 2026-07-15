@@ -68,16 +68,16 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchTenant = async () => {
+    // الحصول على إعدادات الـ domain مسبقاً كـ fallback آمن
+    const domainConfig = typeof window !== 'undefined'
+      ? getTenantConfig()
+      : getDefaultTenant();
+
     try {
       setLoading(true);
       setError(null);
 
-      // Use domain-based config as the starting point
-      const domainConfig = typeof window !== 'undefined' 
-        ? getTenantConfig() 
-        : getDefaultTenant();
-      
-      // Apply domain config immediately for better UX
+      // تطبيق إعدادات الـ domain فوراً للحصول على أفضل تجربة (بدون انتظار API)
       setTenant(domainConfig);
       if (typeof document !== 'undefined') {
         applyTheme(domainConfig.theme, domainConfig.id);
@@ -87,42 +87,54 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
 
       const baseUrl = getTenantApiUrl();
 
-      // Fetch additional tenant data from API
-      const response = await fetch(`${baseUrl}/api/v2/tenant/info`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
+      // مهلة زمنية للطلب: 5 ثوانٍ فقط لتجنب تعليق الواجهة
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-      if (!response.ok) {
-        throw new Error('فشل تحميل بيانات المعرض');
+      let response: Response;
+      try {
+        response = await fetch(`${baseUrl}/api/v2/tenant/info`, {
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+      } catch (fetchErr) {
+        clearTimeout(timeoutId);
+        // فشل الشبكة أو انتهت المهلة — نستمر بإعدادات الـ domain (لا نرمي خطأ)
+        console.warn('[Tenant] API unreachable, using domain config:', (fetchErr as Error).message);
+        return;
       }
 
-      const data = await response.json();
-      
-      if (data.success && data.data) {
-        // Merge API data with domain config (API data takes precedence)
+      // إذا كان الـ response غير ناجح، نستمر بإعدادات الـ domain بهدوء
+      if (!response.ok) {
+        console.warn('[Tenant] API returned', response.status, '— using domain config fallback');
+        return;
+      }
+
+      let data: any;
+      try {
+        data = await response.json();
+      } catch {
+        console.warn('[Tenant] Invalid JSON from API — using domain config fallback');
+        return;
+      }
+
+      if (data?.success && data?.data) {
+        // دمج بيانات الـ API مع إعدادات الـ domain (الـ API له الأولوية)
         const mergedTenant = { ...domainConfig, ...data.data };
         setTenant(mergedTenant);
-        
-        // تطبيق الثيم على المتصفح
-        applyTheme(mergedTenant.theme, mergedTenant.id);
-        
-        // تحديث favicon
-        updateFavicon(mergedTenant.favicon);
-        
-        // تحديث عنوان الصفحة
-        document.title = mergedTenant.name || 'HM CAR';
+        if (typeof document !== 'undefined') {
+          applyTheme(mergedTenant.theme, mergedTenant.id);
+          updateFavicon(mergedTenant.favicon);
+          document.title = mergedTenant.name || 'HM CAR';
+        }
       }
     } catch (err) {
-      console.error('خطأ في تحميل بيانات المعرض:', err);
-      setError(err instanceof Error ? err.message : 'خطأ غير معروف');
-      
-      // Domain config is already set, but ensure we have a fallback
-      if (!tenant) {
-        setTenant(getDefaultTenant());
-      }
+      // أي خطأ غير متوقع — نسجله فقط ولا نرميه للـ ErrorBoundary
+      console.warn('[Tenant] Unexpected error in fetchTenant:', err);
+      // ضمان وجود tenant دائماً
+      setTenant(prev => prev ?? domainConfig);
     } finally {
       setLoading(false);
     }
