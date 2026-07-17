@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-    Car, Wrench, Gavel, ShieldCheck, Globe, Sparkles, Star, HelpCircle
+    Car, Wrench, Gavel, ShieldCheck, Globe, Sparkles, Star, HelpCircle, Users
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useLanguage } from '@/lib/LanguageContext';
