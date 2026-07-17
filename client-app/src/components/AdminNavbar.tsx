@@ -275,6 +275,7 @@ function buildNavCategories(isRTL: boolean, user: any, tenant: any): NavCategory
     const hasP = (p: string) => isSuper || permissions.includes(p);
 
     const categories: NavCategory[] = [
+        // ─── قسم CAR X (للمستأجر carx فقط) ───
         ...(tenant?.id === 'carx' ? [{
             label: isRTL ? 'إدارة CAR X' : 'CAR X MANAGER',
             items: [
@@ -282,42 +283,70 @@ function buildNavCategories(isRTL: boolean, user: any, tenant: any): NavCategory
                 { id: 'carx-permissions', icon: Shield, label: isRTL ? 'الصلاحيات' : 'PERMISSIONS', href: '/admin/carx-permissions' }
             ]
         }] : []),
+
+        // ─── القسم الرئيسي ───
         {
-            label: isRTL ? '🏠 الرئيسية' : 'HOME',
+            label: isRTL ? '🏠 الرئيسية' : '🏠 HOME',
             items: [
                 { id: 'dashboard', icon: Activity, label: isRTL ? 'لوحة التحكم' : 'DASHBOARD', href: '/admin/dashboard' },
             ]
         },
+
+        // ─── المخزون والكتالوج ───
         {
-            label: isRTL ? '🚗 المخزون' : 'INVENTORY',
+            label: isRTL ? '🚗 المخزون والكتالوج' : '🚗 INVENTORY',
             items: [
                 ...(hasP('manage_cars') ? [{ id: 'showroom', icon: Car, label: isRTL ? 'السيارات' : 'CARS', href: '/admin/cars' }] : []),
                 ...(hasP('manage_parts') ? [{ id: 'parts', icon: Layers, label: isRTL ? 'قطع الغيار' : 'PARTS', href: '/admin/parts' }] : []),
-                ...(hasP('manage_brands') ? [{ id: 'brands', icon: Tag, label: isRTL ? 'الماركات' : 'BRANDS', href: '/admin/brands' }] : []),
+                ...(hasP('manage_brands') ? [{ id: 'brands', icon: Tag, label: isRTL ? 'الماركات والوكالات' : 'BRANDS', href: '/admin/brands' }] : []),
             ]
         },
+
+        // ─── المزادات ───
         {
-            label: isRTL ? '⚡ العمليات' : 'OPERATIONS',
+            label: isRTL ? '⚡ المزادات' : '⚡ AUCTIONS',
             items: [
-                ...(hasP('manage_auctions') ? [{ id: 'market', icon: Gavel, label: isRTL ? 'المزادات' : 'AUCTIONS', href: '/admin/market' }] : []),
+                ...(hasP('manage_auctions') ? [
+                    { id: 'market', icon: Gavel, label: isRTL ? 'إدارة المزادات' : 'AUCTIONS MGR', href: '/admin/market' },
+                    { id: 'live-auctions', icon: Database, label: isRTL ? 'المزادات المباشرة' : 'LIVE AUCTIONS', href: '/admin/live-auctions' },
+                ] : []),
+            ]
+        },
+
+        // ─── العمليات والطلبات ───
+        {
+            label: isRTL ? '📦 العمليات والطلبات' : '📦 OPERATIONS',
+            items: [
                 ...(hasP('manage_orders') || hasP('manage_concierge') ? [{ id: 'fulfillment', icon: ShoppingCart, label: isRTL ? 'الطلبات' : 'ORDERS', href: '/admin/orders' }] : []),
                 ...(hasP('manage_orders') ? [{ id: 'invoices', icon: Tag, label: isRTL ? 'الفواتير' : 'INVOICES', href: '/admin/invoices' }] : []),
-                ...(hasP('manage_messages') ? [{ id: 'comms', icon: MessageCircle, label: isRTL ? 'الرسائل' : 'MESSAGES', href: '/admin/comms' }] : []),
+            ]
+        },
+
+        // ─── التواصل والرسائل ───
+        {
+            label: isRTL ? '💬 التواصل والرسائل' : '💬 COMMUNICATIONS',
+            items: [
+                ...(hasP('manage_messages') ? [
+                    { id: 'comms', icon: MessageCircle, label: isRTL ? 'محادثات العملاء' : 'LIVE CHATS', href: '/admin/comms' },
+                    { id: 'contact', icon: Bell, label: isRTL ? 'رسائل التواصل' : 'CONTACT MSGS', href: '/admin/contact' },
+                ] : []),
                 ...(hasP('manage_notifications') ? [{ id: 'alerts', icon: Bell, label: isRTL ? 'الإشعارات' : 'ALERTS', href: '/admin/notifications' }] : []),
             ]
         },
+
+        // ─── الإدارة والنظام ───
         {
-            label: isRTL ? '⚙️ الإدارة' : 'SYSTEM',
+            label: isRTL ? '⚙️ الإدارة والنظام' : '⚙️ SYSTEM ADMIN',
             items: [
                 ...(hasP('manage_users') ? [
-                    { id: 'users', icon: Users, label: isRTL ? 'المستخدمون' : 'USERS', href: '/admin/users' },
-                    { id: 'security', icon: Shield, label: isRTL ? 'الأمان' : 'SECURITY', href: '/admin/security' },
-                    { id: 'health', icon: Activity, label: isRTL ? 'صحة النظام' : 'HEALTH', href: '/admin/health' },
-                    { id: 'system', icon: Server, label: isRTL ? 'الفحص الشامل' : 'SYSTEM', href: '/admin/system' },
+                    { id: 'users', icon: Users, label: isRTL ? 'إدارة المستخدمين' : 'USERS', href: '/admin/users' },
+                    { id: 'security', icon: Shield, label: isRTL ? 'الأمان والصلاحيات' : 'SECURITY', href: '/admin/security' },
+                    { id: 'health', icon: Activity, label: isRTL ? 'صحة النظام' : 'SYSTEM HEALTH', href: '/admin/health' },
+                    { id: 'system', icon: Server, label: isRTL ? 'الفحص الشامل' : 'FULL SCAN', href: '/admin/system' },
                 ] : []),
-                ...(hasP('manage_footer') || hasP('manage_whatsapp') ? [{ id: 'social', icon: Share2, label: isRTL ? 'القنوات' : 'CHANNELS', href: '/admin/social' }] : []),
-                ...(isSuper || hasP('view_analytics') ? [{ id: 'reports', icon: TrendingUp, label: isRTL ? 'التقارير' : 'REPORTS', href: '/admin/reports' }] : []),
-                ...(hasP('manage_settings') || hasP('manage_content') ? [{ id: 'settings', icon: Settings, label: isRTL ? 'الإعدادات' : 'SETTINGS', href: '/admin/settings' }] : []),
+                ...(hasP('manage_footer') || hasP('manage_whatsapp') ? [{ id: 'social', icon: Share2, label: isRTL ? 'القنوات الاجتماعية' : 'CHANNELS', href: '/admin/social' }] : []),
+                ...(isSuper || hasP('view_analytics') ? [{ id: 'reports', icon: TrendingUp, label: isRTL ? 'التقارير والإحصاءات' : 'REPORTS', href: '/admin/reports' }] : []),
+                ...(hasP('manage_settings') || hasP('manage_content') ? [{ id: 'settings', icon: Settings, label: isRTL ? 'الإعدادات العامة' : 'SETTINGS', href: '/admin/settings' }] : []),
             ]
         }
     ];
