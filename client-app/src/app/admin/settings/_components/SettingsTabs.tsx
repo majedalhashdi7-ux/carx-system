@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import NextImage from 'next/image';
 import { api } from '@/lib/api-original';
+import { cn } from '@/lib/utils';
 
 const EMPTY_STRING = '';
 const rawText = (value: string) => value;
@@ -32,6 +33,7 @@ interface HomeContent {
     heroTitle: string; 
     heroSubtitle: string; 
     heroVideoUrl: string;
+    featuredCarsSource?: 'showroom' | 'auctions';
     showSearchSection?: boolean;
     showLiveMarket?: boolean;
     showTrustHub?: boolean;
@@ -421,6 +423,35 @@ export function HomeTab({ homeContent, loading, isRTL, onSave, onSilentSave, onH
                             onChange={e => onHomeChange({ ...homeContent, heroVideoUrl: e.target.value })}
                             onBlur={onSilentSave} placeholder="/videos/hero.mp4"
                             className="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 text-sm focus:outline-none focus:border-cinematic-neon-red/40" />
+                    </div>
+                    
+                    {/* مصدر السيارات المميزة في الصفحة الرئيسية */}
+                    <div className="p-5 bg-white/5 border border-white/10 rounded-2xl space-y-4">
+                        <label className="text-[10px] font-black text-[#c9a96e] uppercase tracking-widest block">
+                            {isRTL ? rawText('مصدر عرض السيارات المميزة (تحت أزرار Hero)') : rawText('Homepage Featured Cars Source')}
+                        </label>
+                        <div className="flex gap-2">
+                            {(['showroom', 'auctions'] as const).map(source => (
+                                <button
+                                    key={source}
+                                    type="button"
+                                    onClick={() => {
+                                        onHomeChange({ ...homeContent, featuredCarsSource: source });
+                                        setTimeout(() => onSilentSave(), 200);
+                                    }}
+                                    className={cn(
+                                        "flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all border",
+                                        (homeContent?.featuredCarsSource || 'showroom') === source
+                                            ? "bg-[#c9a96e] text-black border-[#c9a96e]"
+                                            : "bg-white/[0.02] border-white/5 text-white/60 hover:bg-white/5 hover:text-white"
+                                    )}
+                                >
+                                    {source === 'showroom'
+                                        ? (isRTL ? 'سيارات المعرض (Showroom)' : 'Showroom Cars')
+                                        : (isRTL ? 'المزادات الحية (Live Auctions)' : 'Live Auctions')}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
 

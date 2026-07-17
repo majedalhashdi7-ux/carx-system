@@ -40,7 +40,7 @@ interface SocialLinks { whatsapp: string; instagram: string; twitter: string; fa
 interface ContactInfo { phone: string; email: string; address: string; workingHours: string; }
 interface CurrencySettings { usdToSar: number; usdToKrw: number; activeCurrency: string; partsMultiplier: number; auctionMultiplier: number; }
 interface SiteInfo { siteName: string; siteDescription: string; logoUrl: string; faviconUrl: string; }
-interface HomeContent { heroTitle: string; heroSubtitle: string; heroVideoUrl: string; }
+interface HomeContent { heroTitle: string; heroSubtitle: string; heroVideoUrl: string; featuredCarsSource?: 'showroom' | 'auctions'; }
 interface Feature { icon: string; title: string; desc: string;[key: string]: string; }
 
 export default function AdminSettings() {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Car, Wrench, Gavel, ShieldCheck, Globe, Sparkles, Star, HelpCircle, Users
@@ -9,6 +9,7 @@ import Navbar from '@/components/Navbar';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useSettings } from '@/lib/SettingsContext';
 import { cn } from '@/lib/utils';
+import { api } from '@/lib/api-original';
 import Link from 'next/link';
 
 // ─── Calculator Data ───
@@ -43,7 +44,87 @@ const CAR_SIZES = [
 
 export default function HomePage() {
     const { isRTL } = useLanguage();
-    const { formatPriceFromUsd } = useSettings();
+    const { formatPriceFromUsd, homeContent } = useSettings();
+
+    // ─── Brand & Featured Stock State ───
+    const [brands, setBrands] = useState<any[]>([]);
+    const [featuredCars, setFeaturedCars] = useState<any[]>([]);
+    const [carsLoading, setCarsLoading] = useState(true);
+
+    const featuredSource = homeContent?.featuredCarsSource || 'showroom';
+
+    useEffect(() => {
+        // Fetch active car brands
+        api.brands.list('cars').then(res => {
+            if (res?.success && res.brands) {
+                const activeWithLogos = res.brands.filter((b: any) => b.isActive !== false && b.logoUrl);
+                setBrands(activeWithLogos);
+            }
+        }).catch(err => console.error('Error fetching brands:', err));
+    }, []);
+
+    useEffect(() => {
+        setCarsLoading(true);
+        if (featuredSource === 'auctions') {
+            api.auctions.list({ status: 'running', limit: 12 }).then(res => {
+                if (res?.success && res.auctions) {
+                    setFeaturedCars(res.auctions);
+                }
+            }).catch(err => console.error('Error fetching featured auctions:', err))
+              .finally(() => setCarsLoading(false));
+        } else {
+            api.cars.list({ isActive: true, limit: 12 }).then(res => {
+                if (res?.success && res.cars) {
+                    setFeaturedCars(res.cars);
+                }
+            }).catch(err => console.error('Error fetching featured cars:', err))
+              .finally(() => setCarsLoading(false));
+        }
+    }, [featuredSource]);
+
+    const FALLBACK_BRANDS = [
+        { name: 'Hyundai', logoUrl: '/brands/hyundai.png' },
+        { name: 'Kia', logoUrl: '/brands/kia.png' },
+        { name: 'Genesis', logoUrl: '/brands/genesis.png' },
+        { name: 'BMW', logoUrl: '/brands/bmw.png' },
+        { name: 'Mercedes-Benz', logoUrl: '/brands/mercedes.png' },
+        { name: 'Toyota', logoUrl: '/brands/toyota.png' },
+    ];
+    const displayBrands = brands.length > 0 ? brands : FALLBACK_BRANDS;
+    const marqueeBrands = [...displayBrands, ...displayBrands, ...displayBrands];
+
+    const FALLBACK_CARS = [
+        {
+            _id: '1',
+            title: isRTL ? 'هيونداي سانتا في 2024' : 'Hyundai Santa Fe 2024',
+            images: ['https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&q=80&w=600'],
+            price: 32000,
+            specs: { year: '2024', transmission: isRTL ? 'أوتوماتيك' : 'Automatic', fuel: isRTL ? 'بنزين' : 'Petrol' }
+        },
+        {
+            _id: '2',
+            title: isRTL ? 'كيا سورينتو 2023' : 'Kia Sorento 2023',
+            images: ['https://images.unsplash.com/photo-1606016159991-dfe4f2746ad5?auto=format&fit=crop&q=80&w=600'],
+            price: 28000,
+            specs: { year: '2023', transmission: isRTL ? 'أوتوماتيك' : 'Automatic', fuel: isRTL ? 'ديزل' : 'Diesel' }
+        },
+        {
+            _id: '3',
+            title: isRTL ? 'جينيسيس GV80 2023' : 'Genesis GV80 2023',
+            images: ['https://images.unsplash.com/photo-1619767886558-efdc259cde1a?auto=format&fit=crop&q=80&w=600'],
+            price: 65000,
+            specs: { year: '2023', transmission: isRTL ? 'أوتوماتيك' : 'Automatic', fuel: isRTL ? 'بنزين' : 'Petrol' }
+        },
+        {
+            _id: '4',
+            title: isRTL ? 'بي إم دبليو الفئة الخامسة 2023' : 'BMW 5 Series 2023',
+            images: ['https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=600'],
+            price: 49000,
+            specs: { year: '2023', transmission: isRTL ? 'أوتوماتيك' : 'Automatic', fuel: isRTL ? 'هجين' : 'Hybrid' }
+        }
+    ];
+    const displayCars = featuredCars.length > 0 ? featuredCars : FALLBACK_CARS;
+    const marqueeCars = [...displayCars, ...displayCars, ...displayCars];
 
     // ─── Calculator State ───
     const [countryCode, setCountryCode] = useState<'KSA' | 'UAE' | 'YE' | 'JO'>('KSA');
@@ -154,101 +235,99 @@ export default function HomePage() {
                             {isRTL ? 'المزادات الحية' : 'LIVE AUCTIONS'}
                         </Link>
                     </div>
-                </motion.div>
-            </header>
 
-            {/* ─── Shipping Cost Calculator Section ─── */}
-            <section className="py-20 bg-gradient-to-b from-transparent via-white/[0.01] to-transparent border-y border-white/5 relative z-10">
-                <div className="max-w-5xl mx-auto px-4 sm:px-6">
-                    <div className="text-center mb-12">
-                        <span className="text-[10px] font-black text-[#C9A96E] tracking-[0.3em] uppercase">
-                            {isRTL ? 'حاسبة التكلفة الفورية' : 'SHIPPING RATE CALCULATOR'}
-                        </span>
-                        <h2 className="text-3xl font-black tracking-tight mt-2">
-                            {isRTL ? 'احسب تكلفة شحن سيارتك من كوريا' : 'Calculate Shipping From Korea'}
-                        </h2>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-[#101018] border border-white/6 rounded-3xl p-6 sm:p-10 shadow-2xl">
-                        {/* Selector fields */}
-                        <div className="space-y-6">
-                            <div>
-                                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-2">
-                                    {isRTL ? 'الدولة المستهدفة' : 'Destination Country'}
-                                </label>
-                                <select 
-                                    value={countryCode} 
-                                    onChange={(e) => {
-                                        setCountryCode(e.target.value as any);
-                                        setPortIndex(0);
-                                    }}
-                                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#C9A96E]/50"
-                                >
-                                    {COUNTRIES.map(c => (
-                                        <option key={c.code} value={c.code} className="bg-[#111118]">
-                                            {isRTL ? c.nameAr : c.nameEn}
-                                        </option>
-                                    ))}
-                                </select>
+                    {/* Featured Cars Marquee (Premium Square Card Slider) */}
+                    <div className="mt-16 w-full max-w-7xl relative overflow-hidden select-none">
+                        {carsLoading ? (
+                            <div className="flex gap-4 justify-center items-center py-16">
+                                <div className="w-6 h-6 rounded-full border-2 border-t-transparent border-[#C9A96E] animate-spin" />
+                                <span className="text-[10px] uppercase tracking-widest text-[#C9A96E] font-black italic animate-pulse">Loading Luxury Fleet...</span>
                             </div>
-
-                            <div>
-                                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-2">
-                                    {isRTL ? 'ميناء الوصول' : 'Destination Port'}
-                                </label>
-                                <select 
-                                    value={portIndex} 
-                                    onChange={(e) => setPortIndex(Number(e.target.value))}
-                                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#C9A96E]/50"
-                                >
-                                    {availablePorts.map((p, idx) => (
-                                        <option key={idx} value={idx} className="bg-[#111118]">
-                                            {isRTL ? p.nameAr : p.nameEn}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-2">
-                                    {isRTL ? 'حجم وفئة السيارة' : 'Car Size & Class'}
-                                </label>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {CAR_SIZES.map((size, idx) => (
-                                        <button
-                                            key={idx}
-                                            onClick={() => setCarSizeIndex(idx)}
-                                            className={cn(
-                                                "p-3 rounded-xl border text-center transition-all text-xs font-bold",
-                                                carSizeIndex === idx 
-                                                    ? "bg-[#C9A96E]/10 border-[#C9A96E] text-[#C9A96E]" 
-                                                    : "bg-white/[0.02] border-white/5 hover:bg-white/5"
+                        ) : (
+                            <div className="relative w-full overflow-hidden py-4">
+                                <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-black to-transparent z-10 pointer-events-none" />
+                                <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-black to-transparent z-10 pointer-events-none" />
+                                
+                                <div className="animate-marquee-infinite flex gap-6">
+                                    {marqueeCars.map((car, idx) => (
+                                        <div key={idx} className="relative aspect-square w-[240px] sm:w-[280px] rounded-3xl overflow-hidden border border-white/10 bg-white/2 group flex-shrink-0">
+                                            {car.images && car.images.length > 0 ? (
+                                                <img src={car.images[0]} alt={car.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 pointer-events-none" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center bg-white/5">
+                                                    <Car className="w-12 h-12 text-white/10" />
+                                                </div>
                                             )}
-                                        >
-                                            {isRTL ? size.nameAr.split(' ')[0] : size.nameEn}
-                                        </button>
+                                            
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex flex-col justify-end p-5 text-start">
+                                                <div className="flex items-center justify-between mb-1.5">
+                                                    <span className="px-2 py-0.5 rounded bg-black/60 border border-white/10 text-[9px] font-black uppercase text-[#C9A96E]">
+                                                        {featuredSource === 'auctions' ? (isRTL ? 'مزاد مباشر' : 'LIVE AUCTION') : (isRTL ? 'معرض' : 'SHOWROOM')}
+                                                    </span>
+                                                    <span className="text-sm font-black text-[#C9A96E] cockpit-num">
+                                                        {formatPriceFromUsd(car.price)}
+                                                    </span>
+                                                </div>
+                                                
+                                                <h4 className="text-sm font-black text-white line-clamp-1 mb-1.5">
+                                                    {car.title}
+                                                </h4>
+                                                
+                                                <div className="flex gap-3 text-[9px] text-white/40">
+                                                    <span>{car.specs?.year || car.year || '2023'}</span>
+                                                    <span>•</span>
+                                                    <span>{car.specs?.transmission || car.transmission || (isRTL ? 'أوتوماتيك' : 'Auto')}</span>
+                                                    <span>•</span>
+                                                    <span>{car.specs?.fuel || car.fuel || (isRTL ? 'ديزل' : 'Diesel')}</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <Link href={featuredSource === 'auctions' ? `/auctions/${car._id}` : `/cars/${car._id}`} className="absolute inset-0 z-10" />
+                                        </div>
                                     ))}
                                 </div>
                             </div>
-                        </div>
+                        )}
+                    </div>
+                </motion.div>
+            </header>
 
-                        {/* Result Output Card */}
-                        <div className="flex flex-col items-center justify-center p-8 rounded-2xl bg-white/[0.02] border border-white/5 relative overflow-hidden group min-h-[250px]">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-[#C9A96E]/5 rounded-full blur-2xl group-hover:bg-[#C9A96E]/10 transition-all" />
-                            <Globe className="w-8 h-8 text-[#C9A96E] mb-4 animate-pulse" />
-                            
-                            <span className="cockpit-mono text-[9px] text-white/40 uppercase tracking-[0.3em] mb-1">
-                                {isRTL ? 'تكلفة الشحن التقديرية' : 'ESTIMATED SHIPPING COST'}
-                            </span>
-                            <div className="text-3xl sm:text-4xl font-black text-[#C9A96E] cockpit-num mb-2">
-                                {formatPriceFromUsd(totalUsd)}
+            {/* ─── Car Brands Ribbon Section (Circular Logos & Moving Marquee) ─── */}
+            <section className="py-16 border-y border-white/5 bg-gradient-to-b from-transparent via-white/[0.01] to-transparent relative z-10 overflow-hidden">
+                <div className="max-w-7xl mx-auto px-4 mb-8 text-center">
+                    <span className="text-[10px] font-black text-[#C9A96E] tracking-[0.3em] uppercase">
+                        {isRTL ? 'الشركات المصنعة والوكالات' : 'PREMIUM BRANDS'}
+                    </span>
+                    <h2 className="text-2xl sm:text-3xl font-black mt-2">
+                        {isRTL ? 'تصفح السيارات حسب العلامة التجارية' : 'Browse By Car Brand'}
+                    </h2>
+                </div>
+                
+                {/* Marquee Track */}
+                <div className="relative w-full overflow-hidden py-4">
+                    <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-black to-transparent z-10 pointer-events-none" />
+                    <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-black to-transparent z-10 pointer-events-none" />
+                    
+                    <div className="animate-marquee-infinite flex gap-12 items-center">
+                        {marqueeBrands.map((brand, idx) => (
+                            <div key={idx} className="flex flex-col items-center gap-3 select-none">
+                                {/* Circular Logo Frame */}
+                                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white flex items-center justify-center p-4 border-2 border-[#C9A96E]/20 shadow-[0_0_15px_rgba(201,169,110,0.1)] hover:border-[#C9A96E] hover:shadow-[0_0_20px_rgba(201,169,110,0.2)] transition-all duration-300">
+                                    <div className="relative w-full h-full">
+                                        {brand.logoUrl ? (
+                                            <img src={brand.logoUrl} alt={brand.name} className="w-full h-full object-contain pointer-events-none" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-black/40">
+                                                {brand.name}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <span className="text-xs font-bold text-white/70 hover:text-white transition-colors">
+                                    {brand.name}
+                                </span>
                             </div>
-                            <p className="text-[10px] text-white/30 text-center leading-relaxed max-w-[240px]">
-                                {isRTL 
-                                    ? '* تشمل التكلفة الشحن البحري من كوريا وإعداد المستندات الجمركية الرسمية للتصدير.'
-                                    : '* Rate includes ocean shipping from Korea and customs document preparation.'}
-                            </p>
-                        </div>
+                        ))}
                     </div>
                 </div>
             </section>
