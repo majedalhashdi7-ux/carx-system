@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ReactGA from 'react-ga4';
 import {
     ChevronLeft, MessageCircle, Fuel, Gauge, Settings2,
-    Calendar, Car, Tag, CheckCircle, AlertCircle, Image as ImageIcon
+    Calendar, Car, Tag, CheckCircle, AlertCircle, Image as ImageIcon, Globe
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Image from 'next/image';
@@ -14,6 +14,7 @@ import ModernCarCard from '@/components/ModernCarCard';
 import { api } from '@/lib/api-original';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useSettings } from '@/lib/SettingsContext';
+import { useToast } from '@/lib/ToastContext';
 import { WhatsAppService } from '@/lib/WhatsAppService';
 import { cn } from '@/lib/utils';
 
@@ -31,6 +32,35 @@ export default function LocalCarDetail() {
     const router = useRouter();
     const { isRTL } = useLanguage();
     const { formatPrice, formatPriceFromUsd, currency } = useSettings();
+    const { showToast } = useToast();
+    const [is360Mode, setIs360Mode] = useState(false);
+    const [dragStartX, setDragStartX] = useState(0);
+
+    const handle360Drag = (e: React.MouseEvent | React.TouchEvent) => {
+        if (!is360Mode || !images.length || images.length <= 1) return;
+        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+        
+        if (dragStartX === 0) {
+            setDragStartX(clientX);
+            return;
+        }
+
+        const diff = clientX - dragStartX;
+        if (Math.abs(diff) > 12) {
+            const step = diff > 0 ? -1 : 1;
+            setActiveImage((prev) => {
+                let next = prev + step;
+                if (next < 0) next = images.length - 1;
+                if (next >= images.length) next = 0;
+                return next;
+            });
+            setDragStartX(clientX);
+        }
+    };
+
+    const stop360Drag = () => {
+        setDragStartX(0);
+    };
 
     const [car, setCar] = useState<{
         title: string;
@@ -286,14 +316,49 @@ export default function LocalCarDetail() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                     <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="space-y-4">
                         {/* Desktop Image Viewer */}
-                        <div className="hidden md:block relative aspect-[4/3] rounded-3xl overflow-hidden border border-white/10 bg-white/2">
+                        <div 
+                            className={cn(
+                                "hidden md:block relative aspect-[4/3] rounded-3xl overflow-hidden border border-white/10 bg-white/2",
+                                is360Mode ? "cursor-ew-resize select-none" : ""
+                            )}
+                            onMouseMove={is360Mode ? handle360Drag : undefined}
+                            onMouseDown={is360Mode ? (e) => setDragStartX(e.clientX) : undefined}
+                            onMouseUp={stop360Drag}
+                            onMouseLeave={stop360Drag}
+                            onTouchMove={is360Mode ? handle360Drag : undefined}
+                            onTouchStart={is360Mode ? (e) => setDragStartX(e.touches[0].clientX) : undefined}
+                            onTouchEnd={stop360Drag}
+                        >
                             {images.length > 0 ? (
-                                <Image src={images[activeImage]} alt={car.title} fill className="object-cover animate-fade-in" unoptimized />
+                                <Image src={images[activeImage]} alt={car.title} fill className="object-cover pointer-events-none select-none" unoptimized />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center">
                                     <ImageIcon className="w-20 h-20 text-white/10" />
                                 </div>
                             )}
+                            
+                            {/* Toggle 360 View Button */}
+                            {images.length > 1 && (
+                                <div className="absolute top-4 left-4 z-20">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIs360Mode(p => !p);
+                                            showToast?.(isRTL ? "قم بالسحب يميناً ويساراً لتدوير السيارة" : "Drag left/right to rotate the car", "info");
+                                        }}
+                                        className={cn(
+                                            "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest backdrop-blur-md transition-all flex items-center gap-1.5 border border-white/15",
+                                            is360Mode 
+                                                ? "bg-[#C9A96E] text-black border-[#C9A96E]" 
+                                                : "bg-black/60 text-white/80 hover:bg-black/80"
+                                        )}
+                                    >
+                                        <Globe className="w-3.5 h-3.5 animate-pulse" />
+                                        {isRTL ? rawText('عرض 360°') : rawText('360° VIEW')}
+                                    </button>
+                                </div>
+                            )}
+
                             <div className="absolute top-4 right-4 flex gap-2">
                                 <span className="px-3 py-1 bg-cinematic-neon-gold/20 border border-cinematic-neon-gold/40 rounded-lg text-[10px] font-black text-cinematic-neon-gold uppercase tracking-widest backdrop-blur-md">
                                     {isRTL ? rawText('متجرنا') : rawText('STORE')}
