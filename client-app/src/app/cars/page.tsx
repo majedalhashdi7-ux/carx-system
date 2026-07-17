@@ -76,6 +76,36 @@ function CarCard({ car, onWhatsApp }: { car: CarItem; onWhatsApp: (car: CarItem)
     const [imgErr, setImgErr] = useState(false);
     const img = imgErr ? 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?q=80&w=800' : resolveImg(car);
 
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const favs = JSON.parse(localStorage.getItem('hm_favorites') || '[]');
+            setLiked(favs.some((f: any) => f.id === car.id));
+        }
+    }, [car.id]);
+
+    const toggleLike = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        
+        const favs = JSON.parse(localStorage.getItem('hm_favorites') || '[]');
+        let updated;
+        if (liked) {
+            updated = favs.filter((f: any) => f.id !== car.id);
+        } else {
+            updated = [...favs, {
+                id: car.id,
+                type: 'car',
+                title: car.title || car.model,
+                price: car.priceSar || car.price || 0,
+                image: resolveImg(car),
+                brand: car.makeAr || car.make
+            }];
+        }
+        localStorage.setItem('hm_favorites', JSON.stringify(updated));
+        setLiked(!liked);
+        window.dispatchEvent(new CustomEvent('hm_favorites_updated'));
+    };
+
     const displayPrice = car.priceSar || car.price || 0;
     const displayName = car.makeAr || car.make;
 
@@ -116,7 +146,7 @@ function CarCard({ car, onWhatsApp }: { car: CarItem; onWhatsApp: (car: CarItem)
 
                     {/* Like button */}
                     <button
-                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); setLiked(p => !p); }}
+                        onClick={toggleLike}
                         className="absolute bottom-2 left-2 w-7 h-7 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 flex items-center justify-center transition-all hover:scale-110 active:scale-95"
                     >
                         <Heart className={cn("w-3.5 h-3.5 transition-colors", liked ? "fill-red-500 text-red-500" : "text-white/60")} />
@@ -700,12 +730,13 @@ function CarsContent() {
                                 {/* ── Pagination ── */}
                                 {totalPages > 1 && (
                                     <div className="mt-12 flex items-center justify-center gap-2">
+                                        {/* Previous Button - Aligning with LTR/RTL reading order */}
                                         <button
-                                            onClick={() => { setPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                                            disabled={page === totalPages}
+                                            onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                            disabled={page === 1}
                                             className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-white/10 text-xs font-black text-white/50 hover:bg-[#C9A96E] hover:text-black hover:border-[#C9A96E] disabled:opacity-20 transition-all">
-                                            <ChevronLeft className="w-4 h-4" />
-                                            التالي
+                                            {isRTL ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                                            {isRTL ? 'السابق' : 'Previous'}
                                         </button>
 
                                         <div className="flex items-center gap-1">
@@ -727,12 +758,13 @@ function CarsContent() {
                                             })}
                                         </div>
 
+                                        {/* Next Button - Aligning with LTR/RTL reading order */}
                                         <button
-                                            onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                                            disabled={page === 1}
+                                            onClick={() => { setPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                            disabled={page === totalPages}
                                             className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-white/10 text-xs font-black text-white/50 hover:bg-[#C9A96E] hover:text-black hover:border-[#C9A96E] disabled:opacity-20 transition-all">
-                                            السابق
-                                            <ChevronRight className="w-4 h-4" />
+                                            {isRTL ? 'التالي' : 'Next'}
+                                            {isRTL ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                                         </button>
                                     </div>
                                 )}
@@ -754,7 +786,7 @@ function CarsContent() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 20 }}
                         onClick={() => setMobileSidebar(true)}
-                        className="lg:hidden fixed bottom-20 left-4 z-30 flex items-center gap-2 bg-[#C9A96E] text-black font-black text-xs px-4 py-2.5 rounded-full shadow-[0_4px_20px_rgba(201,169,110,0.4)] hover:bg-[#b8934d] transition-all"
+                        className="lg:hidden fixed bottom-24 right-4 z-40 flex items-center gap-2 bg-[#C9A96E] text-black font-black text-xs px-5 py-3 rounded-full shadow-[0_4px_25px_rgba(201,169,110,0.5)] hover:bg-[#b8934d] transition-all border border-[#b8955b]/20"
                         whileTap={{ scale: 0.95 }}
                     >
                         <SlidersHorizontal className="w-3.5 h-3.5" />

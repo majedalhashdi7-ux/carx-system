@@ -113,8 +113,36 @@ export default function FavoritesPage() {
                         </div>
                     </motion.div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        <AnimatePresence>
+                    <div className="space-y-8">
+                        {/* إجمالي سعر العناصر المفضلة */}
+                        <div className="p-6 bg-white/2 border border-white/10 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-6">
+                            <div className="text-center sm:text-start">
+                                <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] block mb-1">
+                                    {isRTL ? 'إجمالي قيمة المفضلات' : 'TOTAL VALUE OF FAVORITES'}
+                                </span>
+                                <div className="text-3xl font-black text-red-500">
+                                    {formatPrice(favorites.reduce((sum, item) => sum + (Number(item.price) || 0), 0))}
+                                </div>
+                            </div>
+                            
+                            <button
+                                onClick={() => {
+                                    const total = favorites.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+                                    const itemsSummary = favorites.map(item => `• *${item.title}*: ${formatPrice(item.price)}`).join('\n');
+                                    const msg = isRTL
+                                        ? `💝 *طلب شراء عناصر المفضلة بالكامل*\n━━━━━━━━━━━━━━━━\n${itemsSummary}\n━━━━━━━━━━━━━━━━\n💰 *الإجمالي: ${formatPrice(total)}*\n━━━━━━━━━━━━━━━━\n\nأرجو التواصل للتأكيد والإتمام ✅`
+                                        : `💝 *Favorites Order request*\n━━━━━━━━━━━━━━━━\n${itemsSummary}\n━━━━━━━━━━━━━━━━\n💰 *Total Price: ${formatPrice(total)}*\n━━━━━━━━━━━━━━━━\n\nPlease contact me to confirm ✅`;
+                                    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
+                                }}
+                                className="w-full sm:w-auto px-6 py-4 rounded-xl bg-green-500 hover:bg-green-600 text-black font-black uppercase text-xs tracking-widest transition-all flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(34,197,94,0.3)]"
+                            >
+                                <Package className="w-4 h-4" />
+                                {isRTL ? 'شراء كافة العناصر عبر واتساب' : 'BUY ALL VIA WHATSAPP'}
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            <AnimatePresence>
                             {favorites.map((item, i) => (
                                 <motion.div key={item.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ delay: i * 0.05 }} className="group">
                                     <div className="bg-white/2 border border-white/10 rounded-3xl overflow-hidden hover:border-red-500/30 transition-all duration-500">
@@ -152,6 +180,7 @@ export default function FavoritesPage() {
                                 </motion.div>
                             ))}
                         </AnimatePresence>
+                    </div>
                     </div>
                 )}
             </main>
