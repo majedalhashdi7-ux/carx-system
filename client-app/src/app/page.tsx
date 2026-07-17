@@ -8,6 +8,7 @@ import {
 import Navbar from '@/components/Navbar';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useSettings } from '@/lib/SettingsContext';
+import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
 // ─── Calculator Data ───
