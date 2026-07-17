@@ -43,6 +43,7 @@ interface HomeContent {
     heroTitle?: string;
     heroSubtitle?: string;
     heroVideoUrl?: string;
+    featuredCarsSource?: 'showroom' | 'auctions';
     showSearchSection?: boolean;
     showLiveMarket?: boolean;
     showTrustHub?: boolean;

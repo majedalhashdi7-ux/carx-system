@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { 
     Plus, Globe, DollarSign, TrendingUp, RefreshCw,
-    Car as CarIcon 
+    Car as CarIcon, Shield, CheckCircle, XCircle, Zap
 } from 'lucide-react';
 import NextLink from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -87,6 +87,10 @@ function CarsContent() {
 
     const [cars, setCars] = useState<Car[]>([]);
     const [totalCarsCount, setTotalCarsCount] = useState(0);
+    const [activeCarsCount, setActiveCarsCount] = useState(0);
+    const [soldCarsCount, setSoldCarsCount] = useState(0);
+    const [importedCarsCount, setImportedCarsCount] = useState(0);
+    const [localCarsCount, setLocalCarsCount] = useState(0);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [loading, setLoading] = useState(true);
@@ -118,6 +122,18 @@ function CarsContent() {
                 setTotalPages(res.data?.pagination?.pages || 1);
             }
 
+            // Load stats for landing page
+            if (!requestedSource) {
+                try {
+                    const [localRes, koreanRes] = await Promise.all([
+                        api.cars.list({ source: 'hm_local', limit: 1 }),
+                        api.cars.list({ source: 'korean_import', limit: 1 }),
+                    ]);
+                    if (localRes.success) setLocalCarsCount(localRes.data?.pagination?.total || 0);
+                    if (koreanRes.success) setImportedCarsCount(koreanRes.data?.pagination?.total || 0);
+                } catch { /* ignore stats error */ }
+            }
+
             const settingsRes = await api.showroom.getSettings();
             if (settingsRes.success) {
                 setEncarUrl(settingsRes.data?.encarUrl || '');
@@ -135,7 +151,7 @@ function CarsContent() {
         } finally {
             setLoading(false);
         }
-    }, [inventorySource, page]);
+    }, [inventorySource, page, requestedSource]);
 
     useEffect(() => { loadData(); }, [loadData]);
 
@@ -315,23 +331,38 @@ function CarsContent() {
         }
     };
 
+    const activeCount = cars.filter(c => c.isActive && !c.isSold).length;
+    const soldCount = cars.filter(c => c.isSold).length;
+
     return (
         <div className="relative min-h-screen text-white font-sans overflow-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
             <AdminPageShell
+                icon={CarIcon}
+                accentColor={inventorySource === 'korean_import' ? 'blue' : 'orange'}
                 title={!requestedSource
-                    ? (isRTL ? 'المعرض' : 'SHOWROOM')
+                    ? (isRTL ? 'إدارة السيارات' : 'VEHICLE MANAGER')
                     : (inventorySource === 'korean_import' ? (isRTL ? 'المعرض الكوري' : 'KOREAN SHOWROOM') : (isRTL ? 'معرض HM CAR' : 'HM CAR GALLERY'))
                 }
-                titleEn={!requestedSource ? 'GALLERY CONTROL' : (inventorySource === 'korean_import' ? 'KOREAN OPS' : 'LOCAL OPS')}
+                titleEn={!requestedSource ? 'INVENTORY CONTROL' : (inventorySource === 'korean_import' ? 'ENCAR IMPORT HUB' : 'LOCAL SHOWROOM OPS')}
+                subtitle={!requestedSource ? (isRTL ? 'اختر قسم السيارات الذي تريد إدارته' : 'Select the inventory section to manage') : undefined}
                 backHref={requestedSource ? '/admin/cars' : '/admin/dashboard'}
                 isRTL={isRTL}
+                stats={requestedSource ? [
+                    { label: isRTL ? 'إجمالي' : 'TOTAL', value: totalCarsCount, color: inventorySource === 'korean_import' ? 'text-blue-400' : 'text-orange-400' },
+                    { label: isRTL ? 'نشطة' : 'ACTIVE', value: activeCount, color: 'text-emerald-400' },
+                    { label: isRTL ? 'مباعة' : 'SOLD', value: soldCount, color: 'text-white/40' },
+                ] : [
+                    { label: isRTL ? 'HM محلي' : 'LOCAL', value: localCarsCount, color: 'text-orange-400' },
+                    { label: isRTL ? 'كوري' : 'KOREAN', value: importedCarsCount, color: 'text-blue-400' },
+                    { label: isRTL ? 'إجمالي' : 'TOTAL', value: localCarsCount + importedCarsCount, color: 'text-white/60' },
+                ]}
                 actions={requestedSource && (
                     <div className="flex items-center gap-3">
                         {inventorySource === 'hm_local' ? (
                             <button
                                 onClick={() => { resetForm(); setShowModal(true); }}
                                 title={isRTL ? 'إضافة سيارة جديدة' : 'Add New Vehicle'}
-                                className="h-12 px-6 rounded-2xl bg-orange-500 text-black font-black text-xs uppercase tracking-widest hover:bg-orange-400 transition-all shadow-[0_0_20px_rgba(249,115,22,0.3)] flex items-center gap-2"
+                                className="h-11 px-6 rounded-2xl bg-orange-500 text-black font-black text-xs uppercase tracking-widest hover:bg-orange-400 transition-all shadow-[0_0_20px_rgba(249,115,22,0.3)] flex items-center gap-2"
                             >
                                 <Plus className="w-4 h-4" />
                                 {isRTL ? 'إضافة سيارة' : 'ADD VEHICLE'}
@@ -341,12 +372,12 @@ function CarsContent() {
                                 onClick={() => setShowImportSettings(!showImportSettings)}
                                 title={isRTL ? 'إعدادات الاستيراد' : 'Import Settings'}
                                 className={cn(
-                                    "h-12 px-6 rounded-2xl border border-blue-400/30 text-blue-400 font-black text-xs uppercase tracking-widest hover:bg-blue-400/10 transition-all flex items-center gap-2",
+                                    "h-11 px-6 rounded-2xl border border-blue-400/30 text-blue-400 font-black text-xs uppercase tracking-widest hover:bg-blue-400/10 transition-all flex items-center gap-2",
                                     showImportSettings && "bg-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.3)]"
                                 )}
                             >
                                 <Globe className="w-4 h-4" />
-                                {isRTL ? 'استيراد' : 'IMPORT'}
+                                {isRTL ? 'استيراد كوري' : 'KR IMPORT'}
                             </button>
                         )}
                     </div>
@@ -538,35 +569,65 @@ function CarsContent() {
                 )}
 
                 {!requestedSource ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-10">
-                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
-                            <NextLink href="/admin/cars?source=hm_local" className="group block h-full">
-                                <div className="ck-card p-10 h-full border-red-500/10 group-hover:border-red-500/40 transition-all flex flex-col items-center text-center justify-center space-y-6">
-                                    <div className="w-24 h-24 rounded-[30%] bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 group-hover:scale-110 transition-transform">
-                                        <CarIcon className="w-12 h-12" />
+                    <div className="space-y-6 py-4">
+                        {/* ── Section Picker Cards ── */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+                                <NextLink href="/admin/cars?source=hm_local" className="group block h-full">
+                                    <div className="relative overflow-hidden rounded-3xl border border-orange-500/15 bg-gradient-to-br from-orange-500/8 via-black/60 to-black/80 p-8 h-full hover:border-orange-500/40 transition-all duration-300 group-hover:shadow-[0_0_40px_rgba(249,115,22,0.12)]">
+                                        {/* Glow circle */}
+                                        <div className="absolute top-0 right-0 w-48 h-48 bg-orange-500/5 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                                        <div className="relative z-10 flex flex-col h-full gap-6">
+                                            <div className="flex items-start justify-between">
+                                                <div className="w-16 h-16 rounded-2xl bg-orange-500/15 border border-orange-500/25 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                    <CarIcon className="w-8 h-8 text-orange-400" />
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="text-3xl font-black text-orange-400 font-mono">{localCarsCount}</div>
+                                                    <div className="text-[9px] text-white/30 uppercase tracking-widest">{isRTL ? 'سيارة' : 'VEHICLES'}</div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-black tracking-tight mb-2">{isRTL ? 'معرض HM CAR' : 'HM CAR SHOWROOM'}</h3>
+                                                <p className="text-white/40 text-xs leading-relaxed">{isRTL ? 'إدارة السيارات المحلية، إضافة وتعديل والتحكم الكامل.' : 'Manage local inventory with full add, edit & control.'}</p>
+                                            </div>
+                                            <div className="mt-auto flex items-center gap-2 text-orange-400">
+                                                <span className="text-[11px] font-black uppercase tracking-widest">{isRTL ? 'دخول المعرض' : 'ENTER GALLERY'}</span>
+                                                <svg className={cn('w-4 h-4 group-hover:translate-x-1 transition-transform', isRTL && 'rotate-180 group-hover:-translate-x-1')} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="m9 18 6-6-6-6" /></svg>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="text-2xl font-black italic tracking-tighter mb-2">{isRTL ? 'معرض HM CAR' : 'HM CAR SHOWROOM'}</h3>
-                                        <p className="text-white/40 text-xs leading-relaxed max-w-xs">{isRTL ? 'إدارة السيارات المتاحة في معرض HM CAR، إضافة وتعديل وتحكم كامل.' : 'Manage available vehicles in HM CAR showroom with full CRUD control.'}</p>
+                                </NextLink>
+                            </motion.div>
+
+                            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                                <NextLink href="/admin/cars?source=korean_import" className="group block h-full">
+                                    <div className="relative overflow-hidden rounded-3xl border border-blue-500/15 bg-gradient-to-br from-blue-500/8 via-black/60 to-black/80 p-8 h-full hover:border-blue-500/40 transition-all duration-300 group-hover:shadow-[0_0_40px_rgba(59,130,246,0.12)]">
+                                        <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/5 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                                        <div className="relative z-10 flex flex-col h-full gap-6">
+                                            <div className="flex items-start justify-between">
+                                                <div className="w-16 h-16 rounded-2xl bg-blue-500/15 border border-blue-500/25 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                    <Globe className="w-8 h-8 text-blue-400" />
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="text-3xl font-black text-blue-400 font-mono">{importedCarsCount}</div>
+                                                    <div className="text-[9px] text-white/30 uppercase tracking-widest">{isRTL ? 'سيارة' : 'VEHICLES'}</div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-black tracking-tight mb-2">{isRTL ? 'المعرض الكوري' : 'KOREAN IMPORT'}</h3>
+                                                <p className="text-white/40 text-xs leading-relaxed">{isRTL ? 'استيراد مباشر من كوريا عبر Encar Scraper بنقرة واحدة.' : 'Direct import from Korea via real-time Encar scraper.'}</p>
+                                            </div>
+                                            <div className="flex items-center gap-2 mt-auto">
+                                                <span className="px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-500/30 text-[9px] text-blue-400 font-black uppercase tracking-widest">ENCAR</span>
+                                                <span className="text-[11px] font-black uppercase tracking-widest text-blue-400">{isRTL ? 'بوابة الاستيراد' : 'IMPORT HUB'}</span>
+                                                <svg className={cn('w-4 h-4 text-blue-400 group-hover:translate-x-1 transition-transform ml-auto', isRTL && 'rotate-180 group-hover:-translate-x-1')} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="m9 18 6-6-6-6" /></svg>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="cockpit-mono text-[10px] text-red-500 tracking-[0.3em] font-black">{isRTL ? 'فتح المعرض' : 'ENTER GALLERY'}</div>
-                                </div>
-                            </NextLink>
-                        </motion.div>
-                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
-                            <NextLink href="/admin/cars?source=korean_import" className="group block h-full">
-                                <div className="ck-card p-10 h-full border-blue-500/10 group-hover:border-blue-500/40 transition-all flex flex-col items-center text-center justify-center space-y-6">
-                                    <div className="w-24 h-24 rounded-[30%] bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
-                                        <Globe className="w-12 h-12" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-2xl font-black italic tracking-tighter mb-2">{isRTL ? 'المعرض الكوري' : 'KOREAN SHOWROOM'}</h3>
-                                        <p className="text-white/40 text-xs leading-relaxed max-w-xs">{isRTL ? 'استيراد وإدارة السيارات المباشرة من كوريا عبر نظام Encar Scraper.' : 'Direct Korean import management powered by real-time Encar scraper.'}</p>
-                                    </div>
-                                    <div className="cockpit-mono text-[10px] text-blue-400 tracking-[0.3em] font-black">{isRTL ? 'فتح المعرض المستورد' : 'ENTER IMPORT HUB'}</div>
-                                </div>
-                            </NextLink>
-                        </motion.div>
+                                </NextLink>
+                            </motion.div>
+                        </div>
                     </div>
                 ) : loading ? (
                     <div className="py-24 flex flex-col items-center justify-center space-y-6">

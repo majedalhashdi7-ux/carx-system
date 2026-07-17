@@ -5,9 +5,9 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Plus, Trash2, Edit2, ChevronLeft, X, Link as LinkIcon,
+    Plus, Trash2, Edit2, X, Link as LinkIcon,
     Play, Square, ExternalLink, Image as ImageIcon, RefreshCw,
-    CheckCircle, AlertCircle, Clock, Zap, ToggleLeft, ToggleRight,
+    CheckCircle, AlertCircle, Zap, ToggleLeft, ToggleRight,
     Save, Download, Eye, Radio, Info
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
@@ -15,49 +15,11 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/LanguageContext";
 import Link from "next/link";
 import { api } from "@/lib/api-original";
+import { useToast } from "@/lib/ToastContext";
+import AdminPageShell from "@/components/AdminPageShell";
 
-// =============================================
-// Toast Notification Component
-// =============================================
+// Toast types kept for backward compat with addToast wrapper
 type ToastType = 'success' | 'error' | 'info' | 'loading';
-interface Toast {
-    id: number;
-    type: ToastType;
-    message: string;
-}
-
-function ToastContainer({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id: number) => void }) {
-    return (
-        <div className="fixed top-6 right-6 z-[999] flex flex-col gap-3 pointer-events-none">
-            <AnimatePresence>
-                {toasts.map(t => (
-                    <motion.div
-                        key={t.id}
-                        initial={{ opacity: 0, x: 80, scale: 0.9 }}
-                        animate={{ opacity: 1, x: 0, scale: 1 }}
-                        exit={{ opacity: 0, x: 80, scale: 0.9 }}
-                        className={cn(
-                            "pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-2xl border text-sm font-bold shadow-2xl min-w-[280px] max-w-[380px]",
-                            t.type === 'success' && "bg-emerald-950 border-emerald-500/40 text-emerald-300",
-                            t.type === 'error' && "bg-red-950 border-red-500/40 text-red-300",
-                            t.type === 'info' && "bg-blue-950 border-blue-500/40 text-blue-300",
-                            t.type === 'loading' && "bg-zinc-900 border-white/10 text-white/60",
-                        )}
-                    >
-                        {t.type === 'success' && <CheckCircle className="w-5 h-5 shrink-0" />}
-                        {t.type === 'error' && <AlertCircle className="w-5 h-5 shrink-0" />}
-                        {t.type === 'info' && <Info className="w-5 h-5 shrink-0" />}
-                        {t.type === 'loading' && <RefreshCw className="w-5 h-5 shrink-0 animate-spin" />}
-                        <span className="flex-1 text-[13px] leading-tight">{t.message}</span>
-                        <button onClick={() => onDismiss(t.id)} className="opacity-40 hover:opacity-100 transition-opacity">
-                            <X className="w-4 h-4" />
-                        </button>
-                    </motion.div>
-                ))}
-            </AnimatePresence>
-        </div>
-    );
-}
 
 // =============================================
 // Status Badge Component
@@ -82,26 +44,20 @@ function StatusBadge({ status, isRTL }: { status: string; isRTL: boolean }) {
 // =============================================
 export default function AdminLiveAuctions() {
     const { isRTL } = useLanguage();
+    const { showToast } = useToast();
     const [sessions, setSessions] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [isImporting, setIsImporting] = useState<string | null>(null);
     const [isStarting, setIsStarting] = useState<string | null>(null);
-    const [toasts, setToasts] = useState<Toast[]>([]);
-    let toastCounter = 0;
 
-    // ── Toast helpers ──
-    const addToast = useCallback((type: ToastType, message: string, duration = 4000) => {
-        const id = ++toastCounter;
-        setToasts(prev => [...prev, { id, type, message }]);
-        if (duration > 0) setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), duration);
-        return id;
-    }, []);
-
-    const dismissToast = useCallback((id: number) => {
-        setToasts(prev => prev.filter(t => t.id !== id));
-    }, []);
+    // Wrapper to keep the same API surface as the old addToast
+    const addToast = useCallback((type: 'success' | 'error' | 'info' | 'loading', message: string, _duration = 4000) => {
+        showToast(message, type === 'loading' ? 'info' : type);
+        return 0;
+    }, [showToast]);
+    const dismissToast = useCallback((_id: number) => {}, []);
 
     // ── Form State ──
     const [formData, setFormData] = useState({
@@ -275,93 +231,62 @@ export default function AdminLiveAuctions() {
     // Counts
     const liveSessions = sessions.filter(s => s.status === 'live').length;
     const upcomingSessions = sessions.filter(s => s.status === 'upcoming').length;
+    const endedSessions = sessions.filter(s => s.status === 'ended').length;
 
     return (
-        <div className="min-h-screen bg-[#070711] text-white" dir={isRTL ? 'rtl' : 'ltr'}>
-            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+        <div dir={isRTL ? 'rtl' : 'ltr'}>
 
-            {/* ── Page Header ── */}
-            <div className="sticky top-0 z-30 bg-[#070711]/95 backdrop-blur-xl border-b border-white/5 px-6 py-4 lg:px-10">
-                <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                        <Link href="/admin/dashboard" className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 transition-all">
-                            <ChevronLeft className={cn("w-5 h-5 text-white/40", isRTL && "rotate-180")} />
-                        </Link>
-                        <div>
-                            <div className="flex items-center gap-2 mb-0.5">
-                                <Radio className="w-4 h-4 text-red-400" />
-                                <h1 className="text-xl font-black uppercase tracking-tighter">
-                                    {isRTL ? 'إدارة المزادات المباشرة' : 'Live Auctions Admin'}
-                                </h1>
-                            </div>
-                            <p className="text-[10px] text-white/30 uppercase tracking-widest">
-                                {isRTL ? 'لوحة تحكم حصرية للمشرفين' : 'Admin exclusive control panel'}
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Stats Row */}
-                    <div className="hidden md:flex items-center gap-4">
-                        <div className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-xl">
-                            <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-red-400">
-                                {liveSessions} {isRTL ? 'مباشر' : 'LIVE'}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-                            <Clock className="w-3 h-3 text-blue-400" />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">
-                                {upcomingSessions} {isRTL ? 'قادم' : 'UPCOMING'}
-                            </span>
-                        </div>
-                        <motion.button
-                            whileHover={{ scale: 1.03 }}
-                            whileTap={{ scale: 0.97 }}
-                            onClick={() => { resetForm(); setIsModalOpen(true); }}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-orange-500 hover:bg-orange-400 text-black font-black uppercase text-[10px] tracking-widest rounded-xl transition-colors"
-                        >
-                            <Plus className="w-4 h-4" />
-                            {isRTL ? 'جلسة جديدة' : 'NEW SESSION'}
-                        </motion.button>
-                    </div>
-                    {/* Mobile create button */}
-                    <button
+            <AdminPageShell
+                icon={Radio}
+                accentColor="red"
+                title={isRTL ? 'المزادات المباشرة' : 'LIVE AUCTIONS'}
+                titleEn="LIVE AUCTION CONTROL"
+                subtitle={isRTL ? 'إدارة جلسات البث المباشر واستيراد السيارات من المواقع الخارجية' : 'Manage live sessions and import cars from external sources'}
+                isRTL={isRTL}
+                badge={liveSessions > 0 ? (isRTL ? `${liveSessions} مباشر` : `${liveSessions} LIVE`) : undefined}
+                stats={[
+                    { label: isRTL ? 'مباشر الآن' : 'LIVE NOW', value: liveSessions, color: liveSessions > 0 ? 'text-red-400' : 'text-white/30' },
+                    { label: isRTL ? 'قادم' : 'UPCOMING', value: upcomingSessions, color: 'text-blue-400' },
+                    { label: isRTL ? 'منتهي' : 'ENDED', value: endedSessions, color: 'text-white/30' },
+                    { label: isRTL ? 'الكل' : 'TOTAL', value: sessions.length, color: 'text-white/50' },
+                ]}
+                actions={
+                    <motion.button
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
                         onClick={() => { resetForm(); setIsModalOpen(true); }}
-                        className="md:hidden p-3 bg-orange-500 rounded-xl"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-red-500 hover:bg-red-400 text-white font-black uppercase text-[11px] tracking-widest rounded-xl transition-colors shadow-[0_0_20px_rgba(239,68,68,0.3)]"
                     >
-                        <Plus className="w-5 h-5 text-black" />
-                    </button>
-                </div>
-            </div>
+                        <Plus className="w-4 h-4" />
+                        {isRTL ? 'جلسة جديدة' : 'NEW SESSION'}
+                    </motion.button>
+                }
+            >
 
-            {/* ── How It Works Banner ── */}
-            <div className="px-6 lg:px-10 pt-6">
-                <div className="max-w-7xl mx-auto bg-white/[0.02] border border-white/5 rounded-2xl p-5 flex flex-wrap items-center gap-6">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-[11px] font-black text-orange-400">1</div>
-                        <span className="text-[11px] text-white/50 font-medium">{isRTL ? 'أنشئ جلسة جديدة' : 'Create Session'}</span>
-                    </div>
-                    <div className="w-8 h-px bg-white/10 hidden sm:block" />
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-[11px] font-black text-orange-400">2</div>
-                        <span className="text-[11px] text-white/50 font-medium">{isRTL ? 'أدخل رابط المزاد الخارجي واحفظ' : 'Add External URL & Save'}</span>
-                    </div>
-                    <div className="w-8 h-px bg-white/10 hidden sm:block" />
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-[11px] font-black text-orange-400">3</div>
-                        <span className="text-[11px] text-white/50 font-medium">{isRTL ? 'اضغط "استيراد" لجلب السيارات' : 'Click "Import" to fetch cars'}</span>
-                    </div>
-                    <div className="w-8 h-px bg-white/10 hidden sm:block" />
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-[11px] font-black text-orange-400">4</div>
-                        <span className="text-[11px] text-white/50 font-medium">{isRTL ? 'ابدأ البث المباشر' : 'Go Live!'}</span>
+                {/* ── How It Works Wizard ── */}
+                <div className="bg-white/[0.02] border border-white/[0.05] rounded-2xl p-5 mb-6">
+                    <p className="text-[9px] text-white/25 uppercase tracking-widest font-black mb-4">{isRTL ? 'كيف يعمل؟' : 'HOW IT WORKS'}</p>
+                    <div className="flex flex-wrap items-center gap-4">
+                        {[
+                            { n: 1, ar: 'أنشئ جلسة جديدة', en: 'Create Session' },
+                            { n: 2, ar: 'أدخل رابط المزاد الخارجي واحفظ', en: 'Add External URL & Save' },
+                            { n: 3, ar: 'اضغط "استيراد" لجلب السيارات', en: 'Click Import to fetch cars' },
+                            { n: 4, ar: 'ابدأ البث المباشر', en: 'Go Live!' },
+                        ].map((step, i, arr) => (
+                            <>
+                                <div key={step.n} className="flex items-center gap-2.5">
+                                    <div className="w-7 h-7 rounded-full bg-red-500/15 border border-red-500/25 flex items-center justify-center text-[10px] font-black text-red-400">{step.n}</div>
+                                    <span className="text-[11px] text-white/50 font-medium">{isRTL ? step.ar : step.en}</span>
+                                </div>
+                                {i < arr.length - 1 && <div className="w-6 h-px bg-white/10 hidden sm:block" />}
+                            </>
+                        ))}
                     </div>
                 </div>
-            </div>
 
-            {/* ── Sessions List ── */}
-            <div className="px-6 lg:px-10 py-6">
-                <div className="max-w-7xl mx-auto space-y-4">
+                {/* ── Sessions List ── */}
+                <div className="space-y-4">
+
 
                     {isLoading && sessions.length === 0 && (
                         <div className="flex flex-col items-center justify-center py-24 gap-4">
@@ -553,7 +478,8 @@ export default function AdminLiveAuctions() {
                         ))}
                     </AnimatePresence>
                 </div>
-            </div>
+
+            </AdminPageShell>
 
             {/* ══════════════════════════════════════════
                 SESSION MODAL (Create / Edit)
