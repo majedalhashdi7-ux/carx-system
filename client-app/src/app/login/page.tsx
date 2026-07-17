@@ -52,7 +52,7 @@ function HMCarLogin() {
     const [showRoleSwitcher, setShowRoleSwitcher] = useState(false); // إظهار محول الأدوار (عميل/مدير)
 
     const { socket, isConnected } = useSocket();
-    const { user } = useAuth();
+    const { user, login: authLogin } = useAuth();
     const _DEV_FAKE = process.env.NEXT_PUBLIC_ENABLE_DEV_ADMIN === '1';
 
     // عند تحميل الصفحة للمرة الأولى
@@ -146,16 +146,30 @@ function HMCarLogin() {
             }
 
             if (response.success) {
-                // حفظ التوكن وبيانات المستخدم في التخزين المحلي (LocalStorage)
-                localStorage.setItem('hm_token', response.token);
-                localStorage.setItem('hm_user', JSON.stringify(response.user));
-                const savedRole = response.user?.role || 'buyer';
-                localStorage.setItem('hm_user_role', savedRole);
+                // استخدام AuthContext.login لتحديث الحالة فوراً عبر التطبيق + حفظ في localStorage
+                authLogin(response.token, response.user);
 
-                // حفظ في Cookie للـ middleware - لضمان حماية المسارات من جهة الخادم (Server-side)
-                const maxAge = rememberMe ? 604800 : 86400; // أسبوع في حال تذكرني، أو يوم واحد
-                document.cookie = `hm_token=${response.token}; path=/; max-age=${maxAge}; SameSite=Lax`;
-                document.cookie = `hm_user_role=${savedRole}; path=/; max-age=${maxAge}; SameSite=Lax`;
+                // حفظ أو مسح بيانات "تذكرني"
+                if (rememberMe) {
+                    try {
+                        localStorage.setItem('hm_remember', JSON.stringify({
+                            identifier: identifier,
+                            password: formData.password,
+                            role: role
+                        }));
+                    } catch (e) { }
+                } else {
+                    try {
+                        localStorage.removeItem('hm_remember');
+                    } catch (e) { }
+                }
+
+                // تمديد الكوكيز إذا اختار "تذكرني"
+                if (rememberMe) {
+                    const maxAge = 604800; // أسبوع
+                    document.cookie = `hm_token=${response.token}; path=/; max-age=${maxAge}; SameSite=Lax`;
+                    document.cookie = `hm_user_role=${response.user?.role || 'buyer'}; path=/; max-age=${maxAge}; SameSite=Lax`;
+                }
                 
                 if (isRegister && role === 'buyer') {
                     setSuccessMessage(isRTL ? 'تم إنشاء حسابك بنجاح! جاري الدخول...' : 'Account created! Logging in...');
@@ -173,7 +187,6 @@ function HMCarLogin() {
                     } else if (userRole === 'admin' || userRole === 'super_admin' || userRole === 'manager') {
                         window.location.href = "/admin/dashboard";
                     } else {
-                        // إذا كان العميل يستخدم التطبيق، نوجهه للرئيسية (AppHome) المخصصة للتطبيق
                         const isApp = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
                         window.location.href = isApp ? "/" : "/client/dashboard";
                     }

@@ -70,7 +70,7 @@ export default function ClientSettingsPage() {
     const handleSetup2FA = async () => {
         try {
             setSaving(true);
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('hm_token');
             const res = await fetch('/api/v2/auth/2fa/setup', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -91,7 +91,7 @@ export default function ClientSettingsPage() {
     const handleEnable2FA = async () => {
         try {
             setSaving(true);
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('hm_token');
             const res = await fetch('/api/v2/auth/2fa/enable', {
                 method: 'POST',
                 headers: { 

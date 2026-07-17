@@ -6,7 +6,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { MessageCircle, X, ExternalLink, ChevronLeft, ShieldCheck, Tag, AlertTriangle } from "lucide-react";
+import { MessageCircle, X, ExternalLink, ChevronLeft, ShieldCheck, Tag, AlertTriangle, Globe } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/LanguageContext";
@@ -138,14 +138,27 @@ export default function LiveAuctionDetails() {
                             <h1 className="text-base md:text-2xl font-black italic uppercase tracking-tighter truncate">{session.title}</h1>
                         </div>
                     </div>
-                    <a
-                        href={`https://wa.me/${(session.whatsappNumber || globalWhatsapp).replace(/[^0-9]/g, '')}`}
-                        target="_blank"
-                        className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-green-500/10 border border-green-500/20 rounded-xl hover:bg-green-500/20 transition-all text-green-400 text-[10px] font-black uppercase tracking-widest shrink-0"
-                    >
-                        <MessageCircle className="w-4 h-4" />
-                        {isRTL ? 'تحدث معنا' : 'TALK TO US'}
-                    </a>
+                    <div className="hidden md:flex items-center gap-3 shrink-0">
+                        {session.externalUrl && (
+                            <a
+                                href={session.externalUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 px-4 py-2.5 bg-orange-500/10 border border-orange-500/20 rounded-xl hover:bg-orange-500/20 transition-all text-orange-400 text-[10px] font-black uppercase tracking-widest"
+                            >
+                                <Globe className="w-4 h-4" />
+                                {isRTL ? 'موقع المزاد' : 'AUCTION SITE'}
+                            </a>
+                        )}
+                        <a
+                            href={`https://wa.me/${(session.whatsappNumber || globalWhatsapp).replace(/[^0-9]/g, '')}`}
+                            target="_blank"
+                            className="flex items-center gap-2 px-4 py-2.5 bg-green-500/10 border border-green-500/20 rounded-xl hover:bg-green-500/20 transition-all text-green-400 text-[10px] font-black uppercase tracking-widest"
+                        >
+                            <MessageCircle className="w-4 h-4" />
+                            {isRTL ? 'تحدث معنا' : 'TALK TO US'}
+                        </a>
+                    </div>
                 </div>
             </div>
 
@@ -274,6 +287,27 @@ export default function LiveAuctionDetails() {
                                 </div>
                             </div>
                         </div>
+
+                        {/* External Auction Site Link */}
+                        {session.externalUrl && (
+                            <div className="pt-8 border-t border-white/5">
+                                <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.4em] mb-4 block">
+                                    {isRTL ? 'رابط المزاد الأصلي' : 'Original Auction'}
+                                </span>
+                                <a
+                                    href={session.externalUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-full py-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex items-center justify-center gap-3 text-orange-400 hover:bg-orange-500/20 transition-all"
+                                >
+                                    <Globe className="w-5 h-5" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">
+                                        {isRTL ? 'زيارة موقع المزاد' : 'VISIT AUCTION SITE'}
+                                    </span>
+                                    <ExternalLink className="w-3.5 h-3.5 opacity-60" />
+                                </a>
+                            </div>
+                        )}
 
                         <div className="pt-8 border-t border-white/5">
                             <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.4em] mb-6 block">Support</span>

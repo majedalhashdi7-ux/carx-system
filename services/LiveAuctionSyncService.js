@@ -112,6 +112,37 @@ async function syncSession(session) {
     }
 
     console.log(`[Cron Sync] Syncing session ${session._id} (${session.title}) from URL: ${url}`);
+    
+    // فحص ما إذا كان المزاد الخارجي قد انتهى
+    let hasEnded = false;
+    try {
+        const response = await axios.get(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept-Language': 'ar,en-US;q=0.9,en;q=0.8,ko;q=0.7'
+            },
+            timeout: 20000
+        });
+        const $ = cheerio.load(response.data);
+        const pageText = $.text().toLowerCase();
+        
+        // كلمات تدل على انتهاء المزاد (عربي، إنجليزي، كوري)
+        hasEnded = ['ended', 'closed', '종료', 'انتهى', 'مغلق', 'complete', 'finished', 'expired', 'sale complete'].some(kw => pageText.includes(kw));
+    } catch (err) {
+        console.warn(`[Cron Sync] Fetch failed while checking ended status for session ${session._id}:`, err.message);
+        if (err.response && (err.response.status === 404 || err.response.status === 410)) {
+            hasEnded = true;
+        }
+    }
+
+    if (hasEnded) {
+        console.log(`[Cron Sync] Live auction has ended for session ${session._id}. Stopping auction.`);
+        session.status = 'ended';
+        session.endTime = new Date();
+        await session.save();
+        return true;
+    }
+
     let importedCars = [];
 
     // 1. محاولة الكشط كصفحة تفاصيل سيارة واحدة أولاً
@@ -142,6 +173,15 @@ async function syncSession(session) {
         }
     }
 
+    // إذا اختفت كل السيارات وكان المزاد يحتوي على سيارات سابقاً، فهذا يعني أن المزاد قد انتهى أو تمت تصفيته
+    if (importedCars.length === 0 && session.cars && session.cars.length > 0) {
+        console.log(`[Cron Sync] Session ${session._id} has no cars remaining. Stopping auction.`);
+        session.status = 'ended';
+        session.endTime = new Date();
+        await session.save();
+        return true;
+    }
+
     if (importedCars.length === 0) {
         console.warn(`[Cron Sync] No cars scraped for session ${session._id}`);
         return false;
@@ -158,7 +198,7 @@ async function syncSession(session) {
         }
     }
 
-    // حفظ السيارات الجديدة في الجلسة
+    // حفظ السيارات الجديدة في الجلسة (السيارات التي اختفت سيتم حذفها تلقائياً لأن القائمة تُستبدل بالكامل)
     session.cars = importedCars;
     await session.save();
     console.log(`[Cron Sync] Successfully synced ${importedCars.length} cars for session ${session._id}`);

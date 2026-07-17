@@ -192,7 +192,16 @@ export const api = {
     delete: (id: string) => fetchAPI<any>(`/live-auctions/${id}`, { method: 'DELETE' }),
     start: (id: string) => fetchAPI<any>(`/live-auctions/${id}/start`, { method: 'POST' }),
     end: (id: string) => fetchAPI<any>(`/live-auctions/${id}/end`, { method: 'POST' }),
-    importExternal: (id: string) => fetchAPI<any>(`/live-auctions/${id}/import-external`, { method: 'POST' }),
+    // استيراد السيارات من الرابط الخارجي مع خيار إلغاء السيارات المختفية
+    importExternal: (id: string, removeMissing = true) => fetchAPI<any>(`/live-auctions/${id}/import-external`, {
+      method: 'POST',
+      body: JSON.stringify({ removeMissing })
+    }),
+    // تفعيل/إيقاف التحديث التلقائي كل 24 ساعة
+    toggleAutoSync: (id: string, enable: boolean) => fetchAPI<any>(`/live-auctions/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ autoSync: enable })
+    }),
   },
   liveAuctionRequests: {
     create: (data: any) => fetchAPI<any>('/live-auction-requests', {

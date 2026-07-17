@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 /**
- * middleware.ts - نظام حماية المسارات لـ HM CAR
+ * proxy.ts - نظام حماية المسارات لـ HM CAR
  * يعمل كـ Edge Middleware قبل تحميل أي صفحة
  */
 

@@ -13,6 +13,7 @@ import {
     LogOut
 } from "lucide-react";
 import { useLanguage } from "@/lib/LanguageContext";
+import { useAuth } from "@/lib/AuthContext";
 import { api } from "@/lib/api-original";
 import ClientPageHeader from "@/components/ClientPageHeader";
 
@@ -20,6 +21,7 @@ const rawText = (value: string) => value;
 
 export default function ClientProfilePage() {
     const { isRTL } = useLanguage();
+    const { logout } = useAuth();
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [userData, setUserData] = useState({
@@ -107,9 +109,7 @@ export default function ClientProfilePage() {
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('hm_token');
-        localStorage.removeItem('hm_user');
-        window.location.href = '/login';
+        logout();
     };
 
     return (

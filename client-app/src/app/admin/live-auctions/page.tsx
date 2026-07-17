@@ -1,13 +1,85 @@
 'use client';
 
+// [[ARABIC_HEADER]] صفحة الأدمن لإدارة المزادات المباشرة - منفصلة تماماً عن صفحة العميل
+// الـ AdminLayout يحمي هذه الصفحة ولا يمكن الوصول إليها إلا بصلاحيات admin/super_admin/manager
+
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, Edit2, ChevronLeft, X, Link as LinkIcon, Play, Square, ExternalLink, Image as ImageIcon, RefreshCw } from "lucide-react";
-import { useState, useEffect } from "react";
+import {
+    Plus, Trash2, Edit2, ChevronLeft, X, Link as LinkIcon,
+    Play, Square, ExternalLink, Image as ImageIcon, RefreshCw,
+    CheckCircle, AlertCircle, Clock, Zap, ToggleLeft, ToggleRight,
+    Save, Download, Eye, Radio, Info
+} from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/LanguageContext";
 import Link from "next/link";
 import { api } from "@/lib/api-original";
 
+// =============================================
+// Toast Notification Component
+// =============================================
+type ToastType = 'success' | 'error' | 'info' | 'loading';
+interface Toast {
+    id: number;
+    type: ToastType;
+    message: string;
+}
+
+function ToastContainer({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id: number) => void }) {
+    return (
+        <div className="fixed top-6 right-6 z-[999] flex flex-col gap-3 pointer-events-none">
+            <AnimatePresence>
+                {toasts.map(t => (
+                    <motion.div
+                        key={t.id}
+                        initial={{ opacity: 0, x: 80, scale: 0.9 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        exit={{ opacity: 0, x: 80, scale: 0.9 }}
+                        className={cn(
+                            "pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-2xl border text-sm font-bold shadow-2xl min-w-[280px] max-w-[380px]",
+                            t.type === 'success' && "bg-emerald-950 border-emerald-500/40 text-emerald-300",
+                            t.type === 'error' && "bg-red-950 border-red-500/40 text-red-300",
+                            t.type === 'info' && "bg-blue-950 border-blue-500/40 text-blue-300",
+                            t.type === 'loading' && "bg-zinc-900 border-white/10 text-white/60",
+                        )}
+                    >
+                        {t.type === 'success' && <CheckCircle className="w-5 h-5 shrink-0" />}
+                        {t.type === 'error' && <AlertCircle className="w-5 h-5 shrink-0" />}
+                        {t.type === 'info' && <Info className="w-5 h-5 shrink-0" />}
+                        {t.type === 'loading' && <RefreshCw className="w-5 h-5 shrink-0 animate-spin" />}
+                        <span className="flex-1 text-[13px] leading-tight">{t.message}</span>
+                        <button onClick={() => onDismiss(t.id)} className="opacity-40 hover:opacity-100 transition-opacity">
+                            <X className="w-4 h-4" />
+                        </button>
+                    </motion.div>
+                ))}
+            </AnimatePresence>
+        </div>
+    );
+}
+
+// =============================================
+// Status Badge Component
+// =============================================
+function StatusBadge({ status, isRTL }: { status: string; isRTL: boolean }) {
+    const map: Record<string, { label: string; labelAr: string; color: string; dot: string }> = {
+        live: { label: 'LIVE', labelAr: 'مباشر الآن', color: 'bg-red-500/15 text-red-400 border-red-500/30', dot: 'bg-red-400 animate-pulse' },
+        upcoming: { label: 'UPCOMING', labelAr: 'قادم', color: 'bg-blue-500/15 text-blue-400 border-blue-500/30', dot: 'bg-blue-400' },
+        ended: { label: 'ENDED', labelAr: 'منتهي', color: 'bg-white/5 text-white/30 border-white/10', dot: 'bg-white/20' },
+    };
+    const s = map[status] || map['upcoming'];
+    return (
+        <span className={cn("flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border", s.color)}>
+            <span className={cn("w-1.5 h-1.5 rounded-full", s.dot)} />
+            {isRTL ? s.labelAr : s.label}
+        </span>
+    );
+}
+
+// =============================================
+// Main Admin Component
+// =============================================
 export default function AdminLiveAuctions() {
     const { isRTL } = useLanguage();
     const [sessions, setSessions] = useState<any[]>([]);
@@ -15,21 +87,34 @@ export default function AdminLiveAuctions() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [isImporting, setIsImporting] = useState<string | null>(null);
+    const [isStarting, setIsStarting] = useState<string | null>(null);
+    const [toasts, setToasts] = useState<Toast[]>([]);
+    let toastCounter = 0;
 
-    // Form State
+    // ── Toast helpers ──
+    const addToast = useCallback((type: ToastType, message: string, duration = 4000) => {
+        const id = ++toastCounter;
+        setToasts(prev => [...prev, { id, type, message }]);
+        if (duration > 0) setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), duration);
+        return id;
+    }, []);
+
+    const dismissToast = useCallback((id: number) => {
+        setToasts(prev => prev.filter(t => t.id !== id));
+    }, []);
+
+    // ── Form State ──
     const [formData, setFormData] = useState({
         title: '',
         externalUrl: '',
         whatsappNumber: '',
-        auctionUsername: '', // [[ARABIC_COMMENT]] اسم المستخدم للمزاد الخارجي
-        auctionPassword: '', // [[ARABIC_COMMENT]] كلمة السر للمزاد الخارجي
+        auctionUsername: '',
+        auctionPassword: '',
         autoSync: false,
         cars: [] as any[]
     });
 
-    useEffect(() => {
-        loadSessions();
-    }, []);
+    useEffect(() => { loadSessions(); }, []);
 
     const loadSessions = async () => {
         setIsLoading(true);
@@ -37,14 +122,18 @@ export default function AdminLiveAuctions() {
             const res = await api.liveAuctions.list();
             if (res.success) setSessions(res.data);
         } catch (e) {
-            console.error(e);
+            addToast('error', isRTL ? 'فشل تحميل الجلسات' : 'Failed to load sessions');
         } finally {
             setIsLoading(false);
         }
     };
 
     const handleSave = async () => {
-        if (!formData.title) return alert(isRTL ? "يرجى إدخال العنوان" : "Title is required");
+        if (!formData.title) {
+            addToast('error', isRTL ? 'يرجى إدخال عنوان الجلسة' : 'Session title is required');
+            return;
+        }
+        const loadId = addToast('loading', isRTL ? 'جاري الحفظ...' : 'Saving...', 0);
         setIsLoading(true);
         try {
             if (editingId) {
@@ -52,50 +141,78 @@ export default function AdminLiveAuctions() {
             } else {
                 await api.liveAuctions.create(formData);
             }
+            dismissToast(loadId);
+            addToast('success', isRTL ? 'تم الحفظ بنجاح ✓' : 'Saved successfully ✓');
             setIsModalOpen(false);
             resetForm();
             loadSessions();
-        } catch (e) {
-            console.error(e);
+        } catch (e: any) {
+            dismissToast(loadId);
+            addToast('error', e.message || (isRTL ? 'فشل الحفظ' : 'Save failed'));
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm(isRTL ? "هل أنت متأكد؟" : "Are you sure?")) return;
+    const handleDelete = async (id: string, title: string) => {
+        if (!confirm(isRTL ? `هل أنت متأكد من حذف جلسة "${title}"؟` : `Delete session "${title}"?`)) return;
+        const loadId = addToast('loading', isRTL ? 'جاري الحذف...' : 'Deleting...', 0);
         try {
             await api.liveAuctions.delete(id);
+            dismissToast(loadId);
+            addToast('success', isRTL ? 'تم الحذف بنجاح' : 'Deleted successfully');
             loadSessions();
-        } catch (e) {
-            console.error(e);
+        } catch (e: any) {
+            dismissToast(loadId);
+            addToast('error', e.message || (isRTL ? 'فشل الحذف' : 'Delete failed'));
         }
     };
 
     const handleStatus = async (id: string, action: 'start' | 'end') => {
+        setIsStarting(id);
+        const loadId = addToast('loading', isRTL
+            ? (action === 'start' ? 'جاري بدء المزاد...' : 'جاري إيقاف المزاد...')
+            : (action === 'start' ? 'Starting auction...' : 'Stopping auction...'), 0);
         try {
             if (action === 'start') await api.liveAuctions.start(id);
             else await api.liveAuctions.end(id);
+            dismissToast(loadId);
+            addToast('success', isRTL
+                ? (action === 'start' ? '🔴 تم بدء البث المباشر وإخطار العملاء' : '⏹ تم إيقاف المزاد')
+                : (action === 'start' ? '🔴 Auction started & clients notified' : '⏹ Auction stopped'));
             loadSessions();
-        } catch (e) {
-            console.error(e);
+        } catch (e: any) {
+            dismissToast(loadId);
+            addToast('error', e.message || 'Error');
+        } finally {
+            setIsStarting(null);
         }
     };
 
     const handleImport = async (id: string) => {
-        if (!confirm(isRTL ? "هل تريد بدء استيراد السيارات من هذا الرابط؟ قد يستغرق هذا دقيقة." : "Do you want to start importing cars from this link? This may take a minute.")) return;
+        const session = sessions.find(s => s._id === id);
+        if (!session?.externalUrl) {
+            addToast('error', isRTL ? 'لا يوجد رابط خارجي. أضف الرابط أولاً ثم احفظ.' : 'No external URL. Add URL first and save.');
+            return;
+        }
+        if (!confirm(isRTL
+            ? `سيتم استيراد السيارات من الرابط الخارجي. قد يستغرق هذا دقيقة. هل تريد المتابعة؟`
+            : `Import cars from external URL? This may take a minute. Continue?`)) return;
+
         setIsImporting(id);
+        const loadId = addToast('loading', isRTL ? 'جاري استيراد السيارات من الرابط...' : 'Importing cars from URL...', 0);
         try {
             const res = await (api.liveAuctions as any).importExternal(id);
+            dismissToast(loadId);
             if (res.success) {
-                alert(isRTL ? `تم استيراد ${res.message || 'السيارات'} بنجاح!` : "Cars imported successfully!");
+                addToast('success', isRTL ? `✅ ${res.message}` : `✅ Cars imported successfully!`);
                 loadSessions();
             } else {
-                alert(res.error || (isRTL ? "فشل الاستيراد، تأكد من صحة الرابط." : "Import failed, verify link."));
+                addToast('error', res.error || (isRTL ? 'فشل الاستيراد. تأكد من صحة الرابط.' : 'Import failed. Check the URL.'));
             }
         } catch (e: any) {
-            console.error(e);
-            alert(isRTL ? "حدث خطأ أثناء الاتصال بالسيرفر للاستيراد." : "Error calling import service.");
+            dismissToast(loadId);
+            addToast('error', isRTL ? 'خطأ في الاتصال بالخادم أثناء الاستيراد.' : 'Server connection error during import.');
         } finally {
             setIsImporting(null);
         }
@@ -106,11 +223,22 @@ export default function AdminLiveAuctions() {
         setEditingId(null);
     };
 
-    const addCar = () => {
+    const openEdit = (session: any) => {
         setFormData({
-            ...formData,
-            cars: [...formData.cars, { title: '', images: [], condition: '', description: '', priceEstimate: '' }]
+            title: session.title || '',
+            externalUrl: session.externalUrl || '',
+            whatsappNumber: session.whatsappNumber || '',
+            auctionUsername: session.auctionUsername || '',
+            auctionPassword: session.auctionPassword || '',
+            autoSync: session.autoSync || false,
+            cars: session.cars || []
         });
+        setEditingId(session._id);
+        setIsModalOpen(true);
+    };
+
+    const addCar = () => {
+        setFormData({ ...formData, cars: [...formData.cars, { title: '', images: [], condition: '', description: '', priceEstimate: '' }] });
     };
 
     const removeCar = (index: number) => {
@@ -127,233 +255,639 @@ export default function AdminLiveAuctions() {
 
     const handleImageUpload = async (index: number, files: FileList | null) => {
         if (!files) return;
-        const uploadPromises = Array.from(files).map(file => {
-            const fd = new FormData();
-            fd.append('image', file);
-            return api.upload.image(fd);
-        });
-
+        const loadId = addToast('loading', isRTL ? 'جاري رفع الصور...' : 'Uploading images...', 0);
         try {
-            const results = await Promise.all(uploadPromises);
-            const urls = results.map(r => r.url);
+            const results = await Promise.all(Array.from(files).map(file => {
+                const fd = new FormData();
+                fd.append('image', file);
+                return api.upload.image(fd);
+            }));
+            const urls = results.map((r: any) => r.url);
             updateCar(index, 'images', [...formData.cars[index].images, ...urls]);
+            dismissToast(loadId);
+            addToast('success', isRTL ? `تم رفع ${urls.length} صورة` : `${urls.length} image(s) uploaded`);
         } catch (e) {
-            console.error(e);
-            alert("Image upload failed");
+            dismissToast(loadId);
+            addToast('error', isRTL ? 'فشل رفع الصور' : 'Image upload failed');
         }
     };
 
+    // Counts
+    const liveSessions = sessions.filter(s => s.status === 'live').length;
+    const upcomingSessions = sessions.filter(s => s.status === 'upcoming').length;
+
     return (
-        <div className="min-h-screen bg-black text-white p-6 md:p-12 lg:p-20">
-            <header className="flex justify-between items-center mb-12">
-                <div>
-                    <Link href="/admin/dashboard" className="flex items-center gap-2 text-white/40 hover:text-white mb-4 transition-colors">
-                        <ChevronLeft className={cn("w-4 h-4", isRTL && "rotate-180")} />
-                        <span className="text-[10px] font-black uppercase tracking-widest">{isRTL ? "العودة" : "BACK"}</span>
-                    </Link>
-                    <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter">
-                        {isRTL ? "المزادات المباشرة" : "LIVE SHOWROOM"}
-                    </h1>
-                </div>
-                <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => { resetForm(); setIsModalOpen(true); }}
-                    className="px-8 py-4 bg-cinematic-neon-blue text-black font-black uppercase text-[10px] tracking-widest rounded-2xl flex items-center gap-3 shadow-[0_0_30px_rgba(0,240,255,0.3)]"
-                >
-                    <Plus className="w-4 h-4" />
-                    {isRTL ? "إنشاء جلسة" : "CREATE SESSION"}
-                </motion.button>
-            </header>
+        <div className="min-h-screen bg-[#070711] text-white" dir={isRTL ? 'rtl' : 'ltr'}>
+            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
-            <div className="grid grid-cols-1 gap-6">
-                {sessions.map(session => (
-                    <div key={session._id} className="glass-card p-8 border-white/5 bg-white/[0.01] flex flex-col md:flex-row justify-between items-center gap-8 group">
-                        <div className="flex-1 space-y-2">
-                            <div className="flex items-center gap-3">
-                                <span className={cn(
-                                    "px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest",
-                                    session.status === 'live' ? "bg-cinematic-neon-red/20 text-cinematic-neon-red border border-cinematic-neon-red/40" :
-                                        session.status === 'ended' ? "bg-white/5 text-white/40 border border-white/10" : "bg-cinematic-neon-blue/20 text-cinematic-neon-blue border border-cinematic-neon-blue/40"
-                                )}>
-                                    {session.status}
-                                </span>
-                                <h3 className="text-2xl font-black uppercase italic tracking-tighter">{session.title}</h3>
+            {/* ── Page Header ── */}
+            <div className="sticky top-0 z-30 bg-[#070711]/95 backdrop-blur-xl border-b border-white/5 px-6 py-4 lg:px-10">
+                <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <Link href="/admin/dashboard" className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 transition-all">
+                            <ChevronLeft className={cn("w-5 h-5 text-white/40", isRTL && "rotate-180")} />
+                        </Link>
+                        <div>
+                            <div className="flex items-center gap-2 mb-0.5">
+                                <Radio className="w-4 h-4 text-red-400" />
+                                <h1 className="text-xl font-black uppercase tracking-tighter">
+                                    {isRTL ? 'إدارة المزادات المباشرة' : 'Live Auctions Admin'}
+                                </h1>
                             </div>
-                            <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
-                                <LinkIcon className="w-3 h-3" /> {session.externalUrl || "Manual Entries Only"}
+                            <p className="text-[10px] text-white/30 uppercase tracking-widest">
+                                {isRTL ? 'لوحة تحكم حصرية للمشرفين' : 'Admin exclusive control panel'}
                             </p>
-                            <div className="flex gap-4 pt-2">
-                                <div className="text-[10px] uppercase tracking-widest bg-white/5 px-3 py-1 rounded border border-white/5">
-                                    <span className="text-white/40">{isRTL ? "السيارات:" : "CARS:"}</span> {session.cars?.length || 0}
-                                </div>
-                                <div className={cn(
-                                    "text-[10px] uppercase tracking-widest px-3 py-1 rounded border",
-                                    session.autoSync 
-                                        ? "bg-cinematic-neon-blue/10 text-cinematic-neon-blue border-cinematic-neon-blue/20" 
-                                        : "bg-white/5 text-white/40 border-white/5"
-                                )}>
-                                    <span className="text-white/40">{isRTL ? "التحديث:" : "SYNC:"}</span> {session.autoSync ? (isRTL ? "تلقائي (24س)" : "AUTO (24h)") : (isRTL ? "يدوي" : "MANUAL")}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 w-full md:w-auto">
-                            {session.status !== 'live' ? (
-                                <button onClick={() => handleStatus(session._id, 'start')} className="p-4 bg-white/5 rounded-2xl border border-white/5 text-cinematic-neon-blue hover:bg-cinematic-neon-blue/10 transition-all flex flex-col items-center gap-1">
-                                    <Play className="w-5 h-5" />
-                                    <span className="text-[7px] font-black uppercase">START</span>
-                                </button>
-                            ) : (
-                                <button onClick={() => handleStatus(session._id, 'end')} className="p-4 bg-white/5 rounded-2xl border border-white/5 text-cinematic-neon-red hover:bg-cinematic-neon-red/10 transition-all flex flex-col items-center gap-1">
-                                    <Square className="w-5 h-5" />
-                                    <span className="text-[7px] font-black uppercase">STOP</span>
-                                </button>
-                            )}
-
-                            {/* زر الاستيراد التلقائي */}
-                            <button 
-                                onClick={() => handleImport(session._id)} 
-                                disabled={isImporting === session._id || !session.externalUrl}
-                                className={cn(
-                                    "p-4 bg-white/5 rounded-2xl border border-white/5 text-luxury-gold hover:bg-luxury-gold/15 transition-all flex flex-col items-center gap-1 disabled:opacity-30 disabled:hover:bg-transparent",
-                                    isImporting === session._id && "animate-pulse"
-                                )}
-                            >
-                                <RefreshCw className={cn("w-5 h-5", isImporting === session._id && "animate-spin")} />
-                                <span className="text-[7px] font-black uppercase">{isRTL ? "مزامنة" : "SYNC"}</span>
-                            </button>
-
-                            <button onClick={() => { setFormData(session); setEditingId(session._id); setIsModalOpen(true); }} className="p-4 bg-white/5 rounded-2xl border border-white/5 text-white/60 hover:text-white transition-all flex flex-col items-center gap-1">
-                                <Edit2 className="w-5 h-5" />
-                                <span className="text-[7px] font-black uppercase">EDIT</span>
-                            </button>
-
-                            <button onClick={() => handleDelete(session._id)} className="p-4 bg-white/5 rounded-2xl border border-white/5 text-white/20 hover:text-cinematic-neon-red transition-all flex flex-col items-center gap-1">
-                                <Trash2 className="w-5 h-5" />
-                                <span className="text-[7px] font-black uppercase">DEL</span>
-                            </button>
-
-                            <Link href={`/auctions/live/${session._id}`} target="_blank" className="p-4 bg-white/5 rounded-2xl border border-white/5 text-white/40 hover:text-white transition-all flex flex-col items-center gap-1">
-                                <ExternalLink className="w-5 h-5" />
-                                <span className="text-[7px] font-black uppercase">VIEW</span>
-                            </Link>
                         </div>
                     </div>
-                ))}
+
+                    {/* Stats Row */}
+                    <div className="hidden md:flex items-center gap-4">
+                        <div className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-xl">
+                            <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-red-400">
+                                {liveSessions} {isRTL ? 'مباشر' : 'LIVE'}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                            <Clock className="w-3 h-3 text-blue-400" />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">
+                                {upcomingSessions} {isRTL ? 'قادم' : 'UPCOMING'}
+                            </span>
+                        </div>
+                        <motion.button
+                            whileHover={{ scale: 1.03 }}
+                            whileTap={{ scale: 0.97 }}
+                            onClick={() => { resetForm(); setIsModalOpen(true); }}
+                            className="flex items-center gap-2 px-5 py-2.5 bg-orange-500 hover:bg-orange-400 text-black font-black uppercase text-[10px] tracking-widest rounded-xl transition-colors"
+                        >
+                            <Plus className="w-4 h-4" />
+                            {isRTL ? 'جلسة جديدة' : 'NEW SESSION'}
+                        </motion.button>
+                    </div>
+                    {/* Mobile create button */}
+                    <button
+                        onClick={() => { resetForm(); setIsModalOpen(true); }}
+                        className="md:hidden p-3 bg-orange-500 rounded-xl"
+                    >
+                        <Plus className="w-5 h-5 text-black" />
+                    </button>
+                </div>
             </div>
 
-            {/* Modal */}
+            {/* ── How It Works Banner ── */}
+            <div className="px-6 lg:px-10 pt-6">
+                <div className="max-w-7xl mx-auto bg-white/[0.02] border border-white/5 rounded-2xl p-5 flex flex-wrap items-center gap-6">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-[11px] font-black text-orange-400">1</div>
+                        <span className="text-[11px] text-white/50 font-medium">{isRTL ? 'أنشئ جلسة جديدة' : 'Create Session'}</span>
+                    </div>
+                    <div className="w-8 h-px bg-white/10 hidden sm:block" />
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-[11px] font-black text-orange-400">2</div>
+                        <span className="text-[11px] text-white/50 font-medium">{isRTL ? 'أدخل رابط المزاد الخارجي واحفظ' : 'Add External URL & Save'}</span>
+                    </div>
+                    <div className="w-8 h-px bg-white/10 hidden sm:block" />
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-[11px] font-black text-orange-400">3</div>
+                        <span className="text-[11px] text-white/50 font-medium">{isRTL ? 'اضغط "استيراد" لجلب السيارات' : 'Click "Import" to fetch cars'}</span>
+                    </div>
+                    <div className="w-8 h-px bg-white/10 hidden sm:block" />
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-[11px] font-black text-orange-400">4</div>
+                        <span className="text-[11px] text-white/50 font-medium">{isRTL ? 'ابدأ البث المباشر' : 'Go Live!'}</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* ── Sessions List ── */}
+            <div className="px-6 lg:px-10 py-6">
+                <div className="max-w-7xl mx-auto space-y-4">
+
+                    {isLoading && sessions.length === 0 && (
+                        <div className="flex flex-col items-center justify-center py-24 gap-4">
+                            <RefreshCw className="w-8 h-8 text-white/20 animate-spin" />
+                            <p className="text-white/30 text-xs uppercase tracking-widest">{isRTL ? 'جاري التحميل...' : 'Loading...'}</p>
+                        </div>
+                    )}
+
+                    {!isLoading && sessions.length === 0 && (
+                        <div className="flex flex-col items-center justify-center py-24 gap-6 border border-dashed border-white/10 rounded-3xl">
+                            <Radio className="w-16 h-16 text-white/5" />
+                            <div className="text-center space-y-2">
+                                <h3 className="text-xl font-black uppercase italic text-white/20 tracking-tighter">
+                                    {isRTL ? 'لا توجد جلسات بعد' : 'No Sessions Yet'}
+                                </h3>
+                                <p className="text-white/20 text-xs uppercase tracking-widest">
+                                    {isRTL ? 'أنشئ أول جلسة مزاد مباشر' : 'Create your first live auction session'}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => { resetForm(); setIsModalOpen(true); }}
+                                className="flex items-center gap-2 px-6 py-3 bg-orange-500 text-black font-black uppercase text-xs tracking-widest rounded-xl"
+                            >
+                                <Plus className="w-4 h-4" />
+                                {isRTL ? 'إنشاء جلسة جديدة' : 'CREATE SESSION'}
+                            </button>
+                        </div>
+                    )}
+
+                    <AnimatePresence>
+                        {sessions.map((session, i) => (
+                            <motion.div
+                                key={session._id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ delay: i * 0.04 }}
+                                className={cn(
+                                    "bg-white/[0.02] border rounded-2xl p-6 transition-all",
+                                    session.status === 'live'
+                                        ? "border-red-500/30 bg-red-500/[0.03]"
+                                        : "border-white/5 hover:border-white/10"
+                                )}
+                            >
+                                <div className="flex flex-col lg:flex-row gap-6">
+
+                                    {/* ── Session Info ── */}
+                                    <div className="flex-1 space-y-3 min-w-0">
+                                        <div className="flex flex-wrap items-center gap-3">
+                                            <StatusBadge status={session.status} isRTL={isRTL} />
+                                            <h3 className="text-xl font-black uppercase italic tracking-tighter truncate">
+                                                {session.title}
+                                            </h3>
+                                        </div>
+
+                                        {/* External URL */}
+                                        {session.externalUrl ? (
+                                            <div className="flex items-center gap-2">
+                                                <LinkIcon className="w-3 h-3 text-orange-400 shrink-0" />
+                                                <a
+                                                    href={session.externalUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-orange-400/70 hover:text-orange-400 text-[11px] font-mono truncate transition-colors"
+                                                >
+                                                    {session.externalUrl}
+                                                </a>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2">
+                                                <AlertCircle className="w-3 h-3 text-yellow-500/60 shrink-0" />
+                                                <span className="text-yellow-500/60 text-[11px]">
+                                                    {isRTL ? 'لا يوجد رابط خارجي — أضفه عبر تعديل الجلسة' : 'No external URL — edit session to add one'}
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {/* Stats Row */}
+                                        <div className="flex flex-wrap gap-3 pt-1">
+                                            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg border border-white/5">
+                                                <ImageIcon className="w-3 h-3 text-white/30" />
+                                                <span className="text-[10px] font-bold uppercase tracking-widest text-white/50">
+                                                    {session.cars?.length || 0} {isRTL ? 'سيارة' : 'CARS'}
+                                                </span>
+                                            </div>
+                                            <div className={cn(
+                                                "flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-widest",
+                                                session.autoSync
+                                                    ? "bg-cyan-500/10 border-cyan-500/20 text-cyan-400"
+                                                    : "bg-white/5 border-white/5 text-white/30"
+                                            )}>
+                                                {session.autoSync
+                                                    ? <><ToggleRight className="w-3.5 h-3.5" />{isRTL ? 'تلقائي كل 24 ساعة' : 'AUTO SYNC 24H'}</>
+                                                    : <><ToggleLeft className="w-3.5 h-3.5" />{isRTL ? 'تحديث يدوي' : 'MANUAL SYNC'}</>
+                                                }
+                                            </div>
+                                            {session.whatsappNumber && (
+                                                <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-lg text-[10px] font-bold text-green-400">
+                                                    📱 {session.whatsappNumber}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* ── Action Buttons ── */}
+                                    <div className="flex flex-wrap lg:flex-nowrap items-center gap-2 shrink-0">
+
+                                        {/* Start / Stop */}
+                                        {session.status !== 'live' ? (
+                                            <motion.button
+                                                whileHover={{ scale: 1.05 }}
+                                                whileTap={{ scale: 0.95 }}
+                                                onClick={() => handleStatus(session._id, 'start')}
+                                                disabled={isStarting === session._id}
+                                                className="flex flex-col items-center gap-1 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 hover:bg-red-500/20 transition-all disabled:opacity-40"
+                                            >
+                                                {isStarting === session._id
+                                                    ? <RefreshCw className="w-5 h-5 animate-spin" />
+                                                    : <Play className="w-5 h-5" />
+                                                }
+                                                <span className="text-[7px] font-black uppercase">{isRTL ? 'بث' : 'GO LIVE'}</span>
+                                            </motion.button>
+                                        ) : (
+                                            <motion.button
+                                                whileHover={{ scale: 1.05 }}
+                                                whileTap={{ scale: 0.95 }}
+                                                onClick={() => handleStatus(session._id, 'end')}
+                                                disabled={isStarting === session._id}
+                                                className="flex flex-col items-center gap-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white/40 hover:text-red-400 hover:border-red-500/20 transition-all"
+                                            >
+                                                <Square className="w-5 h-5" />
+                                                <span className="text-[7px] font-black uppercase">{isRTL ? 'إيقاف' : 'STOP'}</span>
+                                            </motion.button>
+                                        )}
+
+                                        {/* Import from URL */}
+                                        <motion.button
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            onClick={() => handleImport(session._id)}
+                                            disabled={isImporting === session._id || !session.externalUrl}
+                                            title={!session.externalUrl ? (isRTL ? 'أضف رابطاً خارجياً أولاً' : 'Add external URL first') : ''}
+                                            className={cn(
+                                                "flex flex-col items-center gap-1 px-4 py-3 rounded-xl border transition-all",
+                                                session.externalUrl
+                                                    ? "bg-orange-500/10 border-orange-500/20 text-orange-400 hover:bg-orange-500/20"
+                                                    : "bg-white/5 border-white/5 text-white/20 cursor-not-allowed",
+                                                isImporting === session._id && "animate-pulse"
+                                            )}
+                                        >
+                                            <Download className={cn("w-5 h-5", isImporting === session._id && "animate-spin")} />
+                                            <span className="text-[7px] font-black uppercase">{isRTL ? 'استيراد' : 'IMPORT'}</span>
+                                        </motion.button>
+
+                                        {/* Edit */}
+                                        <motion.button
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            onClick={() => openEdit(session)}
+                                            className="flex flex-col items-center gap-1 px-4 py-3 bg-white/5 border border-white/5 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all"
+                                        >
+                                            <Edit2 className="w-5 h-5" />
+                                            <span className="text-[7px] font-black uppercase">{isRTL ? 'تعديل' : 'EDIT'}</span>
+                                        </motion.button>
+
+                                        {/* View (client page) */}
+                                        <Link
+                                            href={`/auctions/live/${session._id}`}
+                                            target="_blank"
+                                            className="flex flex-col items-center gap-1 px-4 py-3 bg-white/5 border border-white/5 rounded-xl text-white/40 hover:text-cyan-400 hover:border-cyan-500/20 hover:bg-cyan-500/5 transition-all"
+                                        >
+                                            <Eye className="w-5 h-5" />
+                                            <span className="text-[7px] font-black uppercase">{isRTL ? 'معاينة' : 'VIEW'}</span>
+                                        </Link>
+
+                                        {/* Delete */}
+                                        <motion.button
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            onClick={() => handleDelete(session._id, session.title)}
+                                            className="flex flex-col items-center gap-1 px-4 py-3 bg-white/5 border border-white/5 rounded-xl text-white/20 hover:text-red-400 hover:border-red-500/20 transition-all"
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                            <span className="text-[7px] font-black uppercase">{isRTL ? 'حذف' : 'DEL'}</span>
+                                        </motion.button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
+                </div>
+            </div>
+
+            {/* ══════════════════════════════════════════
+                SESSION MODAL (Create / Edit)
+            ══════════════════════════════════════════ */}
             <AnimatePresence>
                 {isModalOpen && (
-                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl">
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl">
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
-                            className="bg-zinc-950 border border-white/10 rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col relative"
+                            initial={{ opacity: 0, scale: 0.94, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.94, y: 20 }}
+                            className="bg-[#0c0c14] border border-white/10 rounded-3xl w-full max-w-4xl max-h-[92vh] overflow-hidden flex flex-col relative shadow-2xl"
                         >
-                            <button onClick={() => setIsModalOpen(false)} aria-label="Close" className="absolute top-6 right-6 text-white/40 hover:text-white z-10"><X className="w-6 h-6" /></button>
-
-                            <div className="p-8 border-b border-white/5">
-                                <h2 className="text-3xl font-black uppercase italic tracking-tighter">{editingId ? "تعديل الجلسة" : "جلسة جديدة"}</h2>
+                            {/* Modal Header */}
+                            <div className="px-8 py-6 border-b border-white/5 flex items-center justify-between shrink-0">
+                                <div>
+                                    <h2 className="text-2xl font-black uppercase italic tracking-tighter">
+                                        {editingId
+                                            ? (isRTL ? '✏️ تعديل الجلسة' : '✏️ Edit Session')
+                                            : (isRTL ? '➕ جلسة جديدة' : '➕ New Session')}
+                                    </h2>
+                                    <p className="text-white/30 text-[10px] uppercase tracking-widest mt-1">
+                                        {isRTL ? 'أدخل البيانات ثم احفظ' : 'Fill in details then save'}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => { setIsModalOpen(false); resetForm(); }}
+                                    className="p-2 text-white/30 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
                             </div>
 
+                            {/* Modal Body */}
                             <div className="flex-1 overflow-y-auto p-8 space-y-8">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">{isRTL ? 'عنوان الجلسة' : 'Session Title'}</label>
-                                        <input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="w-full bg-white/5 border border-white/10 p-4 rounded-xl focus:outline-none focus:border-cinematic-neon-blue" placeholder={isRTL ? 'مثال: جلسة الاثنين IAAI' : 'e.g. IAAI Live Monday'} />
+
+                                {/* ── Section 1: Basic Info ── */}
+                                <div className="space-y-5">
+                                    <div className="flex items-center gap-3 pb-2 border-b border-white/5">
+                                        <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 text-xs font-black flex items-center justify-center">1</span>
+                                        <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-white/40">
+                                            {isRTL ? 'معلومات الجلسة' : 'Session Info'}
+                                        </h4>
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">{isRTL ? 'الرابط الخارجي (iframe/URL)' : 'External Link (Iframe/URL)'}</label>
-                                        <input value={formData.externalUrl} onChange={e => setFormData({ ...formData, externalUrl: e.target.value })} className="w-full bg-white/5 border border-white/10 p-4 rounded-xl focus:outline-none focus:border-cinematic-neon-blue" placeholder="https://www.copart.com/..." />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">{isRTL ? 'واتساب هذا المزاد' : 'WhatsApp for this Auction'}</label>
-                                        <input value={formData.whatsappNumber} onChange={e => setFormData({ ...formData, whatsappNumber: e.target.value })} className="w-full bg-white/5 border border-white/10 p-4 rounded-xl focus:outline-none focus:border-cinematic-neon-blue" placeholder="9665xxxxxxxx" />
-                                    </div>
-                                    {/* [[ARABIC_COMMENT]] بيانات دخول المزاد الخارجي */}
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">{isRTL ? 'اسم المستخدم (للمزاد الخارجي)' : 'Username (External Site)'}</label>
-                                        <input value={formData.auctionUsername} onChange={e => setFormData({ ...formData, auctionUsername: e.target.value })} className="w-full bg-white/5 border border-white/10 p-4 rounded-xl focus:outline-none focus:border-cinematic-neon-blue" placeholder={isRTL ? 'اسم المستخدم' : 'username'} />
-                                    </div>
-                                    <div className="space-y-2">
-                                         <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">{isRTL ? 'كلمة السر (للمزاد الخارجي)' : 'Password (External Site)'}</label>
-                                         <input type="password" value={formData.auctionPassword} onChange={e => setFormData({ ...formData, auctionPassword: e.target.value })} className="w-full bg-white/5 border border-white/10 p-4 rounded-xl focus:outline-none focus:border-cinematic-neon-blue" placeholder="••••••••" />
-                                    </div>
-                                    <div className="space-y-2 col-span-1 md:col-span-2">
-                                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">{isRTL ? 'وضع التحديث للمزاد' : 'Auction Sync Mode'}</label>
-                                        <div className="flex items-center gap-4 bg-white/5 border border-white/10 p-4 rounded-xl">
-                                            <button
-                                                type="button"
-                                                onClick={() => setFormData({ ...formData, autoSync: true })}
-                                                className={cn(
-                                                    "flex-1 py-2 text-center text-xs font-black uppercase tracking-widest rounded-lg border transition-all",
-                                                    formData.autoSync 
-                                                        ? "bg-cinematic-neon-blue/20 border-cinematic-neon-blue text-cinematic-neon-blue shadow-[0_0_15px_rgba(0,240,255,0.2)]" 
-                                                        : "border-white/5 bg-transparent text-white/40 hover:text-white"
-                                                )}
-                                            >
-                                                {isRTL ? "تحديث تلقائي كل 24 ساعة" : "Auto Sync (Every 24h)"}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setFormData({ ...formData, autoSync: false })}
-                                                className={cn(
-                                                    "flex-1 py-2 text-center text-xs font-black uppercase tracking-widest rounded-lg border transition-all",
-                                                    !formData.autoSync 
-                                                        ? "bg-white/10 border-white/20 text-white" 
-                                                        : "border-white/5 bg-transparent text-white/40 hover:text-white"
-                                                )}
-                                            >
-                                                {isRTL ? "تحديث يدوي فقط" : "Manual Sync Only"}
-                                            </button>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
+                                                {isRTL ? 'عنوان الجلسة *' : 'Session Title *'}
+                                            </label>
+                                            <input
+                                                value={formData.title}
+                                                onChange={e => setFormData({ ...formData, title: e.target.value })}
+                                                className="w-full bg-white/5 border border-white/10 p-3.5 rounded-xl focus:outline-none focus:border-orange-500/50 focus:bg-white/[0.07] transition-all text-sm"
+                                                placeholder={isRTL ? 'مثال: مزاد IAAI — الاثنين ١٥ يوليو' : 'e.g. IAAI Live — Monday July 15'}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
+                                                {isRTL ? 'واتساب هذا المزاد' : 'WhatsApp (this auction)'}
+                                            </label>
+                                            <input
+                                                value={formData.whatsappNumber}
+                                                onChange={e => setFormData({ ...formData, whatsappNumber: e.target.value })}
+                                                className="w-full bg-white/5 border border-white/10 p-3.5 rounded-xl focus:outline-none focus:border-orange-500/50 transition-all text-sm"
+                                                placeholder="9665xxxxxxxx"
+                                                dir="ltr"
+                                            />
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="pt-8 space-y-6">
-                                    <div className="flex justify-between items-center">
-                                        <h4 className="text-lg font-black uppercase italic">{isRTL ? "السيارات المضافة يدوياً" : "MANUAL CAR LISTING"}</h4>
-                                        <button onClick={addCar} className="flex items-center gap-2 text-cinematic-neon-blue text-[10px] font-black uppercase tracking-widest bg-cinematic-neon-blue/10 px-4 py-2 rounded-lg border border-cinematic-neon-blue/20">
-                                            <Plus className="w-4 h-4" /> Add Car
+                                {/* ── Section 2: External URL (IMPORTANT) ── */}
+                                <div className="space-y-5">
+                                    <div className="flex items-center gap-3 pb-2 border-b border-white/5">
+                                        <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 text-xs font-black flex items-center justify-center">2</span>
+                                        <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-white/40">
+                                            {isRTL ? 'رابط المزاد الخارجي' : 'External Auction URL'}
+                                        </h4>
+                                    </div>
+
+                                    <div className="bg-orange-500/5 border border-orange-500/20 rounded-2xl p-4 flex gap-3">
+                                        <Info className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
+                                        <p className="text-[11px] text-orange-300/70 leading-relaxed">
+                                            {isRTL
+                                                ? 'أدخل رابط صفحة المزاد الخارجي (مثل Copart أو IAAI أو Encar). بعد الحفظ، اضغط زر "استيراد" لجلب السيارات تلقائياً من الرابط.'
+                                                : 'Enter the external auction URL (e.g. Copart, IAAI, or Encar). After saving, click "Import" to automatically fetch cars from this URL.'
+                                            }
+                                        </p>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
+                                            {isRTL ? 'رابط المزاد الخارجي' : 'Auction URL'}
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <div className="flex-1 relative">
+                                                <LinkIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 pointer-events-none" />
+                                                <input
+                                                    value={formData.externalUrl}
+                                                    onChange={e => setFormData({ ...formData, externalUrl: e.target.value })}
+                                                    className="w-full bg-white/5 border border-white/10 p-3.5 pr-10 rounded-xl focus:outline-none focus:border-orange-500/50 transition-all text-sm font-mono"
+                                                    placeholder="https://www.copart.com/lot/..."
+                                                    dir="ltr"
+                                                />
+                                            </div>
+                                            {formData.externalUrl && (
+                                                <a
+                                                    href={formData.externalUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="p-3.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all"
+                                                    title={isRTL ? 'فتح الرابط' : 'Open URL'}
+                                                >
+                                                    <ExternalLink className="w-4 h-4 text-white/40" />
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Login credentials for external site */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30">
+                                                {isRTL ? 'اسم المستخدم (الموقع الخارجي)' : 'Username (External Site)'}
+                                            </label>
+                                            <input
+                                                value={formData.auctionUsername}
+                                                onChange={e => setFormData({ ...formData, auctionUsername: e.target.value })}
+                                                className="w-full bg-white/[0.03] border border-white/5 p-3.5 rounded-xl focus:outline-none focus:border-white/20 transition-all text-sm"
+                                                placeholder={isRTL ? 'اختياري' : 'Optional'}
+                                                autoComplete="off"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30">
+                                                {isRTL ? 'كلمة المرور (الموقع الخارجي)' : 'Password (External Site)'}
+                                            </label>
+                                            <input
+                                                type="password"
+                                                value={formData.auctionPassword}
+                                                onChange={e => setFormData({ ...formData, auctionPassword: e.target.value })}
+                                                className="w-full bg-white/[0.03] border border-white/5 p-3.5 rounded-xl focus:outline-none focus:border-white/20 transition-all text-sm"
+                                                placeholder="••••••••"
+                                                autoComplete="new-password"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* ── Section 3: Sync Mode ── */}
+                                <div className="space-y-5">
+                                    <div className="flex items-center gap-3 pb-2 border-b border-white/5">
+                                        <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 text-xs font-black flex items-center justify-center">3</span>
+                                        <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-white/40">
+                                            {isRTL ? 'وضع التحديث' : 'Update Mode'}
+                                        </h4>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {/* Auto Sync */}
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, autoSync: true })}
+                                            className={cn(
+                                                "flex items-start gap-4 p-5 rounded-2xl border text-start transition-all",
+                                                formData.autoSync
+                                                    ? "bg-cyan-500/10 border-cyan-500/40 shadow-[0_0_20px_rgba(0,200,255,0.08)]"
+                                                    : "bg-white/[0.02] border-white/5 hover:border-white/10"
+                                            )}
+                                        >
+                                            <div className={cn(
+                                                "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5",
+                                                formData.autoSync ? "bg-cyan-500/20" : "bg-white/5"
+                                            )}>
+                                                <Zap className={cn("w-5 h-5", formData.autoSync ? "text-cyan-400" : "text-white/20")} />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className={cn("text-sm font-black uppercase tracking-wider", formData.autoSync ? "text-cyan-300" : "text-white/40")}>
+                                                    {isRTL ? 'تحديث تلقائي' : 'Auto Sync'}
+                                                </p>
+                                                <p className="text-[11px] text-white/30 leading-relaxed">
+                                                    {isRTL
+                                                        ? 'يتم تحديث السيارات تلقائياً كل 24 ساعة من الرابط الخارجي دون تدخل يدوي.'
+                                                        : 'Cars are automatically updated every 24 hours from the external URL without manual intervention.'
+                                                    }
+                                                </p>
+                                            </div>
+                                            {formData.autoSync && (
+                                                <CheckCircle className="w-5 h-5 text-cyan-400 shrink-0 ms-auto mt-0.5" />
+                                            )}
+                                        </button>
+
+                                        {/* Manual Sync */}
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, autoSync: false })}
+                                            className={cn(
+                                                "flex items-start gap-4 p-5 rounded-2xl border text-start transition-all",
+                                                !formData.autoSync
+                                                    ? "bg-white/5 border-white/20"
+                                                    : "bg-white/[0.02] border-white/5 hover:border-white/10"
+                                            )}
+                                        >
+                                            <div className={cn(
+                                                "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5",
+                                                !formData.autoSync ? "bg-white/10" : "bg-white/5"
+                                            )}>
+                                                <RefreshCw className={cn("w-5 h-5", !formData.autoSync ? "text-white/60" : "text-white/20")} />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className={cn("text-sm font-black uppercase tracking-wider", !formData.autoSync ? "text-white/70" : "text-white/30")}>
+                                                    {isRTL ? 'تحديث يدوي فقط' : 'Manual Sync Only'}
+                                                </p>
+                                                <p className="text-[11px] text-white/30 leading-relaxed">
+                                                    {isRTL
+                                                        ? 'التحديث يدوي فقط عند الضغط على زر "استيراد" في لوحة التحكم.'
+                                                        : 'Update only when you manually press the "Import" button in the dashboard.'
+                                                    }
+                                                </p>
+                                            </div>
+                                            {!formData.autoSync && (
+                                                <CheckCircle className="w-5 h-5 text-white/40 shrink-0 ms-auto mt-0.5" />
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* ── Section 4: Manual Cars (optional) ── */}
+                                <div className="space-y-5">
+                                    <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                                        <div className="flex items-center gap-3">
+                                            <span className="w-6 h-6 rounded-full bg-white/5 text-white/30 text-xs font-black flex items-center justify-center">4</span>
+                                            <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-white/30">
+                                                {isRTL ? 'إضافة سيارات يدوياً (اختياري)' : 'Add Cars Manually (Optional)'}
+                                            </h4>
+                                        </div>
+                                        <button
+                                            onClick={addCar}
+                                            className="flex items-center gap-1.5 text-orange-400 text-[10px] font-black uppercase tracking-widest bg-orange-500/10 px-3 py-1.5 rounded-lg border border-orange-500/20 hover:bg-orange-500/20 transition-all"
+                                        >
+                                            <Plus className="w-3.5 h-3.5" />
+                                            {isRTL ? 'إضافة سيارة' : 'ADD CAR'}
                                         </button>
                                     </div>
 
-                                    <div className="space-y-6">
+                                    {formData.cars.length === 0 && (
+                                        <p className="text-center text-white/20 text-xs py-6">
+                                            {isRTL ? 'لم تضف سيارات يدوياً بعد. يمكنك الاكتفاء بالاستيراد التلقائي من الرابط.' : 'No manual cars added. You can rely on auto-import from URL.'}
+                                        </p>
+                                    )}
+
+                                    <div className="space-y-4">
                                         {formData.cars.map((car, idx) => (
-                                            <div key={idx} className="bg-white/5 p-6 rounded-2xl border border-white/10 relative space-y-4">
-                                                <button onClick={() => removeCar(idx)} aria-label="Remove car" className="absolute top-4 right-4 text-red-500 hover:text-red-400"><Trash2 className="w-4 h-4" /></button>
-
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <input value={car.title} onChange={e => updateCar(idx, 'title', e.target.value)} className="bg-black/40 border border-white/10 p-3 rounded-lg text-sm" placeholder="Car Name (e.g. Ford Mustang 2021)" />
-                                                    <input value={car.condition} onChange={e => updateCar(idx, 'condition', e.target.value)} className="bg-black/40 border border-white/10 p-3 rounded-lg text-sm" placeholder="Condition/Damage (e.g. Frontal Damage)" />
-                                                    <input value={car.priceEstimate} onChange={e => updateCar(idx, 'priceEstimate', e.target.value)} className="bg-black/40 border border-white/10 p-3 rounded-lg text-sm" placeholder="Max Bid / Estimate" />
-                                                    <div className="flex items-center gap-4">
-                                                        <label className="cursor-pointer bg-white/5 hover:bg-white/10 p-3 rounded-lg border border-white/10 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all">
-                                                            <ImageIcon className="w-4 h-4" /> Upload Images
-                                                            <input type="file" multiple className="hidden" onChange={e => handleImageUpload(idx, e.target.files)} />
-                                                        </label>
-                                                        <span className="text-[10px] text-white/40">{car.images?.length || 0} images</span>
+                                            <div key={idx} className="bg-white/[0.03] p-5 rounded-2xl border border-white/5 relative space-y-4">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-white/30">
+                                                        {isRTL ? `سيارة #${idx + 1}` : `Car #${idx + 1}`}
+                                                    </span>
+                                                    <button
+                                                        onClick={() => removeCar(idx)}
+                                                        className="text-white/20 hover:text-red-400 transition-colors"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    <input
+                                                        value={car.title}
+                                                        onChange={e => updateCar(idx, 'title', e.target.value)}
+                                                        className="bg-black/30 border border-white/10 p-3 rounded-lg text-sm focus:outline-none focus:border-white/20"
+                                                        placeholder={isRTL ? 'اسم السيارة (مثال: فورد موستانج 2021)' : 'Car name (e.g. Ford Mustang 2021)'}
+                                                    />
+                                                    <input
+                                                        value={car.condition}
+                                                        onChange={e => updateCar(idx, 'condition', e.target.value)}
+                                                        className="bg-black/30 border border-white/10 p-3 rounded-lg text-sm focus:outline-none focus:border-white/20"
+                                                        placeholder={isRTL ? 'الحالة (مثال: تلف أمامي)' : 'Condition (e.g. Front damage)'}
+                                                    />
+                                                    <input
+                                                        value={car.priceEstimate}
+                                                        onChange={e => updateCar(idx, 'priceEstimate', e.target.value)}
+                                                        className="bg-black/30 border border-white/10 p-3 rounded-lg text-sm focus:outline-none focus:border-white/20"
+                                                        placeholder={isRTL ? 'السعر التقديري' : 'Price estimate'}
+                                                    />
+                                                    <label className="cursor-pointer bg-white/5 hover:bg-white/10 p-3 rounded-lg border border-white/10 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all">
+                                                        <ImageIcon className="w-4 h-4 text-white/30" />
+                                                        <span>{isRTL ? 'رفع صور' : 'Upload Images'}</span>
+                                                        <input type="file" multiple className="hidden" onChange={e => handleImageUpload(idx, e.target.files)} />
+                                                        {car.images?.length > 0 && (
+                                                            <span className="ms-auto text-orange-400">{car.images.length}</span>
+                                                        )}
+                                                    </label>
+                                                </div>
+                                                <textarea
+                                                    value={car.description}
+                                                    onChange={e => updateCar(idx, 'description', e.target.value)}
+                                                    className="w-full bg-black/30 border border-white/10 p-3 rounded-lg text-sm h-16 resize-none focus:outline-none focus:border-white/20"
+                                                    placeholder={isRTL ? 'تفاصيل إضافية...' : 'Additional details...'}
+                                                />
+                                                {car.images?.length > 0 && (
+                                                    <div className="flex gap-2 overflow-x-auto pb-1">
+                                                        {car.images.map((img: string, i: number) => (
+                                                            // eslint-disable-next-line @next/next/no-img-element
+                                                            <img key={i} src={img} alt="" className="w-14 h-14 object-cover rounded-lg border border-white/10 shrink-0" />
+                                                        ))}
                                                     </div>
-                                                </div>
-                                                <textarea value={car.description} onChange={e => updateCar(idx, 'description', e.target.value)} className="w-full bg-black/40 border border-white/10 p-3 rounded-lg text-sm h-20" placeholder="Full details, engine status, problem, etc..."></textarea>
-
-                                                <div className="flex gap-2 overflow-x-auto pb-2">
-                                                    {car.images?.map((img: string, i: number) => (
-                                                        // eslint-disable-next-line @next/next/no-img-element
-                                        <img key={i} src={img} alt={`${car.title || 'Car'} image ${i + 1}`} className="w-16 h-16 object-cover rounded-lg border border-white/10" />
-                                                    ))}
-                                                </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="p-8 border-t border-white/5 bg-black/50">
-                                <button onClick={handleSave} disabled={isLoading} className="w-full py-5 bg-cinematic-neon-red text-white font-black uppercase tracking-[0.5em] text-xs rounded-2xl shadow-[0_0_30px_rgba(255,0,60,0.3)] disabled:opacity-50">
-                                    {editingId ? "SAVE CHANGES" : "CREATE SESSION"}
+                            {/* Modal Footer */}
+                            <div className="p-6 border-t border-white/5 bg-black/40 flex gap-3 shrink-0">
+                                <button
+                                    onClick={() => { setIsModalOpen(false); resetForm(); }}
+                                    className="px-6 py-3.5 bg-white/5 border border-white/10 rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-white/10 transition-all"
+                                >
+                                    {isRTL ? 'إلغاء' : 'Cancel'}
                                 </button>
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={handleSave}
+                                    disabled={isLoading}
+                                    className="flex-1 py-3.5 bg-orange-500 hover:bg-orange-400 text-black font-black uppercase tracking-[0.3em] text-xs rounded-xl shadow-[0_0_30px_rgba(249,115,22,0.25)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+                                >
+                                    {isLoading
+                                        ? <RefreshCw className="w-4 h-4 animate-spin" />
+                                        : <Save className="w-4 h-4" />
+                                    }
+                                    {isRTL ? (editingId ? 'حفظ التعديلات' : 'حفظ وإنشاء الجلسة') : (editingId ? 'SAVE CHANGES' : 'SAVE & CREATE')}
+                                </motion.button>
                             </div>
                         </motion.div>
                     </div>

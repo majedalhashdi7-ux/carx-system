@@ -74,7 +74,7 @@ function LiveDot({ colorClass = 'bg-green-400' }: { colorClass?: string }) {
 
 // ── Sidebar Content ──
 function SidebarInner({
-    categories, pathname, queryString, isRTL, lang, time, dateStr, ping,
+    categories, pathname, queryString, isRTL, lang, time, dateStr, ping, pendingOrders,
     toggleLanguage, onLogout, onBackup, onRefresh, onClose
 }: SidebarProps) {
     return (

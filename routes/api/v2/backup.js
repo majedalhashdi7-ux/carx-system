@@ -84,4 +84,71 @@ router.get('/status', requireAuthAPI, requirePermissionAPI('manage_cars'), async
     }
 });
 
+// [[ARABIC_COMMENT]] POST /api/v2/backup/restore - استعادة نسخة احتياطية من ملف JSON (أدمن فقط)
+router.post('/restore', requireAuthAPI, requirePermissionAPI('manage_cars'), async (req, res) => {
+    try {
+        const { backupData } = req.body;
+        if (!backupData || !backupData.collections) {
+            return res.status(400).json({ success: false, error: 'بيانات النسخة الاحتياطية غير صالحة أو مفقودة.' });
+        }
+
+        const tenantId = req.tenant?.id || 'default';
+        const Car = getModel(req, 'Car');
+        const SparePart = getModel(req, 'SparePart');
+
+        const { cars, parts } = backupData.collections;
+
+        // 1. مسح البيانات الحالية للمستأجر الحالي فقط
+        await Promise.all([
+            Car.deleteMany({ tenantId }),
+            SparePart.deleteMany({ tenantId })
+        ]);
+
+        // 2. إعداد وإدراج بيانات السيارات المستعادة مع ربطها بالـ tenant الحالي
+        let restoredCarsCount = 0;
+        if (Array.isArray(cars) && cars.length > 0) {
+            const preparedCars = cars.map(car => {
+                const { _id, ...rest } = car;
+                return {
+                    ...rest,
+                    tenantId
+                };
+            });
+            await Car.insertMany(preparedCars);
+            restoredCarsCount = preparedCars.length;
+        }
+
+        // 3. إعداد وإدراج قطع الغيار
+        let restoredPartsCount = 0;
+        if (Array.isArray(parts) && parts.length > 0) {
+            const preparedParts = parts.map(part => {
+                const { _id, ...rest } = part;
+                return {
+                    ...rest,
+                    tenantId
+                };
+            });
+            await SparePart.insertMany(preparedParts);
+            restoredPartsCount = preparedParts.length;
+        }
+
+        res.json({
+            success: true,
+            message: `تم استعادة النسخة الاحتياطية بنجاح: تم استيراد عدد ${restoredCarsCount} سيارات وعدد ${restoredPartsCount} قطع غيار.`,
+            counts: {
+                cars: restoredCarsCount,
+                parts: restoredPartsCount
+            }
+        });
+
+    } catch (error) {
+        console.error('[Backup Restore] Error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Restore failed',
+            message: error.message
+        });
+    }
+});
+
 module.exports = router;

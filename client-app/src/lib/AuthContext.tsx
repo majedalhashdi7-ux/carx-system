@@ -3,6 +3,7 @@
 /**
  * سياق الهوية والتوثيق (AuthContext)
  * المسؤول عن إدارة بيانات المستخدم المسجل، الصلاحيات، وعمليات تسجيل الخروج.
+ * يحفظ الجلسة بشكل دائم ويتحقق من صلاحية التوكن عند كل تحميل للصفحة.
  */
 
 import { useEffect, useState, createContext, useContext, ReactNode, useCallback } from 'react';
@@ -12,12 +13,12 @@ import { api } from '@/lib/api-original';
  * واجهة بيانات المستخدم
  */
 interface User {
-    _id: string; // معرف المستخدم الفريد
-    name: string; // اسم المستخدم
-    username?: string; // اسم الدخول (اختياري)
-    email?: string; // البريد الإلكتروني (اختياري)
-    role: string; // دور المستخدم (مدير، عميل، إلخ)
-    phone?: string; // رقم الهاتف (اختياري)
+    _id: string;
+    name: string;
+    username?: string;
+    email?: string;
+    role: string;
+    phone?: string;
 }
 
 interface AuthContextType {
@@ -25,6 +26,7 @@ interface AuthContextType {
     isLoggedIn: boolean;
     isLoading: boolean;
     isAdmin: boolean;
+    login: (token: string, userData: User) => void;
     logout: () => void;
     refreshUser: () => void;
 }
@@ -43,11 +45,11 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<User | null>(null); // حاله المستخدم الحالي
-    const [isLoading, setIsLoading] = useState(true); // حالة التحميل أثناء التحقق من الجلسة
+    const [user, setUser] = useState<User | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const isLoggedIn = !!user; // تحويل حالة المستخدم إلى قيمة منطقية (هل هو مسجل دخول؟)
-    const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'manager'; // هل المستخدم لديه صلاحيات إدارية؟
+    const isLoggedIn = !!user;
+    const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'manager';
 
     /**
      * مسح ملفات تعريف الارتباط (Cookies) الخاصة بالتوثيق
@@ -63,15 +65,73 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      * مسح جميع بيانات التوثيق من التخزين المحلي والمتصفح
      */
     const clearAuth = useCallback(() => {
-        localStorage.removeItem('hm_token');
-        localStorage.removeItem('hm_user');
-        localStorage.removeItem('hm_user_role');
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('hm_token');
+            localStorage.removeItem('hm_user');
+            localStorage.removeItem('hm_user_role');
+        }
         clearCookies();
         setUser(null);
     }, [clearCookies]);
 
     /**
+     * تسجيل دخول جديد - يحفظ البيانات في localStorage والكوكيز
+     */
+    const login = useCallback((token: string, userData: User) => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('hm_token', token);
+            localStorage.setItem('hm_user', JSON.stringify(userData));
+            const role = userData.role || 'buyer';
+            localStorage.setItem('hm_user_role', role);
+
+            // حفظ في Cookie للـ middleware - أسبوع واحد
+            const maxAge = 60 * 60 * 24 * 7;
+            document.cookie = `hm_token=${token}; path=/; max-age=${maxAge}; SameSite=Lax`;
+            document.cookie = `hm_user_role=${role}; path=/; max-age=${maxAge}; SameSite=Lax`;
+        }
+        setUser(userData);
+    }, []);
+
+    /**
+     * التحقق من صلاحية التوكن مع الخادم وتحديث بيانات المستخدم
+     * يُستخدم عند تحميل الصفحة للتأكد من أن الجلسة لا تزال صالحة
+     */
+    const verifyTokenWithServer = useCallback(async () => {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('hm_token') : null;
+        if (!token) {
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            const res = await api.auth.verify() as any;
+            if (res && res.success && res.user) {
+                // تحديث بيانات المستخدم بأحدث نسخة من الخادم
+                const freshUser = res.user;
+                setUser(freshUser);
+                localStorage.setItem('hm_user', JSON.stringify(freshUser));
+                localStorage.setItem('hm_user_role', freshUser.role || 'buyer');
+            } else if (res && res._id) {
+                // بعض الـ APIs ترجع المستخدم مباشرة
+                setUser(res);
+                localStorage.setItem('hm_user', JSON.stringify(res));
+                localStorage.setItem('hm_user_role', res.role || 'buyer');
+            } else {
+                // التوكن غير صالح - امسح كل شيء
+                clearAuth();
+            }
+        } catch {
+            // في حال فشل الاتصال بالخادم، احتفظ بالبيانات المحلية
+            // ولا تقم بتسجيل الخروج التلقائي (قد يكون الخادم معطلاً مؤقتاً)
+            console.warn('[Auth] Server verification failed - keeping local session');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [clearAuth]);
+
+    /**
      * التحقق من وجود جلسة دخول سابقة عند تحميل الموقع
+     * يقرأ من localStorage فوراً للسرعة، ثم يتحقق من الخادم في الخلفية
      */
     const checkExistingLogin = useCallback(() => {
         setIsLoading(true);
@@ -87,45 +147,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (token && userStr) {
                 try {
                     const userData = JSON.parse(userStr);
-                    // التحقق من أن البيانات سليمة
                     if (userData && userData.role) {
+                        // تعيين البيانات المحلية فوراً للسرعة
                         setUser(userData);
+                        // ثم التحقق من الخادم في الخلفية
+                        verifyTokenWithServer();
                     } else {
-                        // بيانات ناقصة - امسح كل شيء
                         clearAuth();
+                        setIsLoading(false);
                     }
                 } catch {
                     clearAuth();
+                    setIsLoading(false);
                 }
             } else {
-                // لا يوجد token أو user - تأكد من مسح الـ cookies
                 clearCookies();
+                setIsLoading(false);
             }
         } catch (error) {
             console.error('Auth check failed:', error);
             clearAuth();
-        } finally {
             setIsLoading(false);
         }
-    }, [clearAuth, clearCookies]);
+    }, [clearAuth, clearCookies, verifyTokenWithServer]);
 
-    // [[ARABIC_COMMENT]] 1. التحقق من الجلسة مرة واحدة عند التحميل
+    // التحقق من الجلسة مرة واحدة عند التحميل
     useEffect(() => {
         checkExistingLogin();
     }, [checkExistingLogin]);
 
-    // [[ARABIC_COMMENT]] 2. إرسال إشارة نبض كل 5 دقائق لإبلاغ السيرفر أن المستخدم متصل
+    // إرسال إشارة نبض كل 5 دقائق لإبلاغ السيرفر أن المستخدم متصل
     useEffect(() => {
         let heartbeatInterval: NodeJS.Timeout;
         let initialTimeout: NodeJS.Timeout;
 
         if (user) {
             const sendHeartbeat = () => {
-                api.users.heartbeat().catch(() => {}); // صامت - لا يعرض أخطاء
+                api.users.heartbeat().catch(() => {});
             };
-            // تأخير 3 ثوانٍ قبل الإرسال الأول لإعطاء الصفحة وقت للتحميل
             initialTimeout = setTimeout(sendHeartbeat, 3000);
-            heartbeatInterval = setInterval(sendHeartbeat, 5 * 60 * 1000); // 5 دقائق
+            heartbeatInterval = setInterval(sendHeartbeat, 5 * 60 * 1000);
         }
 
         return () => {
@@ -133,6 +194,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (heartbeatInterval) clearInterval(heartbeatInterval);
         };
     }, [user]);
+
+    // الاستماع لتغييرات localStorage من تابات أخرى
+    useEffect(() => {
+        const handleStorage = (e: StorageEvent) => {
+            if (e.key === 'hm_token') {
+                if (!e.newValue) {
+                    setUser(null);
+                } else if (e.newValue !== e.oldValue) {
+                    checkExistingLogin();
+                }
+            }
+        };
+        window.addEventListener('storage', handleStorage);
+        return () => window.removeEventListener('storage', handleStorage);
+    }, [checkExistingLogin]);
 
     function refreshUser() {
         checkExistingLogin();
@@ -143,7 +219,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      */
     function logout() {
         clearAuth();
-        // إعادة توجيه للصفحة الرئيسية بعد الخروج
         if (typeof window !== 'undefined') {
             window.location.href = '/login';
         }
@@ -155,6 +230,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             isLoggedIn,
             isLoading,
             isAdmin,
+            login,
             logout,
             refreshUser
         }}>

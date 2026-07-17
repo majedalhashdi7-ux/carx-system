@@ -41,6 +41,7 @@ export default function AdminDashboard() {
     const { showToast } = useToast();
     const [mounted, setMounted] = useState(false);
     const [backingUp, setBackingUp] = useState(false);
+    const [restoring, setRestoring] = useState(false);
     const router = useRouter();
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [loading, setLoading] = useState(true);
@@ -62,6 +63,60 @@ export default function AdminDashboard() {
             showToast(isRTL ? '✅ تم تحميل النسخة الاحتياطية!' : '✅ Backup downloaded!', 'success');
         } catch { showToast(isRTL ? '❌ فشل التحميل' : '❌ Backup failed', 'error'); }
         finally { setBackingUp(false); }
+    };
+
+    const handleRestore = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!confirm(isRTL 
+            ? "⚠️ تحذير: استعادة النسخة الاحتياطية ستمسح جميع السيارات وقطع الغيار الحالية وتستبدلها ببيانات الملف. هل تريد الاستمرار؟"
+            : "⚠️ WARNING: Restoring the backup will delete all current cars and spare parts and replace them with the backup data. Do you want to proceed?")) {
+            e.target.value = '';
+            return;
+        }
+
+        setRestoring(true);
+        showToast(isRTL ? '⏳ جاري استعادة البيانات...' : '⏳ Restoring data...', 'info');
+        
+        try {
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                try {
+                    const backupData = JSON.parse(event.target?.result as string);
+                    const token = localStorage.getItem('hm_token');
+                    
+                    const res = await fetch('/api/v2/backup/restore', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ backupData })
+                    });
+                    
+                    const data = await res.json();
+                    if (data.success) {
+                        showToast(isRTL ? `✅ تم الاستعادة: ${data.message}` : `✅ Restored successfully: ${data.message}`, 'success');
+                        const [s, a] = await Promise.all([api.analytics.getSummary(), api.analytics.getActivities(6)]);
+                        if (s.success) setStats(s.stats);
+                        if (a.success) setRecentActivities(a.activities);
+                    } else {
+                        showToast(data.error || (isRTL ? '❌ فشل الاستعادة' : '❌ Restore failed'), 'error');
+                    }
+                } catch (parseErr) {
+                    showToast(isRTL ? '❌ ملف النسخة الاحتياطية غير صالح' : '❌ Invalid backup file format', 'error');
+                } finally {
+                    setRestoring(false);
+                    e.target.value = '';
+                }
+            };
+            reader.readAsText(file);
+        } catch (err) {
+            showToast(isRTL ? '❌ حدث خطأ غير متوقع' : '❌ Unexpected error occurred', 'error');
+            setRestoring(false);
+            e.target.value = '';
+        }
     };
 
     useEffect(() => { setMounted(true); }, []);
@@ -126,6 +181,7 @@ export default function AdminDashboard() {
         { icon: Bell, label: isRTL ? 'الإشعارات' : 'ALERTS', href: '/admin/notifications', color: '#f97316', desc: isRTL ? 'إدارة الإشعارات' : 'Notifications' },
         { icon: Settings, label: isRTL ? 'الإعدادات' : 'SETTINGS', href: '/admin/settings', color: '#64748b', desc: isRTL ? 'إعدادات النظام' : 'Site control' },
         { icon: Database, label: isRTL ? 'نسخ احتياطي' : 'BACKUP', isButton: true, onClick: handleBackup, color: '#f97316', desc: isRTL ? 'تنزيل نسخة احتياطية' : 'Download backup' },
+        { icon: RefreshCw, label: isRTL ? 'استعادة البيانات' : 'RESTORE', isButton: true, onClick: () => document.getElementById('restore-file-input')?.click(), color: '#10b981', desc: isRTL ? 'رفع نسخة احتياطية' : 'Upload backup file' },
     ];
 
     const getActivityIcon = (target: string) => {
@@ -305,7 +361,7 @@ export default function AdminDashboard() {
                                         </motion.div>
                                     );
                                     return link.isButton
-                                        ? <button key={i} onClick={link.onClick} className="w-full" disabled={backingUp} title={link.label}>{Inner}</button>
+                                        ? <button key={i} onClick={link.onClick} className="w-full" disabled={backingUp || restoring} title={link.label}>{Inner}</button>
                                         : <Link key={i} href={link.href!} title={link.label} className="w-full">{Inner}</Link>;
                                 })}
                             </div>
@@ -473,6 +529,13 @@ export default function AdminDashboard() {
                 </div>
 
             </main>
+            <input 
+                id="restore-file-input" 
+                type="file" 
+                accept=".json" 
+                onChange={handleRestore} 
+                className="hidden" 
+            />
         </div>
     );
 }
