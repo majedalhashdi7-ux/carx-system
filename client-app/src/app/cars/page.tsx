@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useSettings } from '@/lib/SettingsContext';
 import Image from 'next/image';
+import WatermarkImage from '@/components/WatermarkImage';
 import Link from 'next/link';
 import { WhatsAppService } from '@/lib/WhatsAppService';
 
@@ -113,8 +114,8 @@ function CarCard({ car, onWhatsApp }: { car: CarItem; onWhatsApp: (car: CarItem)
     const transLabel = car.transmissionAr || car.transmission || '';
 
     const sourceBadge = car.source === 'korean'
-        ? { label: 'كوري 🇰🇷', color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' }
-        : { label: 'معرض HM', color: 'bg-[#C9A96E]/20 text-[#C9A96E] border-[#C9A96E]/30' };
+        ? { label: '🇰🇷 مستورد', color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' }
+        : { label: '🏢 معرض HM', color: 'bg-[#C9A96E]/20 text-[#C9A96E] border-[#C9A96E]/30' };
 
     return (
         <Link href={`/cars/${car.id}`} className="block h-full">
@@ -126,11 +127,12 @@ function CarCard({ car, onWhatsApp }: { car: CarItem; onWhatsApp: (car: CarItem)
             >
                 {/* Image */}
                 <div className="relative aspect-[4/3] sm:aspect-[16/9] bg-[#0a0a12] overflow-hidden shrink-0">
-                    <Image
+                    <WatermarkImage
                         src={img} alt={car.title} fill sizes="(max-width:640px) 50vw, 33vw"
-                        className="object-cover group-hover:scale-105 transition-transform duration-700"
+                        className="group-hover:scale-105 transition-transform duration-700"
                         onError={() => setImgErr(true)}
                         unoptimized
+                        watermarkPosition="br"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
 

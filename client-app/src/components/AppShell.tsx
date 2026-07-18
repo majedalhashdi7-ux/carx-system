@@ -14,6 +14,7 @@ import BottomTabBar from './BottomTabBar';
 import GlobalDrawers from './GlobalDrawers';
 import SmartIslandNotification from './SmartIslandNotification';
 import AppBackground from './AppBackground';
+import PageTransition from './PageTransition';
 
 /**
  * AppShell - غلاف التطبيق
@@ -71,23 +72,19 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     }
 
     if (isStandalone && !pathname?.startsWith('/admin')) {
-        // ── وضع التطبيق المثبت ──
         return (
             <div
                 className="relative min-h-screen"
                 data-app-mode="standalone"
-                style={{ paddingBottom: '80px' }} // مساحة للـ Bottom Tab Bar
+                style={{ paddingBottom: '80px' }}
             >
-                {/* خلفية التطبيق الاحترافية */}
                 <AppBackground />
-
                 <main className="relative z-10">
-                    {children}
+                    <PageTransition>{children}</PageTransition>
                 </main>
-                
-                <BottomTabBar /> {/* شريط التنقل السفلي كما في تطبيقات الجوال */}
-                <GlobalDrawers /> {/* الحاويات الجانبية العالمية (المفضلة، الإشعارات) */}
-                <SmartIslandNotification /> {/* الإشعارات العلوية الذكية */}
+                <BottomTabBar />
+                <GlobalDrawers />
+                <SmartIslandNotification />
             </div>
         );
     }
@@ -95,10 +92,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     // ── وضع الموقع العادي (Browser Mode) ──
     return (
         <div className="relative min-h-screen pb-[80px] lg:pb-0">
-            {children}
+            <PageTransition>{children}</PageTransition>
             {!pathname?.startsWith('/admin') && <BottomTabBar />}
-            <GlobalDrawers /> {/* الحاويات الجانبية تعمل في الموقع أيضاً */}
-            <SmartIslandNotification /> {/* تحذيرات النظام */}
+            <GlobalDrawers />
+            <SmartIslandNotification />
         </div>
     );
 }

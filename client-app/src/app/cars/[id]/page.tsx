@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Image from 'next/image';
+import WatermarkImage from '@/components/WatermarkImage';
 import ModernCarCard from '@/components/ModernCarCard';
 import { api } from '@/lib/api-original';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -304,7 +305,7 @@ export default function LocalCarDetail() {
                 <motion.button
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    onClick={() => router.push('/')}
+                    onClick={() => router.push('/cars')}
                     className="flex items-center gap-2 mb-10 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-all group w-fit"
                 >
                     <ChevronLeft className={cn('w-4 h-4 transition-transform group-hover:-translate-x-1', isRTL && 'rotate-180 group-hover:translate-x-1')} />
@@ -330,7 +331,7 @@ export default function LocalCarDetail() {
                             onTouchEnd={stop360Drag}
                         >
                             {images.length > 0 ? (
-                                <Image src={images[activeImage]} alt={car.title} fill className="object-cover pointer-events-none select-none" unoptimized />
+                                <WatermarkImage src={images[activeImage]} alt={car.title} fill className="pointer-events-none select-none" unoptimized watermarkPosition="br" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center">
                                     <ImageIcon className="w-20 h-20 text-white/10" />
@@ -385,7 +386,7 @@ export default function LocalCarDetail() {
                                 {images.length > 0 ? (
                                     images.map((img: string, idx: number) => (
                                         <div key={idx} className="w-full h-full shrink-0 snap-start relative">
-                                            <Image src={img} alt={car.title} fill className="object-cover" unoptimized />
+                                            <WatermarkImage src={img} alt={car.title} fill className="" unoptimized watermarkPosition="br" />
                                         </div>
                                     ))
                                 ) : (
@@ -428,7 +429,7 @@ export default function LocalCarDetail() {
                                             activeImage === idx ? 'border-cinematic-neon-gold shadow-[0_0_15px_rgba(201,169,110,0.4)]' : 'border-white/10 opacity-50 hover:opacity-80'
                                         )}
                                     >
-                                        <Image src={img} alt={`img ${idx + 1}`} fill className="object-cover" unoptimized />
+                                        <WatermarkImage src={img} alt={`img ${idx + 1}`} fill className="" unoptimized showWatermark={false} />
                                     </button>
                                 ))}
                             </div>
