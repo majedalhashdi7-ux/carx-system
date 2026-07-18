@@ -289,6 +289,40 @@ router.get('/makes', cacheResponse(1800), async (req, res, next) => {
     }
 });
 
+// GET /api/v2/cars/fix-tenant-id - إصلاح معرف المعرض للسيارات المستوردة
+router.get('/fix-tenant-id', requireAuthAPI, async (req, res, next) => {
+    try {
+        if (!req.user.role || !['admin', 'super_admin'].includes(req.user.role)) {
+            return res.status(403).json({ success: false, error: 'Forbidden', message: 'Admin access required' });
+        }
+        const Car = getModel(req, 'Car');
+        const tenantId = getTenantId(req);
+        
+        const result = await Car.updateMany(
+            {
+                $or: [
+                    { tenantId: { $exists: false } },
+                    { tenantId: 'default' },
+                    { tenantId: null }
+                ]
+            },
+            {
+                $set: { tenantId }
+            }
+        );
+        
+        res.json({
+            success: true,
+            modifiedCount: result.modifiedCount,
+            matchedCount: result.matchedCount,
+            tenantId,
+            message: `تم تحديث ${result.modifiedCount} سيارة بنجاح إلى المعرض: ${tenantId}`
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
 // GET /api/v2/cars/:id - جلب تفاصيل سيارة محددة
 router.get('/:id', cacheResponse(600), async (req, res, next) => {
     try {

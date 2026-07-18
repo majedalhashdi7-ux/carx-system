@@ -2,7 +2,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { getModel } = require('../../../tenants/tenant-model-helper');
+const { getModel, addTenantFilter } = require('../../../tenants/tenant-model-helper');
 const { requireAuthAPI } = require('../../../middleware/auth');
 
 // GET /api/v2/dashboard/client - بيانات لوحة تحكم العميل
@@ -116,12 +116,12 @@ router.get('/admin', requireAuthAPI, async (req, res) => {
             totalOrders,
             pendingOrders
         ] = await Promise.all([
-            Car.countDocuments(),
-            User.countDocuments(),
-            Auction.countDocuments(),
-            Auction.countDocuments({ status: 'running' }),
-            Order.countDocuments(),
-            Order.countDocuments({ status: 'pending' })
+            Car.countDocuments(addTenantFilter(req)),
+            User.countDocuments(addTenantFilter(req)),
+            Auction.countDocuments(addTenantFilter(req)),
+            Auction.countDocuments(addTenantFilter(req, { status: 'running' })),
+            Order.countDocuments(addTenantFilter(req)),
+            Order.countDocuments(addTenantFilter(req, { status: 'pending' }))
         ]);
 
         res.json({

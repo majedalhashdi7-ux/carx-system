@@ -121,6 +121,24 @@ async function run() {
     }
 
     // ─────────────────────────────────────────────
+    // 4. إصلاح tenantId للسيارات
+    // ─────────────────────────────────────────────
+    console.log('\n🏢 إصلاح معرف المعرض (tenantId)...');
+    const tenantIdResult = await carCollection.updateMany(
+        {
+            $or: [
+                { tenantId: { $exists: false } },
+                { tenantId: 'default' },
+                { tenantId: null }
+            ]
+        },
+        {
+            $set: { tenantId: 'hmcar' }
+        }
+    );
+    console.log(`   ✅ تم تحديث ${tenantIdResult.modifiedCount} سيارة لتتبع المعرض 'hmcar'`);
+
+    // ─────────────────────────────────────────────
     // ملخص
     // ─────────────────────────────────────────────
     console.log('\n─────────────────────────────────────────────');
@@ -129,6 +147,7 @@ async function run() {
     console.log(`   • المزادات المنتهية: ${expiredResult.modifiedCount} مزاد تم إغلاقه`);
     console.log(`   • المزادات المفعّلة: ${startedResult.modifiedCount} مزاد تم تفعيله`);
     console.log(`   • رابط الواتساب: تم التصحيح`);
+    console.log(`   • معرف المعرض (tenantId): تم تحديث ${tenantIdResult.modifiedCount} سيارة`);
     console.log('─────────────────────────────────────────────');
 
     await mongoose.disconnect();

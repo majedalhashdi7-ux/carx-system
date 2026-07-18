@@ -3,7 +3,7 @@
 const express = require('express');
 const router = express.Router();
 const https = require('https');
-const { getModel } = require('../../../tenants/tenant-model-helper');
+const { getModel, getTenantId, addTenantFilter } = require('../../../tenants/tenant-model-helper');
 const { requireAuthAPI, requireAdmin } = require('../../../middleware/auth');
 
 // ─────────────────────────────────────────────────────────
@@ -267,8 +267,8 @@ router.get('/cars', async (req, res) => {
         };
 
         const [cars, total] = await Promise.all([
-            Car.find(showroomFilter).sort({ createdAt: -1 }).skip(skip).limit(limit),
-            Car.countDocuments(showroomFilter)
+            Car.find(addTenantFilter(req, showroomFilter)).sort({ createdAt: -1 }).skip(skip).limit(limit),
+            Car.countDocuments(addTenantFilter(req, showroomFilter))
         ]);
 
         const settings = await SiteSettings.getSettings();
@@ -424,6 +424,7 @@ router.post('/scrape', requireAuthAPI, requireAdmin, async (req, res) => {
                     const brand = await Brand.findOne({ name: item.manufacturerAr });
 
                     await Car.create({
+                        tenantId: getTenantId(req),
                         title: item.title,
                         make: item.manufacturerAr,
                         makeLogoUrl: brand ? brand.logoUrl : '',
@@ -456,6 +457,9 @@ router.post('/scrape', requireAuthAPI, requireAdmin, async (req, res) => {
                     existingCar.price = computedSar;
                     existingCar.source = 'korean_import';
                     existingCar.listingType = 'showroom';
+                    if (!existingCar.tenantId || existingCar.tenantId === 'default') {
+                        existingCar.tenantId = getTenantId(req);
+                    }
                     
                     // تحديث الصور فقط إذا كانت القائمة الحالية ناقصة أو تالفة
                     const needsImageRepair = !Array.isArray(existingCar.images)
