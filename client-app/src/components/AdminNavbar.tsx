@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Activity, Car, Gavel, Users, ShoppingCart, Settings, Shield,
     LogOut, Layers, TrendingUp, MessageCircle, Server,
-    Tag, Menu, X, Languages, Database, RefreshCw, Bell, Share2, ChevronDown
+    Tag, Menu, X, Languages, Database, RefreshCw, Bell, Share2, ChevronDown, Download
 } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
