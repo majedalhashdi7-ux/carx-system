@@ -10,8 +10,8 @@ import { MessageCircle, X, ExternalLink, ChevronLeft, ShieldCheck, Tag, AlertTri
 import Navbar from "@/components/Navbar";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/LanguageContext";
+import WatermarkImage from "@/components/WatermarkImage";
 import { api } from "@/lib/api-original";
-import Image from "next/image";
 
 export default function LiveAuctionDetails() {
     const { isRTL } = useLanguage();
@@ -207,12 +207,13 @@ export default function LiveAuctionDetails() {
                                         onClick={() => setSelectedCar(car)}
                                     >
                                         <div className="relative aspect-video rounded-xl md:rounded-2xl overflow-hidden border border-white/5">
-                                            <Image
+                                            <WatermarkImage
                                                 src={car.images?.[0] || 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=1000'}
                                                 fill
                                                 className="object-cover grayscale-[0.3] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
                                                 alt={car.title}
                                                 unoptimized
+                                                watermarkPosition="br"
                                             />
                                             <div className="absolute top-3 right-3 flex gap-2">
                                                 {car.lotNumber && (
@@ -303,12 +304,12 @@ export default function LiveAuctionDetails() {
                             <div className="grid grid-cols-1 lg:grid-cols-2">
                                     <div className="p-8 space-y-6">
                                     <div className="relative aspect-video rounded-2xl overflow-hidden border border-white/10">
-                                        <Image src={selectedCar.images?.[0]} fill className="object-cover" alt="" unoptimized />
+                                        <WatermarkImage src={selectedCar.images?.[0]} fill className="object-cover" alt="" unoptimized watermarkPosition="br" />
                                     </div>
                                     <div className="grid grid-cols-4 gap-4">
                                         {selectedCar.images?.slice(1, 5).map((img: string, i: number) => (
                                             <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-white/10">
-                                                <Image src={img} fill className="object-cover" alt="" unoptimized />
+                                                <WatermarkImage src={img} fill className="object-cover" alt="" unoptimized watermarkPosition="br" />
                                             </div>
                                         ))}
                                     </div>
