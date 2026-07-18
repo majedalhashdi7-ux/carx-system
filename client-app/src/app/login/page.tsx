@@ -164,9 +164,9 @@ function HMCarLogin() {
                     } catch (e) { }
                 }
 
-                // تمديد الكوكيز إذا اختار "تذكرني"
-                if (rememberMe) {
-                    const maxAge = 604800; // أسبوع
+                // تمديد الكوكيز دائماً لـ 30 يوم لعدم الحاجة لإعادة تسجيل الدخول
+                {
+                    const maxAge = 2592000; // 30 يوماً
                     document.cookie = `hm_token=${response.token}; path=/; max-age=${maxAge}; SameSite=Lax`;
                     document.cookie = `hm_user_role=${response.user?.role || 'buyer'}; path=/; max-age=${maxAge}; SameSite=Lax`;
                 }

@@ -71,7 +71,7 @@ router.post('/register', authLimiter, async (req, res) => {
 
     await user.save();
 
-    // Generate JWT token
+    // Generate JWT token - 30 يوم لعدم الحاجة لإعادة التسجيل
     const token = jwt.sign(
       {
         userId: user._id,
@@ -82,7 +82,7 @@ router.post('/register', authLimiter, async (req, res) => {
       },
       process.env.JWT_SECRET,
       {
-        expiresIn: '7d',
+        expiresIn: '30d',
         issuer: 'hm-car-auction',
         audience: 'api-users'
       }
@@ -179,7 +179,7 @@ router.post('/client-login', authLimiter, async (req, res) => {
       return sendResponse(res, unauthorizedResponse('كلمة المرور غير صحيحة'));
     }
 
-    // توليد التوكن
+    // توليد التوكن - مدة 30 يوماً بشكل افتراضي (تذكرني دائماً)
     const token = jwt.sign(
       {
         userId: user._id,
@@ -188,7 +188,7 @@ router.post('/client-login', authLimiter, async (req, res) => {
         role: user.role,
       },
       process.env.JWT_SECRET,
-      { expiresIn: rememberMe ? '30d' : '7d' }
+      { expiresIn: '30d' }
     );
 
     // تحديث وقت الدخول
@@ -261,7 +261,7 @@ router.post('/client-register', authLimiter, async (req, res) => {
 
     await newUser.save();
 
-    // توليد التوكن
+    // توليد التوكن - مدة 30 يوماً لعدم الحاجة للتسجيل مجدداً
     const token = jwt.sign(
       {
         userId: newUser._id,
@@ -271,7 +271,7 @@ router.post('/client-register', authLimiter, async (req, res) => {
         permissions: newUser.permissions || []
       },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '30d' }
     );
 
     // تسجيل في AuditLog
@@ -389,11 +389,11 @@ router.post('/auto-login', authLimiter, async (req, res) => {
       userToLogin.lastLoginIP = clientIP;
       await userToLogin.save();
 
-      // Generate token
+      // Generate token - 30 يوماً للتذكر الدائم
       const token = jwt.sign(
         { userId: userToLogin._id, tenantId: req.tenant?.id || 'default', role: userToLogin.role },
         process.env.JWT_SECRET,
-        { expiresIn: '7d' }
+        { expiresIn: '30d' }
       );
 
       // تحديث البصمة لتشمل الاسم الأخير المستخدم (للمستقبل)
@@ -435,11 +435,11 @@ router.post('/auto-login', authLimiter, async (req, res) => {
 
     await newUser.save();
 
-    // Generate token
+    // Generate token - 30 يوماً للتذكر الدائم
     const token = jwt.sign(
       { userId: newUser._id, tenantId: req.tenant?.id || 'default', role: newUser.role },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '30d' }
     );
 
     // ربط الجهاز بحساب العميل الجديد (upsert - لا تكرار)
@@ -561,7 +561,7 @@ router.post('/login', authLimiter, async (req, res) => {
       return sendResponse(res, forbiddenResponse('Your account has been suspended'));
     }
 
-    // توليد التوكن
+    // توليد التوكن - 30 يوماً بشكل افتراضي لعدم الحاجة لإعادة تسجيل الدخول
     const token = jwt.sign(
       {
         userId: user._id,
@@ -571,7 +571,7 @@ router.post('/login', authLimiter, async (req, res) => {
         permissions: user.permissions || []
       },
       process.env.JWT_SECRET,
-      { expiresIn: rememberMe ? '30d' : '7d', issuer: 'hm-car-auction', audience: 'api-users' }
+      { expiresIn: '30d', issuer: 'hm-car-auction', audience: 'api-users' }
     );
 
     // تحديث وقت الدخول + AuditLog — _id فريد عالمياً فلا يحتاج لتصفية tenantId

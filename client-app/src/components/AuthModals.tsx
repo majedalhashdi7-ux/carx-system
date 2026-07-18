@@ -73,10 +73,12 @@ export default function AuthModals({
             });
 
             if (response.success) {
-                // حفظ بيانات المستخدم
+                // حفظ بيانات المستخدم - 30 يوم للاستمرارية
                 localStorage.setItem('hm_token', response.token);
                 localStorage.setItem('hm_user', JSON.stringify(response.user));
                 localStorage.setItem('hm_user_role', response.user.role);
+                document.cookie = `hm_token=${response.token}; path=/; max-age=2592000; SameSite=Lax`;
+                document.cookie = `hm_user_role=${response.user.role}; path=/; max-age=2592000; SameSite=Lax`;
                 
                 // تحديث السياق
                 refreshUser();

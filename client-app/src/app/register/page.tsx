@@ -93,8 +93,8 @@ export default function Register() {
                 const savedRole = response.user?.role || 'buyer';
                 localStorage.setItem('hm_user_role', savedRole);
 
-                document.cookie = `hm_token=${response.token}; path=/; max-age=86400; SameSite=Lax`;
-                document.cookie = `hm_user_role=${savedRole}; path=/; max-age=86400; SameSite=Lax`;
+                document.cookie = `hm_token=${response.token}; path=/; max-age=2592000; SameSite=Lax`;
+                document.cookie = `hm_user_role=${savedRole}; path=/; max-age=2592000; SameSite=Lax`;
 
                 setSuccess(true);
                 setTimeout(() => {

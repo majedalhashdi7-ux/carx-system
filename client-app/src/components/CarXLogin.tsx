@@ -118,12 +118,12 @@ export default function CarXLogin() {
                     // [[ARABIC_COMMENT]] تخزين التوكن وبيانات المستخدم
                     if (res.token) {
                         localStorage.setItem('hm_token', res.token);
-                        document.cookie = `hm_token=${res.token}; path=/; max-age=604800; SameSite=Lax`;
+                        document.cookie = `hm_token=${res.token}; path=/; max-age=2592000; SameSite=Lax`;
                     }
                     if (res.user) {
                         localStorage.setItem('hm_user', JSON.stringify(res.user));
                         localStorage.setItem('hm_user_role', res.user.role || 'buyer');
-                        document.cookie = `hm_user_role=${res.user.role || 'buyer'}; path=/; max-age=604800; SameSite=Lax`;
+                        document.cookie = `hm_user_role=${res.user.role || 'buyer'}; path=/; max-age=2592000; SameSite=Lax`;
                     }
 
                     const role = res.user?.role;

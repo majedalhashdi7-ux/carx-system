@@ -423,13 +423,6 @@ export default function AuctionsPage() {
                                             {isRTL ? 'استفسار' : 'Enquire'}
                                         </a>
 
-                                        {item.externalUrl && (
-                                            <a href={item.externalUrl} target="_blank" rel="noopener noreferrer"
-                                                className="flex items-center gap-1.5 px-4 py-3 bg-white/4 border border-white/8 rounded-xl text-xs font-bold text-white/40 hover:text-white transition-all">
-                                                <ExternalLink className="w-3.5 h-3.5" />
-                                                {isRTL ? 'رابط' : 'Link'}
-                                            </a>
-                                        )}
                                     </div>
                                 </div>
                             </motion.div>

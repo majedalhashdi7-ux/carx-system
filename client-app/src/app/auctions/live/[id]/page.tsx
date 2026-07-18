@@ -139,17 +139,6 @@ export default function LiveAuctionDetails() {
                         </div>
                     </div>
                     <div className="hidden md:flex items-center gap-3 shrink-0">
-                        {session.externalUrl && (
-                            <a
-                                href={session.externalUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 px-4 py-2.5 bg-orange-500/10 border border-orange-500/20 rounded-xl hover:bg-orange-500/20 transition-all text-orange-400 text-[10px] font-black uppercase tracking-widest"
-                            >
-                                <Globe className="w-4 h-4" />
-                                {isRTL ? 'موقع المزاد' : 'AUCTION SITE'}
-                            </a>
-                        )}
                         <a
                             href={`https://wa.me/${(session.whatsappNumber || globalWhatsapp).replace(/[^0-9]/g, '')}`}
                             target="_blank"
@@ -288,26 +277,7 @@ export default function LiveAuctionDetails() {
                             </div>
                         </div>
 
-                        {/* External Auction Site Link */}
-                        {session.externalUrl && (
-                            <div className="pt-8 border-t border-white/5">
-                                <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.4em] mb-4 block">
-                                    {isRTL ? 'رابط المزاد الأصلي' : 'Original Auction'}
-                                </span>
-                                <a
-                                    href={session.externalUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="w-full py-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex items-center justify-center gap-3 text-orange-400 hover:bg-orange-500/20 transition-all"
-                                >
-                                    <Globe className="w-5 h-5" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest">
-                                        {isRTL ? 'زيارة موقع المزاد' : 'VISIT AUCTION SITE'}
-                                    </span>
-                                    <ExternalLink className="w-3.5 h-3.5 opacity-60" />
-                                </a>
-                            </div>
-                        )}
+
 
                         <div className="pt-8 border-t border-white/5">
                             <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.4em] mb-6 block">Support</span>

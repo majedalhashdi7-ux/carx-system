@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-    Car, Wrench, Gavel, ShieldCheck, Globe, Sparkles, Star, HelpCircle, Users
+    Car, Wrench, Gavel, ShieldCheck, Globe, Sparkles, Star, HelpCircle, Users,
+    Download, Smartphone
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -50,8 +51,8 @@ export default function HomePage() {
     const [brands, setBrands] = useState<any[]>([]);
     const [featuredCars, setFeaturedCars] = useState<any[]>([]);
     const [carsLoading, setCarsLoading] = useState(true);
-
-    const featuredSource = homeContent?.featuredCarsSource || 'showroom';
+    const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+    const [showInstallBtn, setShowInstallBtn] = useState(false);
 
     useEffect(() => {
         // Fetch active car brands
@@ -64,23 +65,83 @@ export default function HomePage() {
     }, []);
 
     useEffect(() => {
-        setCarsLoading(true);
-        if (featuredSource === 'auctions') {
-            api.auctions.list({ status: 'running', limit: 12 }).then(res => {
-                if (res?.success && res.auctions) {
-                    setFeaturedCars(res.auctions);
-                }
-            }).catch(err => console.error('Error fetching featured auctions:', err))
-              .finally(() => setCarsLoading(false));
-        } else {
-            api.cars.list({ isActive: true, limit: 12 }).then(res => {
-                if (res?.success && res.cars) {
-                    setFeaturedCars(res.cars);
-                }
-            }).catch(err => console.error('Error fetching featured cars:', err))
-              .finally(() => setCarsLoading(false));
+        const handleBeforeInstallPrompt = (e: Event) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+            setShowInstallBtn(true);
+        };
+        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        
+        // Check if iOS/Android or already stand-alone
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+        const ua = navigator.userAgent.toLowerCase();
+        const isMobile = /iphone|ipad|ipod|android/.test(ua);
+        
+        if (isMobile && !isStandalone) {
+            setShowInstallBtn(true);
         }
-    }, [featuredSource]);
+
+        return () => {
+            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        };
+    }, []);
+
+    const handleInstallApp = async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                setDeferredPrompt(null);
+                setShowInstallBtn(false);
+            }
+        } else {
+            alert(isRTL 
+                ? 'تثبيت التطبيق على جهازك:\n١. اضغط على زر "مشاركة" (Share) أسفل المتصفح.\n٢. اختر "إضافة إلى الشاشة الرئيسية" (Add to Home Screen).' 
+                : 'Install app on your device:\n1. Tap the "Share" button in your browser.\n2. Select "Add to Home Screen".'
+            );
+        }
+    };
+
+    useEffect(() => {
+        setCarsLoading(true);
+        
+        // Fetch both local/imported showroom cars and running auctions to display a full combined series
+        Promise.all([
+            api.cars.list({ isActive: true, limit: 100 }).catch(() => ({ success: false, data: { cars: [] } })),
+            api.auctions.list({ status: 'running', limit: 100 }).catch(() => ({ success: false, auctions: [] }))
+        ]).then(([carsRes, auctionsRes]) => {
+            const combined: any[] = [];
+            
+            if (carsRes?.success && carsRes.data?.cars) {
+                combined.push(...carsRes.data.cars.map((c: any) => ({
+                    ...c,
+                    _id: c.id || c._id,
+                    type: 'showroom',
+                    price: c.price || 0,
+                    year: c.year || '2024',
+                    transmission: c.transmission || (isRTL ? 'أوتوماتيك' : 'Auto'),
+                    fuel: c.fuelType || (isRTL ? 'ديزل' : 'Diesel'),
+                    images: c.images || []
+                })));
+            }
+            
+            if (auctionsRes?.success && auctionsRes.auctions) {
+                combined.push(...auctionsRes.auctions.map((a: any) => ({
+                    ...a,
+                    _id: a._id || a.id,
+                    type: 'auctions',
+                    price: a.currentBid || a.startingPrice || 0,
+                    year: a.year || '2024',
+                    transmission: a.transmission || (isRTL ? 'أوتوماتيك' : 'Auto'),
+                    fuel: a.fuelType || (isRTL ? 'ديزل' : 'Diesel'),
+                    images: a.images || []
+                })));
+            }
+            
+            setFeaturedCars(combined);
+        }).catch(err => console.error('Error fetching combined homepage fleet:', err))
+          .finally(() => setCarsLoading(false));
+    }, [isRTL]);
 
     const FALLBACK_BRANDS = [
         { name: 'Hyundai', logoUrl: '/brands/hyundai.png' },
@@ -249,8 +310,8 @@ export default function HomePage() {
                                 <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-black to-transparent z-10 pointer-events-none" />
                                 
                                 <div className="animate-marquee-infinite flex gap-6">
-                                    {marqueeCars.map((car, idx) => (
-                                        <div key={idx} className="relative aspect-square w-[240px] sm:w-[280px] rounded-3xl overflow-hidden border border-white/10 bg-white/2 group flex-shrink-0">
+                                    {displayCars.map((car, idx) => (
+                                        <div key={`car-a-${idx}`} className="relative aspect-square w-[240px] sm:w-[280px] rounded-3xl overflow-hidden border border-white/10 bg-white/2 group flex-shrink-0">
                                             {car.images && car.images.length > 0 ? (
                                                 <img src={car.images[0]} alt={car.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 pointer-events-none" />
                                             ) : (
@@ -261,8 +322,13 @@ export default function HomePage() {
                                             
                                             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex flex-col justify-end p-5 text-start">
                                                 <div className="flex items-center justify-between mb-1.5">
-                                                    <span className="px-2 py-0.5 rounded bg-black/60 border border-white/10 text-[9px] font-black uppercase text-[#C9A96E]">
-                                                        {featuredSource === 'auctions' ? (isRTL ? 'مزاد مباشر' : 'LIVE AUCTION') : (isRTL ? 'معرض' : 'SHOWROOM')}
+                                                    <span className={cn(
+                                                        "px-2 py-0.5 rounded border text-[9px] font-black uppercase",
+                                                        car.type === 'auctions' 
+                                                            ? "bg-red-500/20 border-red-500/30 text-red-400" 
+                                                            : "bg-orange-500/20 border-orange-500/30 text-[#C9A96E]"
+                                                    )}>
+                                                        {car.type === 'auctions' ? (isRTL ? 'مزاد مباشر' : 'LIVE AUCTION') : (isRTL ? 'معرض' : 'SHOWROOM')}
                                                     </span>
                                                     <span className="text-sm font-black text-[#C9A96E] cockpit-num">
                                                         {formatPriceFromUsd(car.price)}
@@ -274,15 +340,56 @@ export default function HomePage() {
                                                 </h4>
                                                 
                                                 <div className="flex gap-3 text-[9px] text-white/40">
-                                                    <span>{car.specs?.year || car.year || '2023'}</span>
+                                                    <span>{car.year || '2024'}</span>
                                                     <span>•</span>
-                                                    <span>{car.specs?.transmission || car.transmission || (isRTL ? 'أوتوماتيك' : 'Auto')}</span>
+                                                    <span>{car.transmission || (isRTL ? 'أوتوماتيك' : 'Auto')}</span>
                                                     <span>•</span>
-                                                    <span>{car.specs?.fuel || car.fuel || (isRTL ? 'ديزل' : 'Diesel')}</span>
+                                                    <span>{car.fuel || (isRTL ? 'ديزل' : 'Diesel')}</span>
                                                 </div>
                                             </div>
                                             
-                                            <Link href={featuredSource === 'auctions' ? `/auctions/${car._id}` : `/cars/${car._id}`} className="absolute inset-0 z-10" />
+                                            <Link href={car.type === 'auctions' ? `/auctions/${car._id}` : `/cars/${car._id}`} className="absolute inset-0 z-10" />
+                                        </div>
+                                    ))}
+                                    {displayCars.map((car, idx) => (
+                                        <div key={`car-b-${idx}`} className="relative aspect-square w-[240px] sm:w-[280px] rounded-3xl overflow-hidden border border-white/10 bg-white/2 group flex-shrink-0">
+                                            {car.images && car.images.length > 0 ? (
+                                                <img src={car.images[0]} alt={car.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 pointer-events-none" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center bg-white/5">
+                                                    <Car className="w-12 h-12 text-white/10" />
+                                                </div>
+                                            )}
+                                            
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex flex-col justify-end p-5 text-start">
+                                                <div className="flex items-center justify-between mb-1.5">
+                                                    <span className={cn(
+                                                        "px-2 py-0.5 rounded border text-[9px] font-black uppercase",
+                                                        car.type === 'auctions' 
+                                                            ? "bg-red-500/20 border-red-500/30 text-red-400" 
+                                                            : "bg-orange-500/20 border-orange-500/30 text-[#C9A96E]"
+                                                    )}>
+                                                        {car.type === 'auctions' ? (isRTL ? 'مزاد مباشر' : 'LIVE AUCTION') : (isRTL ? 'معرض' : 'SHOWROOM')}
+                                                    </span>
+                                                    <span className="text-sm font-black text-[#C9A96E] cockpit-num">
+                                                        {formatPriceFromUsd(car.price)}
+                                                    </span>
+                                                </div>
+                                                
+                                                <h4 className="text-sm font-black text-white line-clamp-1 mb-1.5">
+                                                    {car.title}
+                                                </h4>
+                                                
+                                                <div className="flex gap-3 text-[9px] text-white/40">
+                                                    <span>{car.year || '2024'}</span>
+                                                    <span>•</span>
+                                                    <span>{car.transmission || (isRTL ? 'أوتوماتيك' : 'Auto')}</span>
+                                                    <span>•</span>
+                                                    <span>{car.fuel || (isRTL ? 'ديزل' : 'Diesel')}</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <Link href={car.type === 'auctions' ? `/auctions/${car._id}` : `/cars/${car._id}`} className="absolute inset-0 z-10" />
                                         </div>
                                     ))}
                                 </div>
@@ -309,8 +416,27 @@ export default function HomePage() {
                     <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-black to-transparent z-10 pointer-events-none" />
                     
                     <div className="animate-marquee-infinite flex gap-12 items-center">
-                        {marqueeBrands.map((brand, idx) => (
-                            <div key={idx} className="flex flex-col items-center gap-3 select-none">
+                        {displayBrands.map((brand, idx) => (
+                            <div key={`brand-a-${idx}`} className="flex flex-col items-center gap-3 select-none">
+                                {/* Circular Logo Frame */}
+                                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white flex items-center justify-center p-4 border-2 border-[#C9A96E]/20 shadow-[0_0_15px_rgba(201,169,110,0.1)] hover:border-[#C9A96E] hover:shadow-[0_0_20px_rgba(201,169,110,0.2)] transition-all duration-300">
+                                    <div className="relative w-full h-full">
+                                        {brand.logoUrl ? (
+                                            <img src={brand.logoUrl} alt={brand.name} className="w-full h-full object-contain pointer-events-none" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-black/40">
+                                                {brand.name}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <span className="text-xs font-bold text-white/70 hover:text-white transition-colors">
+                                    {brand.name}
+                                </span>
+                            </div>
+                        ))}
+                        {displayBrands.map((brand, idx) => (
+                            <div key={`brand-b-${idx}`} className="flex flex-col items-center gap-3 select-none">
                                 {/* Circular Logo Frame */}
                                 <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white flex items-center justify-center p-4 border-2 border-[#C9A96E]/20 shadow-[0_0_15px_rgba(201,169,110,0.1)] hover:border-[#C9A96E] hover:shadow-[0_0_20px_rgba(201,169,110,0.2)] transition-all duration-300">
                                     <div className="relative w-full h-full">
@@ -440,6 +566,28 @@ export default function HomePage() {
                     </p>
                 </div>
             </footer>
+            {/* Premium PWA Install Floating Trigger */}
+            <AnimatePresence>
+                {showInstallBtn && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.8, y: 50 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.8, y: 50 }}
+                        className="fixed bottom-24 right-4 z-[100]"
+                    >
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={handleInstallApp}
+                            className="flex items-center gap-2.5 px-4.5 py-3 rounded-2xl bg-gradient-to-r from-[#C9A96E] to-[#b8955b] border border-[#a07e40] text-black font-black text-xs uppercase tracking-wider shadow-[0_10px_30px_rgba(201,169,110,0.3)] group transition-all"
+                        >
+                            <Smartphone className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                            <span className="text-[10px] sm:text-xs">{isRTL ? 'تنزيل التطبيق' : 'DOWNLOAD APP'}</span>
+                            <Download className="w-3.5 h-3.5 opacity-60" />
+                        </motion.button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

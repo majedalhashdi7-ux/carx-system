@@ -84,8 +84,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const role = userData.role || 'buyer';
             localStorage.setItem('hm_user_role', role);
 
-            // حفظ في Cookie للـ middleware - أسبوع واحد
-            const maxAge = 60 * 60 * 24 * 7;
+            // حفظ في Cookie للـ middleware - سنة كاملة للاستمرارية
+            const maxAge = 60 * 60 * 24 * 365;
             document.cookie = `hm_token=${token}; path=/; max-age=${maxAge}; SameSite=Lax`;
             document.cookie = `hm_user_role=${role}; path=/; max-age=${maxAge}; SameSite=Lax`;
         }
