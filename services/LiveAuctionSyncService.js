@@ -137,7 +137,7 @@ async function scrapeMultipleCars(targetUrl) {
         });
     }
 
-    return items.slice(0, 50); // الحد الأقصى 50 سيارة
+    return items.slice(0, 150); // الحد الأقصى 150 سيارة
 }
 
 /**

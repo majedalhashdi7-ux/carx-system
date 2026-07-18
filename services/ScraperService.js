@@ -155,23 +155,49 @@ class ScraperService {
     }
   }
 
-  /**
-   * استخراج الصور من صفحة HTML مع تصفية ذكية
-   */
   _extractImages($, baseUrl) {
     const images = [];
     const seen = new Set();
     
-    // الصورة الرئيسية من OG
+    // 1. الصورة الرئيسية من OG
     const mainImage = $('meta[property="og:image"]').attr('content');
     if (mainImage && mainImage.startsWith('http')) {
       images.push(mainImage);
       seen.add(mainImage);
     }
     
-    // صور إضافية من الصفحة
+    // 2. إذا كان الرابط يخص encar، نستخرج كل روابط الصور من سكريبت الصفحة والـ HTML الخام
+    const lowerBase = String(baseUrl).toLowerCase();
+    if (lowerBase.includes('encar.com') || lowerBase.includes('encar.co.kr')) {
+        const rawHtml = $.html();
+        let match;
+        // مطابقة روابط الصور المطلقة لـ Encar
+        const regexAbs = /(?:https?:)?\/\/[a-z0-9.-]*encar\.(?:com|co\.kr)\/[^\s"'`<>]+?\.(?:jpg|jpeg|png|webp)/gi;
+        while ((match = regexAbs.exec(rawHtml)) !== null) {
+            let imgUrl = match[0];
+            if (imgUrl.startsWith('//')) imgUrl = 'https:' + imgUrl;
+            const lowerImg = imgUrl.toLowerCase();
+            if (!['logo', 'icon', 'favicon', 'sprite', 'pixel', 'banner', 'btn', 'spacer', 'loading', 'ad_'].some(p => lowerImg.includes(p))) {
+                if (!seen.has(imgUrl)) {
+                    seen.add(imgUrl);
+                    images.push(imgUrl);
+                }
+            }
+        }
+        // مطابقة الروابط النسبية لـ carpicture
+        const regexRel = /\/carpicture\/[^\s"'`<>]+?\.(?:jpg|jpeg|png|webp)/gi;
+        while ((match = regexRel.exec(rawHtml)) !== null) {
+            const imgUrl = 'https://ci.encar.com' + match[0];
+            if (!seen.has(imgUrl)) {
+                seen.add(imgUrl);
+                images.push(imgUrl);
+            }
+        }
+    }
+    
+    // 3. صور إضافية من عناصر img
     $('img').each((i, el) => {
-      let src = $(el).attr('src') || $(el).attr('data-src') || $(el).attr('data-original');
+      let src = $(el).attr('src') || $(el).attr('data-src') || $(el).attr('data-original') || $(el).attr('data-zoom-image') || $(el).attr('data-large');
       if (!src) return;
       
       // تحويل الروابط النسبية
@@ -201,7 +227,30 @@ class ScraperService {
       images.push(src);
     });
 
-    return images.slice(0, 15); // أول 15 صورة كحد أقصى
+    // 4. البحث في الروابط <a> التي تشير لصور كبيرة (مثل قطع الغيار والسيارات)
+    $('a').each((i, el) => {
+      let href = $(el).attr('href') || $(el).attr('data-zoom') || $(el).attr('data-image');
+      if (!href) return;
+      const lowerHref = href.toLowerCase();
+      if (lowerHref.match(/\.(jpg|jpeg|png|webp)(?:\?.*)?$/i)) {
+          if (href.startsWith('//')) href = 'https:' + href;
+          else if (href.startsWith('/') && !href.startsWith('http')) {
+              try {
+                  const urlObj = new URL(baseUrl);
+                  href = `${urlObj.origin}${href}`;
+              } catch(e) { return; }
+          }
+          if (href.startsWith('http') && !seen.has(href)) {
+              const lower = href.toLowerCase();
+              if (!['logo', 'icon', 'favicon', 'sprite', 'pixel', 'banner', 'btn', 'spacer', 'loading', 'ad_'].some(p => lower.includes(p))) {
+                  seen.add(href);
+                  images.push(href);
+              }
+          }
+      }
+    });
+
+    return images.slice(0, 80); // أول 80 صورة كحد أقصى
   }
 }
 
