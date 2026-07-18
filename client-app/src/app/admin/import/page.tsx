@@ -28,7 +28,7 @@ export default function AdminImportHub() {
     const [encarUrl, setEncarUrl] = useState("");
     const [showroomSettingsLoading, setShowroomSettingsLoading] = useState(false);
     const [forceScrapingCars, setForceScrapingCars] = useState(false);
-    const [carsScrapeResult, setCarsScrapeResult] = useState<{ success: boolean; msg: string } | null>(null);
+    const [carsScrapeResult, setCarsScrapeResult] = useState<{ success: boolean; msg: string; importedCars?: any[] } | null>(null);
     const [carsImportMode, setCarsImportMode] = useState<"auto" | "manual">("auto");
 
     // --- Live Auctions State ---
@@ -37,12 +37,13 @@ export default function AdminImportHub() {
     const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
     const [sessionUrls, setSessionUrls] = useState<Record<string, string>>({});
     const [auctionLoading, setAuctionLoading] = useState(false);
+    const [syncedSessionCars, setSyncedSessionCars] = useState<Record<string, any[]>>({}); // session._id -> imported cars
 
     // --- Parts (Autospare Scraper) State ---
     const [partsImportMode, setPartsImportMode] = useState<"auto" | "manual">("auto");
     const [forceScrapingParts, setForceScrapingParts] = useState(false);
     const [fixingPartsLinks, setFixingPartsLinks] = useState(false);
-    const [partsScrapeResult, setPartsScrapeResult] = useState<{ success: boolean; msg: string } | null>(null);
+    const [partsScrapeResult, setPartsScrapeResult] = useState<{ success: boolean; msg: string; brandsCreated?: number; partsCreated?: number } | null>(null);
 
     // --- Load Encar & Live Auction data ---
     const loadEncarSettings = useCallback(async () => {
@@ -109,11 +110,17 @@ export default function AdminImportHub() {
     const handleForceScrapeCars = async () => {
         setForceScrapingCars(true);
         setCarsScrapeResult(null);
-        showToast(isRTL ? "⏳ جاري بدء استيراد السيارات الكورية..." : "⏳ Starting Korean import scraper...", "info");
+        showToast(isRTL ? "⏳ جاري بدء استيراد السيارات..." : "⏳ Starting cars import scraper...", "info");
         try {
             const res = await api.showroom.scrape();
             if (res.success) {
-                setCarsScrapeResult({ success: true, msg: res.message });
+                // Fetch the recently-imported cars to show in results
+                let importedCars: any[] = [];
+                try {
+                    const recentRes = await api.cars.list({ page: 1, limit: 12 });
+                    if (recentRes.success) importedCars = recentRes.data?.cars || [];
+                } catch {}
+                setCarsScrapeResult({ success: true, msg: res.message, importedCars });
                 showToast(res.message || "Done", "success");
             } else {
                 setCarsScrapeResult({ success: false, msg: res.message || "Error" });
@@ -170,7 +177,6 @@ export default function AdminImportHub() {
         setSyncingSessionId(id);
         showToast(isRTL ? "⏳ جاري استيراد وتزامن سيارات المزاد المباشر..." : "⏳ Scraping & syncing live auction cars...", "info");
         try {
-            // First save URL to session DB, then scrape
             const sessionRes = await api.liveAuctions.getById(id);
             if (sessionRes.success) {
                 const currentData = sessionRes.data;
@@ -181,6 +187,12 @@ export default function AdminImportHub() {
             const res = await (api.liveAuctions as any).importExternal(id);
             if (res.success) {
                 showToast(isRTL ? `✅ ${res.message}` : `✅ ${res.message}`, "success");
+                // Store the cars imported for display
+                const freshSession = await api.liveAuctions.getById(id);
+                if (freshSession.success) {
+                    const carsArr = freshSession.data?.cars || [];
+                    setSyncedSessionCars(prev => ({ ...prev, [id]: carsArr }));
+                }
                 loadAuctionSessions();
             } else {
                 showToast(res.error || "Import failed", "error");
@@ -200,7 +212,12 @@ export default function AdminImportHub() {
         try {
             const res = await api.parts.scrape();
             if (res.success) {
-                setPartsScrapeResult({ success: true, msg: isRTL ? `✅ اكتمل جلب قطع الغيار بنجاح! الإحصائيات: الماركات المضافة ${res.stats?.brandsCreated || 0}، القطع المضافة ${res.stats?.partsCreated || 0}` : `✅ Scrape complete! Brands created: ${res.stats?.brandsCreated || 0}, Parts created: ${res.stats?.partsCreated || 0}` });
+                const brandsCreated = res.stats?.brandsCreated || 0;
+                const partsCreated = res.stats?.partsCreated || 0;
+                const msg = isRTL 
+                    ? `✅ اكتمل جلب قطع الغيار! ماركات جديدة: ${brandsCreated} | قطع جديدة: ${partsCreated}`
+                    : `✅ Scrape complete! Brands: ${brandsCreated} new | Parts: ${partsCreated} new`;
+                setPartsScrapeResult({ success: true, msg, brandsCreated, partsCreated });
                 showToast(isRTL ? "✅ اكتمل الجلب بنجاح!" : "✅ Scrape complete!", "success");
             } else {
                 setPartsScrapeResult({ success: false, msg: res.error || "Scraping failed" });
@@ -383,6 +400,22 @@ export default function AdminImportHub() {
                                             >
                                                 <h5 className="uppercase text-[9px] tracking-widest opacity-60 mb-2">{isRTL ? "تقرير الجلب الأخير:" : "LATEST SCRAPE REPORT:"}</h5>
                                                 {carsScrapeResult.msg}
+                                                {carsScrapeResult.importedCars && carsScrapeResult.importedCars.length > 0 && (
+                                                    <div className="mt-4">
+                                                        <div className="text-[9px] text-white/40 uppercase tracking-widest mb-3">{isRTL ? `السيارات المستوردة الأخيرة (${carsScrapeResult.importedCars.length}):` : `RECENTLY IMPORTED CARS (${carsScrapeResult.importedCars.length}):`}</div>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            {carsScrapeResult.importedCars.slice(0, 8).map((car: any, i: number) => (
+                                                                <div key={i} className="flex items-center gap-2 p-2 bg-black/30 rounded-lg border border-white/5">
+                                                                    {car.images?.[0] && <img src={car.images[0]} alt={car.title || ''} className="w-10 h-8 object-cover rounded" />}
+                                                                    <div className="truncate">
+                                                                        <div className="text-[9px] font-bold truncate text-white/80">{car.title || `${car.make} ${car.model}`}</div>
+                                                                        <div className="text-[8px] text-white/40">{car.year} • {car.price?.toLocaleString()} SAR</div>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </motion.div>
                                         )}
                                     </div>
@@ -430,6 +463,7 @@ export default function AdminImportHub() {
                                         const visibleCars = carsArray.filter((c: any) => c && !c.isHidden).length;
                                         const isSyncing = syncingSessionId === session._id;
                                         const isSaving = editingSessionId === session._id;
+                                        const importedSessionCars = syncedSessionCars[session._id] || [];
 
                                         return (
                                             <div key={session._id} className="ck-card p-6 border-red-500/10 bg-red-500/2 hover:border-red-500/20 transition-all">
@@ -483,6 +517,21 @@ export default function AdminImportHub() {
                                                         dir="ltr"
                                                     />
                                                 </div>
+
+                                                {/* Synced cars preview */}
+                                                {importedSessionCars.length > 0 && (
+                                                    <div className="mt-4 p-4 bg-black/30 rounded-xl border border-white/5">
+                                                        <div className="text-[9px] text-white/40 uppercase tracking-widest mb-3">{isRTL ? `السيارات المستوردة لهذه الجلسة (${importedSessionCars.length}):` : `SYNCED CARS IN THIS SESSION (${importedSessionCars.length}):`}</div>
+                                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                                            {importedSessionCars.slice(0, 6).map((car: any, i: number) => (
+                                                                <div key={i} className="p-2 bg-black/40 rounded-lg border border-white/5">
+                                                                    <div className="text-[9px] font-bold text-white/70 truncate">{car.title || `${car.make} ${car.model}`}</div>
+                                                                    <div className="text-[8px] text-white/40 mt-1">{car.year} • {(car.price || 0).toLocaleString()} SAR</div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         );
                                     })}

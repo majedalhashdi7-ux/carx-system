@@ -309,71 +309,43 @@ function CarsContent() {
     const fetchAllCars = useCallback(async () => {
         setLoading(true);
         try {
-            const [koreanRes, localRes] = await Promise.allSettled([
-                api.showroom.getCars(1),
-                api.cars.list({ limit: 200, isActive: true }),
-            ]);
-
+            // Single unified fetch - gets all cars (local + imported) from one endpoint
+            const res = await api.cars.list({ limit: 300, isActive: true });
+            
             const merged: CarItem[] = [];
 
-            // Korean cars
-            if (koreanRes.status === 'fulfilled' && koreanRes.value?.success) {
-                const kCars = koreanRes.value.data || [];
-                kCars.forEach((c: any) => {
-                    const priceUsd = Number(c.priceUsd) || (Number(c.priceKrw) / (Number(currency.usdToKrw) || 1350));
+            if (res.success) {
+                const carsData = res.data?.cars || (Array.isArray(res.data) ? res.data : []);
+                carsData.forEach((c: any) => {
+                    if (c.isSold || c.isActive === false) return;
+                    const price = Number(c.price) || Number(c.priceSar) || 0;
+                    const priceUsd = Number(c.priceUsd) || Number(c.usdPrice) || (Number(c.priceKrw) / (Number(currency.usdToKrw) || 1350));
+                    const isKoreanImport = c.source === 'korean_import';
                     merged.push({
-                        id: String(c.id || c._id),
-                        title: c.title || `${c.manufacturerAr || c.manufacturer} ${c.model}`,
+                        id: String(c._id || c.id),
+                        title: c.title || `${c.makeAr || c.make} ${c.model} ${c.year}`,
                         titleKr: c.titleKr,
-                        make: c.manufacturer || '',
-                        makeAr: c.manufacturerAr || c.manufacturer,
+                        make: c.make || '',
+                        makeAr: c.makeAr || c.make,
                         model: c.model || '',
                         badge: c.badge || '',
                         year: Number(c.year) || 0,
                         mileage: Number(c.mileage) || 0,
-                        fuelType: c.fuel,
-                        fuelAr: c.fuelAr || c.fuel,
-                        transmission: c.transmission,
-                        transmissionAr: c.transmissionAr || c.transmission,
-                        price: priceUsd * (Number(currency.usdToSar) || 3.75),
-                        priceUsd,
-                        priceSar: c.priceSar || priceUsd * (Number(currency.usdToSar) || 3.75),
-                        images: c.images || [c.imageUrl, c.image].filter(Boolean),
-                        imageUrl: c.imageUrl || c.image,
-                        source: 'korean',
-                        isInspected: Boolean(c.isInspected),
-                        encarUrl: c.encarUrl,
-                    });
-                });
-            }
-
-            // Local HM CAR
-            if (localRes.status === 'fulfilled') {
-                const lData = localRes.value?.data;
-                const lCars = lData?.cars || (Array.isArray(lData) ? lData : []);
-                lCars.forEach((c: any) => {
-                    if (c.isSold || c.isActive === false) return;
-                    const price = Number(c.price) || Number(c.priceSar) || 0;
-                    merged.push({
-                        id: String(c._id || c.id),
-                        title: c.title || `${c.makeAr || c.make} ${c.model} ${c.year}`,
-                        make: c.make || '',
-                        makeAr: c.makeAr || c.make,
-                        model: c.model || '',
-                        year: Number(c.year) || 0,
-                        mileage: Number(c.mileage) || 0,
-                        fuelType: c.fuelType,
-                        fuelAr: c.fuelAr || c.fuelType,
+                        fuelType: c.fuelType || c.fuel,
+                        fuelAr: c.fuelAr || c.fuelType || c.fuel,
                         transmission: c.transmission,
                         transmissionAr: c.transmissionAr || c.transmission,
                         color: c.color,
                         seats: c.seats,
                         bodyType: c.bodyType,
-                        price,
-                        priceSar: price,
+                        price: isKoreanImport ? (priceUsd * (Number(currency.usdToSar) || 3.75)) : price,
+                        priceUsd: isKoreanImport ? priceUsd : undefined,
+                        priceSar: isKoreanImport ? (c.priceSar || priceUsd * (Number(currency.usdToSar) || 3.75)) : price,
                         images: Array.isArray(c.images) ? c.images : [c.imageUrl].filter(Boolean),
                         imageUrl: c.imageUrl || c.images?.[0],
-                        source: 'local',
+                        source: isKoreanImport ? 'korean' : 'local',
+                        isInspected: Boolean(c.isInspected),
+                        encarUrl: c.encarUrl,
                         condition: c.condition,
                     });
                 });
@@ -388,6 +360,7 @@ function CarsContent() {
     }, [currency.usdToKrw, currency.usdToSar]);
 
     useEffect(() => { fetchAllCars(); }, [fetchAllCars]);
+
 
     /* ── Derived filter options ── */
     const allBrands = [...new Set(allCars.map(c => c.makeAr || c.make).filter(Boolean))].sort();
