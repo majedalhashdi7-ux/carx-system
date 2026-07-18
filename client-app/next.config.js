@@ -52,6 +52,16 @@ const nextConfig = {
 
 
 
+  async rewrites() {
+    // Only rewrite in local development when backend is running on port 4001
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:4001/api/:path*',
+      },
+    ];
+  },
+
   compress: true,
   poweredByHeader: false,
   generateEtags: true,
