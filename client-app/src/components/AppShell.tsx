@@ -71,6 +71,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         return <>{children}</>;
     }
 
+    if (pathname?.startsWith('/admin')) {
+        return <>{children}</>;
+    }
+
     if (isStandalone && !pathname?.startsWith('/admin')) {
         return (
             <div
