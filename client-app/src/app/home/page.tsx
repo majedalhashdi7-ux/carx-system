@@ -400,162 +400,170 @@ export default function HomePage() {
             </header>
 
             {/* ─── Car Brands Ribbon Section (Circular Logos & Moving Marquee) ─── */}
-            <section className="py-16 border-y border-white/5 bg-gradient-to-b from-transparent via-white/[0.01] to-transparent relative z-10 overflow-hidden">
-                <div className="max-w-7xl mx-auto px-4 mb-8 text-center">
-                    <span className="text-[10px] font-black text-[#C9A96E] tracking-[0.3em] uppercase">
-                        {isRTL ? 'الشركات المصنعة والوكالات' : 'PREMIUM BRANDS'}
-                    </span>
-                    <h2 className="text-2xl sm:text-3xl font-black mt-2">
-                        {isRTL ? 'تصفح السيارات حسب العلامة التجارية' : 'Browse By Car Brand'}
-                    </h2>
-                </div>
-                
-                {/* Marquee Track */}
-                <div className="relative w-full overflow-hidden py-4">
-                    <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-black to-transparent z-10 pointer-events-none" />
-                    <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-black to-transparent z-10 pointer-events-none" />
-                    
-                    <div className="animate-marquee-infinite flex gap-12 items-center">
-                        {displayBrands.map((brand, idx) => (
-                            <div key={`brand-a-${idx}`} className="flex flex-col items-center gap-3 select-none">
-                                {/* Circular Logo Frame */}
-                                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white flex items-center justify-center p-4 border-2 border-[#C9A96E]/20 shadow-[0_0_15px_rgba(201,169,110,0.1)] hover:border-[#C9A96E] hover:shadow-[0_0_20px_rgba(201,169,110,0.2)] transition-all duration-300">
-                                    <div className="relative w-full h-full">
-                                        {brand.logoUrl ? (
-                                            <img src={brand.logoUrl} alt={brand.name} className="w-full h-full object-contain pointer-events-none" />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-black/40">
-                                                {brand.name}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                                <span className="text-xs font-bold text-white/70 hover:text-white transition-colors">
-                                    {brand.name}
-                                </span>
-                            </div>
-                        ))}
-                        {displayBrands.map((brand, idx) => (
-                            <div key={`brand-b-${idx}`} className="flex flex-col items-center gap-3 select-none">
-                                {/* Circular Logo Frame */}
-                                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white flex items-center justify-center p-4 border-2 border-[#C9A96E]/20 shadow-[0_0_15px_rgba(201,169,110,0.1)] hover:border-[#C9A96E] hover:shadow-[0_0_20px_rgba(201,169,110,0.2)] transition-all duration-300">
-                                    <div className="relative w-full h-full">
-                                        {brand.logoUrl ? (
-                                            <img src={brand.logoUrl} alt={brand.name} className="w-full h-full object-contain pointer-events-none" />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-black/40">
-                                                {brand.name}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                                <span className="text-xs font-bold text-white/70 hover:text-white transition-colors">
-                                    {brand.name}
-                                </span>
-                            </div>
-                        ))}
+            {(homeContent?.showBrandCatalog ?? true) && (
+                <section className="py-16 border-y border-white/5 bg-gradient-to-b from-transparent via-white/[0.01] to-transparent relative z-10 overflow-hidden">
+                    <div className="max-w-7xl mx-auto px-4 mb-8 text-center">
+                        <span className="text-[10px] font-black text-[#C9A96E] tracking-[0.3em] uppercase">
+                            {isRTL ? 'الشركات المصنعة والوكالات' : 'PREMIUM BRANDS'}
+                        </span>
+                        <h2 className="text-2xl sm:text-3xl font-black mt-2">
+                            {isRTL ? 'تصفح السيارات حسب العلامة التجارية' : 'Browse By Car Brand'}
+                        </h2>
                     </div>
-                </div>
-            </section>
+                    
+                    {/* Marquee Track */}
+                    <div className="relative w-full overflow-hidden py-4">
+                        <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-black to-transparent z-10 pointer-events-none" />
+                        <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-black to-transparent z-10 pointer-events-none" />
+                        
+                        <div className="animate-marquee-infinite flex gap-12 items-center">
+                            {displayBrands.map((brand, idx) => (
+                                <div key={`brand-a-${idx}`} className="flex flex-col items-center gap-3 select-none">
+                                    {/* Circular Logo Frame */}
+                                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white flex items-center justify-center p-4 border-2 border-[#C9A96E]/20 shadow-[0_0_15px_rgba(201,169,110,0.1)] hover:border-[#C9A96E] hover:shadow-[0_0_20px_rgba(201,169,110,0.2)] transition-all duration-300">
+                                        <div className="relative w-full h-full">
+                                            {brand.logoUrl ? (
+                                                <img src={brand.logoUrl} alt={brand.name} className="w-full h-full object-contain pointer-events-none" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-black/40">
+                                                    {brand.name}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <span className="text-xs font-bold text-white/70 hover:text-white transition-colors">
+                                        {brand.name}
+                                    </span>
+                                </div>
+                            ))}
+                            {displayBrands.map((brand, idx) => (
+                                <div key={`brand-b-${idx}`} className="flex flex-col items-center gap-3 select-none">
+                                    {/* Circular Logo Frame */}
+                                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white flex items-center justify-center p-4 border-2 border-[#C9A96E]/20 shadow-[0_0_15px_rgba(201,169,110,0.1)] hover:border-[#C9A96E] hover:shadow-[0_0_20px_rgba(201,169,110,0.2)] transition-all duration-300">
+                                        <div className="relative w-full h-full">
+                                            {brand.logoUrl ? (
+                                                <img src={brand.logoUrl} alt={brand.name} className="w-full h-full object-contain pointer-events-none" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-black/40">
+                                                    {brand.name}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <span className="text-xs font-bold text-white/70 hover:text-white transition-colors">
+                                        {brand.name}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
 
             {/* ─── Why Choose Us Section ─── */}
-            <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                <div className="text-center mb-16">
-                    <span className="text-[10px] font-black text-[#C9A96E] tracking-[0.3em] uppercase">
-                        {isRTL ? 'ضمان وجودة إتش إم كار' : 'HM CAR TRUST HUB'}
-                    </span>
-                    <h2 className="text-3xl sm:text-4xl font-black tracking-tight mt-2 uppercase italic">
-                        {isRTL ? 'لماذا تختار منصتنا؟' : 'Why Choose Us?'}
-                    </h2>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {[
-                        { icon: ShieldCheck, titleAr: 'فحص فني شامل', titleEn: 'Guaranteed Inspection', descAr: 'يتم فحص كل سيارة بدقة في كوريا عبر مهندسينا قبل الشحن لضمان خلوها من أي مشاكل.', descEn: 'Every car is thoroughly inspected in Korea by our engineers before shipping.' },
-                        { icon: Gavel, titleAr: 'مزادات كورية مباشرة', titleEn: 'Direct Auction Access', descAr: 'شاهد وزايد في المزادات الحية مباشرة دون وسطاء وبمنتهى الشفافية والسهولة.', descEn: 'Watch and bid in live Korean auctions directly without intermediaries.' },
-                        { icon: Wrench, titleAr: 'قطع غيار أصلية', titleEn: 'Original Parts Catalog', descAr: 'استورد قطع غيار كورية أصلية وتتبع الشحنات بأسعار منافسة للمخزون والتجزئة.', descEn: 'Import original Korean spare parts directly at competitive retail rates.' },
-                        { icon: Users, titleAr: 'دعم العملاء 24/7', titleEn: 'Expert Support 24/7', descAr: 'فريقنا جاهز لمساعدتك في كل خطوة من المزايدة والشراء وحتى الشحن والتسجيل.', descEn: 'Our team is ready to guide you from bidding and purchasing to registration.' }
-                    ].map((item, idx) => (
-                        <div key={idx} className="bg-[#101018] border border-white/5 p-6 rounded-2xl relative overflow-hidden group hover:border-[#C9A96E]/30 transition-all duration-300">
-                            <div className="w-12 h-12 rounded-xl bg-[#C9A96E]/5 border border-[#C9A96E]/20 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-                                <item.icon className="w-6 h-6 text-[#C9A96E]" />
-                            </div>
-                            <h3 className="text-base font-black mb-2 text-white">
-                                {isRTL ? item.titleAr : item.titleEn}
-                            </h3>
-                            <p className="text-xs text-white/45 leading-relaxed">
-                                {isRTL ? item.descAr : item.descEn}
-                            </p>
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            {/* ─── Testimonials Section ─── */}
-            <section className="py-20 bg-gradient-to-b from-transparent via-white/[0.01] to-transparent border-t border-white/5 relative z-10">
-                <div className="max-w-5xl mx-auto px-4 sm:px-6">
+            {(homeContent?.showPlatformFeatures ?? true) && (
+                <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="text-center mb-16">
                         <span className="text-[10px] font-black text-[#C9A96E] tracking-[0.3em] uppercase">
-                            {isRTL ? 'آراء شركاء النجاح' : 'TESTIMONIALS'}
+                            {isRTL ? 'ضمان وجودة إتش إم كار' : 'HM CAR TRUST HUB'}
                         </span>
-                        <h2 className="text-3xl font-black mt-2">
-                            {isRTL ? 'ماذا يقول عملاؤنا عنا؟' : 'What Our Customers Say'}
+                        <h2 className="text-3xl sm:text-4xl font-black tracking-tight mt-2 uppercase italic">
+                            {isRTL ? 'لماذا تختار منصتنا؟' : 'Why Choose Us?'}
                         </h2>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {testimonials.map((t, idx) => (
-                            <div key={idx} className="bg-[#11111a] border border-white/5 rounded-2xl p-6 relative flex flex-col justify-between">
-                                <div>
-                                    <div className="flex gap-1 mb-4">
-                                        {Array.from({ length: t.rating }).map((_, i) => (
-                                            <Star key={i} className="w-3.5 h-3.5 text-[#C9A96E] fill-[#C9A96E]" />
-                                        ))}
-                                    </div>
-                                    <p className="text-xs text-white/60 leading-relaxed italic mb-6">
-                                        "{isRTL ? t.textAr : t.textEn}"
-                                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {[
+                            { icon: ShieldCheck, titleAr: 'فحص فني شامل', titleEn: 'Guaranteed Inspection', descAr: 'يتم فحص كل سيارة بدقة في كوريا عبر مهندسينا قبل الشحن لضمان خلوها من أي مشاكل.', descEn: 'Every car is thoroughly inspected in Korea by our engineers before shipping.' },
+                            { icon: Gavel, titleAr: 'مزادات كورية مباشرة', titleEn: 'Direct Auction Access', descAr: 'شاهد وزايد في المزادات الحية مباشرة دون وسطاء وبمنتهى الشفافية والسهولة.', descEn: 'Watch and bid in live Korean auctions directly without intermediaries.' },
+                            { icon: Wrench, titleAr: 'قطع غيار أصلية', titleEn: 'Original Parts Catalog', descAr: 'استورد قطع غيار كورية أصلية وتتبع الشحنات بأسعار منافسة للمخزون والتجزئة.', descEn: 'Import original Korean spare parts directly at competitive retail rates.' },
+                            { icon: Users, titleAr: 'دعم العملاء 24/7', titleEn: 'Expert Support 24/7', descAr: 'فريقنا جاهز لمساعدتك في كل خطوة من المزايدة والشراء وحتى الشحن والتسجيل.', descEn: 'Our team is ready to guide you from bidding and purchasing to registration.' }
+                        ].map((item, idx) => (
+                            <div key={idx} className="bg-[#101018] border border-white/5 p-6 rounded-2xl relative overflow-hidden group hover:border-[#C9A96E]/30 transition-all duration-300">
+                                <div className="w-12 h-12 rounded-xl bg-[#C9A96E]/5 border border-[#C9A96E]/20 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                                    <item.icon className="w-6 h-6 text-[#C9A96E]" />
                                 </div>
-                                <div className="flex items-center gap-3 pt-4 border-t border-white/5">
-                                    <div className="w-8 h-8 rounded-full bg-[#C9A96E]/20 text-[#C9A96E] border border-[#C9A96E]/30 flex items-center justify-center font-black text-xs">
-                                        {t.avatar}
-                                    </div>
-                                    <div>
-                                        <div className="text-xs font-black text-white">{isRTL ? t.nameAr : t.nameEn}</div>
-                                        <div className="text-[9px] text-[#C9A96E]/70 font-semibold mt-0.5">{isRTL ? t.roleAr : t.roleEn}</div>
-                                    </div>
-                                </div>
+                                <h3 className="text-base font-black mb-2 text-white">
+                                    {isRTL ? item.titleAr : item.titleEn}
+                                </h3>
+                                <p className="text-xs text-white/45 leading-relaxed">
+                                    {isRTL ? item.descAr : item.descEn}
+                                </p>
                             </div>
                         ))}
                     </div>
-                </div>
-            </section>
+                </section>
+            )}
+
+            {/* ─── Testimonials Section ─── */}
+            {(homeContent?.showTestimonials ?? true) && (
+                <section className="py-20 bg-gradient-to-b from-transparent via-white/[0.01] to-transparent border-t border-white/5 relative z-10">
+                    <div className="max-w-5xl mx-auto px-4 sm:px-6">
+                        <div className="text-center mb-16">
+                            <span className="text-[10px] font-black text-[#C9A96E] tracking-[0.3em] uppercase">
+                                {isRTL ? 'آراء شركاء النجاح' : 'TESTIMONIALS'}
+                            </span>
+                            <h2 className="text-3xl font-black mt-2">
+                                {isRTL ? 'ماذا يقول عملاؤنا عنا؟' : 'What Our Customers Say'}
+                            </h2>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {testimonials.map((t, idx) => (
+                                <div key={idx} className="bg-[#11111a] border border-white/5 rounded-2xl p-6 relative flex flex-col justify-between">
+                                    <div>
+                                        <div className="flex gap-1 mb-4">
+                                            {Array.from({ length: t.rating }).map((_, i) => (
+                                                <Star key={i} className="w-3.5 h-3.5 text-[#C9A96E] fill-[#C9A96E]" />
+                                            ))}
+                                        </div>
+                                        <p className="text-xs text-white/60 leading-relaxed italic mb-6">
+                                            "{isRTL ? t.textAr : t.textEn}"
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-3 pt-4 border-t border-white/5">
+                                        <div className="w-8 h-8 rounded-full bg-[#C9A96E]/20 text-[#C9A96E] border border-[#C9A96E]/30 flex items-center justify-center font-black text-xs">
+                                            {t.avatar}
+                                        </div>
+                                        <div>
+                                            <div className="text-xs font-black text-white">{isRTL ? t.nameAr : t.nameEn}</div>
+                                            <div className="text-[9px] text-[#C9A96E]/70 font-semibold mt-0.5">{isRTL ? t.roleAr : t.roleEn}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
 
             {/* ─── FAQs Section ─── */}
-            <section className="py-24 max-w-4xl mx-auto px-4 sm:px-6 relative z-10">
-                <div className="text-center mb-16">
-                    <span className="text-[10px] font-black text-[#C9A96E] tracking-[0.3em] uppercase">
-                        {isRTL ? 'الأسئلة المتكررة' : 'FREQUENTLY ASKED QUESTIONS'}
-                    </span>
-                    <h2 className="text-3xl font-black mt-2">
-                        {isRTL ? 'إجابات على استفساراتك' : 'Answers To Your Questions'}
-                    </h2>
-                </div>
+            {(homeContent?.showFAQ ?? true) && (
+                <section className="py-24 max-w-4xl mx-auto px-4 sm:px-6 relative z-10">
+                    <div className="text-center mb-16">
+                        <span className="text-[10px] font-black text-[#C9A96E] tracking-[0.3em] uppercase">
+                            {isRTL ? 'الأسئلة المتكررة' : 'FREQUENTLY ASKED QUESTIONS'}
+                        </span>
+                        <h2 className="text-3xl font-black mt-2">
+                            {isRTL ? 'إجابات على استفساراتك' : 'Answers To Your Questions'}
+                        </h2>
+                    </div>
 
-                <div className="space-y-4">
-                    {faqs.map((faq, idx) => (
-                        <div key={idx} className="bg-[#101018] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-colors">
-                            <h3 className="text-sm sm:text-base font-black flex items-start gap-2.5 text-white mb-2 leading-snug">
-                                <HelpCircle className="w-5 h-5 text-[#C9A96E] shrink-0 mt-0.5" />
-                                {isRTL ? faq.qAr : faq.qEn}
-                            </h3>
-                            <p className="text-xs sm:text-sm text-white/50 pl-7 leading-relaxed">
-                                {isRTL ? faq.aAr : faq.aEn}
-                            </p>
-                        </div>
-                    ))}
-                </div>
-            </section>
+                    <div className="space-y-4">
+                        {faqs.map((faq, idx) => (
+                            <div key={idx} className="bg-[#101018] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-colors">
+                                <h3 className="text-sm sm:text-base font-black flex items-start gap-2.5 text-white mb-2 leading-snug">
+                                    <HelpCircle className="w-5 h-5 text-[#C9A96E] shrink-0 mt-0.5" />
+                                    {isRTL ? faq.qAr : faq.qEn}
+                                </h3>
+                                <p className="text-xs sm:text-sm text-white/50 pl-7 leading-relaxed">
+                                    {isRTL ? faq.aAr : faq.aEn}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            )}
 
             {/* ─── Footer ─── */}
             <footer className="mt-auto py-10 bg-[#06060a] border-t border-white/5 relative z-10 text-center text-xs text-white/30">
@@ -568,7 +576,7 @@ export default function HomePage() {
             </footer>
             {/* Premium PWA Install Floating Trigger */}
             <AnimatePresence>
-                {showInstallBtn && (
+                {showInstallBtn && (homeContent?.showAppConversion ?? true) && (
                     <motion.div
                         initial={{ opacity: 0, scale: 0.8, y: 50 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}

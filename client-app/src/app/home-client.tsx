@@ -320,7 +320,7 @@ export default function HomeClient({ latestCars: initialLatestCars }: HomeClient
           isRTL ? "right-4" : "left-4"
         )}>
           {socialConfig.whatsapp && (
-            <a href={whatsappUrl} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-2xl bg-black/40 backdrop-blur-md border border-green-500/30 flex items-center justify-center text-green-500 hover:scale-110 transition-transform shadow-[0_0_15px_rgba(34,197,94,0.3)]" title="WhatsApp">
+            <a href={whatsappUrl} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-md border border-green-500/30 flex items-center justify-center text-green-500 hover:scale-110 transition-transform shadow-[0_0_15px_rgba(34,197,94,0.3)]" title="WhatsApp">
               <SocialIconMap.whatsapp className="w-6 h-6" />
             </a>
           )}
@@ -328,7 +328,7 @@ export default function HomeClient({ latestCars: initialLatestCars }: HomeClient
             const SvgIcon = SocialIconMap[link.platform];
             const colorClass = SocialColorMap[link.platform] || 'text-white/80';
             return (
-              <a key={i} href={link.url} target="_blank" rel="noreferrer" className={`w-12 h-12 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center hover:scale-110 hover:border-white/30 transition-transform ${colorClass}`} title={link.platform}>
+              <a key={i} href={link.url} target="_blank" rel="noreferrer" className={`w-12 h-12 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center hover:scale-110 hover:border-white/30 transition-transform ${colorClass}`} title={link.platform}>
                 {SvgIcon ? <SvgIcon className="w-5 h-5" /> : <LinkIcon className="w-5 h-5" />}
               </a>
             )
@@ -386,110 +386,114 @@ export default function HomeClient({ latestCars: initialLatestCars }: HomeClient
           <LandingShowcase isRTL={isRTL} latestCars={latestCars} />
 
           {/* 2. LATEST CARS SECTION (RESTORED) */}
-          <section className="relative z-10 py-24 px-4 bg-gradient-to-b from-transparent to-black/20">
-            <div className="max-w-7xl mx-auto">
-              <div className="flex items-center justify-between mb-12">
-                <div>
-                  <h2 className="text-4xl md:text-6xl font-black text-white italic uppercase tracking-tighter">
-                    {isRTL ? 'أحدث السيارات' : 'LATEST ARRIVALS'}
-                  </h2>
-                  <div className="h-1 w-20 bg-accent-gold mt-2" />
-                </div>
-                <Link href="/gallery" className="group flex items-center gap-2 text-accent-gold font-bold uppercase tracking-widest hover:text-white transition-colors">
-                  {isRTL ? 'عرض الكل' : 'VIEW ALL'}
-                  <ArrowRight className={cn("w-5 h-5 transition-transform group-hover:translate-x-2", isRTL && "rotate-180 group-hover:-translate-x-2")} />
-                </Link>
-              </div>
-
-              {loadingCars ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                  {[...Array(4)].map((_, i) => (
-                    <div key={i} className="rounded-2xl bg-white/5 border border-white/8 overflow-hidden animate-pulse">
-                      <div className="h-52 bg-white/8" />
-                      <div className="p-5 space-y-3">
-                        <div className="h-4 bg-white/8 rounded-lg w-3/4" />
-                        <div className="h-3 bg-white/5 rounded-lg w-1/2" />
-                        <div className="h-8 bg-white/8 rounded-xl w-full mt-3" />
-                      </div>
+          {(homeContent?.showLiveMarket ?? true) && (
+            <>
+              <section className="relative z-10 py-24 px-4 bg-gradient-to-b from-transparent to-black/20">
+                <div className="max-w-7xl mx-auto">
+                  <div className="flex items-center justify-between mb-12">
+                    <div>
+                      <h2 className="text-4xl md:text-6xl font-black text-white italic uppercase tracking-tighter">
+                        {isRTL ? 'أحدث السيارات' : 'LATEST ARRIVALS'}
+                      </h2>
+                      <div className="h-1 w-20 bg-accent-gold mt-2" />
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                  {latestCars.slice(0, 8).map((car, i) => (
-                    <ModernCarCard key={car.id || i} car={car as any} index={i} formatPrice={formatPrice} />
-                  ))}
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* ── شريط "وصل حديثاً" - آخر 7 أيام ── */}
-          {latestCars.length > 0 && (
-            <section className="relative z-10 py-12 px-4">
-              <div className="max-w-7xl mx-auto">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20">
-                      <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                      <span className="text-xs font-black text-green-400 uppercase tracking-widest">
-                        {isRTL ? 'وصل حديثاً' : 'New Arrivals'}
-                      </span>
-                    </div>
-                    <span className="text-white/30 text-xs">{isRTL ? 'آخر 7 أيام' : 'Last 7 days'}</span>
+                    <Link href="/gallery" className="group flex items-center gap-2 text-accent-gold font-bold uppercase tracking-widest hover:text-white transition-colors">
+                      {isRTL ? 'عرض الكل' : 'VIEW ALL'}
+                      <ArrowRight className={cn("w-5 h-5 transition-transform group-hover:translate-x-2", isRTL && "rotate-180 group-hover:-translate-x-2")} />
+                    </Link>
                   </div>
-                  <Link href="/cars" className="text-xs font-bold text-accent-gold hover:text-white transition-colors flex items-center gap-1">
-                    {isRTL ? 'عرض الكل' : 'View All'}
-                    <ArrowRight className={cn("w-3.5 h-3.5", isRTL && "rotate-180")} />
-                  </Link>
-                </div>
 
-                {/* شريط أفقي قابل للتمرير */}
-                <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-none snap-x snap-mandatory">
-                  {latestCars.slice(0, 12).map((car: any, i) => (
-                    <motion.div
-                      key={car.id || i}
-                      initial={{ opacity: 0, x: 20 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: i * 0.05 }}
-                      className="snap-start shrink-0 w-52 sm:w-60 group cursor-pointer"
-                      onClick={() => router.push(`/cars/${car.id || car._id}`)}
-                    >
-                      <div className="relative overflow-hidden rounded-xl border border-white/8 bg-white/3 hover:border-luxury-gold/30 transition-all duration-300 group-hover:shadow-[0_8px_30px_rgba(212,175,55,0.1)]">
-                        {/* صورة السيارة */}
-                        <div className="relative h-36 overflow-hidden bg-white/5">
-                          {car.images?.[0] ? (
-                            <Image src={car.images[0]} alt={car.title || car.name || ''} fill className="object-cover transition-transform duration-500 group-hover:scale-105" unoptimized />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <Car className="w-10 h-10 text-white/10" />
-                            </div>
-                          )}
-                          {/* شارة جديد */}
-                          <div className="absolute top-2 right-2">
-                            <span className="px-2 py-0.5 rounded-full bg-green-500 text-[9px] font-black text-black uppercase tracking-widest">
-                              {isRTL ? 'جديد' : 'New'}
-                            </span>
+                  {loadingCars ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                      {[...Array(4)].map((_, i) => (
+                        <div key={i} className="rounded-2xl bg-white/5 border border-white/8 overflow-hidden animate-pulse">
+                          <div className="h-52 bg-white/8" />
+                          <div className="p-5 space-y-3">
+                            <div className="h-4 bg-white/8 rounded-lg w-3/4" />
+                            <div className="h-3 bg-white/5 rounded-lg w-1/2" />
+                            <div className="h-8 bg-white/8 rounded-xl w-full mt-3" />
                           </div>
                         </div>
-                        {/* بيانات السيارة */}
-                        <div className="p-3 space-y-1.5">
-                          <p className="text-xs font-black text-white truncate">{car.title || car.name}</p>
-                          <div className="flex items-center gap-2 text-[9px] text-white/40 font-bold">
-                            {car.year && <span>{car.year}</span>}
-                            {car.mileage && <><span>·</span><span>{Number(car.mileage).toLocaleString()} km</span></>}
-                          </div>
-                          <div className="text-sm font-black text-luxury-gold">
-                            {car.priceSar ? `${Number(car.priceSar).toLocaleString()} SAR` : car.price ? `${Number(car.price).toLocaleString()}` : '—'}
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                      {latestCars.slice(0, 8).map((car, i) => (
+                        <ModernCarCard key={car.id || i} car={car as any} index={i} formatPrice={formatPrice} />
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
-            </section>
+              </section>
+
+              {/* ── شريط "وصل حديثاً" - آخر 7 أيام ── */}
+              {latestCars.length > 0 && (
+                <section className="relative z-10 py-12 px-4">
+                  <div className="max-w-7xl mx-auto">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20">
+                          <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                          <span className="text-xs font-black text-green-400 uppercase tracking-widest">
+                            {isRTL ? 'وصل حديثاً' : 'New Arrivals'}
+                          </span>
+                        </div>
+                        <span className="text-white/30 text-xs">{isRTL ? 'آخر 7 أيام' : 'Last 7 days'}</span>
+                      </div>
+                      <Link href="/cars" className="text-xs font-bold text-accent-gold hover:text-white transition-colors flex items-center gap-1">
+                        {isRTL ? 'عرض الكل' : 'View All'}
+                        <ArrowRight className={cn("w-3.5 h-3.5", isRTL && "rotate-180")} />
+                      </Link>
+                    </div>
+
+                    {/* شريط أفقي قابل للتمرير */}
+                    <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-none snap-x snap-mandatory">
+                      {latestCars.slice(0, 12).map((car: any, i) => (
+                        <motion.div
+                          key={car.id || i}
+                          initial={{ opacity: 0, x: 20 }}
+                          whileInView={{ opacity: 1, x: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: i * 0.05 }}
+                          className="snap-start shrink-0 w-52 sm:w-60 group cursor-pointer"
+                          onClick={() => router.push(`/cars/${car.id || car._id}`)}
+                        >
+                          <div className="relative overflow-hidden rounded-xl border border-white/8 bg-white/3 hover:border-luxury-gold/30 transition-all duration-300 group-hover:shadow-[0_8px_30px_rgba(212,175,55,0.1)]">
+                            {/* صورة السيارة */}
+                            <div className="relative h-36 overflow-hidden bg-white/5">
+                              {car.images?.[0] ? (
+                                <Image src={car.images[0]} alt={car.title || car.name || ''} fill className="object-cover transition-transform duration-500 group-hover:scale-105" unoptimized />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Car className="w-10 h-10 text-white/10" />
+                                </div>
+                              )}
+                              {/* شارة جديد */}
+                              <div className="absolute top-2 right-2">
+                                <span className="px-2 py-0.5 rounded-full bg-green-500 text-[9px] font-black text-black uppercase tracking-widest">
+                                  {isRTL ? 'جديد' : 'New'}
+                                </span>
+                              </div>
+                            </div>
+                            {/* بيانات السيارة */}
+                            <div className="p-3 space-y-1.5">
+                              <p className="text-xs font-black text-white truncate">{car.title || car.name}</p>
+                              <div className="flex items-center gap-2 text-[9px] text-white/40 font-bold">
+                                {car.year && <span>{car.year}</span>}
+                                {car.mileage && <><span>·</span><span>{Number(car.mileage).toLocaleString()} km</span></>}
+                              </div>
+                              <div className="text-sm font-black text-luxury-gold">
+                                {car.priceSar ? `${Number(car.priceSar).toLocaleString()} SAR` : car.price ? `${Number(car.price).toLocaleString()}` : '—'}
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+              )}
+            </>
           )}
 
           {/* 2.5 ANNOUNCEMENT RIBBON REMOVED: Replaced fully by SmartAdBanner */}
@@ -775,7 +779,7 @@ export default function HomeClient({ latestCars: initialLatestCars }: HomeClient
                   href={whatsappUrl} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="w-12 h-12 rounded-2xl border border-green-500/30 flex items-center justify-center text-green-400 bg-green-500/5 hover:bg-green-500/10 transition-all"
+                  className="w-12 h-12 rounded-full border border-green-500/30 flex items-center justify-center text-green-400 bg-green-500/5 hover:bg-green-500/10 transition-all"
                   aria-label="WhatsApp"
                   title="WhatsApp"
                 >
@@ -794,7 +798,7 @@ export default function HomeClient({ latestCars: initialLatestCars }: HomeClient
                     href={link.url} 
                     target="_blank" 
                     rel="noopener noreferrer" 
-                    className={`w-12 h-12 rounded-2xl border border-white/10 flex items-center justify-center bg-white/5 hover:bg-white/10 transition-all ${colorClass}`}
+                    className={`w-12 h-12 rounded-full border border-white/10 flex items-center justify-center bg-white/5 hover:bg-white/10 transition-all ${colorClass}`}
                     aria-label={link.platform}
                     title={link.platform}
                   >

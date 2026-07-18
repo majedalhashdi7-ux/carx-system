@@ -138,7 +138,7 @@ export default function ClientProfilePage() {
                         <div className="bg-white/3 border border-white/5 rounded-[2.5rem] p-8 text-center relative overflow-hidden group">
                            <div className="absolute inset-0 bg-cinematic-neon-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-3xl" />
                            <div className="relative">
-                               <div className="w-24 h-24 mx-auto rounded-[2rem] bg-cinematic-neon-gold/10 border border-cinematic-neon-gold/20 flex items-center justify-center mb-6 shadow-2xl">
+                               <div className="w-24 h-24 mx-auto rounded-full bg-cinematic-neon-gold/10 border border-cinematic-neon-gold/20 flex items-center justify-center mb-6 shadow-2xl">
                                    <User className="w-10 h-10 text-cinematic-neon-gold" />
                                </div>
                                <h3 className="text-xl font-black text-white italic tracking-tight mb-2 uppercase">{userData.name || rawText('GUEST')}</h3>

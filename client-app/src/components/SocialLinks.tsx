@@ -191,7 +191,7 @@ export default function SocialLinks({
                     whileHover={{ scale: 1.1, y: -4 }}
                     whileTap={{ scale: 0.95 }}
                     className={cn(
-                        "flex items-center justify-center rounded-2xl transition-all shadow-2xl overflow-hidden",
+                        "flex items-center justify-center rounded-full transition-all shadow-2xl overflow-hidden",
                         sizeClasses[size],
                         link.color
                     )}
