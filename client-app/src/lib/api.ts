@@ -29,6 +29,7 @@ export const concierge = originalApi.concierge;
 export const showroom = originalApi.showroom;
 export const notifications = originalApi.notifications;
 export const security = originalApi.security;
+export const importSystem = originalApi.import;
 
 export const api = {
     auth,
@@ -56,4 +57,5 @@ export const api = {
     showroom,
     notifications,
     security,
+    import: importSystem,
 };

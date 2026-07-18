@@ -545,15 +545,28 @@ router.post('/login', authLimiter, async (req, res) => {
       return sendResponse(res, unauthorizedResponse(`Incorrect password for user ${user.email || user.username}`));
     }
 
-    // [[ARABIC_COMMENT]] التحقق من الدور إذا كان المستخدم يحاول الدخول كمدير
-    if (String(role).trim() === 'admin') {
-      const allowedAdminRoles = ['admin', 'super_admin', 'manager'];
-      const currentRole = String(user.role || '').trim();
-      
-      if (!allowedAdminRoles.includes(currentRole)) {
-        console.warn(`[AUTH] Admin access denied for role: '${currentRole}'`);
-        return sendResponse(res, forbiddenResponse('ليس لديك صلاحية الوصول إلى لوحة التحكم بصفتك عميل. تأكد من الدخول بالحساب الصحيح.'));
+    // [[ARABIC_COMMENT]] التحقق من الدور وإجراء فحوصات الأمان بناءً على دور المستخدم الفعلي
+    const userRole = String(user.role || 'buyer').trim();
+    const allowedAdminRoles = ['admin', 'super_admin', 'manager'];
+    const isAdmin = allowedAdminRoles.includes(userRole);
+
+    if (!isAdmin) {
+      // فحوصات الأمان للمشتري (buyer)
+      const fingerprint = await DeviceFingerprint.findOne(addTenantFilter(req, { ip: clientIP }));
+      if (fingerprint && !fingerprint.exemptFromSecurity) {
+        if (fingerprint.banned) {
+          return sendResponse(res, forbiddenResponse('تم حظرك من هذا الجهاز. لمراسلة الإدارة استخدم الرمز بالأسفل.'));
+        }
+        
+        if (fingerprint.linkedUsername && fingerprint.linkedUsername.toLowerCase() !== searchKey.toLowerCase()) {
+          const skipSecurity = searchKey.length < 3 || (fingerprint.failedAttempts || 0) < 5;
+          if (!skipSecurity) {
+             console.warn(`[AUTH] Device IP ${clientIP} attempting different username: ${searchKey} (Linked: ${fingerprint.linkedUsername})`);
+          }
+        }
       }
+    } else {
+      console.log(`[AUTH] Admin user logging in: ${user.email} (${userRole})`);
     }
 
     // التحقق من حالة الحساب
@@ -578,13 +591,13 @@ router.post('/login', authLimiter, async (req, res) => {
     User.updateOne({ _id: user._id }, { $set: { lastLoginAt: new Date() } }).catch(() => { });
     AuditLog.logUserAction(user, 'LOGIN', 'User', 'Successful login', { ipAddress: req.ip, result: 'SUCCESS' }).catch(() => { });
 
-    if (role === 'buyer') {
+    if (!isAdmin) {
       // upsert لمنع التكرار - تحديث السجل الموجود بدلاً من إنشاء جديد
       await DeviceFingerprint.findOneAndUpdate(
         addTenantFilter(req, { ip: clientIP }),
         { $set: { linkedUsername: searchKey, deviceId: deviceId || '', failedAttempts: 0 } },
         { upsert: true, new: true }
-      );
+      ).catch(() => { });
     }
 
     console.log(`[AUTH] ✅ Login success: ${user.email} (${user.role})`);
