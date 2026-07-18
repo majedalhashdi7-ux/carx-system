@@ -298,6 +298,7 @@ function buildNavCategories(isRTL: boolean, user: any, tenant: any): NavCategory
                 ...(hasP('manage_cars') ? [{ id: 'showroom', icon: Car, label: isRTL ? 'السيارات' : 'CARS', href: '/admin/cars' }] : []),
                 ...(hasP('manage_parts') ? [{ id: 'parts', icon: Layers, label: isRTL ? 'قطع الغيار' : 'PARTS', href: '/admin/parts' }] : []),
                 ...(hasP('manage_brands') ? [{ id: 'brands', icon: Tag, label: isRTL ? 'الماركات والوكالات' : 'BRANDS', href: '/admin/brands' }] : []),
+                ...(hasP('manage_cars') || hasP('manage_parts') ? [{ id: 'import', icon: Download, label: isRTL ? 'بوابة الاستيراد' : 'IMPORT HUB', href: '/admin/import' }] : []),
             ]
         },
 

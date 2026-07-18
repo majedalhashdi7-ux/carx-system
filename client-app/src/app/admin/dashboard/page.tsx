@@ -169,6 +169,7 @@ export default function AdminDashboard() {
 
     const quickLinks = [
         { icon: Car, label: isRTL ? 'إدارة السيارات' : 'CARS', href: '/admin/cars', color: '#f97316', desc: isRTL ? 'عرض وإضافة السيارات' : 'Manage vehicles' },
+        { icon: Download, label: isRTL ? 'بوابة الاستيراد' : 'IMPORT HUB', href: '/admin/import', color: '#0ea5e9', desc: isRTL ? 'استيراد سيارات وقطع غيار' : 'Central scraper hub' },
         { icon: Gavel, label: isRTL ? 'المزادات' : 'AUCTIONS', href: '/admin/market', color: '#ef4444', desc: isRTL ? 'إدارة المزادات الحية' : 'Live auctions hub' },
         { icon: ShoppingCart, label: isRTL ? 'الطلبات' : 'ORDERS', href: '/admin/orders', color: '#34d399', desc: isRTL ? 'متابعة الطلبات' : 'Track orders' },
         { icon: MessageCircle, label: isRTL ? 'الرسائل' : 'COMMS', href: '/admin/comms', color: '#60a5fa', desc: isRTL ? 'مركز التواصل' : 'Communications' },
