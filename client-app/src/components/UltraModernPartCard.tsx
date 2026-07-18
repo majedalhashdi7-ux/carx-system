@@ -7,6 +7,7 @@
 
 import React, { useState, useCallback } from 'react';
 import Image from 'next/image';
+import WatermarkImage from '@/components/WatermarkImage';
 import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import { 
     Heart, ShoppingCart, Check, Wrench, Package, Coins, FileText, 
@@ -210,14 +211,14 @@ export default function UltraModernPartCard({
                 {/* ── صورة القطعة ── */}
                 <div className="relative aspect-square bg-gradient-to-br from-white/5 to-transparent overflow-hidden">
                     {!imgError && imageSrc ? (
-                        <Image
+                        <WatermarkImage
                             src={imageSrc}
                             alt={name || ''}
                             fill
                             className="object-cover group-hover:scale-110 transition-transform duration-1000 group-hover:rotate-2"
                             onError={() => setImgError(true)}
-                            referrerPolicy="no-referrer"
-                            priority={index < 4}
+                            unoptimized
+                            watermarkPosition="br"
                         />
                     ) : (
                         <div className="absolute inset-0 flex items-center justify-center">
