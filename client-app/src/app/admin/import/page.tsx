@@ -67,7 +67,9 @@ export default function AdminImportHub() {
                 setAuctionSessions(res.data || []);
                 const urls: Record<string, string> = {};
                 res.data?.forEach((s: any) => {
-                    urls[s._id] = s.externalUrl || "";
+                    if (s && s._id) {
+                        urls[s._id] = s.externalUrl || "";
+                    }
                 });
                 setSessionUrls(urls);
             }
@@ -422,8 +424,10 @@ export default function AdminImportHub() {
                             ) : (
                                 <div className="space-y-6">
                                     {auctionSessions.map((session) => {
-                                        const totalCars = session.cars?.length || 0;
-                                        const visibleCars = (session.cars || []).filter((c: any) => !c.isHidden).length;
+                                        if (!session) return null;
+                                        const carsArray = Array.isArray(session.cars) ? session.cars.filter(Boolean) : [];
+                                        const totalCars = carsArray.length;
+                                        const visibleCars = carsArray.filter((c: any) => c && !c.isHidden).length;
                                         const isSyncing = syncingSessionId === session._id;
                                         const isSaving = editingSessionId === session._id;
 
