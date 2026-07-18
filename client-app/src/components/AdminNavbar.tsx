@@ -247,11 +247,10 @@ function SidebarInner({
                 {/* Visit Site Link */}
                 <Link
                     href="/"
-                    target="_blank"
                     className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.07] text-white/25 hover:text-white/60 hover:border-white/15 transition-all"
                 >
                     <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                    <span className="font-mono text-[6px] font-bold uppercase tracking-widest">{isRTL ? 'الموقع' : 'SITE'}</span>
+                    <span className="font-mono text-[7px] font-bold uppercase tracking-widest">{isRTL ? 'معاينة الموقع للعميل' : 'CLIENT SITE'}</span>
                 </Link>
 
                 {/* Logout */}

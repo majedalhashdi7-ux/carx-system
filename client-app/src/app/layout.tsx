@@ -180,11 +180,30 @@ export default async function RootLayout({
               sessionStorage.removeItem('hm_reload_count');
             }, 60000);
             
-            // تسجيل Service Worker للعمل Offline
+            // تسجيل Service Worker للعمل Offline مع التحديث التلقائي
             if ('serviceWorker' in navigator && typeof window !== 'undefined') {
               window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                navigator.serviceWorker.register('/sw.js').then(function(reg) {
+                  reg.onupdatefound = function() {
+                    var installingWorker = reg.installing;
+                    if (installingWorker) {
+                      installingWorker.onstatechange = function() {
+                        if (installingWorker.state === 'installed') {
+                          if (navigator.serviceWorker.controller) {
+                            console.log('[Service Worker] New update found. Clearing caches and reloading...');
+                            if ('caches' in window) {
+                              caches.keys().then(function(names) {
+                                for(var i = 0; i < names.length; i++) { caches.delete(names[i]); }
+                              });
+                            }
+                            setTimeout(function() { window.location.reload(); }, 500);
+                          }
+                        }
+                      };
+                    }
+                  };
                 }).catch(function(error) {
+                  console.error('Service worker registration failed:', error);
                 });
               });
             }

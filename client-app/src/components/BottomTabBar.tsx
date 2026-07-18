@@ -16,7 +16,7 @@ import { useEffect, useState, useRef } from 'react';
 export default function BottomTabBar() {
     const pathname = usePathname();
     const { isRTL } = useLanguage();
-    const { isLoggedIn } = useAuth();
+    const { isLoggedIn, isAdmin } = useAuth();
     const { socialLinks } = useSettings();
     const [visible, setVisible] = useState(true);
     const lastScrollY = useRef(0);
@@ -54,7 +54,13 @@ export default function BottomTabBar() {
     // التبويبات اليمنى
     const rightTabs = [
         { href: '/parts',                                icon: SparePartIcon, labelAr: 'قطع الغيار', labelEn: 'Parts',   paths: ['/parts'] },
-        { href: isLoggedIn ? '/client/dashboard' : '/login', icon: User, labelAr: isLoggedIn ? 'حسابي' : 'دخول', labelEn: isLoggedIn ? 'My Account' : 'Login', paths: ['/client', '/login', '/register'] },
+        { 
+            href: isLoggedIn ? (isAdmin ? '/admin/dashboard' : '/client/dashboard') : '/login', 
+            icon: User, 
+            labelAr: isLoggedIn ? 'حسابي' : 'دخول', 
+            labelEn: isLoggedIn ? 'My Account' : 'Login', 
+            paths: ['/client', '/admin', '/login', '/register'] 
+        },
     ];
 
     return (
