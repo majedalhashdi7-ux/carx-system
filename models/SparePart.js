@@ -42,6 +42,7 @@ const sparePartSchema = new mongoose.Schema({
   stockQty: { type: Number, default: 999 }, // قيمة عالية افتراضية لتجنب انتهاء المخزون التلقائي
   soldCount: { type: Number, default: 0 },  // إجمالي كمية القطع المباعة
   inStock: { type: Boolean, default: true },
+  condition: { type: String, default: 'New' },
   createdByFirebaseUid: { type: String, required: false, default: '' },
   updatedByFirebaseUid: { type: String, required: false, default: '' }
 }, { timestamps: true });

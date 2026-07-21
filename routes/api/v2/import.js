@@ -159,10 +159,37 @@ router.post('/save', requireAuthAPI, requireAdmin, async (req, res, next) => {
         let saved;
         if (type === 'car') {
             const Car = req.tenantModels.Car;
+            const Brand = req.tenantModels.Brand;
             if (!Car) return res.status(500).json({ success: false, error: 'نموذج السيارات غير متاح' });
 
             const isEncar = data.sourceUrl && (data.sourceUrl.includes('encar.com') || data.sourceUrl.includes('encar.co.kr'));
             const pricing = normalizeImportPricing(data, isEncar);
+
+            // جلب أو إنشاء الوكالة (Brand)
+            let agencyId = null;
+            if (Brand && data.make) {
+                const makeName = String(data.make).trim();
+                const makeKey = makeName.toLowerCase();
+                let brandDoc = await Brand.findOne({ key: makeKey });
+                if (!brandDoc) {
+                    const clearbitLogo = `https://logo.clearbit.com/${makeKey.replace(/\s+/g, '')}.com`;
+                    brandDoc = await Brand.create({
+                        tenantId: getTenantId(req),
+                        name: makeName,
+                        key: makeKey,
+                        logoUrl: clearbitLogo,
+                        forCars: true,
+                        forSpareParts: false,
+                        isActive: true
+                    });
+                } else {
+                    if (!brandDoc.forCars) {
+                        brandDoc.forCars = true;
+                        await brandDoc.save();
+                    }
+                }
+                agencyId = brandDoc._id;
+            }
 
             // تحقق من التكرار (منع إضافة نفس الرابط مرتين)
             if (data.sourceUrl) {
@@ -179,6 +206,7 @@ router.post('/save', requireAuthAPI, requireAdmin, async (req, res, next) => {
                                 make: data.make || existingCar.make,
                                 model: data.model || existingCar.model,
                                 year: data.year || existingCar.year,
+                                agency: agencyId || existingCar.agency,
                                 ...pricing,
                                 updatedAt: new Date()
                             }
@@ -215,20 +243,57 @@ router.post('/save', requireAuthAPI, requireAdmin, async (req, res, next) => {
                 externalUrl: data.sourceUrl || '',
                 source: isEncar ? 'korean_import' : 'hm_local',
                 listingType: data.listingType || (isEncar ? 'showroom' : 'store'),
+                agency: agencyId,
                 isActive: true,
                 isSold: false,
             });
         } else {
             const SparePart = req.tenantModels.SparePart;
+            const Brand = req.tenantModels.Brand;
             if (!SparePart) return res.status(500).json({ success: false, error: 'نموذج قطع الغيار غير متاح' });
 
             const pricing = normalizeImportPricing(data, false);
 
+            // جلب أو إنشاء الوكالة لقطع الغيار
+            let brandId = null;
+            let brandLogoUrl = '';
+            if (Brand && data.brand) {
+                const brandName = String(data.brand).trim();
+                const brandKey = brandName.toLowerCase();
+                let brandDoc = await Brand.findOne({ key: brandKey });
+                if (!brandDoc) {
+                    const clearbitLogo = `https://logo.clearbit.com/${brandKey.replace(/\s+/g, '')}.com`;
+                    brandDoc = await Brand.create({
+                        tenantId: getTenantId(req),
+                        name: brandName,
+                        key: brandKey,
+                        logoUrl: clearbitLogo,
+                        forSpareParts: true,
+                        forCars: false,
+                        isActive: true
+                    });
+                } else {
+                    if (!brandDoc.forSpareParts) {
+                        brandDoc.forSpareParts = true;
+                        await brandDoc.save();
+                    }
+                }
+                brandId = brandDoc._id;
+                brandLogoUrl = brandDoc.logoUrl || '';
+            }
+
             saved = await SparePart.create({
                 tenantId: getTenantId(req),
                 name: data.name || data.title || 'قطعة مستوردة',
+                nameAr: data.name || data.title || 'قطعة مستوردة',
                 partNumber: data.partNumber || 'IMP-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
-                category: data.category || 'استيراد',
+                partType: data.category || 'Engine',
+                partTypeAr: data.category || 'Engine',
+                brand: brandId,
+                carMake: data.brand || 'غير محدد',
+                carMakeLogoUrl: brandLogoUrl,
+                carModel: data.model || '',
+                carYear: Number(data.year) || new Date().getFullYear(),
                 price: pricing.price,
                 priceSar: pricing.priceSar,
                 priceUsd: pricing.priceUsd,
@@ -238,6 +303,8 @@ router.post('/save', requireAuthAPI, requireAdmin, async (req, res, next) => {
                 description: data.description || '',
                 images: processedImages,
                 externalUrl: data.sourceUrl || '',
+                condition: data.condition || 'New',
+                source: 'autospare',
                 inStock: true,
             });
         }
