@@ -15,7 +15,11 @@ const cheerio = require('cheerio');
  */
 async function processCarImages(images = [], folder = 'auctions') {
     const results = [];
-    // نعالج الصور بالتسلسل لتجنب تحميل النظام
+    // على Vercel بدون Cloudinary، نحافظ على الروابط الأصلية لكي لا تتعطل الصور وتصبح 404
+    const hasCloud = process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY;
+    if (!hasCloud && process.env.VERCEL) {
+        return images.filter(Boolean);
+    }
     for (const imgUrl of images) {
         if (!imgUrl || typeof imgUrl !== 'string') continue;
         try {
@@ -301,6 +305,42 @@ async function syncSession(session) {
     session.cars = updatedCars;
     session.lastSyncedAt = new Date();
     await session.save();
+
+    // حفظ وتحديث السيارات المستوردة أيضاً في مجموعة Car المستقلة لتظهر للأدمن في قسم السيارات والمعرض
+    try {
+        const Car = session.db ? session.db.model('Car') : null;
+        if (Car && updatedCars.length > 0) {
+            for (const c of updatedCars) {
+                if (c.isHidden) continue;
+                const carTitle = c.title || 'سيارة مزاد كورية';
+                await Car.findOneAndUpdate(
+                    { title: carTitle },
+                    {
+                        $set: {
+                            tenantId: session.tenantId,
+                            title: carTitle,
+                            make: c.make || 'وارد كوريا',
+                            model: c.model || 'مزاد مباشر',
+                            year: c.year || 2023,
+                            price: c.price || 0,
+                            priceSar: c.priceSar || 0,
+                            images: c.images || [],
+                            img: c.images?.[0] || '',
+                            image: c.images?.[0] || '',
+                            listingType: 'showroom',
+                            source: 'korean_import',
+                            externalUrl: c.sourceUrl || session.externalUrl,
+                            isActive: true,
+                            isSold: false,
+                        }
+                    },
+                    { upsert: true, new: true }
+                ).catch(() => {});
+            }
+        }
+    } catch (carErr) {
+        console.warn('[LiveSync] Failed to upsert Car documents:', carErr.message);
+    }
 
     const visibleCount = updatedCars.filter(c => !c.isHidden).length;
     const hiddenCount = updatedCars.filter(c => c.isHidden).length;
