@@ -262,54 +262,106 @@ router.post('/save', requireAuthAPI, requireAdmin, invalidateCache(['/api/v2/car
             // جلب أو إنشاء الوكالة لقطع الغيار
             let brandId = null;
             let brandLogoUrl = '';
-            if (Brand && data.brand) {
-                const brandName = String(data.brand).trim();
-                const brandKey = brandName.toLowerCase();
-                let brandDoc = await Brand.findOne({ key: brandKey });
+            const rawBrandName = String(data.brand || data.carMake || data.make || '').trim();
+
+            if (Brand && rawBrandName) {
+                const brandKey = rawBrandName.toLowerCase();
+                let brandDoc = await Brand.findOne({ 
+                    $or: [
+                        { key: brandKey },
+                        { name: rawBrandName }
+                    ]
+                });
+                
+                // جلب الشعار المناسب للماركة (Clearbit CDN أو الشعار الممرر)
+                const logo = data.brandLogoUrl || data.carMakeLogoUrl || data.logoUrl || (brandDoc ? brandDoc.logoUrl : '') || `https://logo.clearbit.com/${brandKey.replace(/\s+/g, '')}.com`;
+
                 if (!brandDoc) {
-                    const clearbitLogo = `https://logo.clearbit.com/${brandKey.replace(/\s+/g, '')}.com`;
                     brandDoc = await Brand.create({
                         tenantId: getTenantId(req),
-                        name: brandName,
+                        name: rawBrandName,
                         key: brandKey,
-                        logoUrl: clearbitLogo,
+                        logoUrl: logo,
                         forSpareParts: true,
                         forCars: false,
                         isActive: true
                     });
                 } else {
+                    let updated = false;
                     if (!brandDoc.forSpareParts) {
                         brandDoc.forSpareParts = true;
-                        await brandDoc.save();
+                        updated = true;
                     }
+                    if ((!brandDoc.logoUrl || brandDoc.logoUrl.includes('placeholder')) && logo) {
+                        brandDoc.logoUrl = logo;
+                        updated = true;
+                    }
+                    if (updated) await brandDoc.save();
                 }
                 brandId = brandDoc._id;
-                brandLogoUrl = brandDoc.logoUrl || '';
+                brandLogoUrl = brandDoc.logoUrl || logo;
             }
+
+            // فحص التكرار لقطع الغيار
+            if (data.sourceUrl) {
+                const existingPart = await SparePart.findOne({ externalUrl: data.sourceUrl });
+                if (existingPart) {
+                    const updatedPart = await SparePart.findByIdAndUpdate(
+                        existingPart._id,
+                        {
+                            $set: {
+                                name: data.name || data.title || existingPart.name,
+                                nameAr: data.name || data.title || existingPart.nameAr,
+                                images: processedImages.length > 0 ? processedImages : existingPart.images,
+                                img: processedImages[0] || existingPart.img,
+                                image: processedImages[0] || existingPart.image,
+                                description: data.description || existingPart.description,
+                                brand: brandId || existingPart.brand,
+                                carMake: rawBrandName || existingPart.carMake,
+                                carMakeLogoUrl: brandLogoUrl || existingPart.carMakeLogoUrl,
+                                carModel: data.model || data.carModel || existingPart.carModel,
+                                ...pricing,
+                                updatedAt: new Date()
+                            }
+                        },
+                        { new: true }
+                    );
+                    return res.json({
+                        success: true,
+                        message: '✅ تم تحديث قطعة الغيار الموجودة بنجاح (تم الكشف عن تكرار)',
+                        data: updatedPart,
+                        isDuplicate: true
+                    });
+                }
+            }
+
+            const mainImage = processedImages[0] || data.imageUrl || (Array.isArray(data.images) ? data.images[0] : '') || '';
 
             saved = await SparePart.create({
                 tenantId: getTenantId(req),
                 name: data.name || data.title || 'قطعة مستوردة',
                 nameAr: data.name || data.title || 'قطعة مستوردة',
                 partNumber: data.partNumber || 'IMP-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
-                partType: data.category || 'Engine',
-                partTypeAr: data.category || 'Engine',
+                partType: data.category || data.partType || 'Engine',
+                partTypeAr: data.categoryAr || data.category || 'Engine',
                 brand: brandId,
-                carMake: data.brand || 'غير محدد',
-                carMakeLogoUrl: brandLogoUrl,
-                carModel: data.model || '',
-                carYear: Number(data.year) || new Date().getFullYear(),
+                carMake: rawBrandName || 'غير محدد',
+                carMakeLogoUrl: brandLogoUrl || (rawBrandName ? `https://logo.clearbit.com/${rawBrandName.toLowerCase().replace(/\s+/g, '')}.com` : ''),
+                carModel: data.model || data.carModel || '',
+                carYear: Number(data.year || data.carYear) || new Date().getFullYear(),
                 price: pricing.price,
                 priceSar: pricing.priceSar,
                 priceUsd: pricing.priceUsd,
                 priceKrw: pricing.priceKrw,
                 basePriceUsd: pricing.basePriceUsd,
-                stockQty: data.stock || 1,
+                stockQty: data.stock || data.stockQty || 1,
                 description: data.description || '',
                 images: processedImages,
-                externalUrl: data.sourceUrl || '',
+                img: mainImage,
+                image: mainImage,
+                externalUrl: data.sourceUrl || data.externalUrl || '',
                 condition: data.condition || 'New',
-                source: 'autospare',
+                source: data.source || 'autospare',
                 inStock: true,
             });
         }
