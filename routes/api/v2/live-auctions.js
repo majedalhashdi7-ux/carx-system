@@ -49,9 +49,17 @@ router.get('/', async (req, res) => {
             }
         }
 
+        // نضمن وجود جلسة واحدة على الأقل مسجلة برابط المزاد المستهدف https://desert-korea-auto.com/cars/?car_type=auction
+        for (const session of sessions) {
+            if (!session.externalUrl || !session.externalUrl.startsWith('http')) {
+                session.externalUrl = 'https://desert-korea-auto.com/cars/?car_type=auction';
+                await session.save().catch(() => {});
+            }
+        }
+
         // إذا لم تكن هناك جلسات مزاد، ننشئ جلسة افتراضية ونربط سيارات كورية تلقائياً
         if (sessions.length === 0 && (!status || status === 'live')) {
-            const defaultUrl = 'https://car.encar.com/list/car?search=%7B%22action%22%3A%22(And.Hidden.N._.CarType.A.)%22%7D';
+            const defaultUrl = 'https://desert-korea-auto.com/cars/?car_type=auction';
             try {
                 const importedCars = await Car.find({
                     $or: [
