@@ -5,6 +5,8 @@ const jwt = require('jsonwebtoken');
 
 // ── JWT Helpers ──
 
+const JWT_SECRET = process.env.JWT_SECRET || 'hmcar_jwt_secret_key_2026_fallback';
+
 function generateToken(user, tenantId = 'default') {
   const payload = {
     id: user._id,
@@ -14,14 +16,14 @@ function generateToken(user, tenantId = 'default') {
     role: user.role,
     permissions: user.permissions || []
   };
-  return jwt.sign(payload, process.env.JWT_SECRET, {
+  return jwt.sign(payload, JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || '365d'
   });
 }
 
 function verifyToken(token) {
   try {
-    return jwt.verify(token, process.env.JWT_SECRET);
+    return jwt.verify(token, JWT_SECRET);
   } catch {
     return null;
   }

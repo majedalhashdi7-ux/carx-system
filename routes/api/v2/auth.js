@@ -4,6 +4,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const JWT_SECRET = process.env.JWT_SECRET || 'hmcar_jwt_secret_key_2026_fallback';
 const { getModel, addTenantFilter, getTenantId } = require('../../../tenants/tenant-model-helper');
 const { requireAuthAPI } = require('../../../middleware/auth');
 const { authRateLimiter, fullSecurityMiddleware } = require('../../../middleware/securityEnhanced');
@@ -80,7 +81,7 @@ router.post('/register', authLimiter, async (req, res) => {
         role: user.role,
         permissions: user.permissions
       },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       {
         expiresIn: '30d',
         issuer: 'hm-car-auction',
@@ -187,7 +188,7 @@ router.post('/client-login', authLimiter, async (req, res) => {
         email: user.email,
         role: user.role,
       },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: '30d' }
     );
 
@@ -242,17 +243,26 @@ router.post('/client-register', authLimiter, async (req, res) => {
     const normalizedEmail = email.toLowerCase().trim();
 
     // التحقق من وجود حساب بنفس الإيميل — مع التصفية حسب المستأجر
-    const existingUser = await User.findOne(addTenantFilter(req, { email: normalizedEmail }));
+    const existingUser = await User.findOne({
+      $or: [
+        { email: normalizedEmail },
+        ...(phone && phone.trim() ? [{ phone: phone.trim() }] : [])
+      ]
+    });
+
     if (existingUser) {
-      return sendResponse(res, conflictResponse('يوجد حساب مسجل بهذا الإيميل'));
+      return sendResponse(res, conflictResponse('يوجد حساب مسجل بهذا الإيميل أو رقم الهاتف'));
     }
+
+    const cleanPhone = (phone && typeof phone === 'string' && phone.trim().length > 0) ? phone.trim() : undefined;
+    const cleanName = (name && typeof name === 'string' && name.trim().length > 0) ? name.trim() : normalizedEmail.split('@')[0];
 
     // إنشاء حساب جديد
     const newUser = new User({
       email: normalizedEmail,
       password: password,
-      name: name || normalizedEmail.split('@')[0],
-      phone: phone ? phone.trim() : undefined,
+      name: cleanName,
+      ...(cleanPhone ? { phone: cleanPhone } : {}),
       role: 'buyer',
       status: 'active',
       createdVia: 'auto-registration',
@@ -260,6 +270,8 @@ router.post('/client-register', authLimiter, async (req, res) => {
     });
 
     await newUser.save();
+
+    const jwtSecret = process.env.JWT_SECRET || 'hmcar_jwt_secret_key_2026_fallback';
 
     // توليد التوكن - مدة 30 يوماً لعدم الحاجة للتسجيل مجدداً
     const token = jwt.sign(
@@ -270,12 +282,18 @@ router.post('/client-register', authLimiter, async (req, res) => {
         role: newUser.role,
         permissions: newUser.permissions || []
       },
-      process.env.JWT_SECRET,
+      jwtSecret,
       { expiresIn: '30d' }
     );
 
     // تسجيل في AuditLog
-    AuditLog.logUserAction(newUser, 'REGISTER', 'User', 'New client registration', { email: normalizedEmail }).catch(() => { });
+    try {
+      if (AuditLog && typeof AuditLog.logUserAction === 'function') {
+        await AuditLog.logUserAction(newUser, 'CREATE', 'User', 'New client registration', { email: normalizedEmail });
+      }
+    } catch (auditErr) {
+      console.warn('[AUTH] AuditLog failed:', auditErr.message);
+    }
 
     console.log(`[AUTH] ✅ New client registered: ${normalizedEmail}`);
 
@@ -297,7 +315,10 @@ router.post('/client-register', authLimiter, async (req, res) => {
 
   } catch (error) {
     console.error('Client registration error:', error);
-    return sendResponse(res, serverErrorResponse('حدث خطأ أثناء إنشاء الحساب', error));
+    if (error && (error.code === 11000 || error.name === 'MongoServerError')) {
+      return sendResponse(res, conflictResponse('يوجد حساب مسجل بهذا الإيميل أو البيانات المدخلة'));
+    }
+    return sendResponse(res, serverErrorResponse(error.message || 'حدث خطأ أثناء إنشاء الحساب', error));
   }
 });
 
