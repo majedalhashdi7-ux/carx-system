@@ -6,6 +6,7 @@ import {
     Car as CarIcon
 } from 'lucide-react';
 import NextLink from 'next/link';
+import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 import { api } from '@/lib/api-original';
 import { useToast } from '@/lib/ToastContext';
