@@ -6,9 +6,10 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
-import { Search, AlertCircle, Zap, ChevronLeft, ChevronRight } from "lucide-react";
+import { AlertCircle, Zap, ChevronLeft, ChevronRight } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import UltraModernPartCard from "@/components/UltraModernPartCard";
+import SearchAutocomplete, { type SearchSuggestion } from "@/components/SearchAutocomplete";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/LanguageContext";
 import { api } from "@/lib/api-original";
@@ -63,9 +64,7 @@ export default function PartsPage() {
     const { formatPrice: formatGlobalPrice, socialLinks } = useSettings();
     const _formatPrice = (price: number) => formatGlobalPrice(Number(price || 0), undefined, 'part');
     const { isLoggedIn } = useAuth();
-    // رقم الواتساب - يستخدم رقم الأدمن من الإعدادات أو الرقم الافتراضي
     const WHATSAPP_NUMBER = (socialLinks?.whatsapp || '+821080880014').replace(/\D/g, '');
-    // حالة المودال (المنبثق) - null تعني مغلق، وبيانات الكائن تعني مفتوح
     const [modalProduct, setModalProduct] = useState<ProductModalData | null>(null);
 
     const [viewMode, setViewMode] = useState<'AGENCIES' | 'PARTS'>('AGENCIES');
@@ -233,6 +232,28 @@ export default function PartsPage() {
         return part.nameAr || part.name;
     };
 
+    // اقتراحات البحث في الوكالات
+    const agencySuggestions: SearchSuggestion[] = agencies.map(a => ({
+        id: a.id,
+        label: isRTL ? a.name : (a.nameEn || a.name),
+        sublabel: isRTL ? (a.nameEn || '') : a.name,
+        icon: a.logo,
+        value: a.id,
+    }));
+
+    // اقتراحات البحث في القطع
+    const partSuggestions: SearchSuggestion[] = Array.from(
+        new Map(parts.map((p: any) => [
+            (p.nameAr || p.nameEn || p.name),
+            {
+                id: p._id,
+                label: isRTL ? (p.nameAr || p.name) : (p.nameEn || p.name),
+                sublabel: p.category || p.carModel || '',
+                value: p._id,
+            } as SearchSuggestion
+        ])).values()
+    ).slice(0, 50);
+
     // [[ARABIC_COMMENT]] فتح مودال القطعة مع تحويل بياناتها لصيغة ProductModalData
     const openPartModal = (part: Part) => {
         if (!isLoggedIn) {
@@ -352,29 +373,31 @@ export default function PartsPage() {
                         transition={{ delay: 0.4 }}
                         className="relative max-w-3xl mx-auto w-full mb-10"
                     >
-                        {/* شريط البحث */}
-                        <div className="relative flex items-center bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-2xl p-1 sm:p-2 shadow-2xl overflow-hidden group mb-4">
-                            <div className="flex-1 flex items-center px-2 sm:px-4 gap-2 sm:gap-4">
-                                <Search className="w-4 h-4 sm:w-5 sm:h-5 text-accent-gold group-hover:scale-110 transition-transform" />
-                                {viewMode === 'AGENCIES' ? (
-                                    <input
-                                        type="text"
-                                        placeholder={isRTL ? "ابحث عن وكالة (تويوتا، كيا...)" : "Search Agency (Toyota, Kia...)"}
-                                        className="w-full bg-transparent border-none outline-none py-4 text-sm font-bold placeholder:text-white/20"
-                                        value={agencySearchQuery}
-                                        onChange={(e) => setAgencySearchQuery(e.target.value)}
-                                    />
-                                ) : (
-                                    <input
-                                        type="text"
-                                        placeholder={isRTL ? "ابحث عن قطعة..." : "Search Part..."}
-                                        className="w-full bg-transparent border-none outline-none py-4 text-sm font-bold placeholder:text-white/20"
-                                        value={partSearchQuery}
-                                        onChange={(e) => setPartSearchQuery(e.target.value)}
-                                    />
-                                )}
-                            </div>
-                        </div>
+                        {/* شريط البحث الذكي */}
+                        {viewMode === 'AGENCIES' ? (
+                            <SearchAutocomplete
+                                placeholder={isRTL ? 'ابحث عن وكالة (تويوتا، كيا...)' : 'Search Agency (Toyota, Kia...)'}
+                                suggestions={agencySuggestions}
+                                value={agencySearchQuery}
+                                onChange={setAgencySearchQuery}
+                                onSelect={item => {
+                                    const ag = agencies.find(a => a.id === item.value || a.name === item.label);
+                                    if (ag) handleAgencySelect(ag);
+                                }}
+                                isRTL={isRTL}
+                                className="mb-4 w-full"
+                            />
+                        ) : (
+                            <SearchAutocomplete
+                                placeholder={isRTL ? 'ابحث عن قطعة...' : 'Search Part...'}
+                                suggestions={partSuggestions}
+                                value={partSearchQuery}
+                                onChange={setPartSearchQuery}
+                                onSelect={item => setPartSearchQuery(item.label)}
+                                isRTL={isRTL}
+                                className="mb-4 w-full"
+                            />
+                        )}
 
                         {/* فلاتر الموديلات Pill Chips - تظهر فقط في عرض القطع */}
                         {viewMode === 'PARTS' && availableModels.length > 0 && (
@@ -436,22 +459,7 @@ export default function PartsPage() {
                                             onClick={() => handleAgencySelect(agency)}
                                             className="group flex flex-col items-center gap-5 cursor-pointer"
                                         >
-                                            {/* Brand Circle */}
-                                            <div className="relative w-32 h-32 md:w-48 md:h-48 rounded-full bg-white/[0.02] border border-white/10 flex items-center justify-center p-6 group-hover:border-cinematic-neon-blue/50 group-hover:bg-cinematic-neon-blue/5 transition-all duration-700 shadow-2xl overflow-hidden">
-                                                {/* Animated Glow on Hover */}
-                                                <div className="absolute -inset-10 bg-cinematic-neon-blue/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                                                
-                                                <div className="relative w-full h-full p-4 bg-white rounded-full shadow-inner flex items-center justify-center group-hover:scale-110 transition-transform duration-700">
-                                                    <Image
-                                                        src={agency.logo}
-                                                        alt={getAgencyDisplayName(agency)}
-                                                        fill
-                                                        className="object-contain p-4 group-hover:scale-110 transition-transform duration-700"
-                                                        unoptimized
-                                                        referrerPolicy="no-referrer"
-                                                    />
-                                                </div>
-                                            </div>
+                                            <AgencyLogoCircle agency={agency} displayName={getAgencyDisplayName(agency)} />
 
                                             <div className="text-center">
                                                 <h3 className="text-xl font-black uppercase tracking-widest group-hover:text-cinematic-neon-blue transition-colors">
@@ -533,5 +541,52 @@ export default function PartsPage() {
             `}</style>
             </div>
         </>
+    );
+}
+
+// ── مكوّن دائرة شعار الوكالة مع Fallback ذكي ──────────────────────────────
+function AgencyLogoCircle({ agency, displayName }: { agency: { name: string; logo: string }; displayName: string }) {
+    const [logoSrc, setLogoSrc] = useState<string>(() => {
+        const l = agency.logo;
+        if (!l || l === '/images/placeholder.jpg') return '';
+        return l;
+    });
+    const [fallbackLevel, setFallbackLevel] = useState(0);
+
+    const tryNextFallback = () => {
+        if (fallbackLevel === 0) {
+            // المستوى 1: محاولة Clearbit
+            const brandKey = agency.name.toLowerCase().replace(/\s+/g, '');
+            setLogoSrc(`https://logo.clearbit.com/${brandKey}.com`);
+            setFallbackLevel(1);
+        } else {
+            // المستوى 2: أيقونة النص
+            setLogoSrc('');
+            setFallbackLevel(2);
+        }
+    };
+
+    return (
+        <div className="relative w-32 h-32 md:w-48 md:h-48 rounded-full bg-white/[0.02] border border-white/10 flex items-center justify-center p-6 group-hover:border-cyan-400/50 group-hover:bg-cyan-400/5 transition-all duration-700 shadow-2xl overflow-hidden">
+            <div className="absolute -inset-10 bg-cyan-400/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+            <div className="relative w-full h-full bg-white rounded-full shadow-inner flex items-center justify-center group-hover:scale-110 transition-transform duration-700 overflow-hidden">
+                {logoSrc ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                        src={logoSrc}
+                        alt={displayName}
+                        className="w-full h-full object-contain p-3"
+                        onError={tryNextFallback}
+                        referrerPolicy="no-referrer"
+                        loading="lazy"
+                    />
+                ) : (
+                    // Fallback: الحرف الأول من اسم الوكالة
+                    <span className="text-3xl md:text-5xl font-black text-gray-700 select-none">
+                        {(displayName || agency.name).charAt(0).toUpperCase()}
+                    </span>
+                )}
+            </div>
+        </div>
     );
 }

@@ -145,15 +145,26 @@ export default function CircularBrandCard({ brand, index, onClick: _onClick }: C
                                 {/* تأثير الإضاءة الداخلية */}
                                 <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                                 
+                                {/* شعار الوكالة - fallback تلقائي */}
                                 {brand.logo && !imageError ? (
-                                    <Image
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
                                         src={brand.logo}
                                         alt={displayName}
-                                        width={100}
-                                        height={100}
-                                        className="object-contain p-4 group-hover:scale-110 transition-transform duration-500 filter brightness-110 group-hover:brightness-125"
-                                        onError={() => setImageError(true)}
-                                        unoptimized
+                                        className="w-full h-full object-contain p-4 group-hover:scale-110 transition-transform duration-500"
+                                        onError={() => {
+                                            // محاولة clearbit كبديل تلقائي
+                                            const clearbit = `https://logo.clearbit.com/${(brand.key || brand.name).toLowerCase().replace(/\s+/g, '')}.com`;
+                                            const imgEl = document.querySelector(`img[alt="${displayName}"]`) as HTMLImageElement;
+                                            if (imgEl && imgEl.src !== clearbit) {
+                                                imgEl.src = clearbit;
+                                                imgEl.onerror = () => setImageError(true);
+                                            } else {
+                                                setImageError(true);
+                                            }
+                                        }}
+                                        referrerPolicy="no-referrer"
+                                        loading="lazy"
                                     />
                                 ) : (
                                     <div className="relative">

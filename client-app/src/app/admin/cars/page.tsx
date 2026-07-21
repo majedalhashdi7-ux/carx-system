@@ -12,6 +12,7 @@ import { useToast } from '@/lib/ToastContext';
 import AdminPageShell from '@/components/AdminPageShell';
 import CarCard from './_components/CarCard';
 import CarModal from './_components/CarModal';
+import SearchAutocomplete, { type SearchSuggestion } from '@/components/SearchAutocomplete';
 
 // ── نوع بيانات السيارة ──
 type Car = {
@@ -87,6 +88,7 @@ function CarsContent() {
     const [editingCar, setEditingCar] = useState<Car | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [brands, setBrands] = useState<Array<{_id: string, name: string}>>([]);
+    const [searchQuery, setSearchQuery] = useState('');
     
     const [currencySettings, setCurrencySettings] = useState({ usdToSar: 3.75, usdToKrw: 1350 });
 
@@ -251,6 +253,31 @@ function CarsContent() {
     const activeCount = cars.filter(c => c.isActive && !c.isSold).length;
     const soldCount = cars.filter(c => c.isSold).length;
 
+    // فلترة السيارات بالبحث
+    const filteredCars = searchQuery.trim()
+        ? cars.filter(c => {
+            const q = searchQuery.toLowerCase();
+            const make = typeof c.make === 'object' ? c.make?.name : c.make;
+            return (
+                c.title?.toLowerCase().includes(q) ||
+                (make || '').toLowerCase().includes(q) ||
+                c.model?.toLowerCase().includes(q) ||
+                String(c.year || '').includes(q)
+            );
+        })
+        : cars;
+
+    // اقتراحات البحث
+    const carSuggestions: SearchSuggestion[] = cars.map(c => {
+        const make = typeof c.make === 'object' ? c.make?.name : c.make;
+        return {
+            id: c.id,
+            label: c.title || `${make} ${c.model} ${c.year}`,
+            sublabel: `${make || ''} · ${c.year || ''}`,
+            value: c.id,
+        };
+    });
+
     return (
         <div className="relative min-h-screen text-white font-sans overflow-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
             <AdminPageShell
@@ -308,8 +335,18 @@ function CarsContent() {
 
                 ) : (
                     <>
+                        {/* بحث ذكي */}
+                        <SearchAutocomplete
+                            placeholder={isRTL ? 'ابحث عن سيارة (الاسم، الموديل، السنة...)' : 'Search car (name, model, year...)'}
+                            suggestions={carSuggestions}
+                            value={searchQuery}
+                            onChange={setSearchQuery}
+                            onSelect={item => setSearchQuery(item.label)}
+                            isRTL={isRTL}
+                            className="mb-6"
+                        />
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-8">
-                            {cars.map((car, i) => (
+                            {filteredCars.map((car, i) => (
                                 <CarCard
                                     key={car.id}
                                     car={car}

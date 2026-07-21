@@ -8,9 +8,10 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Car, Search, ArrowLeft, Building2 } from 'lucide-react';
+import { Car, ArrowLeft, Building2 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import CircularBrandCard from '@/components/CircularBrandCard';
+import SearchAutocomplete, { type SearchSuggestion } from '@/components/SearchAutocomplete';
 import { useLanguage } from '@/lib/LanguageContext';
 import { api } from '@/lib/api-original';
 import { cn } from '@/lib/utils';
@@ -52,11 +53,20 @@ export default function BrandsPage() {
 
   const filteredBrands = brands.filter(brand => {
     const q = search.toLowerCase();
-    return !q || 
-      brand.name.toLowerCase().includes(q) || 
+    return !q ||
+      brand.name.toLowerCase().includes(q) ||
       brand.nameAr?.includes(q) ||
       brand.key.toLowerCase().includes(q);
   });
+
+  // اقتراحات البحث الذكي
+  const searchSuggestions: SearchSuggestion[] = brands.map(b => ({
+    id: b.id,
+    label: isRTL ? (b.nameAr || b.name) : b.name,
+    sublabel: isRTL ? b.name : b.nameAr,
+    icon: b.logo,
+    value: b.key,
+  }));
 
   return (
     <div className="min-h-screen bg-black text-white" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -102,26 +112,22 @@ export default function BrandsPage() {
             </p>
           </motion.div>
 
-          {/* شريط البحث */}
+          {/* شريط البحث الذكي */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             className="relative max-w-xl"
           >
-            <div className="absolute inset-0 bg-amber-500/10 blur-xl opacity-0 focus-within:opacity-100 transition-opacity" />
-            <div className="relative flex items-center bg-white/5 border border-white/10 rounded-2xl p-1.5 focus-within:border-amber-500/50 transition-all">
-              <div className="w-12 h-12 flex items-center justify-center text-white/30">
-                <Search className="w-5 h-5" />
-              </div>
-              <input
-                type="text"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder={isRTL ? "ابحث عن وكالة..." : "Search for a brand..."}
-                className="flex-1 bg-transparent border-none outline-none text-base font-medium text-white placeholder:text-white/30 px-2"
-              />
-            </div>
+            <SearchAutocomplete
+              placeholder={isRTL ? 'ابحث عن وكالة (تويوتا، كيا...)' : 'Search brands (Toyota, Kia...)'}
+              suggestions={searchSuggestions}
+              value={search}
+              onChange={setSearch}
+              onSelect={item => setSearch(item.label)}
+              isRTL={isRTL}
+              maxSuggestions={8}
+            />
           </motion.div>
         </div>
 
