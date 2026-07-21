@@ -119,10 +119,11 @@ export default function BottomTabBar() {
                                     whileTap={{ scale: 0.88 }}
                                     whileHover={{ scale: 1.06 }}
                                     onClick={handleWhatsApp}
-                                    className="w-[58px] h-[58px] rounded-full flex items-center justify-center relative"
+                                    className="w-[58px] h-[58px] flex items-center justify-center relative border-[3px] border-white shadow-xl"
                                     style={{
                                         background: 'linear-gradient(145deg, #25D366, #128C7E)',
-                                        boxShadow: '0 4px 20px rgba(37,211,102,0.55), 0 0 0 4px #09090f',
+                                        boxShadow: '0 4px 20px rgba(37,211,102,0.55)',
+                                        borderRadius: '50%',
                                     }}
                                     aria-label="WhatsApp"
                                 >
