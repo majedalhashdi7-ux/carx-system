@@ -483,6 +483,7 @@ export default function PartsPage() {
                                             <AgencyLogoCircle
                                                 brandName={agency.name}
                                                 displayName={getAgencyDisplayName(agency)}
+                                                logoUrl={agency.logo}
                                             />
 
                                             <div className="text-center">
@@ -609,14 +610,31 @@ function getClearbitUrl(brandName: string): string {
 function AgencyLogoCircle({
     brandName,
     displayName,
+    logoUrl,
 }: {
     brandName: string;
     displayName: string;
+    logoUrl?: string;
 }) {
-    // نبدأ من Clearbit مباشرة (لأن /uploads/ لا يعمل على Vercel)
-    const [logoSrc, setLogoSrc] = useState<string>(() => getClearbitUrl(brandName));
+    const getInitialLogo = () => {
+        if (logoUrl && typeof logoUrl === 'string' && logoUrl.startsWith('http') && !logoUrl.includes('placeholder')) {
+            return logoUrl;
+        }
+        return getClearbitUrl(brandName);
+    };
+
+    const [logoSrc, setLogoSrc] = useState<string>(getInitialLogo);
     const [showLetter, setShowLetter] = useState(false);
     const firstLetter = (displayName || brandName).trim().charAt(0).toUpperCase();
+
+    const handleError = () => {
+        const clearbit = getClearbitUrl(brandName);
+        if (logoSrc !== clearbit && clearbit) {
+            setLogoSrc(clearbit);
+        } else {
+            setShowLetter(true);
+        }
+    };
 
     return (
         <div className="relative w-32 h-32 md:w-48 md:h-48 rounded-full bg-white/[0.02] border border-white/10 flex items-center justify-center p-6 group-hover:border-cyan-400/50 group-hover:bg-cyan-400/5 transition-all duration-700 shadow-2xl overflow-hidden">
@@ -628,7 +646,7 @@ function AgencyLogoCircle({
                         src={logoSrc}
                         alt={displayName}
                         className="w-full h-full object-contain p-3"
-                        onError={() => setShowLetter(true)}
+                        onError={handleError}
                         referrerPolicy="no-referrer"
                         loading="lazy"
                     />

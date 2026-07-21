@@ -18,6 +18,7 @@ import Image from 'next/image';
 import WatermarkImage from '@/components/WatermarkImage';
 import Link from 'next/link';
 import { WhatsAppService } from '@/lib/WhatsAppService';
+import { getBrandDisplayName, formatCarTitle } from '@/lib/brandTranslations';
 
 /* ─── Types ─── */
 interface CarItem {
@@ -107,7 +108,9 @@ function CarCard({ car, onWhatsApp }: { car: CarItem; onWhatsApp: (car: CarItem)
     };
 
     const displayPrice = car.priceSar || car.price || 0;
-    const displayName  = car.makeAr || car.make;
+    const rawMake      = car.makeAr || car.make || '';
+    const displayName  = getBrandDisplayName(rawMake, isRTL);
+    const displayTitle = formatCarTitle(car.title || `${rawMake} ${car.model} ${car.badge || ''}`, rawMake, isRTL);
     const fuelLabel    = car.fuelAr || car.fuelType || '';
     const transLabel   = car.transmissionAr || car.transmission || '';
     const isKorean     = car.source === 'korean';
@@ -124,7 +127,7 @@ function CarCard({ car, onWhatsApp }: { car: CarItem; onWhatsApp: (car: CarItem)
                 {/* ─── صورة السيارة ─── */}
                 <div className="relative aspect-[4/3] overflow-hidden bg-[#07070c] shrink-0">
                     <WatermarkImage
-                        src={img} alt={car.title} fill
+                        src={img} alt={displayTitle} fill
                         className="object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
                         onError={() => setImgErr(true)}
                         unoptimized watermarkPosition="br"
@@ -163,14 +166,14 @@ function CarCard({ car, onWhatsApp }: { car: CarItem; onWhatsApp: (car: CarItem)
                                 ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
                                 : 'bg-[#C9A96E]/10 text-[#C9A96E] border-[#C9A96E]/20'
                         )}>
-                            {isKorean ? '🇰🇷 وارد كوري' : '🏢 معرض HM CAR'}
+                            {isKorean ? (isRTL ? '🇰🇷 وارد كوري' : '🇰🇷 KOREAN IMPORT') : (isRTL ? '🏢 معرض HM CAR' : '🏢 HM SHOWROOM')}
                         </span>
                         <span className="text-[10px] font-black text-white/50">{displayName}</span>
                     </div>
 
                     {/* Model name — main title */}
-                    <h3 className="text-sm sm:text-base font-black text-white leading-snug line-clamp-1 group-hover:text-[#C9A96E] transition-colors duration-300">
-                        {car.model}{car.badge ? ` ${car.badge}` : ''}
+                    <h3 className="text-sm sm:text-base font-black text-white leading-snug line-clamp-1 group-hover:text-[#C9A96E] transition-colors duration-300" title={displayTitle}>
+                        {displayTitle}
                     </h3>
 
                     {/* Specs chips */}

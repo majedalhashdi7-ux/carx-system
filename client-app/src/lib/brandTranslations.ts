@@ -128,3 +128,61 @@ export function isLocalPath(url: string): boolean {
     if (!url) return true;
     return url.startsWith('/uploads/') || url.startsWith('/images/') || url.startsWith('./') || url.startsWith('../');
 }
+
+// ── ترجمة عناوين ومواصفات السيارات المستوردة كوري ↔ عربي ↔ إنجليزي ──
+const KOREAN_TITLE_TOKENS: Array<[RegExp, { ar: string; en: string }]> = [
+    // Manufacturers
+    [/현대/g, { ar: 'هيونداي', en: 'Hyundai' }],
+    [/기아/g, { ar: 'كيا', en: 'Kia' }],
+    [/제네시스/g, { ar: 'جينيسيس', en: 'Genesis' }],
+    [/KG모빌리티|\(쌍용\)|쌍용/g, { ar: 'KG موبيليتي (سانغ يونغ)', en: 'KG Mobility (SsangYong)' }],
+    [/르노코리아|\(삼성\)|삼성/g, { ar: 'رينو كوريا (سامسونج)', en: 'Renault Samsung' }],
+    [/벤츠/g, { ar: 'مرسيدس', en: 'Mercedes-Benz' }],
+    [/아우디/g, { ar: 'أودي', en: 'Audi' }],
+    [/폭스바겐/g, { ar: 'فولكس واغن', en: 'Volkswagen' }],
+    [/볼보/g, { ar: 'فولفو', en: 'Volvo' }],
+    [/렉서스/g, { ar: 'لكزس', en: 'Lexus' }],
+    [/토요타/g, { ar: 'تويوتا', en: 'Toyota' }],
+    [/혼다/g, { ar: 'هوندا', en: 'Honda' }],
+    [/닛산/g, { ar: 'نيسان', en: 'Nissan' }],
+    [/쉐보레/g, { ar: 'شيفروليه', en: 'Chevrolet' }],
+    [/포드/g, { ar: 'فورد', en: 'Ford' }],
+    [/지프/g, { ar: 'جيب', en: 'Jeep' }],
+    [/랜드로버/g, { ar: 'لاند روفر', en: 'Land Rover' }],
+    [/포르쉐/g, { ar: 'بورش', en: 'Porsche' }],
+    [/미니/g, { ar: 'ميني', en: 'MINI' }],
+
+    // Specs & Details
+    [/올\s*뉴/g, { ar: 'أول نيو', en: 'All New' }],
+    [/더\s*뉴/g, { ar: 'ذا نيو', en: 'The New' }],
+    [/(\d+)인승/g, { ar: '$1 مقاعد', en: '$1-Seater' }],
+    [/디젤/g, { ar: 'ديزل', en: 'Diesel' }],
+    [/가솔린/g, { ar: 'بنزين', en: 'Gasoline' }],
+    [/하이브리드/g, { ar: 'هايبرد', en: 'Hybrid' }],
+    [/전기/g, { ar: 'كهربائي', en: 'EV' }],
+    [/터보/g, { ar: 'توربو', en: 'Turbo' }],
+    [/오토|자동/g, { ar: 'أوتوماتيك', en: 'Automatic' }],
+    [/수동/g, { ar: 'يدوي', en: 'Manual' }],
+    [/(\d+)세대/g, { ar: 'الجيل $1', en: 'Gen $1' }],
+    [/무사고/g, { ar: 'بدون حوادث', en: 'Accident-Free' }],
+    [/풀옵션/g, { ar: 'فل كامل', en: 'Full Option' }],
+];
+
+/**
+ * تنسيق وترجمة عنوان السيارة المستوردة حسب اللغة (عربي / إنجليزي)
+ */
+export function formatCarTitle(rawTitle: string, rawMake: string, isRTL: boolean): string {
+    if (!rawTitle) return '';
+    let title = rawTitle;
+
+    KOREAN_TITLE_TOKENS.forEach(([pattern, trans]) => {
+        title = title.replace(pattern, isRTL ? trans.ar : trans.en);
+    });
+
+    const brandName = getBrandDisplayName(rawMake || '', isRTL);
+    if (brandName && !title.toLowerCase().includes(brandName.toLowerCase())) {
+        title = `${brandName} ${title}`;
+    }
+
+    return title.trim();
+}

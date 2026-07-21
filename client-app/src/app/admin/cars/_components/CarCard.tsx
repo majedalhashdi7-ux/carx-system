@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 import { Edit, Eye, Trash2, CheckCircle2 } from 'lucide-react';
 import Image from 'next/image';
 import { useLanguage } from '@/lib/LanguageContext';
+import { getBrandDisplayName, formatCarTitle } from '@/lib/brandTranslations';
 
 // ── نوع بيانات السيارة ──
 interface Car {
@@ -40,8 +41,10 @@ interface CarCardProps {
 export default function CarCard({ car, index, usdToSar, onEdit, onDelete, onMarkSold, onToggleActive }: CarCardProps) {
     const { isRTL } = useLanguage();
 
-    // استخراج اسم الماركة سواء كانت object أو string
-    const makeName = typeof car.make === 'object' ? car.make?.name : car.make;
+    // استخراج وترجمة اسم الماركة وعنوان السيارة حسب اللغة المحددة (عربي / إنجليزي)
+    const rawMake = typeof car.make === 'object' ? (car.make as any)?.name || '' : (car.make || '');
+    const displayMake = getBrandDisplayName(rawMake, isRTL);
+    const displayTitle = formatCarTitle(car.title || `${rawMake} ${car.model} ${car.year}`, rawMake, isRTL);
 
     // عرض السعر حسب عملة العرض المختارة
     const displayPrice = car.displayCurrency === 'USD'
@@ -120,12 +123,11 @@ export default function CarCard({ car, index, usdToSar, onEdit, onDelete, onMark
             {/* ── تفاصيل السيارة وأزرار الإجراءات ── */}
             <div className="p-5 space-y-4">
                 <div>
-                    {/* اسم الماركة */}
+                    {/* اسم الماركة واسم السيارة المترجم بحسب اللغة */}
                     <p className="cockpit-mono text-[9px] text-orange-400/60 uppercase tracking-[0.2em] mb-1">
-                        {makeName}
+                        {displayMake}
                     </p>
-                    {/* اسم السيارة */}
-                    <h3 className="text-base font-bold text-white truncate">{car.title}</h3>
+                    <h3 className="text-base font-bold text-white truncate" title={displayTitle}>{displayTitle}</h3>
                 </div>
 
                 {/* السعر وأزرار الإجراءات */}
