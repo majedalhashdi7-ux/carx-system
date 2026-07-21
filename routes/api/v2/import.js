@@ -15,6 +15,7 @@
 const express = require('express');
 const router = express.Router();
 const { requireAuthAPI, requireAdmin } = require('../../../middleware/auth');
+const { invalidateCache } = require('../../../middleware/cache');
 const ScraperService = require('../../../services/ScraperService');
 const { downloadAndOptimize } = require('../../../services/externalImageService');
 const { getTenantId, getModel, addTenantFilter } = require('../../../tenants/tenant-model-helper');
@@ -131,7 +132,7 @@ router.post('/preview', requireAuthAPI, requireAdmin, async (req, res, next) => 
  * - يضغط الصور محلياً قبل الحفظ
  * - يحفظ جميع البيانات المُرسلة كما هي بدون فقدان
  */
-router.post('/save', requireAuthAPI, requireAdmin, async (req, res, next) => {
+router.post('/save', requireAuthAPI, requireAdmin, invalidateCache(['/api/v2/cars*', '/api/v2/parts*', '/api/v2/brands*']), async (req, res, next) => {
     try {
         const { data, type } = req.body;
 

@@ -100,8 +100,8 @@ function CarsContent() {
     const loadData = useCallback(async () => {
         try {
             setLoading(true);
-            // جلب كل السيارات معاً (محلية + مستوردة) في معرض موحد
-            const res = await api.cars.list({ page, limit: 30 });
+            // جلب كل السيارات معاً (محلية + مستوردة + كورية) في معرض موحد
+            const res = await api.cars.list({ page, limit: 100, status: 'all' });
             if (res.success) {
                 setCars(res.data?.cars || []);
                 setTotalCarsCount(res.data?.pagination?.total || 0);

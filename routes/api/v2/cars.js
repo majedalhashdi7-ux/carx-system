@@ -85,6 +85,7 @@ router.get('/', cacheResponse(300), async (req, res, next) => {
         } else if (status === 'inactive') {
             conditions.push({ isActive: false });
         }
+        // status === 'all' → لا فلتر، يُعيد كل السيارات (للأدمن)
 
         if (category) conditions.push({ category });
         if (make) conditions.push({ make });
