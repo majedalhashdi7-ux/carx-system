@@ -267,7 +267,7 @@ export default function AppHome({ isRTL, latestCars, formatPrice }: { isRTL: boo
                     </div>
                     <motion.div
                         whileTap={{ scale: 0.9 }}
-                        className="w-12 h-12 rounded-2xl bg-emerald-500 text-black flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.3)] group-hover:scale-105 transition-transform"
+                        className="w-12 h-12 rounded-full bg-emerald-500 text-black flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.3)] group-hover:scale-105 transition-transform"
                     >
                         <MessageCircle className="w-5 h-5" />
                     </motion.div>

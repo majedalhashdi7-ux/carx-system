@@ -20,10 +20,16 @@ export default function BottomTabBar() {
     const { socialLinks } = useSettings();
     const [visible, setVisible] = useState(true);
     const lastScrollY = useRef(0);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const whatsappNumber = (socialLinks?.whatsapp || '+821080880014').replace(/\D/g, '');
 
     useEffect(() => {
+        if (!mounted) return;
         const handleScroll = () => {
             const currentScrollY = window.scrollY;
             if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
@@ -62,6 +68,8 @@ export default function BottomTabBar() {
             paths: ['/client', '/admin', '/login', '/register'] 
         },
     ];
+
+    if (!mounted) return null;
 
     return (
         <AnimatePresence>

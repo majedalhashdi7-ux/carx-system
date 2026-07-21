@@ -75,6 +75,7 @@ function fmtPrice(n: number) {
 function CarCard({ car, onWhatsApp }: { car: CarItem; onWhatsApp: (car: CarItem) => void }) {
     const [liked, setLiked] = useState(false);
     const [imgErr, setImgErr] = useState(false);
+    const { isRTL } = useLanguage();
     const img = imgErr ? 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?q=80&w=800' : resolveImg(car);
 
     useEffect(() => {
@@ -116,103 +117,104 @@ function CarCard({ car, onWhatsApp }: { car: CarItem; onWhatsApp: (car: CarItem)
             <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                whileHover={{ y: -5, boxShadow: '0 16px 48px rgba(201,169,110,0.12)' }}
-                transition={{ duration: 0.2 }}
-                className="group relative bg-[#0e0e18] border border-white/6 rounded-[20px] overflow-hidden hover:border-[#C9A96E]/45 transition-colors duration-300 cursor-pointer h-full flex flex-col"
-                style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.45)' }}
+                whileHover={{ y: -6 }}
+                transition={{ duration: 0.3, ease: [0.25, 0.8, 0.25, 1] }}
+                className="group relative bg-[#0c0c14]/80 backdrop-blur-xl border border-white/[0.06] rounded-[24px] overflow-hidden hover:border-[#C9A96E]/50 transition-all duration-300 cursor-pointer h-full flex flex-col shadow-[0_12px_30px_rgba(0,0,0,0.5)] hover:shadow-[0_20px_40px_rgba(201,169,110,0.12)]"
             >
                 {/* ─── صورة السيارة ─── */}
-                <div className="relative aspect-[4/3] overflow-hidden bg-[#0a0a12] shrink-0">
+                <div className="relative aspect-[4/3] overflow-hidden bg-[#07070c] shrink-0">
                     <WatermarkImage
                         src={img} alt={car.title} fill
-                        className="group-hover:scale-105 transition-transform duration-700"
+                        className="object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
                         onError={() => setImgErr(true)}
                         unoptimized watermarkPosition="br"
                     />
                     {/* Gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e18]/95 via-[#0e0e18]/15 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c14] via-transparent to-black/30" />
 
                     {/* Year badge — top-left */}
-                    <div className="absolute top-2 left-2 bg-[#C9A96E] text-black text-[10px] font-black px-2 py-[3px] rounded-lg leading-none">
+                    <div className="absolute top-3 left-3 bg-[#C9A96E] text-black text-[10px] font-black px-2.5 py-[4px] rounded-lg leading-none shadow-md">
                         {car.year}
                     </div>
 
                     {/* Like button — top-right */}
                     <button
                         onClick={toggleLike}
-                        className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 flex items-center justify-center transition-all hover:scale-110 active:scale-95 z-10"
+                        className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 backdrop-blur-md border border-white/10 flex items-center justify-center transition-all hover:scale-110 active:scale-95 z-10"
                     >
-                        <Heart className={cn('w-3.5 h-3.5 transition-colors', liked ? 'fill-red-500 text-red-500' : 'text-white/60')} />
+                        <Heart className={cn('w-4 h-4 transition-colors', liked ? 'fill-red-500 text-red-500' : 'text-white/70')} />
                     </button>
 
                     {/* Inspected badge */}
                     {car.isInspected && (
-                        <div className="absolute bottom-9 left-2 bg-green-500/20 border border-green-500/40 text-green-400 text-[8px] font-black px-1.5 py-[3px] rounded-md backdrop-blur-sm">
+                        <div className="absolute bottom-3 left-3 bg-emerald-500/25 border border-emerald-500/40 text-emerald-400 text-[8.5px] font-black px-2 py-[4px] rounded-lg backdrop-blur-md shadow-sm">
                             ✓ مفحوصة
                         </div>
                     )}
-
-                    {/* Price overlay at bottom */}
-                    <div className="absolute bottom-0 inset-x-0 px-2.5 pb-2 pt-5 bg-gradient-to-t from-[#0e0e18] to-transparent">
-                        <div className="text-[16px] font-black leading-none" style={{ background: 'linear-gradient(135deg,#C9A96E,#F5D9A0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                            {displayPrice > 0
-                                ? fmtPrice(displayPrice)
-                                : <span className="text-xs text-white/40" style={{ WebkitTextFillColor: 'rgba(255,255,255,0.4)' }}>اتصل للسعر</span>
-                            }
-                        </div>
-                    </div>
                 </div>
 
                 {/* ─── بيانات السيارة ─── */}
-                <div className="px-2.5 pt-2 pb-2.5 flex flex-col flex-1 gap-1.5">
-
+                <div className="p-4 flex flex-col flex-1 gap-3">
                     {/* Source chip + brand */}
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center justify-between gap-2">
                         <span className={cn(
-                            'text-[8.5px] font-black px-2 py-[3.5px] rounded-lg border leading-none tracking-wide uppercase',
+                            'text-[9px] font-black px-2 py-[4px] rounded-lg border leading-none uppercase tracking-wider',
                             isKorean
                                 ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
                                 : 'bg-[#C9A96E]/10 text-[#C9A96E] border-[#C9A96E]/20'
                         )}>
-                            {isKorean ? '🇰🇷 وارد كوري' : '🏢 معرض HM CAR'} • {displayName}
+                            {isKorean ? '🇰🇷 وارد كوري' : '🏢 معرض HM CAR'}
                         </span>
+                        <span className="text-[10px] font-black text-white/50">{displayName}</span>
                     </div>
 
                     {/* Model name — main title */}
-                    <h3 className="text-[13px] sm:text-[14px] font-black text-white leading-snug line-clamp-1 group-hover:text-[#C9A96E] transition-colors duration-300">
+                    <h3 className="text-sm sm:text-base font-black text-white leading-snug line-clamp-1 group-hover:text-[#C9A96E] transition-colors duration-300">
                         {car.model}{car.badge ? ` ${car.badge}` : ''}
                     </h3>
 
                     {/* Specs chips */}
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-1.5">
                         {car.mileage > 0 && (
-                            <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-white/40 bg-white/4 border border-white/6 px-1.5 py-[3px] rounded-lg">
-                                <Gauge className="w-[9px] h-[9px] text-[#C9A96E]/50 shrink-0" />{fmtKm(car.mileage)}
+                            <span className="inline-flex items-center gap-1 text-[10px] font-black text-white/50 bg-white/4 border border-white/5 px-2 py-[4px] rounded-lg">
+                                <Gauge className="w-3 h-3 text-[#C9A96E]/60 shrink-0" />{fmtKm(car.mileage)}
                             </span>
                         )}
                         {fuelLabel && (
-                            <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-white/40 bg-white/4 border border-white/6 px-1.5 py-[3px] rounded-lg">
-                                <Fuel className="w-[9px] h-[9px] text-[#C9A96E]/50 shrink-0" />{fuelLabel}
+                            <span className="inline-flex items-center gap-1 text-[10px] font-black text-white/50 bg-white/4 border border-white/5 px-2 py-[4px] rounded-lg">
+                                <Fuel className="w-3 h-3 text-[#C9A96E]/60 shrink-0" />{fuelLabel}
                             </span>
                         )}
                         {transLabel && (
-                            <span className="hidden sm:inline-flex items-center gap-0.5 text-[9px] font-bold text-white/40 bg-white/4 border border-white/6 px-1.5 py-[3px] rounded-lg">
-                                <Settings2 className="w-[9px] h-[9px] text-[#C9A96E]/50 shrink-0" />{transLabel}
+                            <span className="inline-flex items-center gap-1 text-[10px] font-black text-white/50 bg-white/4 border border-white/5 px-2 py-[4px] rounded-lg">
+                                <Settings2 className="w-3 h-3 text-[#C9A96E]/60 shrink-0" />{transLabel}
                             </span>
                         )}
                     </div>
 
-                    {/* WhatsApp CTA */}
-                    <button
-                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); onWhatsApp(car); }}
-                        className="mt-auto flex items-center justify-center gap-1.5 w-full text-white text-[10px] sm:text-[11px] font-black py-2 rounded-xl transition-all"
-                        style={{ background: 'linear-gradient(135deg,#25D366,#128C7E)', boxShadow: '0 2px 12px rgba(37,211,102,0.25)' }}
-                    >
-                        <svg viewBox="0 0 24 24" className="w-3 h-3 fill-white shrink-0">
-                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                        </svg>
-                        تواصل واتساب
-                    </button>
+                    {/* Price and CTA Row */}
+                    <div className="mt-auto pt-3 border-t border-white/[0.05] flex items-center justify-between gap-2">
+                        <div className="flex flex-col">
+                            <span className="text-[9px] font-bold text-white/30 uppercase tracking-wider">{isRTL ? 'السعر' : 'Price'}</span>
+                            <span className="text-base sm:text-lg font-black tracking-tight" style={{ background: 'linear-gradient(135deg,#C9A96E,#F5D9A0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                                {displayPrice > 0
+                                    ? fmtPrice(displayPrice)
+                                    : <span className="text-xs text-white/40" style={{ WebkitTextFillColor: 'rgba(255,255,255,0.4)' }}>{isRTL ? 'اتصل للسعر' : 'Call for price'}</span>
+                                }
+                            </span>
+                        </div>
+                        
+                        <button
+                            onClick={(e) => { e.stopPropagation(); e.preventDefault(); onWhatsApp(car); }}
+                            className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-white text-[10.5px] font-black transition-all hover:scale-105 shrink-0"
+                            style={{ background: 'linear-gradient(135deg,#25D366,#128C7E)', boxShadow: '0 4px 14px rgba(37,211,102,0.3)' }}
+                        >
+                            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-white shrink-0">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                            </svg>
+                            {isRTL ? 'استفسار' : 'Inquire'}
+                        </button>
+                    </div>
                 </div>
             </motion.div>
         </Link>
@@ -302,6 +304,7 @@ function CarsContent() {
         brand: true, year: true, fuel: true, trans: true, source: true, price: false, km: false,
     });
     const [mobileSidebar, setMobileSidebar] = useState(false);
+    const [showFilters, setShowFilters] = useState(false);
 
     const toggleSection = (key: string) => setExpandedSections(p => ({ ...p, [key]: !p[key] }));
 
@@ -409,11 +412,11 @@ function CarsContent() {
     const SidebarContent = () => (
         <div className="space-y-0" dir="rtl">
             {/* Source */}
-            <FilterSection title="نوع المعرض" expanded={expandedSections.source} onToggle={() => toggleSection('source')}>
+            <FilterSection title={isRTL ? "نوع المعرض" : "Showroom Type"} expanded={expandedSections.source} onToggle={() => toggleSection('source')}>
                 {[
-                    { val: 'all', label: 'الكل', icon: '🌐' },
-                    { val: 'korean', label: 'المعرض الكوري', icon: '🇰🇷' },
-                    { val: 'local', label: 'معرض HM CAR', icon: '🏢' },
+                    { val: 'all', label: isRTL ? 'الكل' : 'All', icon: '🌐' },
+                    { val: 'korean', label: isRTL ? 'المعرض الكوري' : 'Korean Showroom', icon: '🇰🇷' },
+                    { val: 'local', label: isRTL ? 'معرض HM CAR' : 'HM CAR Showroom', icon: '🏢' },
                 ].map(opt => (
                     <FilterOption key={opt.val} label={`${opt.icon} ${opt.label}`}
                         count={opt.val === 'all' ? allCars.length : allCars.filter(c => c.source === opt.val).length}
@@ -422,7 +425,7 @@ function CarsContent() {
             </FilterSection>
 
             {/* Brand */}
-            <FilterSection title="الشركة المصنعة" expanded={expandedSections.brand} onToggle={() => toggleSection('brand')}>
+            <FilterSection title={isRTL ? "الشركة المصنعة" : "Manufacturer"} expanded={expandedSections.brand} onToggle={() => toggleSection('brand')}>
                 {allBrands.slice(0, 20).map(b => (
                     <FilterOption key={b} label={b}
                         count={allCars.filter(c => (c.makeAr || c.make) === b).length}
@@ -432,23 +435,23 @@ function CarsContent() {
             </FilterSection>
 
             {/* Year */}
-            <FilterSection title="السنة" expanded={expandedSections.year} onToggle={() => toggleSection('year')}>
+            <FilterSection title={isRTL ? "السنة" : "Year"} expanded={expandedSections.year} onToggle={() => toggleSection('year')}>
                 <div className="flex gap-2 px-1 pt-1 pb-2">
                     <select value={yearTo} onChange={e => { setYearTo(e.target.value); setPage(1); }}
                         className="flex-1 bg-white/5 border border-white/10 rounded-xl px-2 py-2 text-xs text-white/60 outline-none">
-                        <option value="">إلى</option>
+                        <option value="">{isRTL ? 'إلى' : 'To'}</option>
                         {years.map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
                     <select value={yearFrom} onChange={e => { setYearFrom(e.target.value); setPage(1); }}
                         className="flex-1 bg-white/5 border border-white/10 rounded-xl px-2 py-2 text-xs text-white/60 outline-none">
-                        <option value="">من</option>
+                        <option value="">{isRTL ? 'من' : 'From'}</option>
                         {years.map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
                 </div>
             </FilterSection>
 
             {/* Fuel */}
-            <FilterSection title="الوقود" expanded={expandedSections.fuel} onToggle={() => toggleSection('fuel')}>
+            <FilterSection title={isRTL ? "الوقود" : "Fuel"} expanded={expandedSections.fuel} onToggle={() => toggleSection('fuel')}>
                 {allFuels.map(f => (
                     <FilterOption key={f} label={f}
                         count={allCars.filter(c => (c.fuelAr || c.fuelType) === f).length}
@@ -458,7 +461,7 @@ function CarsContent() {
             </FilterSection>
 
             {/* Transmission */}
-            <FilterSection title="ناقل الحركة" expanded={expandedSections.trans} onToggle={() => toggleSection('trans')}>
+            <FilterSection title={isRTL ? "ناقل الحركة" : "Transmission"} expanded={expandedSections.trans} onToggle={() => toggleSection('trans')}>
                 {allTrans.map(t => (
                     <FilterOption key={t} label={t}
                         count={allCars.filter(c => (c.transmissionAr || c.transmission) === t).length}
@@ -468,20 +471,20 @@ function CarsContent() {
             </FilterSection>
 
             {/* Price */}
-            <FilterSection title="السعر (بالريال)" expanded={expandedSections.price} onToggle={() => toggleSection('price')}>
+            <FilterSection title={isRTL ? "السعر (بالريال)" : "Price (SAR)"} expanded={expandedSections.price} onToggle={() => toggleSection('price')}>
                 <div className="px-1 pt-1 pb-2 space-y-2">
                     {['50000', '100000', '200000', '300000', '500000'].map(val => (
-                        <FilterOption key={val} label={`أقل من ${Number(val).toLocaleString()} ر.س`}
+                        <FilterOption key={val} label={isRTL ? `أقل من ${Number(val).toLocaleString()} ر.س` : `Less than ${Number(val).toLocaleString()} SAR`}
                             checked={priceMax === val} onChange={() => { setPriceMax(priceMax === val ? '' : val); setPage(1); }} />
                     ))}
                 </div>
             </FilterSection>
 
             {/* Mileage */}
-            <FilterSection title="المسافة (كم)" expanded={expandedSections.km} onToggle={() => toggleSection('km')}>
+            <FilterSection title={isRTL ? "المسافة (كم)" : "Mileage (KM)"} expanded={expandedSections.km} onToggle={() => toggleSection('km')}>
                 <div className="px-1 pt-1 pb-2">
                     {['50000', '100000', '150000', '200000'].map(val => (
-                        <FilterOption key={val} label={`أقل من ${Number(val).toLocaleString()} كم`}
+                        <FilterOption key={val} label={isRTL ? `أقل من ${Number(val).toLocaleString()} كم` : `Less than ${Number(val).toLocaleString()} KM`}
                             checked={kmMax === val} onChange={() => { setKmMax(kmMax === val ? '' : val); setPage(1); }} />
                     ))}
                 </div>
@@ -492,7 +495,7 @@ function CarsContent() {
                 <div className="pt-3 pb-1 px-1">
                     <button onClick={clearFilters}
                         className="w-full py-2.5 rounded-xl border border-red-500/20 text-red-400/70 hover:bg-red-500/10 text-xs font-bold transition-all">
-                        مسح جميع الفلاتر
+                        {isRTL ? 'مسح جميع الفلاتر' : 'Clear All Filters'}
                     </button>
                 </div>
             )}
@@ -520,10 +523,10 @@ function CarsContent() {
                             <div className="flex items-center gap-1.5 bg-white/4 border border-white/8 rounded-xl px-3 py-1.5">
                                 <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse shrink-0" />
                                 <span className="text-[10px] sm:text-xs font-black text-white/50">
-                                    {loading ? '...' : `${allCars.length.toLocaleString()} سيارة`}
+                                    {loading ? '...' : isRTL ? `${allCars.length.toLocaleString()} سيارة` : `${allCars.length.toLocaleString()} cars`}
                                 </span>
                             </div>
-                            <button onClick={fetchAllCars} title="تحديث" disabled={loading}
+                            <button onClick={fetchAllCars} title={isRTL ? 'تحديث' : 'Refresh'} disabled={loading}
                                 className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white/4 border border-white/8 flex items-center justify-center hover:bg-white/8 transition-all disabled:opacity-50">
                                 <RefreshCw className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4 text-white/40", loading && "animate-spin")} />
                             </button>
@@ -536,118 +539,163 @@ function CarsContent() {
 
                 {/* ── Search bar ── */}
                 <div className="py-4">
-                    <div className="relative flex items-center bg-[#111118] border border-white/8 rounded-2xl px-4 py-3 focus-within:border-[#C9A96E]/40 transition-all">
-                        <Search className="w-4 h-4 text-white/25 shrink-0 ml-3" />
+                    <div className="relative flex items-center gap-2 bg-[#111118] border border-white/8 rounded-2xl px-4 py-3 focus-within:border-[#C9A96E]/40 transition-all">
+                        <Search className="w-4 h-4 text-white/25 shrink-0 ml-1" />
                         <input
                             type="text" value={searchInput}
                             onChange={e => setSearchInput(e.target.value)}
                             onKeyDown={e => { if (e.key === 'Enter') { setSearch(searchInput); setPage(1); } }}
-                            placeholder="ابحث بالماركة أو الموديل أو السنة..."
+                            placeholder={isRTL ? "ابحث بالماركة أو الموديل أو السنة..." : "Search by brand, model, or year..."}
                             className="flex-1 bg-transparent outline-none text-sm font-medium text-white placeholder:text-white/20"
                         />
                         {searchInput && (
                             <button onClick={() => { setSearchInput(''); setSearch(''); setPage(1); }}
-                                className="w-7 h-7 rounded-full bg-white/8 flex items-center justify-center hover:bg-white/15 transition-all ml-2">
+                                className="w-7 h-7 rounded-full bg-white/8 flex items-center justify-center hover:bg-white/15 transition-all ml-1">
                                 <X className="w-3.5 h-3.5 text-white/50" />
                             </button>
                         )}
                         <button
                             onClick={() => { setSearch(searchInput); setPage(1); }}
-                            className="bg-[#C9A96E] hover:bg-[#b8934d] text-black font-black text-xs px-4 py-2 rounded-xl transition-all">
-                            بحث
+                            className="bg-[#C9A96E] hover:bg-[#b8934d] text-black font-black text-xs px-4 py-2.5 rounded-xl transition-all shrink-0">
+                            {isRTL ? 'بحث' : 'Search'}
+                        </button>
+                        
+                        {/* Toggle Filters Button for Mobile */}
+                        <button
+                            onClick={() => setShowFilters(!showFilters)}
+                            className={cn(
+                                "lg:hidden flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-black transition-all border shrink-0",
+                                showFilters 
+                                    ? "bg-[#C9A96E]/20 text-[#C9A96E] border-[#C9A96E]/30" 
+                                    : "bg-white/5 text-white/60 border-white/10 hover:bg-white/10"
+                            )}
+                        >
+                            <SlidersHorizontal className="w-3.5 h-3.5" />
+                            {isRTL ? 'تصفية' : 'Filter'}
                         </button>
                     </div>
                 </div>
 
-                {/* ── Smart Filter Chips (Mobile Only — Auto-hidden on desktop) ── */}
-                <div className="lg:hidden overflow-x-auto pb-1 -mx-1 px-1" dir="rtl">
-                    <div className="flex gap-2 w-max py-1">
-                        {/* Chip: Source */}
-                        {['all', 'korean', 'local'].map(src => (
-                            <button key={src}
-                                onClick={() => { setSourceFilter(src as any); setPage(1); }}
-                                className={cn(
-                                    'flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all',
-                                    sourceFilter === src
-                                        ? 'bg-[#C9A96E] text-black border-[#C9A96E]'
-                                        : 'bg-white/5 text-white/50 border-white/10 hover:border-white/20'
-                                )}>
-                                {src === 'all' ? '🌐 الكل' : src === 'korean' ? '🇰🇷 كوري' : '🏢 HM CAR'}
-                            </button>
-                        ))}
+                {/* ── Smart Filter Chips (Mobile Only — Collapsible) ── */}
+                <AnimatePresence>
+                    {showFilters && (
+                        <motion.div 
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="lg:hidden overflow-hidden mb-4 bg-[#111118]/40 border border-white/5 rounded-2xl p-3"
+                        >
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[11px] font-black text-white/40 uppercase tracking-widest">{isRTL ? 'الفلاتر السريعة' : 'Quick Filters'}</span>
+                                <button 
+                                    onClick={() => setMobileSidebar(true)}
+                                    className="text-[11px] font-black text-[#C9A96E] hover:underline flex items-center gap-1"
+                                >
+                                    <SlidersHorizontal className="w-3 h-3" />
+                                    {isRTL ? 'فلاتر متقدمة' : 'Advanced Filters'}
+                                </button>
+                            </div>
+                            <div className="overflow-x-auto pb-1 -mx-1 px-1" dir="rtl">
+                                <div className="flex gap-2 w-max py-1">
+                                    {/* Chip: Source */}
+                                    {['all', 'korean', 'local'].map(src => (
+                                        <button key={src}
+                                            onClick={() => { setSourceFilter(src as any); setPage(1); }}
+                                            className={cn(
+                                                'flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all',
+                                                sourceFilter === src
+                                                    ? 'bg-[#C9A96E] text-black border-[#C9A96E]'
+                                                    : 'bg-white/5 text-white/50 border-white/10 hover:border-white/20'
+                                            )}>
+                                            {src === 'all' ? (isRTL ? '🌐 الكل' : '🌐 All') : src === 'korean' ? (isRTL ? '🇰🇷 كوري' : '🇰🇷 Korean') : '🏢 HM CAR'}
+                                        </button>
+                                    ))}
 
-                        <div className="w-px bg-white/10 mx-0.5" />
+                                    <div className="w-px bg-white/10 mx-0.5" />
 
-                        {/* Chips: Brands (first 5) */}
-                        {allBrands.slice(0, 6).map(b => (
-                            <button key={b}
-                                onClick={() => { setBrandFilters(p => p.includes(b) ? p.filter(x => x !== b) : [...p, b]); setPage(1); }}
-                                className={cn(
-                                    'flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all',
-                                    brandFilters.includes(b)
-                                        ? 'bg-[#C9A96E] text-black border-[#C9A96E]'
-                                        : 'bg-white/5 text-white/50 border-white/10 hover:border-white/20'
-                                )}>
-                                {b}
-                            </button>
-                        ))}
+                                    {/* Chips: Brands (first 5) */}
+                                    {allBrands.slice(0, 6).map(b => (
+                                        <button key={b}
+                                            onClick={() => { setBrandFilters(p => p.includes(b) ? p.filter(x => x !== b) : [...p, b]); setPage(1); }}
+                                            className={cn(
+                                                'flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all',
+                                                brandFilters.includes(b)
+                                                    ? 'bg-[#C9A96E] text-black border-[#C9A96E]'
+                                                    : 'bg-white/5 text-white/50 border-white/10 hover:border-white/20'
+                                            )}>
+                                            {b}
+                                        </button>
+                                    ))}
 
-                        <div className="w-px bg-white/10 mx-0.5" />
+                                    <div className="w-px bg-white/10 mx-0.5" />
 
-                        {/* Chips: Year ranges */}
-                        {[['2022+', '2022', ''], ['2019-2021', '2019', '2021'], ['قبل 2019', '', '2018']].map(([label, from, to]) => (
-                            <button key={label}
-                                onClick={() => { setYearFrom(from); setYearTo(to); setPage(1); }}
-                                className={cn(
-                                    'flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all',
-                                    yearFrom === from && yearTo === to && (from || to)
-                                        ? 'bg-[#C9A96E] text-black border-[#C9A96E]'
-                                        : 'bg-white/5 text-white/50 border-white/10 hover:border-white/20'
-                                )}>
-                                📅 {label}
-                            </button>
-                        ))}
+                                    {/* Chips: Year ranges */}
+                                    {[
+                                        [isRTL ? 'جديد (2022+)' : 'New (2022+)', '2022', ''], 
+                                        ['2019-2021', '2019', '2021'], 
+                                        [isRTL ? 'قبل 2019' : 'Before 2019', '', '2018']
+                                    ].map(([label, from, to]) => (
+                                        <button key={label}
+                                            onClick={() => { setYearFrom(from); setYearTo(to); setPage(1); }}
+                                            className={cn(
+                                                'flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all',
+                                                yearFrom === from && yearTo === to && (from || to)
+                                                    ? 'bg-[#C9A96E] text-black border-[#C9A96E]'
+                                                    : 'bg-white/5 text-white/50 border-white/10 hover:border-white/20'
+                                            )}>
+                                            📅 {label}
+                                        </button>
+                                    ))}
 
-                        <div className="w-px bg-white/10 mx-0.5" />
+                                    <div className="w-px bg-white/10 mx-0.5" />
 
-                        {/* Chips: Sort */}
-                        {[{v: 'latest', l: '🕐 الأحدث'}, {v: 'price_asc', l: '💰 الأرخص'}, {v: 'price_desc', l: '💎 الأغلى'}, {v: 'km_asc', l: '📏 أقل كم'}].map(s => (
-                            <button key={s.v}
-                                onClick={() => { setSortBy(s.v as any); setPage(1); }}
-                                className={cn(
-                                    'flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all',
-                                    sortBy === s.v
-                                        ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
-                                        : 'bg-white/5 text-white/50 border-white/10'
-                                )}>
-                                {s.l}
-                            </button>
-                        ))}
+                                    {/* Chips: Sort */}
+                                    {[
+                                        {v: 'latest', l: isRTL ? '🕐 الأحدث' : '🕐 Latest'}, 
+                                        {v: 'price_asc', l: isRTL ? '💰 الأرخص' : '💰 Cheapest'}, 
+                                        {v: 'price_desc', l: isRTL ? '💎 الأغلى' : '💎 Most Expensive'}, 
+                                        {v: 'km_asc', l: isRTL ? '📏 أقل كم' : '📏 Lowest KM'}
+                                    ].map(s => (
+                                        <button key={s.v}
+                                            onClick={() => { setSortBy(s.v as any); setPage(1); }}
+                                            className={cn(
+                                                'flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all',
+                                                sortBy === s.v
+                                                    ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                                                    : 'bg-white/5 text-white/50 border-white/10'
+                                            )}>
+                                            {s.l}
+                                        </button>
+                                    ))}
 
-                        {/* Chip: Clear all */}
-                        {hasFilters && (
-                            <button onClick={clearFilters}
-                                className="flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all">
-                                ✕ مسح
-                            </button>
-                        )}
-                    </div>
-                </div>
+                                    {/* Chip: Clear all */}
+                                    {hasFilters && (
+                                        <button onClick={clearFilters}
+                                            className="flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all">
+                                            ✕ {isRTL ? 'مسح' : 'Clear'}
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* ── Results bar ── */}
                 <div className="flex flex-wrap items-center justify-between gap-3 py-2 mb-4">
                     <div className="text-xs text-white/30 font-bold">
-                        <span className="text-[#C9A96E] font-black text-sm">{filtered.length.toLocaleString()}</span> نتيجة
-                        {loading && <span className="mr-2 text-white/20">جاري التحديث...</span>}
+                        <span className="text-[#C9A96E] font-black text-sm">{filtered.length.toLocaleString()}</span> {isRTL ? 'نتيجة' : 'results'}
+                        {loading && <span className="mr-2 text-white/20">{isRTL ? 'جاري التحديث...' : 'Updating...'}</span>}
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-white/25 uppercase tracking-widest">الترتيب:</span>
+                        <span className="text-[10px] text-white/25 uppercase tracking-widest">{isRTL ? 'الترتيب:' : 'Sort by:'}</span>
                         <select value={sortBy} onChange={e => { setSortBy(e.target.value as any); setPage(1); }}
                             className="bg-[#111118] border border-white/8 rounded-xl px-3 py-1.5 text-xs text-white/60 outline-none focus:border-[#C9A96E]/40">
-                            <option value="latest">الأحدث</option>
-                            <option value="price_asc">السعر: الأقل</option>
-                            <option value="price_desc">السعر: الأعلى</option>
-                            <option value="km_asc">العداد: الأقل</option>
+                            <option value="latest">{isRTL ? 'الأحدث' : 'Latest'}</option>
+                            <option value="price_asc">{isRTL ? 'السعر: الأقل' : 'Price: Low to High'}</option>
+                            <option value="price_desc">{isRTL ? 'السعر: الأعلى' : 'Price: High to Low'}</option>
+                            <option value="km_asc">{isRTL ? 'العداد: الأقل' : 'KM: Low to High'}</option>
                         </select>
                     </div>
                 </div>
@@ -659,11 +707,11 @@ function CarsContent() {
                     <aside className="hidden lg:block w-64 shrink-0 bg-[#0e0e1a] border border-white/6 rounded-2xl p-4 sticky top-24">
                         <div className="flex items-center justify-between mb-3">
                             <button onClick={clearFilters} className={cn("text-[10px] text-red-400/60 hover:text-red-400 transition-colors font-bold", !hasFilters && "invisible")}>
-                                مسح الكل
+                                {isRTL ? 'مسح الكل' : 'Clear All'}
                             </button>
                             <h2 className="text-xs font-black text-white/70 uppercase tracking-widest flex items-center gap-2">
                                 <SlidersHorizontal className="w-3.5 h-3.5 text-[#C9A96E]" />
-                                الفلاتر
+                                {isRTL ? 'الفلاتر' : 'Filters'}
                             </h2>
                         </div>
                         <SidebarContent />
@@ -693,10 +741,10 @@ function CarsContent() {
                         ) : paginated.length === 0 ? (
                             <div className="py-24 text-center border border-dashed border-white/8 rounded-2xl">
                                 <Car className="w-14 h-14 text-white/8 mx-auto mb-4" />
-                                <h2 className="text-lg font-black text-white/30 mb-2">لا توجد سيارات</h2>
-                                <p className="text-xs text-white/20 mb-6">جرب تعديل الفلاتر</p>
+                                <h2 className="text-lg font-black text-white/30 mb-2">{isRTL ? 'لا توجد سيارات' : 'No Cars Found'}</h2>
+                                <p className="text-xs text-white/20 mb-6">{isRTL ? 'جرب تعديل الفلاتر' : 'Try adjusting the filters'}</p>
                                 <button onClick={clearFilters} className="px-6 py-2.5 bg-[#C9A96E] text-black text-xs font-black rounded-xl">
-                                    مسح الفلاتر
+                                    {isRTL ? 'مسح الفلاتر' : 'Clear Filters'}
                                 </button>
                             </div>
                         ) : (
@@ -750,7 +798,7 @@ function CarsContent() {
                                 )}
 
                                 <p className="text-center text-[10px] text-white/15 mt-4">
-                                    صفحة {page} من {totalPages} · إجمالي {filtered.length} سيارة
+                                    {isRTL ? `صفحة ${page} من ${totalPages} · إجمالي ${filtered.length} سيارة` : `Page ${page} of ${totalPages} · Total ${filtered.length} cars`}
                                 </p>
                             </>
                         )}
@@ -758,27 +806,7 @@ function CarsContent() {
                 </div>
             </main>
 
-            {/* ── Floating Filter Button (Mobile Only) ── */}
-            <AnimatePresence>
-                {!mobileSidebar && (
-                    <motion.button
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 20 }}
-                        onClick={() => setMobileSidebar(true)}
-                        className="lg:hidden fixed bottom-24 right-4 z-40 flex items-center gap-2 bg-[#C9A96E] text-black font-black text-xs px-5 py-3 rounded-full shadow-[0_4px_25px_rgba(201,169,110,0.5)] hover:bg-[#b8934d] transition-all border border-[#b8955b]/20"
-                        whileTap={{ scale: 0.95 }}
-                    >
-                        <SlidersHorizontal className="w-3.5 h-3.5" />
-                        الفلاتر
-                        {hasFilters && (
-                            <span className="w-4 h-4 rounded-full bg-black/30 flex items-center justify-center text-[9px]">
-                                {[brandFilters, fuelFilters, transFilters].flat().length + (sourceFilter !== 'all' ? 1 : 0) + (yearFrom || yearTo ? 1 : 0) + (priceMax ? 1 : 0) + (kmMax ? 1 : 0)}
-                            </span>
-                        )}
-                    </motion.button>
-                )}
-            </AnimatePresence>
+
 
             {/* ── Mobile Sidebar Overlay ── */}
             <AnimatePresence>
@@ -804,7 +832,7 @@ function CarsContent() {
                                 </button>
                                 <div className="flex items-center gap-2">
                                     <SlidersHorizontal className="w-4 h-4 text-[#C9A96E]" />
-                                    <h2 className="text-sm font-black text-white/80">الفلاتر</h2>
+                                    <h2 className="text-sm font-black text-white/80">{isRTL ? 'الفلاتر' : 'Filters'}</h2>
                                     {hasFilters && (
                                         <span className="text-[10px] font-black bg-[#C9A96E]/20 text-[#C9A96E] border border-[#C9A96E]/30 px-1.5 py-0.5 rounded-full">
                                             {[brandFilters, fuelFilters, transFilters].flat().length + (sourceFilter !== 'all' ? 1 : 0) + (yearFrom || yearTo ? 1 : 0)}
@@ -817,12 +845,12 @@ function CarsContent() {
                                 {hasFilters && (
                                     <button onClick={() => { clearFilters(); setMobileSidebar(false); }}
                                         className="flex-1 py-2.5 border border-red-500/20 text-red-400/70 hover:bg-red-500/10 text-xs font-bold rounded-xl transition-all">
-                                        مسح الكل
+                                        {isRTL ? 'مسح الكل' : 'Clear All'}
                                     </button>
                                 )}
                                 <button onClick={() => setMobileSidebar(false)}
                                     className="flex-1 py-2.5 bg-[#C9A96E] text-black font-black text-xs rounded-xl hover:bg-[#b8934d] transition-all">
-                                    عرض {filtered.length.toLocaleString()} سيارة
+                                    {isRTL ? `عرض ${filtered.length.toLocaleString()} سيارة` : `Show ${filtered.length.toLocaleString()} cars`}
                                 </button>
                             </div>
                         </motion.aside>

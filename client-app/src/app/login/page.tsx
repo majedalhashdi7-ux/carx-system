@@ -343,11 +343,11 @@ function HMCarLogin() {
                                 transition={{ duration: 3, repeat: Infinity }}
                                 className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)]"
                             >
-                                <Key className={cn("w-3 h-3", role === 'admin' ? "text-accent-red" : "text-accent-gold")} />
+                                <Key className={cn("w-3 h-3", role === 'admin' ? "text-[#D4AF37]" : "text-accent-gold")} />
                                 <span className="text-[8px] font-bold uppercase tracking-[0.4em] text-white/50">
                                     {role === 'admin'
                                         ? (isRTL ? "دخول النظام" : "SYSTEM ACCESS")
-                                        : (isRTL ? "من دخول العميل" : "CLIENT ACCESS")
+                                        : (isRTL ? "دخول العميل" : "CLIENT ACCESS")
                                     }
                                 </span>
                             </motion.div>
@@ -387,7 +387,7 @@ function HMCarLogin() {
                                     className={cn(
                                         "relative overflow-hidden flex-1 py-3 rounded-lg flex items-center justify-center gap-2 transition-all duration-500 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.1em] sm:tracking-[0.15em]",
                                         role === 'admin'
-                                            ? "bg-accent-red text-white shadow-lg shadow-red-500/20"
+                                            ? "bg-[#b8934d] text-white shadow-lg shadow-[#b8934d]/20"
                                             : "text-white/30 hover:text-white/50"
                                     )}
                                 >
@@ -460,7 +460,7 @@ function HMCarLogin() {
                                             {isRTL ? "البريد الإلكتروني" : "EMAIL ADDRESS"}
                                         </label>
                                         <div className="relative group">
-                                            <span className="pointer-events-none absolute inset-0 -m-px rounded-xl blur-xl opacity-50 -z-10 bg-blue-500/25" />
+                                            <span className="pointer-events-none absolute inset-0 -m-px rounded-xl blur-xl opacity-50 -z-10 bg-[#D4AF37]/25" />
                                             <Mail className={cn(
                                                 "absolute top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-[#c9a96e] transition-colors",
                                                 isRTL ? "right-4" : "left-4"
@@ -473,7 +473,7 @@ function HMCarLogin() {
                                                 autoComplete="email"
                                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                                 className={cn(
-                                                    "w-full glass-input bg-white/5 focus:bg-white/10 outline-none border border-blue-500/30 ring-1 ring-blue-500/20",
+                                                    "w-full glass-input bg-white/5 focus:bg-white/10 outline-none border border-[#D4AF37]/30 ring-1 ring-[#D4AF37]/20",
                                                     isRTL ? "pr-12 pl-4" : "pl-12 pr-4"
                                                 )}
                                                 placeholder={isRTL ? "اكتب البريد الإلكتروني" : "Enter email address"}
@@ -486,7 +486,7 @@ function HMCarLogin() {
                                             {isRTL ? "اسم المستخدم / المعرّف" : "USERNAME / ACCESS ID"}
                                         </label>
                                         <div className="relative">
-                                            <span className="pointer-events-none absolute inset-0 -m-px rounded-xl blur-xl opacity-50 -z-10 bg-red-500/25" />
+                                            <span className="pointer-events-none absolute inset-0 -m-px rounded-xl blur-xl opacity-50 -z-10 bg-[#D4AF37]/25" />
                                             <User className={cn(
                                                 "absolute top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 transition-colors",
                                                 isRTL ? "right-4" : "left-4"
@@ -501,7 +501,7 @@ function HMCarLogin() {
                                                 autoCorrect="off"
                                                 spellCheck="false"
                                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                                className={cn("w-full glass-input bg-white/5 focus:bg-white/10 outline-none border border-red-500/30 ring-1 ring-red-500/20", isRTL ? "pr-12 pl-4" : "pl-12 pr-4")}
+                                                className={cn("w-full glass-input bg-white/5 focus:bg-white/10 outline-none border border-[#D4AF37]/30 ring-1 ring-[#D4AF37]/20", isRTL ? "pr-12 pl-4" : "pl-12 pr-4")}
                                                 placeholder={isRTL ? "ايميل المدير" : "Admin Email"}
                                             />
                                         </div>
@@ -515,7 +515,7 @@ function HMCarLogin() {
                                     {isRTL ? "كلمة المرور" : "PASSWORD"}
                                 </label>
                                 <div className="relative group">
-                                    <span className={cn("pointer-events-none absolute inset-0 -m-px rounded-xl blur-xl opacity-50 -z-10", role === 'buyer' ? "bg-blue-500/25" : "bg-red-500/25")} />
+                                    <span className="pointer-events-none absolute inset-0 -m-px rounded-xl blur-xl opacity-50 -z-10 bg-[#D4AF37]/25" />
                                     <Lock className={cn(
                                         "absolute top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-[#c9a96e] transition-colors",
                                         isRTL ? "right-4" : "left-4"
@@ -534,8 +534,8 @@ function HMCarLogin() {
                                             "w-full glass-input bg-white/5 focus:bg-white/10 outline-none",
                                             isRTL ? "pr-12 pl-4" : "pl-12 pr-4",
                                             role === 'buyer'
-                                                ? "border border-blue-500/30 ring-1 ring-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.25)]"
-                                                : "border border-red-500/30 ring-1 ring-red-500/20 shadow-[0_0_20px_rgba(255,0,0,0.2)]"
+                                                ? "border border-[#D4AF37]/30 ring-1 ring-[#D4AF37]/20 shadow-[0_0_20px_rgba(212,175,55,0.15)]"
+                                                : "border border-[#b8934d]/30 ring-1 ring-[#b8934d]/20 shadow-[0_0_20px_rgba(184,147,77,0.15)]"
                                         )}
                                         placeholder="••••••••"
                                     />
@@ -556,7 +556,7 @@ function HMCarLogin() {
                                         {isRTL ? "الاسم الكامل" : "FULL NAME"}
                                     </label>
                                     <div className="relative group">
-                                        <span className="pointer-events-none absolute inset-0 -m-px rounded-xl blur-xl opacity-50 -z-10 bg-blue-500/25" />
+                                        <span className="pointer-events-none absolute inset-0 -m-px rounded-xl blur-xl opacity-50 -z-10 bg-[#D4AF37]/25" />
                                         <User className={cn(
                                             "absolute top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-[#c9a96e] transition-colors",
                                             isRTL ? "right-4" : "left-4"
@@ -569,7 +569,7 @@ function HMCarLogin() {
                                             autoComplete="name"
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                             className={cn(
-                                                "w-full glass-input bg-white/5 focus:bg-white/10 outline-none border border-blue-500/30 ring-1 ring-blue-500/20",
+                                                "w-full glass-input bg-white/5 focus:bg-white/10 outline-none border border-[#D4AF37]/30 ring-1 ring-[#D4AF37]/20",
                                                 isRTL ? "pr-12 pl-4" : "pl-12 pr-4"
                                             )}
                                             placeholder={isRTL ? "اكتب اسمك الكامل" : "Enter your full name"}
@@ -585,7 +585,7 @@ function HMCarLogin() {
                                         {isRTL ? "تأكيد كلمة المرور" : "CONFIRM PASSWORD"}
                                     </label>
                                     <div className="relative group">
-                                        <span className="pointer-events-none absolute inset-0 -m-px rounded-xl blur-xl opacity-50 -z-10 bg-blue-500/25" />
+                                        <span className="pointer-events-none absolute inset-0 -m-px rounded-xl blur-xl opacity-50 -z-10 bg-[#D4AF37]/25" />
                                         <Lock className={cn(
                                             "absolute top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-[#c9a96e] transition-colors",
                                             isRTL ? "right-4" : "left-4"
@@ -601,7 +601,7 @@ function HMCarLogin() {
                                             value={confirmPassword}
                                             onChange={(e) => setConfirmPassword(e.target.value)}
                                             className={cn(
-                                                "w-full glass-input bg-white/5 focus:bg-white/10 outline-none border border-blue-500/30 ring-1 ring-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.25)]",
+                                                "w-full glass-input bg-white/5 focus:bg-white/10 outline-none border border-[#D4AF37]/30 ring-1 ring-[#D4AF37]/20 shadow-[0_0_20px_rgba(212,175,55,0.15)]",
                                                 isRTL ? "pr-12 pl-4" : "pl-12 pr-4"
                                             )}
                                             placeholder="••••••••"
@@ -660,7 +660,7 @@ function HMCarLogin() {
                                 className={cn(
                                     "w-full py-4 rounded-xl font-black text-sm tracking-widest mt-4 flex items-center justify-center gap-3 transition-all duration-300",
                                     role === 'admin'
-                                        ? "bg-accent-red hover:bg-red-700 text-white shadow-lg shadow-red-500/20"
+                                        ? "bg-gradient-to-r from-[#b8934d] to-[#a88520] hover:from-[#a88520] hover:to-[#8c6d17] text-white shadow-lg shadow-[#b8934d]/20"
                                         : "bg-[#D4AF37] hover:bg-[#c9a030] text-black shadow-lg shadow-[#D4AF37]/20",
                                     loading && "opacity-50 pointer-events-none"
                                 )}

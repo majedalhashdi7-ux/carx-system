@@ -160,8 +160,8 @@ export default function ImportSystem({ type, onImportComplete }: ImportSystemPro
     <div className="space-y-5">
       {/* رأس النظام */}
       <div className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center shadow-lg shadow-red-900/40">
-          {type === 'car' ? <Car className="w-6 h-6 text-white" /> : <Wrench className="w-6 h-6 text-white" />}
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#C9A96E] to-[#b8934d] flex items-center justify-center shadow-lg shadow-[#C9A96E]/20">
+          {type === 'car' ? <Car className="w-6 h-6 text-black" /> : <Wrench className="w-6 h-6 text-black" />}
         </div>
         <div>
           <h2 className="text-xl font-black text-white">استيراد {type === 'car' ? 'السيارات' : 'قطع الغيار'}</h2>
@@ -175,7 +175,7 @@ export default function ImportSystem({ type, onImportComplete }: ImportSystemPro
           const Icon = source.icon;
           return (
             <div key={idx} className="flex items-center gap-2 p-2.5 rounded-xl bg-white/5 border border-white/8 text-sm">
-              <Icon className="w-3.5 h-3.5 text-red-400 shrink-0" />
+              <Icon className="w-3.5 h-3.5 text-[#C9A96E] shrink-0" />
               <div className="min-w-0">
                 <p className="text-xs font-bold text-white truncate">{source.name}</p>
                 <p className="text-[10px] text-gray-500 truncate">{source.domain}</p>
@@ -199,13 +199,13 @@ export default function ImportSystem({ type, onImportComplete }: ImportSystemPro
               onKeyDown={(e) => e.key === 'Enter' && handleImport()}
               placeholder="https://encar.com/..."
               disabled={loading}
-              className="w-full pr-9 pl-3 py-2.5 rounded-xl bg-white/5 border border-white/10 focus:border-red-500/50 text-white placeholder-gray-500 outline-none transition-all text-sm disabled:opacity-50"
+              className="w-full pr-9 pl-3 py-2.5 rounded-xl bg-white/5 border border-white/10 focus:border-[#C9A96E]/50 text-white placeholder-gray-500 outline-none transition-all text-sm disabled:opacity-50"
             />
           </div>
           <motion.button
             whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
             onClick={handleImport} disabled={loading || !url.trim()}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm transition-all shadow-lg"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#C9A96E] to-[#b8934d] hover:from-[#b8934d] hover:to-[#a7823c] disabled:opacity-50 disabled:cursor-not-allowed text-black font-black text-sm transition-all shadow-lg"
           >
             {loading ? <Loader className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
             <span className="hidden sm:inline">{loading ? 'جاري...' : 'استيراد'}</span>
@@ -276,7 +276,7 @@ export default function ImportSystem({ type, onImportComplete }: ImportSystemPro
                     {currentImages.slice(0, 12).map((img, idx) => (
                       <div key={idx} className="relative aspect-square rounded-lg overflow-hidden bg-zinc-950 group cursor-pointer" onClick={() => removeImage(idx)}>
                         <Image src={img} alt={`صورة ${idx + 1}`} fill className="object-cover" unoptimized />
-                        <div className="absolute inset-0 bg-red-900/0 group-hover:bg-red-900/60 transition-all flex items-center justify-center">
+                        <div className="absolute inset-0 bg-red-500/0 group-hover:bg-red-500/60 transition-all flex items-center justify-center">
                           <Trash2 className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-all" />
                         </div>
                         {idx === 0 && (
@@ -443,7 +443,7 @@ export default function ImportSystem({ type, onImportComplete }: ImportSystemPro
           transition: border-color 0.2s;
         }
         .form-input:focus {
-          border-color: rgba(239, 68, 68, 0.5);
+          border-color: rgba(201, 169, 110, 0.5);
         }
         .form-input option {
           background: #1a1a2e;
