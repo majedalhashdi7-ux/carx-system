@@ -32,6 +32,25 @@ function MarketHubContent() {
     const [isLiveModalOpen, setIsLiveModalOpen] = useState(false);
     const [editingLiveId, setEditingLiveId] = useState<string | null>(null);
     const [liveForm, setLiveForm] = useState({ title: '', externalUrl: '', whatsappNumber: '', auctionUsername: '', auctionPassword: '', cars: [] as any[] });
+    const [syncingSessionId, setSyncingSessionId] = useState<string | null>(null);
+
+    const handleSyncAuction = async (id: string, externalUrl?: string) => {
+        setSyncingSessionId(id);
+        showToast(isRTL ? "⏳ جاري استيراد سيارات المزاد الخارجي..." : "⏳ Scraping live auction cars...", "info");
+        try {
+            const res = await (api.liveAuctions as any).importExternal(id, externalUrl ? { externalUrl } : undefined);
+            if (res.success) {
+                showToast(isRTL ? `✅ ${res.message || 'تم استيراد السيارات بنجاح'}` : `✅ ${res.message || 'Cars imported successfully'}`, "success");
+                loadLiveSessions();
+            } else {
+                showToast(res.error || "Import failed", "error");
+            }
+        } catch (err: any) {
+            showToast(err.message || "Sync failed", "error");
+        } finally {
+            setSyncingSessionId(null);
+        }
+    };
 
     // ── Classic Auctions State ──
     const [auctions, setAuctions] = useState<any[]>([]);
@@ -153,41 +172,115 @@ function MarketHubContent() {
                                 <h3 className="text-xl font-black uppercase italic">{isRTL ? 'جلسات العرض الحي المباشر' : 'LIVE SHOWROOM SESSIONS'}</h3>
                                 <p className="text-[10px] text-white/30 uppercase tracking-[0.2em]">{isRTL ? 'إدارة البث المباشر والمزادات الخارجية واليدوية' : 'Manage external feeds & manual streams'}</p>
                             </div>
-                            <button onClick={() => { setLiveForm({ title: '', externalUrl: '', whatsappNumber: '', auctionUsername: '', auctionPassword: '', cars: [] }); setEditingLiveId(null); setIsLiveModalOpen(true); }} className="px-6 py-3 bg-[#00f0ff] text-black font-black uppercase text-[10px] tracking-widest rounded-xl hover:scale-105 transition-all shadow-[0_0_20px_rgba(0,240,255,0.2)]">
-                                <Plus size={14} className="inline mr-2" /> {isRTL ? 'إنشاء جلسة' : 'INITIATE'}
+                            <button onClick={() => { setLiveForm({ title: 'مزاد السيارات الكورية المباشر', externalUrl: 'https://desert-korea-auto.com/cars/?car_type=auction', whatsappNumber: '', auctionUsername: '', auctionPassword: '', cars: [] }); setEditingLiveId(null); setIsLiveModalOpen(true); }} className="px-6 py-3 bg-[#00f0ff] text-black font-black uppercase text-[10px] tracking-widest rounded-xl hover:scale-105 transition-all shadow-[0_0_20px_rgba(0,240,255,0.2)]">
+                                <Plus size={14} className="inline mr-2" /> {isRTL ? 'إنشاء جلسة مزاد' : 'INITIATE SESSION'}
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-4">
+                        <div className="grid grid-cols-1 gap-6">
                             {sessions.map(s => (
-                                <motion.div key={s._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="ck-card p-6 flex flex-col md:flex-row items-center gap-6 group">
-                                    <div className="flex-1 space-y-2">
-                                        <div className="flex items-center gap-3">
-                                            <span className={cn('px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-wider', s.status === 'live' ? 'bg-red-500/20 text-red-500 border border-red-500/40' : 'bg-white/5 text-white/30 border border-white/10')}>
-                                                {s.status === 'live' ? (isRTL ? 'مباشر الآن' : 'LIVE') : (isRTL ? 'متوقف' : 'ENDED')}
-                                            </span>
-                                            <h4 className="text-lg font-black uppercase italic tracking-tighter">{s.title}</h4>
+                                <motion.div key={s._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="ck-card p-6 flex flex-col gap-6 group border-white/10 bg-black/40">
+                                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                        <div className="flex-1 space-y-2">
+                                            <div className="flex items-center gap-3 flex-wrap">
+                                                <span className={cn('px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-wider', s.status === 'live' ? 'bg-red-500/20 text-red-500 border border-red-500/40' : 'bg-white/5 text-white/30 border border-white/10')}>
+                                                    {s.status === 'live' ? (isRTL ? 'مباشر الآن' : 'LIVE') : (isRTL ? 'متوقف' : 'ENDED')}
+                                                </span>
+                                                <h4 className="text-lg font-black uppercase italic tracking-tighter">{s.title}</h4>
+                                                <span className="text-[10px] font-bold text-[#00f0ff] bg-[#00f0ff]/10 px-3 py-1 rounded-full border border-[#00f0ff]/20">
+                                                    {isRTL ? `السيارات المستوردة: ${s.cars?.length || 0}` : `${s.cars?.length || 0} Cars Synced`}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-[10px] text-white/50 font-mono dir-ltr truncate max-w-2xl bg-black/60 px-3 py-1.5 rounded-lg border border-white/5">
+                                                <LinkIcon size={12} className="text-[#00f0ff] shrink-0" />
+                                                <span className="truncate">{s.externalUrl || (isRTL ? 'لا يوجد رابط بث خارجي' : 'No External Feed URL')}</span>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-4 text-[9px] text-white/40 font-bold uppercase tracking-widest"><LinkIcon size={12} /> {s.externalUrl || (isRTL ? 'لا يوجد بث خارجي' : 'No External Feed')}</div>
+
+                                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 w-full md:w-auto shrink-0">
+                                            <button onClick={() => handleStatusUpdate(s._id, s.status === 'live' ? 'end' : 'start')} title={s.status === 'live' ? (isRTL ? 'إيقاف' : 'Stop') : (isRTL ? 'بدء' : 'Start')} className={cn('p-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all', s.status === 'live' ? 'border-red-500/40 text-red-500 hover:bg-red-500/10' : 'border-[#00f0ff]/40 text-[#00f0ff] hover:bg-[#00f0ff]/10')}>
+                                                {s.status === 'live' ? <Square size={16} /> : <Play size={16} />}
+                                                <span className="text-[8px] font-black">{s.status === 'live' ? (isRTL ? 'إيقاف' : 'STOP') : (isRTL ? 'تشغيل' : 'LIVE')}</span>
+                                            </button>
+
+                                            <button 
+                                                onClick={() => handleSyncAuction(s._id)} 
+                                                disabled={syncingSessionId === s._id}
+                                                title={isRTL ? 'تزامن واستيراد السيارات' : 'Sync & Import Cars'} 
+                                                className="p-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 flex flex-col items-center justify-center gap-1 transition-all"
+                                            >
+                                                <RefreshCw size={16} className={cn(syncingSessionId === s._id && "animate-spin")} />
+                                                <span className="text-[8px] font-black">{syncingSessionId === s._id ? (isRTL ? 'جاري...' : 'SYNCING...') : (isRTL ? 'استيراد السيارات' : 'IMPORT')}</span>
+                                            </button>
+
+                                            <button onClick={() => { setLiveForm(s); setEditingLiveId(s._id); setIsLiveModalOpen(true); }} title={isRTL ? 'تعديل' : 'Edit'} className="p-3 rounded-xl border border-white/5 text-white/40 hover:text-white hover:bg-white/5 flex flex-col items-center justify-center gap-1">
+                                                <Edit2 size={16} />
+                                                <span className="text-[8px] font-black uppercase">{isRTL ? 'تعديل' : 'EDIT'}</span>
+                                            </button>
+
+                                            <button onClick={() => handleDeleteLive(s._id)} title={isRTL ? 'حذف' : 'Delete'} className="p-3 rounded-xl border border-white/5 text-white/20 hover:text-red-500 hover:bg-red-500/10 flex flex-col items-center justify-center gap-1">
+                                                <Trash2 size={16} />
+                                                <span className="text-[8px] font-black uppercase">{isRTL ? 'حذف' : 'DEL'}</span>
+                                            </button>
+
+                                            <Link href={`/auctions/live/${s._id}`} target="_blank" title={isRTL ? 'عرض العميل' : 'View Client'} className="p-3 rounded-xl border border-white/5 text-white/40 hover:text-[#00f0ff] hover:bg-[#00f0ff]/10 flex flex-col items-center justify-center gap-1">
+                                                <ExternalLink size={16} />
+                                                <span className="text-[8px] font-black uppercase">{isRTL ? 'عرض العميل' : 'VIEW'}</span>
+                                            </Link>
+                                        </div>
                                     </div>
-                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 w-full md:w-auto shrink-0">
-                                        <button onClick={() => handleStatusUpdate(s._id, s.status === 'live' ? 'end' : 'start')} title={s.status === 'live' ? (isRTL ? 'إيقاف' : 'Stop') : (isRTL ? 'بدء' : 'Start')} className={cn('p-3 rounded-xl border flex flex-col items-center gap-1 transition-all', s.status === 'live' ? 'border-red-500/40 text-red-500 hover:bg-red-500/10' : 'border-[#00f0ff]/40 text-[#00f0ff] hover:bg-[#00f0ff]/10')}>
-                                            {s.status === 'live' ? <Square size={16} /> : <Play size={16} />}
-                                            <span className="text-[7px] font-black">{s.status === 'live' ? (isRTL ? 'إيقاف' : 'STOP') : (isRTL ? 'تشغيل' : 'LIVE')}</span>
-                                        </button>
-                                        <button onClick={() => { setLiveForm(s); setEditingLiveId(s._id); setIsLiveModalOpen(true); }} title={isRTL ? 'تعديل' : 'Edit'} className="p-3 rounded-xl border border-white/5 text-white/40 hover:text-white hover:bg-white/5 flex flex-col items-center gap-1">
-                                            <Edit2 size={16} />
-                                            <span className="text-[7px] font-black uppercase">{isRTL ? 'تعديل' : 'Edit'}</span>
-                                        </button>
-                                        <button onClick={() => handleDeleteLive(s._id)} title={isRTL ? 'حذف' : 'Delete'} className="p-3 rounded-xl border border-white/5 text-white/20 hover:text-red-500 hover:bg-red-500/10 flex flex-col items-center gap-1">
-                                            <Trash2 size={16} />
-                                            <span className="text-[7px] font-black uppercase">{isRTL ? 'حذف' : 'Del'}</span>
-                                        </button>
-                                        <Link href={`/auctions/live/${s._id}`} target="_blank" title={isRTL ? 'عرض' : 'View'} className="p-3 rounded-xl border border-white/5 text-white/40 hover:text-[#00f0ff] hover:bg-[#00f0ff]/10 flex flex-col items-center gap-1">
-                                            <ExternalLink size={16} />
-                                            <span className="text-[7px] font-black uppercase">{isRTL ? 'عرض' : 'View'}</span>
-                                        </Link>
-                                    </div>
+
+                                    {/* Synced Cars Gallery inside Market Session Card */}
+                                    {Array.isArray(s.cars) && s.cars.length > 0 ? (
+                                        <div className="space-y-3 pt-4 border-t border-white/5">
+                                            <div className="flex items-center justify-between">
+                                                <div className="text-[10px] font-black text-white/60 uppercase tracking-widest flex items-center gap-2">
+                                                    <Car size={14} className="text-[#00f0ff]" />
+                                                    {isRTL ? `السيارات المستوردة المعروضة للعملاء (${s.cars.length} سيارة):` : `SYNCED AUCTION CARS (${s.cars.length}):`}
+                                                </div>
+                                                <span className="text-[9px] text-white/30">{isRTL ? 'تحديث تلقائي مستمر' : 'Auto-synced'}</span>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+                                                {s.cars.map((car: any, idx: number) => {
+                                                    const carImg = car.images?.[0] || car.img || car.image || 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=600';
+                                                    return (
+                                                        <div key={idx} className="bg-black/60 rounded-xl border border-white/5 overflow-hidden flex flex-col group/car hover:border-[#00f0ff]/30 transition-all">
+                                                            <div className="aspect-[4/3] bg-black/80 relative overflow-hidden">
+                                                                <img src={carImg} alt={car.title || 'Auction Car'} className="w-full h-full object-cover group-hover/car:scale-105 transition-transform duration-500" />
+                                                                {car.lotNumber && (
+                                                                    <span className="absolute top-1.5 left-1.5 bg-black/80 text-[8px] font-mono text-white/80 px-1.5 py-0.5 rounded border border-white/10">
+                                                                        {car.lotNumber}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="p-2.5 space-y-1 flex-1 flex flex-col justify-between">
+                                                                <div className="text-[10px] font-bold text-white/90 line-clamp-2 leading-tight">
+                                                                    {car.title || 'سيارة مزاد'}
+                                                                </div>
+                                                                <div className="text-[9px] font-mono text-[#00f0ff] font-bold">
+                                                                    {car.priceEstimate || 'اتصل بنا'}
+                                                                </div>
+                                                                {car.sourceUrl && (
+                                                                    <a href={car.sourceUrl} target="_blank" rel="noreferrer" className="text-[8px] text-white/30 hover:text-white truncate block flex items-center gap-1 mt-1">
+                                                                        <ExternalLink size={10} /> {isRTL ? 'رابط المزاد' : 'Link'}
+                                                                    </a>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="p-6 bg-black/30 rounded-2xl border border-white/5 text-center space-y-2">
+                                            <p className="text-xs text-white/40 font-bold">{isRTL ? 'لم يتم جلب أي سيارات من رابط هذا المزاد بعد.' : 'No cars scraped from this auction URL yet.'}</p>
+                                            <button onClick={() => handleSyncAuction(s._id)} className="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-[10px] font-black uppercase hover:bg-red-500/30 inline-flex items-center gap-2">
+                                                <RefreshCw size={12} className={cn(syncingSessionId === s._id && "animate-spin")} />
+                                                {isRTL ? 'اضغط هنا لاستيراد السيارات من الرابط الآن' : 'Click here to import cars from URL now'}
+                                            </button>
+                                        </div>
+                                    )}
                                 </motion.div>
                             ))}
                         </div>
@@ -368,11 +461,22 @@ function MarketHubContent() {
                                 <button onClick={async () => {
                                     setLoading(true);
                                     try {
-                                        if (editingLiveId) await api.liveAuctions.update(editingLiveId, liveForm);
-                                        else await api.liveAuctions.create(liveForm);
+                                        let targetId = editingLiveId;
+                                        if (editingLiveId) {
+                                            await api.liveAuctions.update(editingLiveId, liveForm);
+                                        } else {
+                                            const createRes = await api.liveAuctions.create(liveForm);
+                                            if (createRes.success && createRes.data?._id) {
+                                                targetId = createRes.data._id;
+                                            }
+                                        }
                                         setIsLiveModalOpen(false);
-                                        loadLiveSessions();
-                                        showToast(isRTL ? 'تم الحفظ' : 'Saved', 'success');
+                                        showToast(isRTL ? '✅ تم حفظ الجلسة بنجاح، جاري استيراد السيارات...' : '✅ Session saved, importing cars...', 'success');
+                                        if (targetId && liveForm.externalUrl) {
+                                            handleSyncAuction(targetId, liveForm.externalUrl);
+                                        } else {
+                                            loadLiveSessions();
+                                        }
                                     } catch { } finally { setLoading(false); }
                                 }} title={isRTL ? 'تنفيذ التكوين' : 'Execute'} className="w-full h-16 bg-[#00f0ff] text-black font-black uppercase tracking-[0.5em] text-xs rounded-2xl shadow-[0_0_30px_rgba(0,240,255,0.2)]">
                                      {isRTL ? 'تنفيذ إعدادات الجلسة' : 'Execute Session Config'}

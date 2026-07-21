@@ -86,62 +86,52 @@ async function scrapeMultipleCars(targetUrl) {
         : targetUrl.includes('iaai') ? 'IAAI'
         : new URL(targetUrl).hostname.replace('www.', '');
 
-    // المرحلة 1: استخراج من روابط تحتوي على صور
-    $('a').each((i, el) => {
-        const href = $(el).attr('href');
+    const seenUrls = new Set();
+    const excludeTitles = ['السيارات', 'مسح الكل', 'الرئيسية', 'معرض الصور', 'تواصل معنا', 'اتصل بنا', 'home', 'cars', 'clear all', 'بحث'];
+
+    $('article, .car-card, .vehicle-card, .product, .inventory-item, div[class*="car"], a[href*="/cars/"]').each((i, element) => {
+        const link = $(element).is('a') ? $(element) : $(element).find('a').first();
+        let href = link.attr('href');
         if (!href) return;
 
-        const img = $(el).find('img').first();
-        let imgSrc = img.attr('src') || img.attr('data-src') || img.attr('data-original') || img.attr('data-lazy-src') || img.attr('data-lazy');
+        let fullHref = href.startsWith('http') ? href : (() => { try { return new URL(href, targetUrl).href; } catch { return href; } })();
+        if (seenUrls.has(fullHref)) return;
+
+        const img = $(element).find('img').first().length ? $(element).find('img').first() : link.find('img').first();
+        let imgSrc = img.attr('src') || img.attr('data-src') || img.attr('data-lazy-src') || img.attr('data-original');
+        const srcset = img.attr('srcset');
+        if (!imgSrc && srcset) {
+            imgSrc = srcset.split(',')[0].split(' ')[0];
+        }
         imgSrc = resolveUrl(imgSrc);
 
-        if (!isValidImage(imgSrc)) return;
+        let titleText = ($(element).find('h1, h2, h3, h4, .title, .car-title, .entry-title').text().trim() 
+            || img.attr('alt') 
+            || link.attr('title') 
+            || link.text().trim() 
+            || '').replace(/\s+/g, ' ').trim();
 
-        const titleText = ($(el).text().trim() || $(el).attr('title') || img.attr('alt') || '').replace(/\s+/g, ' ').trim();
         if (titleText.length < 4) return;
+        const lowerTitle = titleText.toLowerCase();
+        if (excludeTitles.some(t => lowerTitle === t.toLowerCase())) return;
 
-        seenImages.add(imgSrc);
+        let priceText = $(element).find('.price, .amount, .car-price, [class*="price"]').first().text().trim();
+        if (!priceText) priceText = 'اتصل بنا لمعرفة السعر';
+
+        seenUrls.add(fullHref);
         items.push({
             title: titleText,
-            images: [imgSrc],
+            images: imgSrc ? [imgSrc] : [],
             condition: 'مستعملة',
-            description: 'سيارة مستوردة تلقائياً من مزاد خارجي',
-            priceEstimate: 'اتصل بنا لمعرفة السعر',
+            description: `سيارة مستوردة تلقائياً من مزاد ${auctionName}`,
+            priceEstimate: priceText,
             lotNumber: 'LOT-' + Math.floor(100000 + Math.random() * 900000),
             auctionName,
-            sourceUrl: href.startsWith('http') ? href : (() => { try { return new URL(href, targetUrl).href; } catch { return href; } })()
+            sourceUrl: fullHref
         });
     });
 
-    // المرحلة 2: إذا لم تُستخرج سيارات كافية، نبحث في الصور المستقلة
-    if (items.length < 3) {
-        $('img').each((i, el) => {
-            let src = $(el).attr('src') || $(el).attr('data-src') || $(el).attr('data-original');
-            src = resolveUrl(src);
-            if (!isValidImage(src)) return;
-
-            const width = parseInt($(el).attr('width')) || 999;
-            const height = parseInt($(el).attr('height')) || 999;
-            if (width < 150 || height < 100) return;
-
-            const titleText = ($(el).attr('alt') || $(el).attr('title') || '').trim();
-            if (titleText.length < 3) return;
-
-            seenImages.add(src);
-            items.push({
-                title: titleText,
-                images: [src],
-                condition: 'مستعملة',
-                description: 'سيارة مستوردة تلقائياً من صور المزاد',
-                priceEstimate: 'اتصل بنا',
-                lotNumber: 'LOT-' + Math.floor(100000 + Math.random() * 900000),
-                auctionName,
-                sourceUrl: targetUrl
-            });
-        });
-    }
-
-    return items.slice(0, 150); // الحد الأقصى 150 سيارة
+    return items.slice(0, 150);
 }
 
 /**

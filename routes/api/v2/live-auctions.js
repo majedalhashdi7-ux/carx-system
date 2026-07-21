@@ -243,6 +243,14 @@ router.post('/', requireAuthAPI, async (req, res) => {
         const LiveAuction = getModel(req, 'LiveAuction');
         const session = new LiveAuction({ ...req.body, tenantId: getTenantId(req) });
         await session.save();
+
+        if (session.externalUrl && session.externalUrl.startsWith('http')) {
+            const LiveAuctionSyncService = require('../../../services/LiveAuctionSyncService');
+            LiveAuctionSyncService.syncSession(session).catch(err => {
+                console.warn('[LiveSync] Auto-sync after create failed:', err.message);
+            });
+        }
+
         res.status(201).json({ success: true, data: session });
     } catch (error) {
         console.error('Error creating live auction session:', error);
@@ -274,6 +282,13 @@ router.put('/:id', requireAuthAPI, async (req, res) => {
             { $set: updateData },
             { new: true, runValidators: true }
         );
+
+        if (session.externalUrl && session.externalUrl.startsWith('http')) {
+            const LiveAuctionSyncService = require('../../../services/LiveAuctionSyncService');
+            LiveAuctionSyncService.syncSession(session).catch(err => {
+                console.warn('[LiveSync] Auto-sync after update failed:', err.message);
+            });
+        }
 
         res.json({ success: true, data: session });
     } catch (error) {
