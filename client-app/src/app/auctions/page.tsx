@@ -30,12 +30,18 @@ function resolveAuctionCarImg(car: any): string {
         url = url.replace('https://ci.encar.comhttps://ci.encar.com', 'https://ci.encar.com');
     }
     if (url.endsWith('_')) {
-        if (url.startsWith('http')) return `${url}001.jpg`;
-        return `https://ci.encar.com${url}001.jpg`;
+        url = url.startsWith('http') ? `${url}001.jpg` : `https://ci.encar.com${url}001.jpg`;
+    } else if (url.startsWith('/carpicture')) {
+        url = `https://ci.encar.com${url}`;
+    } else if (url.startsWith('/') && !url.startsWith('http')) {
+        url = `https://ci.encar.com/carpicture${url}`;
+    } else if (!url.startsWith('http')) {
+        url = `https://ci.encar.com/carpicture/${url}`;
     }
-    if (url.startsWith('/carpicture')) return `https://ci.encar.com${url}`;
-    if (url.startsWith('/') && !url.startsWith('http')) return `https://ci.encar.com/carpicture${url}`;
-    if (!url.startsWith('http')) return `https://ci.encar.com/carpicture/${url}`;
+
+    if (url.includes('encar.com') || url.includes('encar.co.kr')) {
+        return `/api/v2/image-proxy?url=${encodeURIComponent(url)}`;
+    }
     return url;
 }
 

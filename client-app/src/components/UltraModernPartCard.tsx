@@ -64,12 +64,16 @@ function resolvePartCardImg(part: any): string {
     const raw = part.img || part.image || (Array.isArray(part.images) && part.images.length > 0 ? part.images[0] : '') || '';
     if (!raw || typeof raw !== 'string') return 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?q=80&w=1000';
     let url = raw.trim();
-    if (url.startsWith('//')) return `https:${url}`;
-    if (url.startsWith('/')) {
+    if (url.startsWith('//')) url = `https:${url}`;
+    else if (url.startsWith('/')) {
         if (url.startsWith('/uploads') || url.startsWith('/images')) return url;
-        return `https://autospare.com.eg${url}`;
+        url = `https://autospare.com.eg${url}`;
+    } else if (!url.startsWith('http')) {
+        url = `https://autospare.com.eg/${url}`;
     }
-    if (!url.startsWith('http')) return `https://autospare.com.eg/${url}`;
+    if (url.includes('autospare.com.eg') || url.includes('encar.com')) {
+        return `/api/v2/image-proxy?url=${encodeURIComponent(url)}`;
+    }
     return url;
 }
 

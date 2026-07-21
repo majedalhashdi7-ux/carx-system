@@ -118,6 +118,7 @@ router.use('/showroom', publicLimiter, require('./showroom'));          // ال�
 router.use('/invoices', strictLimiter, require('./invoices'));          // نظام الفواتير المخصص (Invoices)
 router.use('/system', strictLimiter, require('./system'));            // الفحص الشامل للنظام
 router.use('/import', strictLimiter, require('./import'));            // نظام الاستيراد المتقدم من الروابط
+router.use('/image-proxy', publicLimiter, require('./image-proxy'));    // وكيل صور السيارات والقطع من المواقع الخارجية
 
 /**
  * معالج الأخطاء المركزي لمسارات API
