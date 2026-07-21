@@ -1,15 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Tajawal } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 
-// إعداد خط "Tajawal" لتحسين مظهر اللغة العربية واللاتينية في التطبيق
-const tajawal = Tajawal({
-  subsets: ["arabic", "latin"],
-  weight: ["300", "400", "700", "900"], // [[ARABIC_COMMENT]] تقليل عدد الأوزان لضغط حجم الخط وتسريع التحميل
+const tajawal = {
   variable: "--font-tajawal",
-  display: "swap",
-});
+  className: "",
+};
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import { Suspense } from "react";
 import { cookies, headers } from "next/headers";
