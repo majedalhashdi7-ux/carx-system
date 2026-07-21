@@ -262,7 +262,9 @@ router.get('/cars', async (req, res) => {
             isSold: false,
             $or: [
                 { source: 'korean_import' },
-                { source: { $exists: false }, listingType: 'showroom' }
+                { listingType: 'showroom' },
+                { priceKrw: { $gt: 0 } },
+                { externalUrl: { $regex: 'encar', $options: 'i' } }
             ]
         };
 

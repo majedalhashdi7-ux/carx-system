@@ -208,6 +208,10 @@ router.post('/save', requireAuthAPI, requireAdmin, invalidateCache(['/api/v2/car
                                 model: data.model || existingCar.model,
                                 year: data.year || existingCar.year,
                                 agency: agencyId || existingCar.agency,
+                                source: data.source || (isEncar ? 'korean_import' : existingCar.source || 'hm_local'),
+                                listingType: data.listingType || (isEncar ? 'showroom' : existingCar.listingType || 'store'),
+                                isActive: true,
+                                isSold: false,
                                 ...pricing,
                                 updatedAt: new Date()
                             }
@@ -242,7 +246,7 @@ router.post('/save', requireAuthAPI, requireAdmin, invalidateCache(['/api/v2/car
                 mileage: data.mileage || 0,
                 category: data.category || 'sedan',
                 externalUrl: data.sourceUrl || '',
-                source: isEncar ? 'korean_import' : 'hm_local',
+                source: data.source || (isEncar ? 'korean_import' : 'hm_local'),
                 listingType: data.listingType || (isEncar ? 'showroom' : 'store'),
                 agency: agencyId,
                 isActive: true,

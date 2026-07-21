@@ -323,7 +323,7 @@ function CarsContent() {
                     if (c.isSold || c.isActive === false) return;
                     const price = Number(c.price) || Number(c.priceSar) || 0;
                     const priceUsd = Number(c.priceUsd) || Number(c.usdPrice) || (Number(c.priceKrw) / (Number(currency.usdToKrw) || 1350));
-                    const isKoreanImport = c.source === 'korean_import';
+                    const isKoreanImport = c.source === 'korean_import' || c.listingType === 'showroom' || (c.priceKrw && Number(c.priceKrw) > 0) || (c.externalUrl && String(c.externalUrl).includes('encar'));
                     merged.push({
                         id: String(c._id || c.id),
                         title: c.title || `${c.makeAr || c.make} ${c.model} ${c.year}`,
