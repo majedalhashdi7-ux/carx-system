@@ -104,9 +104,12 @@ function CarsContent() {
             // جلب كل السيارات معاً (محلية + مستوردة + كورية) في معرض موحد
             const res = await api.cars.list({ page, limit: 100, status: 'all' });
             if (res.success) {
-                setCars(res.data?.cars || []);
-                setTotalCarsCount(res.data?.pagination?.total || 0);
-                setTotalPages(res.data?.pagination?.pages || 1);
+                const carsList = Array.isArray(res.data) ? res.data : (res.data?.cars || (res as any).cars || []);
+                setCars(carsList);
+                const total = (res as any).pagination?.total || (res as any).total || res.data?.pagination?.total || carsList.length;
+                const pages = (res as any).pagination?.pages || (res as any).pages || res.data?.pagination?.pages || Math.max(1, Math.ceil(total / 100));
+                setTotalCarsCount(total);
+                setTotalPages(pages);
             }
 
             const globalSettings = await api.settings.getPublic();
