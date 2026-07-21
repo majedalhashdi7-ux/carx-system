@@ -28,7 +28,7 @@ const generateCacheKey = (req) => {
  */
 const cacheResponse = (ttlInSeconds = 60) => {
     return async (req, res, next) => {
-        if (req.method !== 'GET' || !cacheService.isRedisEnabled) {
+        if (req.method !== 'GET' || !cacheService.isRedisEnabled || req.query.nocache === 'true' || req.query.status === 'all') {
             return next();
         }
 
