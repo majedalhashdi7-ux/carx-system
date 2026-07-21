@@ -237,9 +237,14 @@ function MarketHubContent() {
                                                 <span className="text-[8px] font-black uppercase">{isRTL ? 'تعديل' : 'EDIT'}</span>
                                             </button>
 
-                                            <button onClick={() => handleDeleteLive(s._id)} title={isRTL ? 'حذف' : 'Delete'} className="p-3 rounded-xl border border-white/5 text-white/20 hover:text-red-500 hover:bg-red-500/10 flex flex-col items-center justify-center gap-1">
-                                                <Trash2 size={16} />
-                                                <span className="text-[8px] font-black uppercase">{isRTL ? 'حذف' : 'DEL'}</span>
+                                            <button 
+                                                onClick={() => handleDeleteLive(s._id)} 
+                                                disabled={deletingLiveId === s._id}
+                                                title={isRTL ? 'حذف الجلسة بالكامل' : 'Delete Session'} 
+                                                className="p-3 rounded-xl border border-red-500/40 text-red-400 bg-red-500/10 hover:bg-red-500/20 flex flex-col items-center justify-center gap-1 transition-all"
+                                            >
+                                                <Trash2 size={16} className={cn(deletingLiveId === s._id && "animate-spin")} />
+                                                <span className="text-[8px] font-black uppercase">{deletingLiveId === s._id ? (isRTL ? 'جاري...' : 'DEL...') : (isRTL ? 'حذف' : 'DEL')}</span>
                                             </button>
 
                                             <Link href={`/auctions/live/${s._id}`} target="_blank" title={isRTL ? 'عرض العميل' : 'View Client'} className="p-3 rounded-xl border border-white/5 text-white/40 hover:text-[#00f0ff] hover:bg-[#00f0ff]/10 flex flex-col items-center justify-center gap-1">

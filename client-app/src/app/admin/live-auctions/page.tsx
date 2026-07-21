@@ -114,10 +114,14 @@ export default function AdminLiveAuctions() {
         if (!confirm(isRTL ? `هل أنت متأكد من حذف جلسة "${title}"؟` : `Delete session "${title}"?`)) return;
         const loadId = addToast('loading', isRTL ? 'جاري الحذف...' : 'Deleting...', 0);
         try {
-            await api.liveAuctions.delete(id);
+            const res = await api.liveAuctions.delete(id);
             dismissToast(loadId);
-            addToast('success', isRTL ? 'تم الحذف بنجاح' : 'Deleted successfully');
-            loadSessions();
+            if (res.success) {
+                setSessions(prev => prev.filter(s => s._id !== id));
+                addToast('success', isRTL ? 'تم الحذف بنجاح' : 'Deleted successfully');
+            } else {
+                addToast('error', res.error || (isRTL ? 'فشل الحذف' : 'Delete failed'));
+            }
         } catch (e: any) {
             dismissToast(loadId);
             addToast('error', e.message || (isRTL ? 'فشل الحذف' : 'Delete failed'));
