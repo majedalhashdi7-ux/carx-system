@@ -17,6 +17,26 @@ import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import WatermarkImage from "@/components/WatermarkImage";
+import { formatCarTitle } from "@/lib/brandTranslations";
+
+function resolveAuctionCarImg(car: any): string {
+    if (!car) return 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=1000';
+    const raw = car.img || car.image || car.imageUrl || (Array.isArray(car.images) && car.images.length > 0 ? car.images[0] : '') || '';
+    if (!raw || typeof raw !== 'string' || !raw.trim()) {
+        return 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=1000';
+    }
+    let url = raw.trim();
+    if (url.includes('https://ci.encar.comhttps://ci.encar.com')) {
+        url = url.replace('https://ci.encar.comhttps://ci.encar.com', 'https://ci.encar.com');
+    }
+    if (url.endsWith('_')) {
+        if (url.startsWith('http')) return `${url}001.jpg`;
+        return `https://ci.encar.com${url}001.jpg`;
+    }
+    if (url.startsWith('/carpicture')) return `https://ci.encar.com${url}`;
+    if (url.startsWith('/') && !url.startsWith('http')) return `https://ci.encar.com/carpicture${url}`;
+    return url;
+}
 
 /* ── Skeleton Card ── */
 function AuctionSkeleton() {
@@ -202,7 +222,7 @@ export default function AuctionsPage() {
                                 </div>
                             </div>
                             <h1 className="text-3xl sm:text-5xl font-black italic tracking-tighter uppercase text-white">
-                                {isRTL ? 'السيارات المعروضة في المزاد' : 'AUCTION VEHICLES'}
+                                {isRTL ? 'المزاد المباشر' : 'LIVE AUCTION'}
                                 <span className="block text-xs not-italic font-light tracking-[0.4em] text-white/25 mt-2">
                                     {isRTL ? 'مزايدة مباشرة · استفسار سريع · تواصل مباشر' : 'DIRECT BIDDING · QUICK ENQUIRY · DIRECT CONTACT'}
                                 </span>
@@ -236,56 +256,60 @@ export default function AuctionsPage() {
                     </motion.div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {cars.map((car, idx) => (
-                            <motion.div
-                                key={idx}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: idx * 0.05 }}
-                                whileHover={{ y: -6 }}
-                                className="glass-card bg-white/[0.01] border-white/5 p-5 space-y-4 cursor-pointer group rounded-2xl md:rounded-3xl"
-                                onClick={() => setSelectedCar(car)}
-                            >
-                                <div className="relative aspect-video rounded-xl md:rounded-2xl overflow-hidden border border-white/5">
-                                    <WatermarkImage
-                                        src={car.images?.[0] || 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=1000'}
-                                        fill
-                                        className="object-cover grayscale-[0.3] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
-                                        alt={car.title}
-                                        unoptimized
-                                        watermarkPosition="br"
-                                    />
-                                    <div className="absolute top-3 right-3 flex gap-2">
-                                        {car.lotNumber && (
-                                            <div className="px-2.5 py-1 bg-[#C9A96E]/20 backdrop-blur-md rounded-lg border border-[#C9A96E]/30 text-[8px] font-black uppercase tracking-widest text-[#C9A96E]">
-                                                LOT #{car.lotNumber}
-                                            </div>
-                                        )}
-                                        {car.condition && (
-                                            <div className="px-2.5 py-1 bg-black/60 backdrop-blur-md rounded-lg border border-white/10 text-[8px] font-black uppercase tracking-widest">
-                                                {car.condition}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="space-y-3">
-                                    <h3 className="text-base md:text-lg font-black uppercase italic truncate">{car.title}</h3>
-                                    <div className="flex justify-between items-end border-t border-white/5 pt-3 gap-3">
-                                        <div className="min-w-0">
-                                            <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest block">{isRTL ? 'تقدير السعر' : 'ESTIMATE'}</span>
-                                            <div className="text-sm md:text-base font-black text-[#C9A96E] tracking-tighter truncate">{car.priceEstimate || (isRTL ? 'تواصل معنا' : 'Contact Us')}</div>
+                        {cars.map((car, idx) => {
+                            const carImg = resolveAuctionCarImg(car);
+                            const carTitle = formatCarTitle(car.title || `${car.make || ''} ${car.model || ''}`, car.make || '', isRTL);
+                            return (
+                                <motion.div
+                                    key={idx}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: idx * 0.05 }}
+                                    whileHover={{ y: -6 }}
+                                    className="glass-card bg-white/[0.01] border-white/5 p-5 space-y-4 cursor-pointer group rounded-2xl md:rounded-3xl"
+                                    onClick={() => setSelectedCar(car)}
+                                >
+                                    <div className="relative aspect-video rounded-xl md:rounded-2xl overflow-hidden border border-white/5 bg-zinc-900">
+                                        <WatermarkImage
+                                            src={carImg}
+                                            fill
+                                            className="object-cover group-hover:scale-105 transition-all duration-700"
+                                            alt={carTitle}
+                                            unoptimized
+                                            watermarkPosition="br"
+                                        />
+                                        <div className="absolute top-3 right-3 flex gap-2">
+                                            {car.lotNumber && (
+                                                <div className="px-2.5 py-1 bg-[#C9A96E]/20 backdrop-blur-md rounded-lg border border-[#C9A96E]/30 text-[8px] font-black uppercase tracking-widest text-[#C9A96E]">
+                                                    LOT #{car.lotNumber}
+                                                </div>
+                                            )}
+                                            {car.condition && (
+                                                <div className="px-2.5 py-1 bg-black/60 backdrop-blur-md rounded-lg border border-white/10 text-[8px] font-black uppercase tracking-widest">
+                                                    {car.condition}
+                                                </div>
+                                            )}
                                         </div>
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); handleBuyRequest(car); }}
-                                            className="shrink-0 px-4 md:px-5 py-2.5 bg-[#C9A96E]/10 border border-[#C9A96E]/30 rounded-xl hover:bg-[#C9A96E]/20 hover:text-[#C9A96E] transition-all text-[8px] md:text-[9px] font-black uppercase tracking-[0.15em] text-[#C9A96E]"
-                                        >
-                                            {isRTL ? 'مزايدة' : 'BID'}
-                                        </button>
                                     </div>
-                                </div>
-                            </motion.div>
-                        ))}
+
+                                    <div className="space-y-3">
+                                        <h3 className="text-base md:text-lg font-black uppercase italic truncate" title={carTitle}>{carTitle}</h3>
+                                        <div className="flex justify-between items-end border-t border-white/5 pt-3 gap-3">
+                                            <div className="min-w-0">
+                                                <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest block">{isRTL ? 'تقدير السعر' : 'ESTIMATE'}</span>
+                                                <div className="text-sm md:text-base font-black text-[#C9A96E] tracking-tighter truncate">{car.priceEstimate || (isRTL ? 'تواصل معنا' : 'Contact Us')}</div>
+                                            </div>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleBuyRequest(car); }}
+                                                className="shrink-0 px-4 md:px-5 py-2.5 bg-[#C9A96E]/10 border border-[#C9A96E]/30 rounded-xl hover:bg-[#C9A96E]/20 hover:text-[#C9A96E] transition-all text-[8px] md:text-[9px] font-black uppercase tracking-[0.15em] text-[#C9A96E]"
+                                            >
+                                                {isRTL ? 'مزايدة' : 'BID'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
                     </div>
                 )}
             </main>
@@ -307,7 +331,7 @@ export default function AuctionsPage() {
                                 {/* Left Side: Images */}
                                 <div className="lg:col-span-7 bg-black relative aspect-video lg:aspect-auto lg:h-[600px] flex items-center justify-center border-r border-white/5">
                                     <WatermarkImage
-                                        src={selectedCar.images?.[0] || 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=1000'}
+                                        src={resolveAuctionCarImg(selectedCar)}
                                         fill
                                         className="object-contain"
                                         alt={selectedCar.title}

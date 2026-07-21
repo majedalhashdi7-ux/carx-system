@@ -5,6 +5,8 @@ const router = express.Router();
 const { requireAuthAPI } = require('../../../middleware/auth');
 const { getModel, addTenantFilter, getTenantId } = require('../../../tenants/tenant-model-helper');
 
+const JWT_SECRET = process.env.JWT_SECRET || 'hmcar_jwt_secret_key_2026_fallback';
+
 // ─── GET /api/v2/live-auctions ─── جلب كل جلسات المزاد
 router.get('/', async (req, res) => {
     try {
@@ -13,14 +15,39 @@ router.get('/', async (req, res) => {
         if (status) query.status = status;
 
         const LiveAuction = getModel(req, 'LiveAuction');
-        const sessions = await LiveAuction.find(addTenantFilter(req, query)).sort({ startTime: -1, createdAt: -1 });
+        let sessions = await LiveAuction.find(addTenantFilter(req, query)).sort({ startTime: -1, createdAt: -1 });
+
+        // إذا لم تكن هناك جلسات مزاد، ننشئ جلسة افتراضية ونربط سيارات كورية تلقائياً
+        if (sessions.length === 0 && (!status || status === 'live')) {
+            const defaultUrl = 'https://car.encar.com/list/car?search=%7B%22action%22%3A%22(And.Hidden.N._.CarType.A.)%22%7D';
+            try {
+                const defaultSession = new LiveAuction({
+                    tenantId: getTenantId(req),
+                    title: 'المزاد المباشر كوريا الجنوبية (Encar Live)',
+                    externalUrl: defaultUrl,
+                    status: 'live',
+                    autoSync: true,
+                    cars: []
+                });
+                await defaultSession.save();
+
+                const LiveAuctionSyncService = require('../../../services/LiveAuctionSyncService');
+                LiveAuctionSyncService.syncSession(defaultSession).catch(err => {
+                    console.warn('[LiveAuctions] Background sync error:', err.message);
+                });
+
+                sessions = [defaultSession];
+            } catch (seedErr) {
+                console.warn('[LiveAuctions] Auto-seed failed:', seedErr.message);
+            }
+        }
 
         // إخفاء السيارات المختفية عن العملاء (إلا في وضع الأدمن)
         const isAdmin = req.headers.authorization && (() => {
             try {
                 const jwt = require('jsonwebtoken');
                 const token = req.headers.authorization.split(' ')[1];
-                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                const decoded = jwt.verify(token, JWT_SECRET);
                 return ['admin', 'super_admin'].includes(decoded.role);
             } catch { return false; }
         })();
