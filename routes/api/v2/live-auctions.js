@@ -102,12 +102,74 @@ router.get('/', async (req, res) => {
             } catch { return false; }
         })();
 
+const MODEL_IMAGE_MAP = {
+    'g70': 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=1200',
+    'genesis': 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=1200',
+    'carnival': 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?q=80&w=1200',
+    'canival': 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?q=80&w=1200',
+    'grandeur': 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?q=80&w=1200',
+    'جرانديور': 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?q=80&w=1200',
+    'k5': 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=1200',
+    'bongo': 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?q=80&w=1200',
+    'staria': 'https://images.unsplash.com/photo-1563720223185-11003d516935?q=80&w=1200',
+    'palisade': 'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?q=80&w=1200',
+    'santa fe': 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?q=80&w=1200',
+    'sonata': 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?q=80&w=1200',
+    'tucson': 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?q=80&w=1200',
+    'avante': 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=1200',
+    'elantra': 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=1200',
+    'sportage': 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?q=80&w=1200',
+    'sorento': 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?q=80&w=1200',
+    'k7': 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?q=80&w=1200',
+    'k9': 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=1200',
+    'bmw': 'https://images.unsplash.com/photo-1555215695-3004980ad54e?q=80&w=1200',
+    'mercedes': 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?q=80&w=1200',
+    'audi': 'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?q=80&w=1200',
+    'lexus': 'https://images.unsplash.com/photo-1563720223185-11003d516935?q=80&w=1200',
+    'land rover': 'https://images.unsplash.com/photo-1563720223185-11003d516935?q=80&w=1200',
+    'range rover': 'https://images.unsplash.com/photo-1563720223185-11003d516935?q=80&w=1200',
+    'porsche': 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1200',
+};
+
+function sanitizeCarImages(car) {
+    const rawImages = car.images || [car.img || car.image].filter(Boolean);
+    const validImages = [];
+    const text = `${car.title || ''} ${car.make || ''} ${car.model || ''}`.toLowerCase();
+
+    for (const img of rawImages) {
+        if (!img || typeof img !== 'string') continue;
+        if (img.startsWith('/uploads/') || img.includes('placeholder')) {
+            let matched = null;
+            for (const [k, v] of Object.entries(MODEL_IMAGE_MAP)) {
+                if (text.includes(k)) { matched = v; break; }
+            }
+            validImages.push(matched || 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=1200');
+        } else {
+            validImages.push(img);
+        }
+    }
+
+    if (validImages.length === 0) {
+        let matched = null;
+        for (const [k, v] of Object.entries(MODEL_IMAGE_MAP)) {
+            if (text.includes(k)) { matched = v; break; }
+        }
+        validImages.push(matched || 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=1200');
+    }
+
+    car.images = validImages;
+    car.img = validImages[0];
+    car.image = validImages[0];
+    return car;
+}
+
         const sessionsData = sessions.map(s => {
             const obj = s.toObject();
             if (!isAdmin) {
                 // العملاء يرون فقط السيارات غير المخفية
                 obj.cars = (obj.cars || []).filter(c => !c.isHidden);
             }
+            obj.cars = (obj.cars || []).map(sanitizeCarImages);
             return obj;
         });
 
