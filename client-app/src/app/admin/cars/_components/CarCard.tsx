@@ -99,6 +99,8 @@ export default function CarCard({ car, index, usdToSar, onEdit, onDelete, onMark
                     quality={70}
                     priority={index < 3}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    referrerPolicy="no-referrer"
+                    unoptimized
                     onError={(e) => {
                         // في حالة فشل تحميل الصورة، نستخدم صورة افتراضية
                         const target = e.target as HTMLImageElement;

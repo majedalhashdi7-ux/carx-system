@@ -1,6 +1,7 @@
-﻿'use client';
+'use client';
 
 import Image, { ImageProps } from 'next/image';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
 interface WatermarkImageProps extends Omit<ImageProps, 'className'> {
@@ -8,6 +9,7 @@ interface WatermarkImageProps extends Omit<ImageProps, 'className'> {
     containerClassName?: string;
     showWatermark?: boolean;
     watermarkPosition?: 'br' | 'bl' | 'tr' | 'tl';
+    fallbackSrc?: string;
 }
 
 const positionClasses = {
@@ -39,31 +41,60 @@ const WatermarkBadge = ({ position }: { position: keyof typeof positionClasses }
     </div>
 );
 
-/**
- * WatermarkImage — يعرض الصورة مع علامة مائية HM CAR
- * يدعم وضع fill (لاستخدامه داخل حاوية positioned) ووضع الصورة العادية
- */
+const DEFAULT_FALLBACK = 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=1000';
+
 export default function WatermarkImage({
     className,
     containerClassName,
     showWatermark = true,
     watermarkPosition = 'br',
+    fallbackSrc = DEFAULT_FALLBACK,
+    src,
+    alt,
+    onError,
     ...props
 }: WatermarkImageProps) {
-    /* وضع fill: الحاوية موجودة في المكوّن الأب، نضيف الشارة فقط */
+    const [imgSrc, setImgSrc] = useState<any>(src || fallbackSrc);
+
+    useEffect(() => {
+        setImgSrc(src || fallbackSrc);
+    }, [src, fallbackSrc]);
+
+    const handleError = (e: any) => {
+        if (imgSrc !== fallbackSrc) {
+            setImgSrc(fallbackSrc);
+        }
+        if (onError) onError(e);
+    };
+
     if (props.fill) {
         return (
             <>
-                <Image className={cn('object-cover', className)} {...props} />
+                <Image
+                    className={cn('object-cover', className)}
+                    src={imgSrc}
+                    alt={alt || 'HM CAR'}
+                    onError={handleError}
+                    referrerPolicy="no-referrer"
+                    unoptimized
+                    {...props}
+                />
                 {showWatermark && <WatermarkBadge position={watermarkPosition} />}
             </>
         );
     }
 
-    /* وضع عادي: نلف الصورة بحاوية relative */
     return (
         <div className={cn('relative overflow-hidden', containerClassName)}>
-            <Image className={cn('object-cover', className)} {...props} />
+            <Image
+                className={cn('object-cover', className)}
+                src={imgSrc}
+                alt={alt || 'HM CAR'}
+                onError={handleError}
+                referrerPolicy="no-referrer"
+                unoptimized
+                {...props}
+            />
             {showWatermark && <WatermarkBadge position={watermarkPosition} />}
         </div>
     );

@@ -35,6 +35,7 @@ function resolveAuctionCarImg(car: any): string {
     }
     if (url.startsWith('/carpicture')) return `https://ci.encar.com${url}`;
     if (url.startsWith('/') && !url.startsWith('http')) return `https://ci.encar.com/carpicture${url}`;
+    if (!url.startsWith('http')) return `https://ci.encar.com/carpicture/${url}`;
     return url;
 }
 
