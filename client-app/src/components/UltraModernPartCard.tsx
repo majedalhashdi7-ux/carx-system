@@ -60,6 +60,19 @@ interface UltraModernPartCardProps {
     onLoginRequired?: () => void;
 }
 
+function resolvePartCardImg(part: any): string {
+    const raw = part.img || part.image || (Array.isArray(part.images) && part.images.length > 0 ? part.images[0] : '') || '';
+    if (!raw || typeof raw !== 'string') return 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?q=80&w=1000';
+    let url = raw.trim();
+    if (url.startsWith('//')) return `https:${url}`;
+    if (url.startsWith('/')) {
+        if (url.startsWith('/uploads') || url.startsWith('/images')) return url;
+        return `https://autospare.com.eg${url}`;
+    }
+    if (!url.startsWith('http')) return `https://autospare.com.eg/${url}`;
+    return url;
+}
+
 export default function UltraModernPartCard({ 
     part, 
     index = 0, 
@@ -72,7 +85,7 @@ export default function UltraModernPartCard({
     const router = useRouter();
 
     const cardKey = String(part.id || part._id || `part-${index}`);
-    const imageSrc = part.img || part.images?.[0] || '';
+    const imageSrc = resolvePartCardImg(part);
     const name = isRTL ? (part.nameAr || part.name) : (part.name || part.nameAr);
     const stock = part.stockQty ?? part.stock ?? 0;
 

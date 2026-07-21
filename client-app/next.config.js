@@ -5,30 +5,10 @@ const nextConfig = {
 
   images: {
     remotePatterns: [
-      { protocol: 'http', hostname: 'localhost' },
-      { protocol: 'https', hostname: 'hmcar-system-two.vercel.app' },
-      { protocol: 'https', hostname: 'carx-system-five.vercel.app' },
-      { protocol: 'https', hostname: 'www.carx-system-five.vercel.app' },
-      { protocol: 'https', hostname: 'res.cloudinary.com' },
-      { protocol: 'https', hostname: 'hmcar.vercel.app' },
-      { protocol: 'https', hostname: 'www.hmcar.vercel.app' },
-      { protocol: 'https', hostname: 'hmcar.xyz' },
-      { protocol: 'https', hostname: 'www.hmcar.xyz' },
-      { protocol: 'https', hostname: 'images.unsplash.com' },
-      { protocol: 'https', hostname: 'ci.encar.com' },
-      { protocol: 'https', hostname: 'img.encar.com' },
-      { protocol: 'https', hostname: 'img1.encar.com' },
-      { protocol: 'https', hostname: 'img2.encar.com' },
-      { protocol: 'https', hostname: 'img3.encar.com' },
-      { protocol: 'https', hostname: 'img4.encar.com' },
-      { protocol: 'https', hostname: 'img5.encar.com' },
-      { protocol: 'https', hostname: 'via.placeholder.com' },
-      { protocol: 'https', hostname: 'picsum.photos' },
-      { protocol: 'https', hostname: 'source.unsplash.com' }
+      { protocol: 'http', hostname: '**' },
+      { protocol: 'https', hostname: '**' }
     ],
-    unoptimized: false,
-    minimumCacheTTL: 60,
-    formats: ['image/webp', 'image/avif'],
+    unoptimized: true,
   },
 
   async headers() {

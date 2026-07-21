@@ -17,17 +17,67 @@ router.get('/', async (req, res) => {
         const LiveAuction = getModel(req, 'LiveAuction');
         let sessions = await LiveAuction.find(addTenantFilter(req, query)).sort({ startTime: -1, createdAt: -1 });
 
+        const Car = getModel(req, 'Car');
+
+        // ضمان أن الجلسات تحتوي على سيارات، وإن كانت فارغة نملؤها بالسيارات الكورية المستوردة تلقائياً
+        for (const session of sessions) {
+            if (!session.cars || session.cars.length === 0) {
+                if (session.externalUrl && session.externalUrl.startsWith('http')) {
+                    const LiveAuctionSyncService = require('../../../services/LiveAuctionSyncService');
+                    await LiveAuctionSyncService.syncSession(session).catch(() => {});
+                }
+                const importedCars = await Car.find({
+                    $or: [
+                        { listingType: 'showroom' },
+                        { source: 'korean_import' },
+                        { externalUrl: { $regex: 'http', $options: 'i' } }
+                    ]
+                }).limit(40).lean().catch(() => []);
+
+                if (importedCars && importedCars.length > 0) {
+                    session.cars = importedCars.map(c => ({
+                        title: c.title || `${c.make || ''} ${c.model || ''}`,
+                        images: c.images?.length > 0 ? c.images : [c.img || c.image].filter(Boolean),
+                        condition: 'مستعملة',
+                        description: c.description || 'سيارة كورية مستوردة من المعرض المباشر',
+                        priceEstimate: c.priceSar ? `${c.priceSar.toLocaleString('ar-SA')} ر.س` : (c.price ? `${c.price.toLocaleString('ar-SA')} ر.س` : 'تواصل معنا'),
+                        lotNumber: 'LOT-' + Math.floor(100000 + Math.random() * 900000),
+                        sourceUrl: c.externalUrl || ''
+                    }));
+                    await session.save().catch(() => {});
+                }
+            }
+        }
+
         // إذا لم تكن هناك جلسات مزاد، ننشئ جلسة افتراضية ونربط سيارات كورية تلقائياً
         if (sessions.length === 0 && (!status || status === 'live')) {
             const defaultUrl = 'https://car.encar.com/list/car?search=%7B%22action%22%3A%22(And.Hidden.N._.CarType.A.)%22%7D';
             try {
+                const importedCars = await Car.find({
+                    $or: [
+                        { listingType: 'showroom' },
+                        { source: 'korean_import' },
+                        { externalUrl: { $regex: 'http', $options: 'i' } }
+                    ]
+                }).limit(40).lean().catch(() => []);
+
+                const defaultCars = (importedCars || []).map(c => ({
+                    title: c.title || `${c.make || ''} ${c.model || ''}`,
+                    images: c.images?.length > 0 ? c.images : [c.img || c.image].filter(Boolean),
+                    condition: 'مستعملة',
+                    description: c.description || 'سيارة كورية مستوردة من المعرض المباشر',
+                    priceEstimate: c.priceSar ? `${c.priceSar.toLocaleString('ar-SA')} ر.س` : (c.price ? `${c.price.toLocaleString('ar-SA')} ر.س` : 'تواصل معنا'),
+                    lotNumber: 'LOT-' + Math.floor(100000 + Math.random() * 900000),
+                    sourceUrl: c.externalUrl || ''
+                }));
+
                 const defaultSession = new LiveAuction({
                     tenantId: getTenantId(req),
                     title: 'المزاد المباشر كوريا الجنوبية (Encar Live)',
                     externalUrl: defaultUrl,
                     status: 'live',
                     autoSync: true,
-                    cars: []
+                    cars: defaultCars
                 });
                 await defaultSession.save();
 
