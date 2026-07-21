@@ -473,6 +473,9 @@ export const api = {
         importExternal: (id: string) => fetchAPI(`/api/v2/live-auctions/${id}/import-external`, {
             method: 'POST',
         }),
+        removeCar: (id: string, index: number) => fetchAPI(`/api/v2/live-auctions/${id}/cars/${index}`, {
+            method: 'DELETE',
+        }),
     },
     liveAuctionRequests: {
         list: (params: Record<string, string | number | boolean> = {}) => {

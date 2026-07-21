@@ -57,31 +57,6 @@ router.get('/', async (req, res) => {
             }
         }
 
-        // إذا لم تكن هناك جلسات مزاد، ننشئ جلسة افتراضية ونجلب سيارات المزاد الكوري المباشر
-        if (sessions.length === 0 && (!status || status === 'live')) {
-            const defaultUrl = 'https://desert-korea-auto.com/cars/?car_type=auction';
-            try {
-                const defaultSession = new LiveAuction({
-                    tenantId: getTenantId(req),
-                    title: 'مزاد السيارات الكورية المباشر',
-                    externalUrl: defaultUrl,
-                    status: 'live',
-                    autoSync: true,
-                    cars: []
-                });
-                await defaultSession.save();
-
-                const LiveAuctionSyncService = require('../../../services/LiveAuctionSyncService');
-                await LiveAuctionSyncService.syncSession(defaultSession).catch(err => {
-                    console.warn('[LiveAuctions] Auto-sync default session failed:', err.message);
-                });
-
-                sessions = [defaultSession];
-            } catch (seedErr) {
-                console.warn('[LiveAuctions] Auto-seed failed:', seedErr.message);
-            }
-        }
-
         // إخفاء السيارات المختفية عن العملاء (إلا في وضع الأدمن)
         const isAdmin = req.headers.authorization && (() => {
             try {
@@ -293,6 +268,32 @@ router.delete('/:id', requireAuthAPI, async (req, res) => {
     } catch (error) {
         console.error('Error deleting live auction session:', error);
         res.status(500).json({ success: false, error: 'Internal Server Error' });
+    }
+});
+
+// ─── DELETE /api/v2/live-auctions/:id/cars/:index ─── حذف سيارة محددة من الجلسة (Admin)
+router.delete('/:id/cars/:index', requireAuthAPI, async (req, res) => {
+    try {
+        if (req.user.role !== 'super_admin' && req.user.role !== 'admin') {
+            return res.status(403).json({ success: false, error: 'Access denied' });
+        }
+
+        const LiveAuction = getModel(req, 'LiveAuction');
+        const session = await LiveAuction.findOne(addTenantFilter(req, { _id: req.params.id }));
+        if (!session) return res.status(404).json({ success: false, error: 'Session not found' });
+
+        const idx = parseInt(req.params.index);
+        if (isNaN(idx) || idx < 0 || idx >= (session.cars || []).length) {
+            return res.status(400).json({ success: false, error: 'Invalid car index' });
+        }
+
+        session.cars.splice(idx, 1);
+        await session.save();
+
+        res.json({ success: true, message: 'Car removed from live auction', data: session });
+    } catch (error) {
+        console.error('Error removing car from live auction:', error);
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 

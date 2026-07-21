@@ -103,12 +103,31 @@ function MarketHubContent() {
     };
 
     const handleDeleteLive = async (id: string) => {
-        if (!confirm(isRTL ? 'هل أنت متأكد؟' : 'Are you sure?')) return;
+        if (!confirm(isRTL ? 'هل أنت متأكد من حذف جلسة المزاد هذه بالكامل؟' : 'Are you sure you want to delete this auction session?')) return;
         try {
-            await api.liveAuctions.delete(id);
-            loadLiveSessions();
-            showToast(isRTL ? 'تم الحذف' : 'Deleted', 'success');
-        } catch { }
+            const res = await api.liveAuctions.delete(id);
+            if (res.success) {
+                setSessions(prev => prev.filter(s => s._id !== id));
+                showToast(isRTL ? 'تم حذف جلسة المزاد المباشر بنجاح' : 'Session deleted successfully', 'success');
+            } else {
+                showToast(res.error || 'Delete failed', 'error');
+            }
+        } catch (err: any) {
+            showToast(err.message || 'Delete failed', 'error');
+        }
+    };
+
+    const handleDeleteCarFromLiveAuction = async (sessionId: string, index: number) => {
+        if (!confirm(isRTL ? "هل أنت متأكد من حذف هذه السيارة من المزاد المباشر؟" : "Remove this car from live auction?")) return;
+        try {
+            const res = await (api.liveAuctions as any).removeCar(sessionId, index);
+            if (res.success) {
+                showToast(isRTL ? "تم حذف السيارة من المزاد بنجاح" : "Car removed", "success");
+                loadLiveSessions();
+            }
+        } catch (err: any) {
+            showToast(err.message || "Delete failed", "error");
+        }
     };
 
     // ── Actions: Auctions ──
@@ -253,6 +272,13 @@ function MarketHubContent() {
                                                                         {car.lotNumber}
                                                                     </span>
                                                                 )}
+                                                                <button
+                                                                    onClick={() => handleDeleteCarFromLiveAuction(s._id, idx)}
+                                                                    title={isRTL ? "حذف السيارة من المزاد" : "Remove car"}
+                                                                    className="absolute top-1.5 right-1.5 w-6 h-6 rounded-lg bg-black/80 text-white/60 hover:text-red-400 hover:bg-red-500/20 border border-white/10 flex items-center justify-center transition-all z-10"
+                                                                >
+                                                                    <Trash2 size={12} />
+                                                                </button>
                                                             </div>
                                                             <div className="p-2.5 space-y-1 flex-1 flex flex-col justify-between">
                                                                 <div className="text-[10px] font-bold text-white/90 line-clamp-2 leading-tight">
