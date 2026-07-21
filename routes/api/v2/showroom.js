@@ -299,6 +299,41 @@ router.get('/cars', async (req, res) => {
                     };
                 });
 
+                // [[ARABIC_COMMENT]] حفظ تلقائي خفي في قاعدة البيانات لتظهر للأدمن والعميل في المستقل
+                (async () => {
+                    try {
+                        for (const item of liveCars) {
+                            if (!item.encarUrl) continue;
+                            const existing = await Car.findOne({ externalUrl: item.encarUrl });
+                            if (!existing) {
+                                await Car.create({
+                                    tenantId: getTenantId(req),
+                                    title: item.title,
+                                    make: item.manufacturerAr || item.manufacturer || 'غير محدد',
+                                    model: item.model || 'غير محدد',
+                                    year: item.year > 9999 ? Math.floor(item.year / 100) : (item.year || new Date().getFullYear()),
+                                    mileage: item.mileage || 0,
+                                    price: item.priceSar,
+                                    priceSar: item.priceSar,
+                                    priceUsd: item.priceUsd,
+                                    priceKrw: item.priceKrw,
+                                    fuelType: item.fuelAr || 'Petrol',
+                                    transmission: item.transmissionAr || 'Automatic',
+                                    category: 'sedan',
+                                    listingType: 'showroom',
+                                    source: 'korean_import',
+                                    externalUrl: item.encarUrl,
+                                    images: item.images || [],
+                                    isActive: true,
+                                    isSold: false
+                                });
+                            }
+                        }
+                    } catch (saveErr) {
+                        console.warn('⚠️ [Showroom] Auto-persist error:', saveErr.message);
+                    }
+                })();
+
                 const encarTotal = data.Count || liveCars.length;
 
                 return res.json({
@@ -379,10 +414,8 @@ router.post('/scrape', requireAuthAPI, requireAdmin, async (req, res) => {
         const Brand = getModel(req, 'Brand');
         const { downloadAndOptimize } = require('../../../services/externalImageService');
         const settings = await SiteSettings.getSettings();
-        const showroomUrl = settings?.showroomSettings?.encarUrl || '';
-        if (!showroomUrl) {
-            return res.status(400).json({ success: false, message: 'لا يوجد رابط معرض محفوظ في الإعدادات.' });
-        }
+        const defaultEncarUrl = 'https://car.encar.com/dc/dc_cardetailview.do?method=kcarList&wtClick_korList=015';
+        const showroomUrl = settings?.showroomSettings?.encarUrl || defaultEncarUrl;
 
         const usdToSar = Number(settings?.currencySettings?.usdToSar || 3.75);
         const usdToKrw = Number(settings?.currencySettings?.usdToKrw || 1350);

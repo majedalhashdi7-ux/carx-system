@@ -122,6 +122,26 @@ function CarsContent() {
         }
     }, [page]);
 
+    const [scraping, setScraping] = useState(false);
+
+    const handleScrapeKorea = async () => {
+        setScraping(true);
+        try {
+            showToast(isRTL ? '⏳ جاري استيراد وجلب السيارات الكورية...' : '⏳ Scraping & importing Korean cars...', 'info');
+            const res = await api.showroom.scrape();
+            if (res.success) {
+                showToast(res.message || (isRTL ? '✅ تم استيراد السيارات الكورية بنجاح!' : '✅ Cars imported!'), 'success');
+                await loadData();
+            } else {
+                showToast(res.message || (isRTL ? '❌ فشل الاستيراد' : '❌ Import failed'), 'error');
+            }
+        } catch (err: any) {
+            showToast(err.message || 'Error', 'error');
+        } finally {
+            setScraping(false);
+        }
+    };
+
     useEffect(() => { loadData(); }, [loadData]);
 
 
@@ -303,9 +323,18 @@ function CarsContent() {
                             <Plus className="w-4 h-4" />
                             {isRTL ? 'إضافة سيارة' : 'ADD VEHICLE'}
                         </button>
+                        <button
+                            onClick={handleScrapeKorea}
+                            disabled={scraping}
+                            title={isRTL ? 'جلب واستيراد سيارات كوريا الكورية فوراً' : 'Scrape Korean cars now'}
+                            className="h-11 px-5 rounded-2xl border border-blue-400/30 text-blue-400 font-black text-xs uppercase tracking-widest hover:bg-blue-400/10 transition-all flex items-center gap-2 bg-blue-500/5 disabled:opacity-50"
+                        >
+                            <Download className={cn("w-4 h-4", scraping && "animate-spin")} />
+                            {scraping ? (isRTL ? 'جاري الجلب...' : 'SCRAPING...') : (isRTL ? 'جلب سيارات كوريا' : 'IMPORT KOREAN')}
+                        </button>
                         <NextLink
                             href="/admin/import"
-                            className="h-11 px-5 rounded-2xl border border-blue-400/30 text-blue-400 font-black text-xs uppercase tracking-widest hover:bg-blue-400/10 transition-all flex items-center gap-2 bg-blue-500/5"
+                            className="h-11 px-5 rounded-2xl border border-white/10 text-white/60 font-black text-xs uppercase tracking-widest hover:bg-white/5 transition-all flex items-center gap-2"
                         >
                             <Download className="w-4 h-4" />
                             {isRTL ? 'بوابة الاستيراد' : 'IMPORT HUB'}
@@ -323,13 +352,14 @@ function CarsContent() {
                     <div className="ck-empty py-32">
                         <div className="ck-empty-icon"><CarIcon className="w-8 h-8" /></div>
                         <p className="cockpit-mono text-sm">{isRTL ? 'لا توجد سيارات في المعرض بعد' : 'NO VEHICLES IN SHOWROOM YET'}</p>
-                        <div className="flex items-center gap-3 mt-8">
-                            <button onClick={() => { resetForm(); setShowModal(true); }} className="ck-btn-primary h-12 px-8">
-                                {isRTL ? 'إضافة أول سيارة' : 'ADD FIRST VEHICLE'}
+                        <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
+                            <button onClick={handleScrapeKorea} disabled={scraping} className="ck-btn-primary h-12 px-8 border border-blue-400/40 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 flex items-center gap-2">
+                                <Download className={cn("w-4 h-4", scraping && "animate-spin")} />
+                                {scraping ? (isRTL ? 'جاري الاستيراد...' : 'IMPORTING...') : (isRTL ? 'استيراد السيارات الكورية الآن' : 'IMPORT KOREAN CARS NOW')}
                             </button>
-                            <NextLink href="/admin/import" className="ck-btn-primary h-12 px-8 border border-blue-400/30 bg-blue-500/5 text-blue-400 hover:bg-blue-400/10">
-                                {isRTL ? 'استيراد من كوريا' : 'IMPORT FROM KOREA'}
-                            </NextLink>
+                            <button onClick={() => { resetForm(); setShowModal(true); }} className="ck-btn-primary h-12 px-8">
+                                {isRTL ? 'إضافة أول سيارة يدوياً' : 'ADD FIRST VEHICLE'}
+                            </button>
                         </div>
                     </div>
 
