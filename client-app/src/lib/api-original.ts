@@ -248,8 +248,9 @@ export const api = {
         delete: (id: string) => fetchAPI(`/api/v2/parts/${id}`, {
             method: 'DELETE',
         }),
-        scrape: () => fetchAPI('/api/v2/parts/scrape/brands', {
-            method: 'POST'
+        scrape: (data?: { targetUrl?: string; maxBrands?: number; maxModelsPerBrand?: number }) => fetchAPI('/api/v2/parts/scrape/brands', {
+            method: 'POST',
+            body: JSON.stringify(data || {})
         }),
         toggleStock: (id: string) => fetchAPI(`/api/v2/parts/${id}/toggle-stock`, {
             method: 'PATCH'

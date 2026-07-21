@@ -206,19 +206,28 @@ export default function AdminImportHub() {
 
     // --- Spare Parts Sync Handlers ---
     const handleForceScrapeParts = async () => {
-        if (!confirm(isRTL ? "هل تريد بدء جلب الماركات وقطع الغيار من autospare.com.eg؟ قد تستغرق العملية دقيقة." : "Do you want to scrape parts from autospare.com.eg? This might take a minute.")) return;
+        const targetUrl = partsCatalogUrl || "https://autospare.com.eg/brands";
+        if (!confirm(isRTL ? `هل تريد بدء استيراد الوكالات وقطع الغيار والصور من: ${targetUrl}؟ قد تستغرق العملية دقيقة.` : `Do you want to scrape brands & parts from: ${targetUrl}? This might take a minute.`)) return;
         setForceScrapingParts(true);
         setPartsScrapeResult(null);
+        showToast(isRTL ? "⏳ جاري استيراد الوكالات وقطع الغيار والصور..." : "⏳ Scraping brands & parts catalog...", "info");
         try {
-            const res = await api.parts.scrape();
+            const res = await api.parts.scrape({ targetUrl });
             if (res.success) {
                 const brandsCreated = res.stats?.brandsCreated || 0;
                 const partsCreated = res.stats?.partsCreated || 0;
-                const msg = isRTL 
-                    ? `✅ اكتمل جلب قطع الغيار! ماركات جديدة: ${brandsCreated} | قطع جديدة: ${partsCreated}`
-                    : `✅ Scrape complete! Brands: ${brandsCreated} new | Parts: ${partsCreated} new`;
-                setPartsScrapeResult({ success: true, msg, brandsCreated, partsCreated });
-                showToast(isRTL ? "✅ اكتمل الجلب بنجاح!" : "✅ Scrape complete!", "success");
+                const msg = res.message || (isRTL 
+                    ? `✅ اكتمل جلب قطع الغيار! وكالات جديدة: ${brandsCreated} | قطع جديدة: ${partsCreated}`
+                    : `✅ Scrape complete! Brands: ${brandsCreated} new | Parts: ${partsCreated} new`);
+                setPartsScrapeResult({ 
+                    success: true, 
+                    msg, 
+                    brandsCreated, 
+                    partsCreated,
+                    brands: res.brands || [],
+                    parts: res.parts || []
+                });
+                showToast(isRTL ? "✅ اكتمل الاستيراد بنجاح!" : "✅ Import complete!", "success");
             } else {
                 setPartsScrapeResult({ success: false, msg: res.error || "Scraping failed" });
                 showToast(res.error || "Failed", "error");
@@ -572,21 +581,40 @@ export default function AdminImportHub() {
 
                             {partsImportMode === "auto" ? (
                                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                                    <div className="xl:col-span-2 ck-card p-8 border-orange-500/10 bg-orange-500/2">
-                                        <h3 className="text-xs font-black tracking-widest text-orange-400 mb-4 flex items-center gap-2">
-                                            <Layers className="w-4 h-4" />
-                                            {isRTL ? "جلب قطع الغيار من موقع autospare" : "AUTOSPARE BULK SCRAPER CONFIG"}
-                                        </h3>
-                                        <p className="text-[11px] text-white/50 leading-relaxed mb-6">
-                                            {isRTL ? "يقوم هذا الإجراء بسحب بيانات وتصنيفات الماركات التجارية والقطع من autospare.com.eg، ويقوم بترجمة أسماء قطع الغيار وتصنيفها باللغة العربية تلقائياً، مع معالجة وتحسين صور القطع في الخلفية." : "This pulls spare part listings, pricing & category hierarchies from autospare.com.eg. Translated names, currency calculations & optimized watermarked images are set up recursively."}
+                                    <div className="xl:col-span-2 ck-card p-8 border-orange-500/10 bg-orange-500/2 space-y-6">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-xs font-black tracking-widest text-orange-400 flex items-center gap-2">
+                                                <Globe className="w-4 h-4" />
+                                                {isRTL ? "رابط موقع قطع الغيار والوكالات المستهدف" : "TARGET SPARE PARTS & BRANDS CATALOG URL"}
+                                            </h3>
+                                        </div>
+
+                                        <p className="text-[11px] text-white/50 leading-relaxed">
+                                            {isRTL ? "أدخل رابط موقع قطع الغيار الذي تريد الاستيراد منه (مثال: https://autospare.com.eg/brands). سيتم استخراج الوكالات مع شعاراتها وقطع الغيار مع الصور كاملة وتخزينها تلقائياً." : "Enter any spare parts catalog URL (e.g. https://autospare.com.eg/brands). All agencies with logos & spare parts with full images will be extracted & saved automatically."}
                                         </p>
-                                        <div className="flex gap-3 flex-wrap">
+
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black text-white/40 uppercase tracking-widest block">
+                                                {isRTL ? "رابط دليل قطع الغيار والمكتشف" : "PARTS CATALOG URL"}
+                                            </label>
+                                            <input
+                                                type="url"
+                                                value={partsCatalogUrl}
+                                                onChange={(e) => setPartsCatalogUrl(e.target.value)}
+                                                placeholder="https://autospare.com.eg/brands"
+                                                title={isRTL ? "رابط موقع قطع الغيار" : "Spare Parts Catalog URL"}
+                                                className="ck-input w-full h-12 bg-black/40 px-4 font-mono text-[11px] focus:border-orange-500/40 rounded-xl"
+                                                dir="ltr"
+                                            />
+                                        </div>
+
+                                        <div className="flex gap-3 flex-wrap pt-2">
                                             <button
                                                 onClick={handleForceScrapeParts}
                                                 disabled={forceScrapingParts}
                                                 className="ck-btn-primary bg-orange-500 text-black hover:bg-orange-400 h-12 text-xs font-black uppercase tracking-wider flex-1 whitespace-nowrap min-w-[200px]"
                                             >
-                                                {forceScrapingParts ? (isRTL ? "جاري جلب قطع الغيار..." : "SCRAPING PARTS...") : (isRTL ? "بدء استيراد وجلب قطع الغيار" : "START BULK SCRAPING")}
+                                                {forceScrapingParts ? (isRTL ? "جاري استيراد الوكالات والقطع..." : "SCRAPING BRANDS & PARTS...") : (isRTL ? "بدء استيراد الوكالات وقطع الغيار والصور" : "START BRANDS & PARTS IMPORT")}
                                             </button>
                                             <button
                                                 onClick={handleFixPartsLinks}
@@ -600,11 +628,12 @@ export default function AdminImportHub() {
 
                                     <div className="space-y-6">
                                         <div className="ck-card p-6 border-white/5 bg-white/2">
-                                            <h4 className="text-[11px] font-black uppercase tracking-widest mb-3 text-white/50">{isRTL ? "شروط الاستيراد" : "IMPORT CONDITIONS"}</h4>
+                                            <h4 className="text-[11px] font-black uppercase tracking-widest mb-3 text-white/50">{isRTL ? "ميزات الاستيراد الذكي" : "SMART IMPORT FEATURES"}</h4>
                                             <ul className="text-[10px] text-white/40 leading-relaxed list-disc list-inside space-y-2">
-                                                <li>{isRTL ? "ترجمة أسماء القطع فورياً للغة العربية" : "On-the-fly Arabic translation for spare parts"}</li>
-                                                <li>{isRTL ? "تطبيق هوامش أسعار استيراد قطع الغيار" : "Apply spare parts profit margin multiplier"}</li>
-                                                <li>{isRTL ? "إضافة ختم HM CAR المائي على صور المنتجات" : "HM CAR watermark gold overlay on all part images"}</li>
+                                                <li>{isRTL ? "استيراد شعارات الوكالات بجودة HD وصور القطع كاملة" : "Import HD agency logos & full spare part product images"}</li>
+                                                <li>{isRTL ? "ترجمة تلقائية للأسماء والتصنيفات إلى العربية" : "Automatic Arabic translation for names & categories"}</li>
+                                                <li>{isRTL ? "ربط قطع الغيار تلقائياً بالوكالة الخاصة بها" : "Automatically link spare parts to their respective Brand ID"}</li>
+                                                <li>{isRTL ? "تأطير وحفظ الصور محلياً مع تحسين الأداء" : "Local image optimization & watermarking"}</li>
                                             </ul>
                                         </div>
 
@@ -613,12 +642,49 @@ export default function AdminImportHub() {
                                                 initial={{ opacity: 0, scale: 0.95 }}
                                                 animate={{ opacity: 1, scale: 1 }}
                                                 className={cn(
-                                                    "p-5 rounded-2xl border text-xs font-black tracking-wide leading-relaxed shadow-lg",
+                                                    "p-5 rounded-2xl border text-xs font-black tracking-wide leading-relaxed shadow-lg space-y-4",
                                                     partsScrapeResult.success ? "bg-green-500/10 border-green-500/20 text-green-400" : "bg-red-500/10 border-red-500/20 text-red-400"
                                                 )}
                                             >
-                                                <h5 className="uppercase text-[9px] tracking-widest opacity-60 mb-2">{isRTL ? "تقرير جلب قطع الغيار الأخير:" : "PARTS SCRAPE REPORT:"}</h5>
-                                                {partsScrapeResult.msg}
+                                                <div>
+                                                    <h5 className="uppercase text-[9px] tracking-widest opacity-60 mb-1">{isRTL ? "تقرير استيراد قطع الغيار:" : "PARTS IMPORT REPORT:"}</h5>
+                                                    <p>{partsScrapeResult.msg}</p>
+                                                </div>
+
+                                                {/* Visual preview of imported brands */}
+                                                {partsScrapeResult.brands && partsScrapeResult.brands.length > 0 && (
+                                                    <div className="pt-2 border-t border-white/10">
+                                                        <div className="text-[9px] text-white/50 uppercase tracking-widest mb-2">{isRTL ? `الوكالات المستوردة (${partsScrapeResult.brands.length}):` : `IMPORTED BRANDS (${partsScrapeResult.brands.length}):`}</div>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {partsScrapeResult.brands.slice(0, 10).map((b: any, idx: number) => (
+                                                                <div key={idx} className="flex items-center gap-1.5 px-2.5 py-1 bg-black/40 rounded-lg border border-white/10 text-white text-[9px] font-bold">
+                                                                    {b.logoUrl && <img src={b.logoUrl} alt={b.name} className="w-4 h-4 object-contain rounded" />}
+                                                                    <span>{b.name}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Visual preview of imported parts */}
+                                                {partsScrapeResult.parts && partsScrapeResult.parts.length > 0 && (
+                                                    <div className="pt-2 border-t border-white/10">
+                                                        <div className="text-[9px] text-white/50 uppercase tracking-widest mb-2">{isRTL ? `معاينة القطع المستوردة بالصور (${partsScrapeResult.parts.length}):` : `IMPORTED PARTS PREVIEW (${partsScrapeResult.parts.length}):`}</div>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            {partsScrapeResult.parts.slice(0, 6).map((part: any, idx: number) => (
+                                                                <div key={idx} className="p-2 bg-black/40 rounded-lg border border-white/10 flex items-center gap-2">
+                                                                    {(part.images?.[0] || part.img || part.image) && (
+                                                                        <img src={part.images?.[0] || part.img || part.image} alt={part.name} className="w-10 h-10 object-cover rounded-md shrink-0 bg-white/5" />
+                                                                    )}
+                                                                    <div className="min-w-0">
+                                                                        <div className="text-[9px] font-bold text-white truncate">{part.nameAr || part.name}</div>
+                                                                        <div className="text-[8px] text-orange-400 font-bold">{part.carMake} • {part.price} SAR</div>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </motion.div>
                                         )}
                                     </div>

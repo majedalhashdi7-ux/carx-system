@@ -445,103 +445,170 @@ router.patch('/:id/sold', requireAuthAPI, invalidateCache('/api/v2/parts*'), asy
 
 const axios = require('axios');
 const cheerio = require('cheerio');
-// [[ARABIC_COMMENT]] POST /api/v2/parts/scrape - جلب وكالات وقطع غيار من autospare.com.eg (أدمن فقط)
-// ==========================================
-// [[ARABIC_COMMENT]] دالة Scrape و جلب الماركات والصور
-// تقوم بسحب بيانات الماركات من موقع autospare.com.eg
-// وتقوم بحفظ الصور نهائياً عبر خدمات Cloudinary
+
+// [[ARABIC_COMMENT]] POST /api/v2/parts/scrape/brands - جلب وكالات وقطع غيار مع الصور من أي موقع (أدمن فقط)
 // ==========================================
 router.post('/scrape/brands', requireAuthAPI, requireAdmin, invalidateCache('/api/v2/parts*'), async (req, res) => {
     try {
         const SparePart = getModel(req, 'SparePart');
         const SiteSettings = getModel(req, 'SiteSettings');
         const Brand = getModel(req, 'Brand');
-        const BASE_URL = 'https://autospare.com.eg';
-        const BRANDS_URL = `${BASE_URL}/brands`;
-        const maxBrands = Number(req.body?.maxBrands || 25);
-        const maxModelsPerBrand = Number(req.body?.maxModelsPerBrand || 4);
+
+        const inputUrl = (req.body?.targetUrl || req.body?.url || 'https://autospare.com.eg/brands').trim();
+        let targetUrl = inputUrl.startsWith('http') ? inputUrl : `https://${inputUrl}`;
+
+        let parsedUrl;
+        try {
+            parsedUrl = new URL(targetUrl);
+        } catch {
+            return res.status(400).json({ success: false, error: 'رابط الموقع غير صالح' });
+        }
+
+        const BASE_URL = parsedUrl.origin;
+        const maxBrands = Number(req.body?.maxBrands || 30);
+        const maxModelsPerBrand = Number(req.body?.maxModelsPerBrand || 6);
+
         const settings = await SiteSettings.getSettings().catch(() => null);
         const usdToSar = Number(settings?.currencySettings?.usdToSar || 3.75);
         const usdToKrw = Number(settings?.currencySettings?.usdToKrw || 1350);
 
-        // [[ARABIC_COMMENT]] 1. جلب الوكالات (Brands) من الصفحة الرئيسية للعلامات التجارية
-        const { data: brandsHtml } = await axios.get(BRANDS_URL, {
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+        const https = require('https');
+        const httpsAgent = new https.Agent({ rejectUnauthorized: false });
+
+        console.log(`[PartsScraper] Scraping brands & parts from: ${targetUrl}`);
+
+        const { data: brandsHtml } = await axios.get(targetUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept-Language': 'ar,en-US;q=0.9,en;q=0.8'
+            },
+            timeout: 25000,
+            httpsAgent
         });
+
         const $brands = cheerio.load(brandsHtml);
         const results = { brandsCreated: 0, modelsUpdated: 0, partsCreated: 0 };
+        const importedBrandsList = [];
+        const importedPartsList = [];
 
         const { downloadAndOptimize } = require('../../../services/externalImageService');
         const brandsToProcess = [];
-        $brands('a.brand-card-link').each((i, el) => {
-            const name = $brands(el).find('h3').text().trim();
-            const href = $brands(el).attr('href');
-            const logo = $brands(el).find('img').attr('src');
+        const seenBrandUrls = new Set();
 
-            if (name && href) {
-                brandsToProcess.push({
-                    name,
-                    url: href.startsWith('http') ? href : `${BASE_URL}${href}`,
-                    logo: logo ? (logo.startsWith('http') ? logo : `${BASE_URL}${logo}`) : ''
-                });
+        // 1) البحث عن روابط الوكالات والماركات عبر سيناريوهات متعددة
+        $brands('a.brand-card-link, a[href*="/brands/"], a[href*="/brand/"], a[href*="/make/"], a.brand-link, .brand-card a, .brand-item a, .brands-list a').each((i, el) => {
+            const name = ($brands(el).find('h3, h4, h5, span, .brand-title, .title').first().text() || $brands(el).text() || $brands(el).attr('title') || '').trim();
+            const href = $brands(el).attr('href');
+            let logo = $brands(el).find('img').first().attr('data-src') ||
+                       $brands(el).find('img').first().attr('data-lazy-src') ||
+                       $brands(el).find('img').first().attr('src') || '';
+
+            if (name && name.length >= 2 && href && !href.includes('#') && !href.includes('javascript:')) {
+                const fullUrl = href.startsWith('http') ? href : `${BASE_URL}${href.startsWith('/') ? '' : '/'}${href}`;
+                if (!seenBrandUrls.has(fullUrl)) {
+                    seenBrandUrls.add(fullUrl);
+                    brandsToProcess.push({
+                        name: name.replace(/\s+/g, ' '),
+                        url: fullUrl,
+                        logo: logo ? (logo.startsWith('http') ? logo : `${BASE_URL}${logo.startsWith('/') ? '' : '/'}${logo}`) : ''
+                    });
+                }
             }
         });
 
-        // [[ARABIC_COMMENT]] تقليل العدد لتجنب مشاكل الأداء والوقت في الطلب الواحد
+        // إذا لم يُعثر على كروت ماركات محددة، يبحث عن الصور التي تملك ALT أسماء ماركات
+        if (brandsToProcess.length === 0) {
+            $brands('img[alt]').each((i, el) => {
+                const alt = $brands(el).attr('alt')?.trim();
+                const parentLink = $brands(el).closest('a').attr('href');
+                let src = $brands(el).attr('src') || $brands(el).attr('data-src') || '';
+                if (alt && alt.length >= 2 && parentLink) {
+                    const fullUrl = parentLink.startsWith('http') ? parentLink : `${BASE_URL}${parentLink.startsWith('/') ? '' : '/'}${parentLink}`;
+                    if (!seenBrandUrls.has(fullUrl)) {
+                        seenBrandUrls.add(fullUrl);
+                        brandsToProcess.push({
+                            name: alt,
+                            url: fullUrl,
+                            logo: src ? (src.startsWith('http') ? src : `${BASE_URL}${src.startsWith('/') ? '' : '/'}${src}`) : ''
+                        });
+                    }
+                }
+            });
+        }
+
         const limitBrands = brandsToProcess.slice(0, Math.max(1, maxBrands));
 
         for (const bData of limitBrands) {
-            // [[ARABIC_COMMENT]] نبحث بـ key فقط، وإذا كان البراند موجوداً للسيارات نضيف forSpareParts=true له
-            // لكن لا نجعل وكالة قطع الغيار تظهر كوكالة سيارات (forCars=false للجديدة)
-            let brand = await Brand.findOne({ key: bData.name.toLowerCase() });
+            const brandKey = bData.name.toLowerCase().trim();
+            let brand = await Brand.findOne({ key: brandKey });
+
+            // جلب الشعار المناسب للماركة (Clearbit CDN أو الشعار الممرر)
+            const fallbackLogo = `https://logo.clearbit.com/${brandKey.replace(/\s+/g, '')}.com`;
+            let logoToUse = bData.logo || fallbackLogo;
+
             if (!brand) {
-                // [[ARABIC_COMMENT]] تحميل وضغط شعار البراند بأبعاد صغيرة لضمان سرعة الواجهة
-                const localLogo = await downloadAndOptimize(bData.logo, 'brands', { width: 250, height: 250, quality: 75 });
+                let localLogo = logoToUse;
+                if (bData.logo && bData.logo.startsWith('http')) {
+                    try {
+                        localLogo = await downloadAndOptimize(bData.logo, 'brands', { width: 250, height: 250, quality: 75 }) || logoToUse;
+                    } catch { localLogo = logoToUse; }
+                }
                 brand = await Brand.create({
                     name: bData.name,
-                    key: bData.name.toLowerCase(),
+                    key: brandKey,
                     logoUrl: localLogo,
                     forSpareParts: true,
-                    forCars: false, // [[ARABIC_COMMENT]] وكالات قطع الغيار لا تظهر في معرض السيارات
+                    forCars: false,
                     targetShowroom: 'both',
                     models: []
                 });
                 results.brandsCreated++;
             } else {
+                let updated = false;
                 if (!brand.forSpareParts) {
                     brand.forSpareParts = true;
-                    await brand.save();
+                    updated = true;
                 }
-                if (bData.logo && !brand.logoUrl) {
-                    brand.logoUrl = await downloadAndOptimize(bData.logo, 'brands', { width: 250, height: 250, quality: 75 });
-                    await brand.save();
+                if (!brand.logoUrl && bData.logo) {
+                    try {
+                        brand.logoUrl = await downloadAndOptimize(bData.logo, 'brands', { width: 250, height: 250, quality: 75 }) || bData.logo;
+                        updated = true;
+                    } catch {}
                 }
+                if (updated) await brand.save();
             }
 
-            // [[ARABIC_COMMENT]] 2. جلب الموديلات لكل وكالة
+            importedBrandsList.push({
+                id: brand._id,
+                name: brand.name,
+                logoUrl: brand.logoUrl || logoToUse
+            });
+
+            // 2) جلب موديلات وقطع الغيار التابعة للوكالة
             try {
-                const { data: modelsHtml } = await axios.get(bData.url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+                const { data: modelsHtml } = await axios.get(bData.url, {
+                    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+                    timeout: 15000,
+                    httpsAgent
+                });
                 const $models = cheerio.load(modelsHtml);
                 const modelsFound = [];
                 const modelUrls = [];
 
-                $models('a.text-decoration-none[href*="/brands/"]').each((i, el) => {
+                $models('a[href*="/brands/"], a[href*="/brand/"], a[href*="/models/"], a[href*="/products/"]').each((i, el) => {
                     const mHref = ($models(el).attr('href') || '').trim();
                     if (!mHref) return;
-                    const absoluteHref = mHref.startsWith('http') ? mHref : `${BASE_URL}${mHref}`;
-                    if (!absoluteHref.startsWith(`${bData.url}/`)) return;
-
+                    const absoluteHref = mHref.startsWith('http') ? mHref : `${BASE_URL}${mHref.startsWith('/') ? '' : '/'}${mHref}`;
                     const fromText = $models(el).text().trim();
                     const fromUrl = decodeURIComponent(absoluteHref.split('/').pop() || '').trim();
                     const mName = fromText || fromUrl;
 
-                    if (mName && absoluteHref) {
+                    if (mName && absoluteHref && !modelUrls.includes(absoluteHref)) {
                         modelsFound.push(mName);
                         modelUrls.push(absoluteHref);
                     }
                 });
 
-                // تحديث الموديلات في قاعدة البيانات إذا كانت جديدة
                 if (modelsFound.length > 0) {
                     const uniqueModels = [...new Set([...(brand.models || []), ...modelsFound])];
                     if (uniqueModels.length !== (brand.models || []).length) {
@@ -551,74 +618,85 @@ router.post('/scrape/brands', requireAuthAPI, requireAdmin, invalidateCache('/ap
                     }
                 }
 
-                // [[ARABIC_COMMENT]] 3. جلب قطع الغيار لبعض الموديلات
-                for (let i = 0; i < Math.min(modelUrls.length, Math.max(1, maxModelsPerBrand)); i++) {
-                    const mUrl = modelUrls[i];
-                    const modelName = cleanModelName(modelsFound[i]);
+                // 3) جلب كروت قطع الغيار
+                const urlsToScrape = modelUrls.length > 0 ? modelUrls.slice(0, maxModelsPerBrand) : [bData.url];
+                for (let i = 0; i < urlsToScrape.length; i++) {
+                    const mUrl = urlsToScrape[i];
+                    const modelName = cleanModelName(modelsFound[i] || brand.name);
 
-                    const { data: partsHtml } = await axios.get(mUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+                    const { data: partsHtml } = await axios.get(mUrl, {
+                        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+                        timeout: 15000,
+                        httpsAgent
+                    });
                     const $parts = cheerio.load(partsHtml);
 
                     const cards = [];
-                    $parts('div.product-card, div.card, div.col-lg-4, div.col-md-6, div.col-6').each((j, cardEl) => {
+                    $parts('div.product-card, div.card, div.col-lg-4, div.col-md-6, div.col-6, .product-item, .product-box').each((j, cardEl) => {
                         const cardRoot = $parts(cardEl);
-                        const linkEl = cardRoot.find('a[href*="/products/"]').first();
-                        const sourceUrl = linkEl.attr('href') ? (linkEl.attr('href').startsWith('http') ? linkEl.attr('href') : `${BASE_URL}${linkEl.attr('href')}`) : '';
-                        
-                        // [[ARABIC_COMMENT]] جلب اسم القطعة من الرابط أو العنوان داخل الكارد
-                        const pName = linkEl.text().trim() || cardRoot.find('h3, h4, .product-title').text().trim();
-                        
-                        // [[ARABIC_COMMENT]] جلب صورة المنتج الحقيقية (نستخدم Selecor محدد لتجنب شعار الوكالة)
-                        let pImg = '';
-                        const productImgEl = cardRoot.find('.card-image-content img, .product-image img, .wp-post-image, img[src*="/products/"]').first();
-                        
-                        if (productImgEl.length > 0) {
-                             pImg = productImgEl.attr('data-src') || 
-                                    productImgEl.attr('data-lazy-src') || 
-                                    productImgEl.attr('srcset')?.split(' ')[0] ||
-                                    productImgEl.attr('src');
-                        } else {
-                            // Fallback to first image that is NOT the brand logo
-                            cardRoot.find('img').each((k, img) => {
-                                const src = $parts(img).attr('src') || '';
-                                if (!src.includes('brand') && !src.includes('logo') && !pImg) {
-                                    pImg = src;
+                        const linkEl = cardRoot.find('a[href*="/products/"], a[href*="/product/"], a[href*="/part/"], a').first();
+                        let href = linkEl.attr('href') || '';
+                        if (!href || href.includes('#') || href.includes('javascript:')) return;
+                        const sourceUrl = href.startsWith('http') ? href : `${BASE_URL}${href.startsWith('/') ? '' : '/'}${href}`;
+
+                        const pName = linkEl.text().trim() || cardRoot.find('h3, h4, h5, .product-title, .title').text().trim();
+                        if (!pName || pName.length < 3) return;
+
+                        // استخراج الصور (مع الصورة الرئيسية وكل الصور الإضافية)
+                        const partImages = [];
+                        cardRoot.find('img').each((k, imgEl) => {
+                            let src = $parts(imgEl).attr('data-src') || $parts(imgEl).attr('data-lazy-src') || $parts(imgEl).attr('src') || '';
+                            if (src) {
+                                const norm = normalizeExternalImage(src);
+                                if (norm && !norm.includes('brand') && !norm.includes('logo') && !partImages.includes(norm)) {
+                                    partImages.push(norm);
                                 }
-                            });
-                        }
+                            }
+                        });
 
+                        const mainImg = partImages[0] || '';
                         const cardText = cardRoot.text().replace(/\s+/g, ' ');
-                        const pPriceText = cardText.replace(/,/g, '').match(/(\d+)\s*جنيه/);
-                        const pPrice = pPriceText ? parseInt(pPriceText[1], 10) : 0;
+                        const pPriceText = cardText.replace(/,/g, '').match(/(\d+)\s*(?:جنيه|ر\.س|\$|EGP|SAR|USD)/i) || cardText.replace(/,/g, '').match(/(\d+)/);
+                        const rawPrice = pPriceText ? parseInt(pPriceText[1], 10) : 0;
 
-                        if (!pName || !sourceUrl) return;
                         cards.push({
                             pName,
-                            pImg: normalizeExternalImage(pImg),
-                            pPrice,
+                            pImg: mainImg,
+                            images: partImages,
+                            pPrice: rawPrice,
                             sourceUrl,
                         });
                     });
 
                     for (const card of cards) {
                         const existing = await SparePart.findOne({
-                            name: card.pName,
-                            carMake: brand.name,
-                            carModel: modelName
+                            $or: [
+                                { externalUrl: card.sourceUrl },
+                                { name: card.pName, carMake: brand.name }
+                            ]
                         });
 
-                        if (existing) continue;
+                        if (existing) {
+                            importedPartsList.push(existing);
+                            continue;
+                        }
 
                         const partsMultiplier = Number(settings?.currencySettings?.partsMultiplier || 1.15);
-                        const sarPrice = Math.ceil(card.pPrice * 0.12 * partsMultiplier);
+                        const rawEgpOrPrice = card.pPrice > 0 ? card.pPrice : 350;
+                        const sarPrice = targetUrl.includes('eg') ? Math.ceil(rawEgpOrPrice * 0.12 * partsMultiplier) : Math.ceil(rawEgpOrPrice * partsMultiplier);
                         const usdPrice = Number((sarPrice / usdToSar).toFixed(2));
                         const krwPrice = Math.round(usdPrice * usdToKrw);
 
-                        // [[ARABIC_COMMENT]] تحميل وضغط صورة القطعة بحجم أصغر ومثالي للعرض بالقوائم
-                        const localPartImg = await downloadAndOptimize(card.pImg, 'parts', { width: 500, height: 400, quality: 70 });
+                        let processedImages = card.images;
+                        if (processedImages.length > 0) {
+                            try {
+                                processedImages = await compressImages(processedImages, 'parts');
+                            } catch {}
+                        }
+                        const mainPartImage = processedImages[0] || card.pImg || '';
 
                         const detectedCategory = toArabicCategory(card.pName);
-                        await SparePart.create({
+                        const createdPart = await SparePart.create({
                             name: card.pName,
                             nameAr: translatePartNameToArabic(card.pName) || card.pName,
                             partType: detectedCategory === 'عام' ? 'General' : detectedCategory,
