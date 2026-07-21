@@ -57,41 +57,23 @@ router.get('/', async (req, res) => {
             }
         }
 
-        // إذا لم تكن هناك جلسات مزاد، ننشئ جلسة افتراضية ونربط سيارات كورية تلقائياً
+        // إذا لم تكن هناك جلسات مزاد، ننشئ جلسة افتراضية ونجلب سيارات المزاد الكوري المباشر
         if (sessions.length === 0 && (!status || status === 'live')) {
             const defaultUrl = 'https://desert-korea-auto.com/cars/?car_type=auction';
             try {
-                const importedCars = await Car.find({
-                    $or: [
-                        { listingType: 'showroom' },
-                        { source: 'korean_import' },
-                        { externalUrl: { $regex: 'http', $options: 'i' } }
-                    ]
-                }).limit(40).lean().catch(() => []);
-
-                const defaultCars = (importedCars || []).map(c => ({
-                    title: c.title || `${c.make || ''} ${c.model || ''}`,
-                    images: c.images?.length > 0 ? c.images : [c.img || c.image].filter(Boolean),
-                    condition: 'مستعملة',
-                    description: c.description || 'سيارة كورية مستوردة من المعرض المباشر',
-                    priceEstimate: c.priceSar ? `${c.priceSar.toLocaleString('ar-SA')} ر.س` : (c.price ? `${c.price.toLocaleString('ar-SA')} ر.س` : 'تواصل معنا'),
-                    lotNumber: 'LOT-' + Math.floor(100000 + Math.random() * 900000),
-                    sourceUrl: c.externalUrl || ''
-                }));
-
                 const defaultSession = new LiveAuction({
                     tenantId: getTenantId(req),
-                    title: 'المزاد المباشر كوريا الجنوبية (Encar Live)',
+                    title: 'مزاد السيارات الكورية المباشر',
                     externalUrl: defaultUrl,
                     status: 'live',
                     autoSync: true,
-                    cars: defaultCars
+                    cars: []
                 });
                 await defaultSession.save();
 
                 const LiveAuctionSyncService = require('../../../services/LiveAuctionSyncService');
-                LiveAuctionSyncService.syncSession(defaultSession).catch(err => {
-                    console.warn('[LiveAuctions] Background sync error:', err.message);
+                await LiveAuctionSyncService.syncSession(defaultSession).catch(err => {
+                    console.warn('[LiveAuctions] Auto-sync default session failed:', err.message);
                 });
 
                 sessions = [defaultSession];

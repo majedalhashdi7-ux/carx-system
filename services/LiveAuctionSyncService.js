@@ -226,72 +226,14 @@ async function syncSession(session) {
         }
     }
 
-    // === منطق الحفاظ على البيانات + تتبع السيارات المختفية ===
-    // نحافظ على السيارات الموجودة ونضيف الجديدة فقط
-    const existingCarsMap = new Map();
-    const hiddenCarsMap = new Map();
+    // تحديث قائمة سيارات الجلسة بالكامل بالسيارات المستوردة من المزاد المباشر
+    const updatedCars = scrapedCars.map(scraped => ({
+        ...scraped,
+        isHidden: false,
+        lastSyncedAt: new Date()
+    }));
 
-    if (session.cars?.length > 0) {
-        for (const c of session.cars) {
-            // السيارات المخفية (isHidden=true) تُحفظ في خريطة منفصلة
-            if (c.isHidden) {
-                hiddenCarsMap.set(c.sourceUrl || c.lotNumber || c.title, c);
-            } else {
-                existingCarsMap.set(c.sourceUrl || c.lotNumber || c.title, c);
-            }
-        }
-    }
-
-    // تحديد السيارات الجديدة والمحدَّثة
-    const scrapedKeys = new Set();
-    const updatedCars = [];
-
-    for (const scraped of scrapedCars) {
-        const key = scraped.sourceUrl || scraped.lotNumber || scraped.title;
-        scrapedKeys.add(key);
-
-        if (existingCarsMap.has(key)) {
-            // ✅ سيارة موجودة: نحدّث الصور فقط ونحافظ على بقية البيانات المُعدَّلة يدوياً
-            const existing = existingCarsMap.get(key);
-            updatedCars.push({
-                ...existing.toObject ? existing.toObject() : existing,
-                // تحديث الصور إذا جاءت جديدة (وليست روابط خارجية فقط)
-                images: scraped.images?.length > 0 ? scraped.images : existing.images,
-                isHidden: false, // إعادة إظهار السيارة إذا كانت مخفية
-                lastSyncedAt: new Date()
-            });
-        } else if (hiddenCarsMap.has(key)) {
-            // سيارة كانت مخفية وظهرت مجدداً: نعيد إظهارها
-            const hidden = hiddenCarsMap.get(key);
-            updatedCars.push({
-                ...hidden.toObject ? hidden.toObject() : hidden,
-                images: scraped.images?.length > 0 ? scraped.images : hidden.images,
-                isHidden: false,
-                lastSyncedAt: new Date()
-            });
-        } else {
-            // ✅ سيارة جديدة: نضيفها
-            updatedCars.push({
-                ...scraped,
-                isHidden: false,
-                lastSyncedAt: new Date()
-            });
-        }
-    }
-
-    // إضافة السيارات التي اختفت (كمخفية بدلاً من الحذف)
-    for (const [key, existing] of existingCarsMap) {
-        if (!scrapedKeys.has(key)) {
-            updatedCars.push({
-                ...existing.toObject ? existing.toObject() : existing,
-                isHidden: true, // إخفاء السيارة من العميل لكن احتفاظها في النظام
-                disappearedAt: new Date()
-            });
-            console.log(`[LiveSync] Car hidden (disappeared from auction): ${existing.title}`);
-        }
-    }
-
-    // حفظ النتائج
+    // حفظ النتائج في الجلسة
     session.cars = updatedCars;
     session.lastSyncedAt = new Date();
     await session.save();
