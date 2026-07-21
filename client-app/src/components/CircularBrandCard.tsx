@@ -11,6 +11,7 @@ import { Building2, Car, ArrowRight, Star, Crown, Gem, Sparkles } from "lucide-r
 import { useLanguage } from "@/lib/LanguageContext";
 import Link from "next/link";
 import Image from "next/image";
+import { getBrandDisplayName, getClearbitLogoUrl, isLocalPath } from "@/lib/brandTranslations";
 
 interface CircularBrandCardProps {
     brand: {
@@ -31,6 +32,13 @@ interface CircularBrandCardProps {
 export default function CircularBrandCard({ brand, index, onClick: _onClick }: CircularBrandCardProps) {
     const { isRTL } = useLanguage();
     const [imageError, setImageError] = useState(false);
+    const [logoSrc, setLogoSrc] = useState<string>(() => {
+        const l = brand.logo;
+        if (!l || isLocalPath(l)) {
+            return getClearbitLogoUrl(brand.name || brand.key) || '';
+        }
+        return l;
+    });
     // Motion values للتأثيرات ثلاثية الأبعاد
     const x = useMotionValue(0);
     const y = useMotionValue(0);
@@ -53,8 +61,9 @@ export default function CircularBrandCard({ brand, index, onClick: _onClick }: C
     const handleMouseEnter = () => {
     };
 
-    const displayName = isRTL ? (brand.nameAr || brand.name) : brand.name;
+    const displayName = getBrandDisplayName(brand.nameAr || brand.name, isRTL);
     const displayDescription = isRTL ? (brand.descriptionAr || brand.description) : brand.description;
+
 
     return (
         <motion.div
@@ -146,19 +155,16 @@ export default function CircularBrandCard({ brand, index, onClick: _onClick }: C
                                 <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                                 
                                 {/* شعار الوكالة - fallback تلقائي */}
-                                {brand.logo && !imageError ? (
+                                {logoSrc && !imageError ? (
                                     // eslint-disable-next-line @next/next/no-img-element
                                     <img
-                                        src={brand.logo}
+                                        src={logoSrc}
                                         alt={displayName}
                                         className="w-full h-full object-contain p-4 group-hover:scale-110 transition-transform duration-500"
                                         onError={() => {
-                                            // محاولة clearbit كبديل تلقائي
-                                            const clearbit = `https://logo.clearbit.com/${(brand.key || brand.name).toLowerCase().replace(/\s+/g, '')}.com`;
-                                            const imgEl = document.querySelector(`img[alt="${displayName}"]`) as HTMLImageElement;
-                                            if (imgEl && imgEl.src !== clearbit) {
-                                                imgEl.src = clearbit;
-                                                imgEl.onerror = () => setImageError(true);
+                                            const clearbit = getClearbitLogoUrl(brand.name || brand.key);
+                                            if (clearbit && logoSrc !== clearbit) {
+                                                setLogoSrc(clearbit);
                                             } else {
                                                 setImageError(true);
                                             }

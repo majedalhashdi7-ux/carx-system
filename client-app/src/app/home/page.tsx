@@ -12,6 +12,7 @@ import { useSettings } from '@/lib/SettingsContext';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api-original';
 import Link from 'next/link';
+import { getBrandDisplayName, getClearbitLogoUrl, isLocalPath } from '@/lib/brandTranslations';
 
 // ─── Calculator Data ───
 const COUNTRIES = [
@@ -42,6 +43,53 @@ const CAR_SIZES = [
     { nameAr: 'دفع رباعي / عائلية (SUV)', nameEn: 'SUV', basePrice: 1500 },
     { nameAr: 'شاحنة / نقل ثقيل (Heavy)', nameEn: 'Heavy Duty', basePrice: 2200 }
 ];
+
+function HomeBrandLogo({ brand, isRTL }: { brand: any, isRTL: boolean }) {
+    const displayName = getBrandDisplayName(brand.nameAr || brand.name, isRTL);
+    const initialSrc = (() => {
+        const l = brand.logoUrl || brand.logo;
+        if (!l || isLocalPath(l)) {
+            return getClearbitLogoUrl(brand.name) || '';
+        }
+        return l;
+    })();
+    const [logoSrc, setLogoSrc] = useState(initialSrc);
+    const [showLetter, setShowLetter] = useState(false);
+    const firstLetter = (displayName || brand.name).trim().charAt(0).toUpperCase();
+
+    return (
+        <div className="flex flex-col items-center gap-3 select-none">
+            {/* Circular Logo Frame */}
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white flex items-center justify-center p-4 border-2 border-[#C9A96E]/20 shadow-[0_0_15px_rgba(201,169,110,0.1)] hover:border-[#C9A96E] hover:shadow-[0_0_20px_rgba(201,169,110,0.2)] transition-all duration-300">
+                <div className="relative w-full h-full flex items-center justify-center">
+                    {!showLetter && logoSrc ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img 
+                            src={logoSrc} 
+                            alt={displayName} 
+                            className="w-full h-full object-contain pointer-events-none" 
+                            onError={() => {
+                                const cb = getClearbitLogoUrl(brand.name);
+                                if (cb && logoSrc !== cb) {
+                                    setLogoSrc(cb);
+                                } else {
+                                    setShowLetter(true);
+                                }
+                            }}
+                        />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center text-lg font-black text-black">
+                            {firstLetter}
+                        </div>
+                    )}
+                </div>
+            </div>
+            <span className="text-xs font-bold text-white/70 hover:text-white transition-colors">
+                {displayName}
+            </span>
+        </div>
+    );
+}
 
 export default function HomePage() {
     const { isRTL } = useLanguage();
@@ -418,42 +466,10 @@ export default function HomePage() {
                         
                         <div className="animate-marquee-infinite flex gap-12 items-center">
                             {displayBrands.map((brand, idx) => (
-                                <div key={`brand-a-${idx}`} className="flex flex-col items-center gap-3 select-none">
-                                    {/* Circular Logo Frame */}
-                                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white flex items-center justify-center p-4 border-2 border-[#C9A96E]/20 shadow-[0_0_15px_rgba(201,169,110,0.1)] hover:border-[#C9A96E] hover:shadow-[0_0_20px_rgba(201,169,110,0.2)] transition-all duration-300">
-                                        <div className="relative w-full h-full">
-                                            {brand.logoUrl ? (
-                                                <img src={brand.logoUrl} alt={brand.name} className="w-full h-full object-contain pointer-events-none" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-black/40">
-                                                    {brand.name}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <span className="text-xs font-bold text-white/70 hover:text-white transition-colors">
-                                        {brand.name}
-                                    </span>
-                                </div>
+                                <HomeBrandLogo key={`brand-a-${idx}`} brand={brand} isRTL={isRTL} />
                             ))}
                             {displayBrands.map((brand, idx) => (
-                                <div key={`brand-b-${idx}`} className="flex flex-col items-center gap-3 select-none">
-                                    {/* Circular Logo Frame */}
-                                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white flex items-center justify-center p-4 border-2 border-[#C9A96E]/20 shadow-[0_0_15px_rgba(201,169,110,0.1)] hover:border-[#C9A96E] hover:shadow-[0_0_20px_rgba(201,169,110,0.2)] transition-all duration-300">
-                                        <div className="relative w-full h-full">
-                                            {brand.logoUrl ? (
-                                                <img src={brand.logoUrl} alt={brand.name} className="w-full h-full object-contain pointer-events-none" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-black/40">
-                                                    {brand.name}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <span className="text-xs font-bold text-white/70 hover:text-white transition-colors">
-                                        {brand.name}
-                                    </span>
-                                </div>
+                                <HomeBrandLogo key={`brand-b-${idx}`} brand={brand} isRTL={isRTL} />
                             ))}
                         </div>
                     </div>

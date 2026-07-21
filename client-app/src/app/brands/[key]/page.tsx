@@ -8,6 +8,7 @@ import { api } from '@/lib/api-original';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowRight, Car, Package } from 'lucide-react';
+import { getBrandDisplayName, getClearbitLogoUrl, isLocalPath } from '@/lib/brandTranslations';
 
 export default function BrandDetail({ params }: { params: { key: string } }) {
   const { isRTL } = useLanguage();
@@ -17,6 +18,20 @@ export default function BrandDetail({ params }: { params: { key: string } }) {
   const [parts, setParts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const [logoSrc, setLogoSrc] = useState<string>('');
+
+  const displayName = brand ? getBrandDisplayName(brand.nameAr || brand.name, isRTL) : params.key;
+
+  useEffect(() => {
+    if (brand) {
+      const l = brand.logoUrl || brand.logo;
+      if (!l || isLocalPath(l)) {
+        setLogoSrc(getClearbitLogoUrl(brand.name || brand.key) || '');
+      } else {
+        setLogoSrc(l);
+      }
+    }
+  }, [brand]);
 
   const resolveCarImage = (car: Record<string, unknown>) => {
     const src = (car?.images as string[] | undefined)?.[0] || car?.imageUrl || car?.image || '';
@@ -52,14 +67,14 @@ export default function BrandDetail({ params }: { params: { key: string } }) {
       <Navbar />
       <main className="relative z-10 pt-24 pb-24 px-6 max-w-[1600px] mx-auto">
         <header className="mb-12 flex items-center gap-4">
-          {brand?.logoUrl && (
-            <div className="w-12 h-12 rounded-xl border border-white/10 overflow-hidden">
+          {logoSrc && (
+            <div className="w-12 h-12 rounded-xl border border-white/10 overflow-hidden bg-white flex items-center justify-center p-1">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={brand.logoUrl} alt={brand.name} className="w-full h-full object-cover" />
+              <img src={logoSrc} alt={displayName} className="w-full h-full object-contain" />
             </div>
           )}
           <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tight">
-            {brand?.name || params.key}
+            {displayName}
           </h1>
         </header>
 
