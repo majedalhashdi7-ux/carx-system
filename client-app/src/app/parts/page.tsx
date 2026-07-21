@@ -15,7 +15,6 @@ import { useLanguage } from "@/lib/LanguageContext";
 import { api } from "@/lib/api-original";
 import { useSettings } from "@/lib/SettingsContext";
 import Link from "next/link";
-import Image from "next/image";
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
 import ProductModal, { type ProductModalData } from "@/components/ProductModal";
@@ -64,7 +63,9 @@ export default function PartsPage() {
     const { formatPrice: formatGlobalPrice, socialLinks } = useSettings();
     const _formatPrice = (price: number) => formatGlobalPrice(Number(price || 0), undefined, 'part');
     const { isLoggedIn } = useAuth();
+    // رقم الواتساب - يستخدم رقم الأدمن من الإعدادات أو الرقم الافتراضي
     const WHATSAPP_NUMBER = (socialLinks?.whatsapp || '+821080880014').replace(/\D/g, '');
+    // حالة المودال (المنبثق) - null تعني مغلق، وبيانات الكائن تعني مفتوح
     const [modalProduct, setModalProduct] = useState<ProductModalData | null>(null);
 
     const [viewMode, setViewMode] = useState<'AGENCIES' | 'PARTS'>('AGENCIES');
@@ -220,24 +221,43 @@ export default function PartsPage() {
             .some(v => String(v).toLowerCase().includes(q));
     });
 
-    // اسم الوكالة حسب اللغة
-    const getAgencyDisplayName = (agency: Agency) =>
-        (!isRTL && agency.nameEn) ? agency.nameEn : agency.name;
+    // قاموس الترجمة العربي → الإنجليزي
+    const BRAND_AR_TO_EN: Record<string, string> = {
+        'هيونداي': 'Hyundai', 'كيا': 'Kia', 'جينيسيس': 'Genesis',
+        'تويوتا': 'Toyota', 'هوندا': 'Honda', 'نيسان': 'Nissan',
+        'إنفينيتي': 'Infiniti', 'لكزس': 'Lexus', 'مازدا': 'Mazda',
+        'ميتسوبيشي': 'Mitsubishi', 'سوزوكي': 'Suzuki', 'سوبارو': 'Subaru',
+        'ام جي': 'MG', 'جيلي': 'Geely', 'هافال': 'Haval', 'شيري': 'Chery',
+        'بي واي دي': 'BYD', 'بي ام دبليو': 'BMW', 'مرسيدس': 'Mercedes',
+        'مرسيدس بنز': 'Mercedes-Benz', 'أودي': 'Audi', 'فولكس واجن': 'Volkswagen',
+        'بورش': 'Porsche', 'فولفو': 'Volvo', 'بيجو': 'Peugeot', 'رينو': 'Renault',
+        'فورد': 'Ford', 'شيفروليه': 'Chevrolet', 'جي ام سي': 'GMC',
+        'كاديلاك': 'Cadillac', 'جيب': 'Jeep', 'دودج': 'Dodge', 'تسلا': 'Tesla',
+        'لاند روفر': 'Land Rover', 'جاكوار': 'Jaguar', 'اسبرانزا': 'Esperanza',
+    };
+
+    // اسم الوكالة حسب اللغة — يستخدم القاموس إذا كان nameEn فارغاً
+    const getAgencyDisplayName = (agency: Agency) => {
+        if (!isRTL) {
+            // اللغة الإنجليزية: نرجع nameEn أو نترجم name
+            if (agency.nameEn && agency.nameEn !== agency.name) return agency.nameEn;
+            return BRAND_AR_TO_EN[agency.name] || agency.name;
+        }
+        // اللغة العربية: نرجع name كما هو (مخزن عربي من الـ DB)
+        return agency.name;
+    };
 
     // اسم القطعة حسب اللغة
     const _getPartDisplayName = (part: any) => {
-        if (!isRTL) {
-            return part.nameEn || part.name;
-        }
+        if (!isRTL) return part.nameEn || part.name;
         return part.nameAr || part.name;
     };
 
     // اقتراحات البحث في الوكالات
     const agencySuggestions: SearchSuggestion[] = agencies.map(a => ({
         id: a.id,
-        label: isRTL ? a.name : (a.nameEn || a.name),
-        sublabel: isRTL ? (a.nameEn || '') : a.name,
-        icon: a.logo,
+        label: getAgencyDisplayName(a),
+        sublabel: isRTL ? (BRAND_AR_TO_EN[a.name] || a.name) : a.name,
         value: a.id,
     }));
 
@@ -373,7 +393,7 @@ export default function PartsPage() {
                         transition={{ delay: 0.4 }}
                         className="relative max-w-3xl mx-auto w-full mb-10"
                     >
-                        {/* شريط البحث الذكي */}
+                        {/* بحث ذكي بالاقتراحات */}
                         {viewMode === 'AGENCIES' ? (
                             <SearchAutocomplete
                                 placeholder={isRTL ? 'ابحث عن وكالة (تويوتا، كيا...)' : 'Search Agency (Toyota, Kia...)'}
@@ -381,7 +401,7 @@ export default function PartsPage() {
                                 value={agencySearchQuery}
                                 onChange={setAgencySearchQuery}
                                 onSelect={item => {
-                                    const ag = agencies.find(a => a.id === item.value || a.name === item.label);
+                                    const ag = agencies.find(a => a.id === item.value);
                                     if (ag) handleAgencySelect(ag);
                                 }}
                                 isRTL={isRTL}
@@ -459,11 +479,15 @@ export default function PartsPage() {
                                             onClick={() => handleAgencySelect(agency)}
                                             className="group flex flex-col items-center gap-5 cursor-pointer"
                                         >
-                                            <AgencyLogoCircle agency={agency} displayName={getAgencyDisplayName(agency)} />
+                                            {/* دائرة شعار الوكالة مع Clearbit fallback */}
+                                            <AgencyLogoCircle
+                                                brandName={agency.name}
+                                                displayName={getAgencyDisplayName(agency)}
+                                            />
 
                                             <div className="text-center">
                                                 <h3 className="text-xl font-black uppercase tracking-widest group-hover:text-cinematic-neon-blue transition-colors">
-                                                    {agency.name}
+                                                    {getAgencyDisplayName(agency)}
                                                 </h3>
                                                 <div className="text-[8px] font-bold uppercase tracking-[0.4em] text-white/20 mt-1 opacity-0 group-hover:opacity-100 transition-all">
                                                     {isRTL ? 'اختر الماركة' : 'Select Brand'}
@@ -544,46 +568,73 @@ export default function PartsPage() {
     );
 }
 
-// ── مكوّن دائرة شعار الوكالة مع Fallback ذكي ──────────────────────────────
-function AgencyLogoCircle({ agency, displayName }: { agency: { name: string; logo: string }; displayName: string }) {
-    const [logoSrc, setLogoSrc] = useState<string>(() => {
-        const l = agency.logo;
-        if (!l || l === '/images/placeholder.jpg') return '';
-        return l;
-    });
-    const [fallbackLevel, setFallbackLevel] = useState(0);
+// ── مكوّن دائرة شعار الوكالة ──────────────────────────────────────────────
+const BRAND_TO_CLEARBIT: Record<string, string> = {
+    'هيونداي': 'hyundai', 'كيا': 'kia', 'جينيسيس': 'genesis',
+    'تويوتا': 'toyota', 'هوندا': 'honda', 'نيسان': 'nissan',
+    'إنفينيتي': 'infiniti', 'لكزس': 'lexus', 'مازدا': 'mazda',
+    'ميتسوبيشي': 'mitsubishi', 'سوزوكي': 'suzuki', 'سوبارو': 'subaru',
+    'ام جي': 'mg', 'جيلي': 'geely', 'هافال': 'haval', 'شيري': 'chery',
+    'بي واي دي': 'byd', 'بي ام دبليو': 'bmw', 'مرسيدس': 'mercedes',
+    'مرسيدس بنز': 'mercedes-benz', 'أودي': 'audi', 'فولكس واجن': 'volkswagen',
+    'بورش': 'porsche', 'فولفو': 'volvo', 'بيجو': 'peugeot', 'رينو': 'renault',
+    'فورد': 'ford', 'شيفروليه': 'chevrolet', 'جي ام سي': 'gmc',
+    'كاديلاك': 'cadillac', 'جيب': 'jeep', 'دودج': 'dodge', 'تسلا': 'tesla',
+    'لاند روفر': 'land-rover', 'جاكوار': 'jaguar', 'اسبرانزا': 'esperanza',
+    // English names
+    'hyundai': 'hyundai', 'kia': 'kia', 'toyota': 'toyota', 'honda': 'honda',
+    'nissan': 'nissan', 'infiniti': 'infiniti', 'lexus': 'lexus', 'mazda': 'mazda',
+    'mitsubishi': 'mitsubishi', 'suzuki': 'suzuki', 'mg': 'mg', 'geely': 'geely',
+    'haval': 'haval', 'chery': 'chery', 'byd': 'byd', 'bmw': 'bmw',
+    'mercedes': 'mercedes', 'audi': 'audi', 'volkswagen': 'volkswagen',
+    'porsche': 'porsche', 'volvo': 'volvo', 'ford': 'ford', 'chevrolet': 'chevrolet',
+    'gmc': 'gmc', 'jeep': 'jeep', 'dodge': 'dodge', 'tesla': 'tesla',
+};
 
-    const tryNextFallback = () => {
-        if (fallbackLevel === 0) {
-            // المستوى 1: محاولة Clearbit
-            const brandKey = agency.name.toLowerCase().replace(/\s+/g, '');
-            setLogoSrc(`https://logo.clearbit.com/${brandKey}.com`);
-            setFallbackLevel(1);
-        } else {
-            // المستوى 2: أيقونة النص
-            setLogoSrc('');
-            setFallbackLevel(2);
+function getClearbitUrl(brandName: string): string {
+    const name = brandName?.trim() || '';
+    // بحث مطابق
+    const key = BRAND_TO_CLEARBIT[name] || BRAND_TO_CLEARBIT[name.toLowerCase()];
+    if (key) return `https://logo.clearbit.com/${key}.com`;
+    // بحث جزئي
+    for (const [k, v] of Object.entries(BRAND_TO_CLEARBIT)) {
+        if (name.includes(k) || k.includes(name.toLowerCase())) {
+            return `https://logo.clearbit.com/${v}.com`;
         }
-    };
+    }
+    // آخر محاولة: استخدام الاسم مباشرة
+    return `https://logo.clearbit.com/${name.toLowerCase().replace(/\s+/g, '')}.com`;
+}
+
+function AgencyLogoCircle({
+    brandName,
+    displayName,
+}: {
+    brandName: string;
+    displayName: string;
+}) {
+    // نبدأ من Clearbit مباشرة (لأن /uploads/ لا يعمل على Vercel)
+    const [logoSrc, setLogoSrc] = useState<string>(() => getClearbitUrl(brandName));
+    const [showLetter, setShowLetter] = useState(false);
+    const firstLetter = (displayName || brandName).trim().charAt(0).toUpperCase();
 
     return (
         <div className="relative w-32 h-32 md:w-48 md:h-48 rounded-full bg-white/[0.02] border border-white/10 flex items-center justify-center p-6 group-hover:border-cyan-400/50 group-hover:bg-cyan-400/5 transition-all duration-700 shadow-2xl overflow-hidden">
             <div className="absolute -inset-10 bg-cyan-400/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
             <div className="relative w-full h-full bg-white rounded-full shadow-inner flex items-center justify-center group-hover:scale-110 transition-transform duration-700 overflow-hidden">
-                {logoSrc ? (
+                {!showLetter ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                         src={logoSrc}
                         alt={displayName}
                         className="w-full h-full object-contain p-3"
-                        onError={tryNextFallback}
+                        onError={() => setShowLetter(true)}
                         referrerPolicy="no-referrer"
                         loading="lazy"
                     />
                 ) : (
-                    // Fallback: الحرف الأول من اسم الوكالة
-                    <span className="text-3xl md:text-5xl font-black text-gray-700 select-none">
-                        {(displayName || agency.name).charAt(0).toUpperCase()}
+                    <span className="text-3xl md:text-5xl font-black select-none" style={{ color: '#1a1a2e' }}>
+                        {firstLetter}
                     </span>
                 )}
             </div>
