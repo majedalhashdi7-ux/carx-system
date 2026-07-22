@@ -270,10 +270,19 @@ export default function HomePage() {
 
     // ─── Dynamic Social Links Configuration ───
     const socialPlatforms = [
-        { key: 'whatsapp', url: socialLinks?.whatsapp ? `https://wa.me/${socialLinks.whatsapp.replace(/\D/g, '')}` : '', labelAr: 'واتساب', labelEn: 'WhatsApp', color: '#25D366', icon: '💬' },
+        { 
+            key: 'whatsapp', 
+            url: socialLinks?.whatsapp ? `https://wa.me/${socialLinks.whatsapp.replace(/\D/g, '')}` : '', 
+            labelAr: 'واتساب', labelEn: 'WhatsApp', color: '#25D366', 
+            icon: (
+                <svg className="w-8 h-8 fill-[#25D366]" viewBox="0 0 24 24">
+                    <path d="M12.012 2c-5.506 0-9.989 4.478-9.989 9.984 0 1.758.459 3.474 1.33 4.988l-1.413 5.164 5.283-1.386c1.455.795 3.1 1.218 4.789 1.218 5.507 0 9.989-4.478 9.989-9.984s-4.482-9.984-9.989-9.984zm5.792 14.126c-.244.686-1.42 1.309-1.968 1.353-.51.041-1.157.184-3.771-.84-3.136-1.226-5.132-4.39-5.288-4.597-.156-.207-1.267-1.688-1.267-3.22 0-1.533.805-2.287 1.09-2.58.286-.293.626-.367.834-.367.208 0 .416.002.598.01.194.008.455-.074.71.539.26.626.885 2.159.963 2.316.078.157.13.34.026.547-.104.207-.156.335-.312.516-.156.182-.328.406-.468.545-.156.156-.319.327-.137.64.182.313.809 1.334 1.734 2.159 1.189 1.06 2.193 1.388 2.506 1.544.313.156.495.13.677-.078.182-.208.781-.911.989-1.224.208-.313.416-.26.703-.156.286.104 1.821.859 2.133 1.015.312.156.52.234.598.365.078.13.078.756-.166 1.442z"/>
+                </svg>
+            )
+        },
         { key: 'instagram', url: socialLinks?.instagram || '', labelAr: 'إنستغرام', labelEn: 'Instagram', color: '#E4405F', icon: '📸' },
         { key: 'facebook', url: socialLinks?.facebook || '', labelAr: 'فيسبوك', labelEn: 'Facebook', color: '#1877F2', icon: '📘' },
-        { key: 'tiktok', url: (socialLinks as any)?.tiktok || '', labelAr: 'تيك توك', labelEn: 'TikTok', color: '#000000', icon: '🎵' },
+        { key: 'tiktok', url: (socialLinks as any)?.tiktok || '', labelAr: 'تيك توك', labelEn: 'TikTok', color: '#ffffff', icon: '🎵' },
         { key: 'snapchat', url: (socialLinks as any)?.snapchat || '', labelAr: 'سناب شات', labelEn: 'Snapchat', color: '#FFFC00', icon: '👻' },
         { key: 'youtube', url: (socialLinks as any)?.youtube || '', labelAr: 'يوتيوب', labelEn: 'YouTube', color: '#FF0000', icon: '▶️' },
         { key: 'twitter', url: socialLinks?.twitter || '', labelAr: 'تويتر (X)', labelEn: 'X (Twitter)', color: '#1DA1F2', icon: '𝕏' },

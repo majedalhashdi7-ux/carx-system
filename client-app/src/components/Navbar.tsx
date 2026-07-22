@@ -264,9 +264,9 @@ export default function Navbar() {
                             )}
                         </div>
 
-                        {/* ── أزرار الجوال ── */}
-                        <div className="flex lg:hidden items-center gap-2 ml-auto">
-                            {/* زر القائمة */}
+                        {/* ── أزرار الجوال (موضوعة بالجهة اليسرى في الوضع العربي) ── */}
+                        <div className="flex lg:hidden items-center gap-2 ms-auto">
+                            {/* زر القائمة الجانبية (3 خطوط) */}
                             <button
                                 onClick={() => setIsOpen(true)}
                                 className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all flex items-center justify-center"

@@ -11,10 +11,12 @@ import { Edit, Eye, Trash2, CheckCircle2 } from 'lucide-react';
 import Image from 'next/image';
 import { useLanguage } from '@/lib/LanguageContext';
 import { getBrandDisplayName, formatCarTitle } from '@/lib/brandTranslations';
+import { cn } from '@/lib/utils';
 
 // ── نوع بيانات السيارة ──
 interface Car {
     id: string;
+    _id?: string;
     title: string;
     make: string | { name: string };
     model: string;
@@ -41,6 +43,7 @@ interface CarCardProps {
 
 export default function CarCard({ car, index, usdToSar, isSelected, onToggleSelect, onEdit, onDelete, onMarkSold, onToggleActive }: CarCardProps) {
     const { isRTL } = useLanguage();
+    const carId = car.id || car._id || '';
 
     // استخراج وترجمة اسم الماركة وعنوان السيارة حسب اللغة المحددة (عربي / إنجليزي)
     const rawMake = typeof car.make === 'object' ? (car.make as any)?.name || '' : (car.make || '');
