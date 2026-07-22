@@ -314,15 +314,15 @@ export default function UltraModernCarCard({
                         <motion.button
                             onClick={() => setIsLiked(!isLiked)}
                             aria-label={isLiked ? 'Unlike' : 'Like'}
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            className={`w-12 h-12 rounded-2xl backdrop-blur-md flex items-center justify-center transition-all duration-300 shadow-lg ${
-                                isLiked 
-                                    ? 'bg-red-500/90 border border-red-400/50 text-white' 
-                                    : 'bg-black/70 text-white/80 hover:bg-red-500/20 hover:text-red-400 border border-white/20 hover:border-red-400/50'
-                            }`}
+                            whileHover={{ scale: 1.15 }}
+                            whileTap={{ scale: 0.85 }}
+                            className="p-2 border-none bg-transparent hover:scale-110 transition-all duration-300 cursor-pointer outline-none focus:outline-none"
                         >
-                            <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+                            <Heart className={`w-6 h-6 transition-all duration-300 ${
+                                isLiked 
+                                    ? 'fill-red-500 text-red-500 drop-shadow-[0_0_12px_rgba(239,68,68,0.95)] scale-110' 
+                                    : 'text-white/90 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] hover:text-red-400'
+                            }`} />
                         </motion.button>
                         
                         <motion.button

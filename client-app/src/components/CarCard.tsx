@@ -117,19 +117,19 @@ export default function CarCard({ car, index = 0, onClick, onLoginRequired }: Ca
 
                     {/* ── أزرار القلب والسلة ── */}
                     <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
-                        {/* قلب المفضلة بتصميم شفاف ناعم حديث */}
+                        {/* قلب المفضلة - أيقونة قلب حرة وشفافة بدون أي مربع محيط */}
                         <motion.button
-                            whileTap={{ scale: 0.82 }}
+                            whileTap={{ scale: 0.8 }}
                             onClick={toggleFav}
-                            className={cn(
-                                "w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-xl border transition-all duration-300 shadow-xl",
-                                isFav
-                                    ? "bg-red-500/90 border-red-400/60 shadow-red-500/40 scale-105"
-                                    : "bg-black/30 border-white/25 hover:bg-red-500/30 hover:border-red-400/50"
-                            )}
+                            className="p-1.5 border-none bg-transparent hover:scale-110 transition-all duration-300 cursor-pointer shadow-none outline-none focus:outline-none"
                             title={isRTL ? 'المفضلة' : 'Favorite'}
                         >
-                            <Heart className={cn("w-4 h-4 transition-all duration-300", isFav ? "fill-white text-white drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" : "text-white/90 drop-shadow-md")} />
+                            <Heart className={cn(
+                                "w-6 h-6 transition-all duration-300",
+                                isFav
+                                    ? "fill-red-500 text-red-500 drop-shadow-[0_0_12px_rgba(239,68,68,0.95)] scale-110"
+                                    : "text-white/90 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] hover:text-red-400"
+                            )} />
                         </motion.button>
 
                         {/* زر التفاصيل (الوصف) */}

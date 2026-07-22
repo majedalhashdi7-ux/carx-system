@@ -141,13 +141,13 @@ export default function ModernCarCard({ car, index, formatPrice }: CarCardProps)
                     <button
                         onClick={() => setIsLiked(!isLiked)}
                         aria-label={isLiked ? (isRTL ? 'الغاء الاعجاب' : 'Unlike') : (isRTL ? 'اعجاب' : 'Like')}
-                        className={`w-10 h-10 rounded-2xl backdrop-blur-md flex items-center justify-center transition-all ${
-                            isLiked 
-                                ? 'bg-red-500 text-white' 
-                                : 'bg-black/60 text-white/80 hover:bg-red-500/20 hover:text-red-400'
-                        }`}
+                        className="p-2 border-none bg-transparent hover:scale-110 transition-all duration-300 cursor-pointer outline-none focus:outline-none"
                     >
-                        <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+                        <Heart className={`w-6 h-6 transition-all duration-300 ${
+                            isLiked 
+                                ? 'fill-red-500 text-red-500 drop-shadow-[0_0_12px_rgba(239,68,68,0.95)] scale-110' 
+                                : 'text-white/90 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] hover:text-red-400'
+                        }`} />
                     </button>
                     <button aria-label={isRTL ? 'مشاركه' : 'Share'} className="w-10 h-10 rounded-2xl bg-black/60 backdrop-blur-md flex items-center justify-center text-white/80 hover:text-white hover:bg-black/80 transition-all">
                         <Share2 className="w-5 h-5" />

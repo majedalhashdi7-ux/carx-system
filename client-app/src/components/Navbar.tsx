@@ -69,12 +69,13 @@ export default function Navbar() {
     }, []);
 
     // روابط التنقل الرئيسية
+    const whatsappUrl = `https://wa.me/821080880014`;
     const navLinks = [
-        { href: '/', label: isRTL ? 'الرئيسية' : 'Home', icon: Home },
-        { href: '/cars', label: isRTL ? 'السيارات' : 'Cars', icon: Car },
-        { href: '/parts', label: isRTL ? 'قطع الغيار' : 'Parts', icon: Wrench },
-        { href: '/auctions', label: isRTL ? 'المزادات' : 'Auctions', icon: Gavel },
-        { href: '/contact', label: isRTL ? 'تواصل معنا' : 'Contact', icon: MessageCircle },
+        { href: '/', label: isRTL ? 'الرئيسية' : 'Home', icon: Home, isExternal: false },
+        { href: '/cars', label: isRTL ? 'السيارات' : 'Cars', icon: Car, isExternal: false },
+        { href: '/parts', label: isRTL ? 'قطع الغيار' : 'Parts', icon: Wrench, isExternal: false },
+        { href: '/auctions', label: isRTL ? 'المزادات' : 'Auctions', icon: Gavel, isExternal: false },
+        { href: whatsappUrl, label: isRTL ? 'تواصل معنا' : 'Contact', icon: MessageCircle, isExternal: true },
     ];
 
     const isActive = (href: string) => pathname === href || (href !== '/' && pathname?.startsWith(href));
@@ -153,32 +154,44 @@ export default function Navbar() {
                         {/* ── روابط التنقل (Desktop فقط - وسط) ── */}
                         <nav className="hidden lg:flex items-center gap-1 flex-1 justify-center">
                             {navLinks.map((link) => (
-                                <Link
-                                    key={link.href}
-                                    href={link.href}
-                                    className={cn(
-                                        "px-5 py-2.5 rounded-xl text-sm font-black transition-all duration-300 relative group tracking-wide",
-                                        isActive(link.href)
-                                            ? "text-[#D4AF37] bg-[#D4AF37]/8 border border-[#D4AF37]/20"
-                                            : "text-white/60 hover:text-white hover:bg-white/5"
-                                    )}
-                                >
-                                    {link.label}
-                                    {isActive(link.href) && (
-                                        <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#D4AF37]" />
-                                    )}
-                                </Link>
+                                link.isExternal ? (
+                                    <a
+                                        key={link.label}
+                                        href={link.href}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-5 py-2.5 rounded-xl text-sm font-black text-white/60 hover:text-white hover:bg-white/5 transition-all duration-300 tracking-wide flex items-center gap-1.5"
+                                    >
+                                        {link.label}
+                                    </a>
+                                ) : (
+                                    <Link
+                                        key={link.href}
+                                        href={link.href}
+                                        className={cn(
+                                            "px-5 py-2.5 rounded-xl text-sm font-black transition-all duration-300 relative group tracking-wide",
+                                            isActive(link.href)
+                                                ? "text-[#D4AF37] bg-[#D4AF37]/8 border border-[#D4AF37]/20"
+                                                : "text-white/60 hover:text-white hover:bg-white/5"
+                                        )}
+                                    >
+                                        {link.label}
+                                        {isActive(link.href) && (
+                                            <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#D4AF37]" />
+                                        )}
+                                    </Link>
+                                )
                             ))}
                         </nav>
 
                         {/* ── أدوات اليسار (Desktop) - تصميم أيقونات فاخر وموحد ── */}
                         <div className="hidden lg:flex items-center gap-3 shrink-0">
 
-                            {/* مبدل العملة - تصميم منحني أملس مطابق لحسابي */}
+                            {/* مبدل العملة - تصميم منحني حواف دائرية أملس مطابق لحسابي */}
                             <div className="relative" ref={currencyRef}>
                                 <button
                                     onClick={() => setCurrencyOpen(!currencyOpen)}
-                                    className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/5 border border-white/10 hover:border-[#D4AF37]/40 text-xs font-black text-white/90 hover:bg-white/10 transition-all cursor-pointer shadow-sm"
+                                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-[#D4AF37]/40 text-xs font-black text-white/90 hover:bg-white/10 transition-all cursor-pointer shadow-sm"
                                 >
                                     <span>{displayCurrency || 'SAR'}</span>
                                     <ChevronDown className={cn("w-3.5 h-3.5 text-white/40 transition-transform", currencyOpen && "rotate-180")} />
@@ -213,13 +226,13 @@ export default function Navbar() {
                                 </AnimatePresence>
                             </div>
 
-                            {/* مبدل اللغة - أيقونة كرة أرضية مع كود اللغة بتصميم أملس */}
+                            {/* مبدل اللغة - حُر وبدون أي مربع أو إطار حاد حول أيقونة الكرة الأرضية */}
                             <button
                                 onClick={toggleLanguage}
-                                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-white/5 border border-white/10 hover:border-[#D4AF37]/40 text-xs font-black text-white/90 hover:bg-white/10 transition-all cursor-pointer shadow-sm"
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-full border-none bg-transparent hover:bg-white/10 text-xs font-black text-white/90 transition-all cursor-pointer"
                                 title={isRTL ? 'English' : 'العربية'}
                             >
-                                <Globe className="w-4 h-4 text-[#D4AF37]" />
+                                <Globe className="w-4.5 h-4.5 text-[#D4AF37]" />
                                 <span>{isRTL ? 'EN' : 'عر'}</span>
                             </button>
 

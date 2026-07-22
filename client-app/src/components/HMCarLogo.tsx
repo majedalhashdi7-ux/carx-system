@@ -37,7 +37,7 @@ export default function HMCarLogo({
         );
     }
 
-    // Horizontal Crest Logo: Perfectly blended (mix-blend-screen), zero box/border, large & integrated
+    // Horizontal Logo: Gold crest + crisp white text, 100% transparent background (no box / sticker)
     const dimMap = {
         sm: 'h-10 w-44 sm:h-12 sm:w-52',
         md: 'h-12 w-52 sm:h-14 sm:w-60',
@@ -52,7 +52,7 @@ export default function HMCarLogo({
                     src="/images/logo/logo-horizontal.png"
                     alt="HM CAR SOUTH KOREA"
                     fill
-                    className="object-contain mix-blend-screen group-hover:scale-105 transition-transform duration-300"
+                    className="object-contain mix-blend-screen invert group-hover:scale-105 transition-transform duration-300"
                     unoptimized
                     priority
                 />
