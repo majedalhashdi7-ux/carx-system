@@ -306,15 +306,15 @@ export default function LocalCarDetail() {
             <Navbar />
 
             <main className="relative z-10 pt-24 sm:pt-28 pb-28 px-3 sm:px-6 max-w-7xl mx-auto">
-                {/* Back button */}
+                {/* Back button — سهم عودة أنيق بدون نص */}
                 <motion.button
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
                     onClick={() => router.push('/cars')}
-                    className="flex items-center gap-2 mb-6 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-all group w-fit text-xs font-black"
+                    className="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 text-white/80 hover:text-white hover:bg-white/10 hover:border-[#C9A96E]/50 flex items-center justify-center transition-all shadow-lg mb-6 group cursor-pointer"
+                    title={isRTL ? 'العودة لقائمة السيارات' : 'Back to cars list'}
                 >
-                    <ChevronLeft className={cn('w-4 h-4 transition-transform group-hover:-translate-x-1', isRTL && 'rotate-180 group-hover:translate-x-1')} />
-                    <span>{isRTL ? 'العودة لقائمة السيارات' : 'Back to Cars List'}</span>
+                    <ChevronLeft className={cn('w-5 h-5 transition-transform group-hover:-translate-x-0.5', isRTL && 'rotate-180 group-hover:translate-x-0.5')} />
                 </motion.button>
 
                 {/* ── Top Header Section (Title & Price Banner matching Desert Korea Auto) ── */}

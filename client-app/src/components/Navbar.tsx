@@ -11,7 +11,7 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Menu, X, User, ChevronDown,
-    Car, MessageCircle, Bell, LogIn, UserPlus, Home, Wrench, Gavel
+    Car, MessageCircle, Bell, LogIn, UserPlus, Home, Wrench, Gavel, Globe
 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -174,11 +174,11 @@ export default function Navbar() {
                         {/* ── أدوات اليسار (Desktop) - تصميم أيقونات فاخر وموحد ── */}
                         <div className="hidden lg:flex items-center gap-3 shrink-0">
 
-                            {/* مبدل العملة */}
+                            {/* مبدل العملة - تصميم منحني أملس مطابق لحسابي */}
                             <div className="relative" ref={currencyRef}>
                                 <button
                                     onClick={() => setCurrencyOpen(!currencyOpen)}
-                                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 hover:border-[#D4AF37]/30 text-xs font-black text-white/80 hover:bg-white/10 transition-all cursor-pointer"
+                                    className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/5 border border-white/10 hover:border-[#D4AF37]/40 text-xs font-black text-white/90 hover:bg-white/10 transition-all cursor-pointer shadow-sm"
                                 >
                                     <span>{displayCurrency || 'SAR'}</span>
                                     <ChevronDown className={cn("w-3.5 h-3.5 text-white/40 transition-transform", currencyOpen && "rotate-180")} />
@@ -191,7 +191,7 @@ export default function Navbar() {
                                             exit={{ opacity: 0, y: -8, scale: 0.96 }}
                                             transition={{ duration: 0.15 }}
                                             className={cn(
-                                                "absolute top-full mt-2 w-36 bg-[#0f0f23] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50",
+                                                "absolute top-full mt-2 w-36 bg-[#0f0f23] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50",
                                                 isRTL ? "right-0" : "left-0"
                                             )}
                                         >
@@ -200,11 +200,12 @@ export default function Navbar() {
                                                     key={c.code}
                                                     onClick={() => { setDisplayCurrency(c.code as any); setCurrencyOpen(false); }}
                                                     className={cn(
-                                                        "w-full px-4 py-2.5 text-xs font-bold text-right hover:bg-white/5 transition-colors",
+                                                        "w-full px-4 py-2.5 text-xs font-bold text-right hover:bg-white/5 transition-colors flex items-center justify-between",
                                                         displayCurrency === c.code ? "text-[#D4AF37] bg-[#D4AF37]/10" : "text-white/70"
                                                     )}
                                                 >
-                                                    {c.label}
+                                                    <span>{c.label}</span>
+                                                    <span className="text-[10px] text-white/30">{c.code}</span>
                                                 </button>
                                             ))}
                                         </motion.div>
@@ -212,23 +213,25 @@ export default function Navbar() {
                                 </AnimatePresence>
                             </div>
 
-                            {/* مبدل اللغة */}
+                            {/* مبدل اللغة - أيقونة كرة أرضية مع كود اللغة بتصميم أملس */}
                             <button
                                 onClick={toggleLanguage}
-                                className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:border-[#D4AF37]/30 flex items-center justify-center text-xs font-black text-white/80 hover:bg-white/10 transition-all cursor-pointer"
+                                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-white/5 border border-white/10 hover:border-[#D4AF37]/40 text-xs font-black text-white/90 hover:bg-white/10 transition-all cursor-pointer shadow-sm"
                                 title={isRTL ? 'English' : 'العربية'}
                             >
-                                {isRTL ? 'EN' : 'عر'}
+                                <Globe className="w-4 h-4 text-[#D4AF37]" />
+                                <span>{isRTL ? 'EN' : 'عر'}</span>
                             </button>
 
-                            {/* الإشعارات */}
+                            {/* الإشعارات - بدون مربع حاد (أيقونة جرس حرة وأنيقة) */}
                             {isLoggedIn && (
                                 <button
                                     onClick={() => setNotificationsOpen(true)}
-                                    className="relative w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:border-[#D4AF37]/30 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                                    className="relative p-2.5 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                                    title="الإشعارات"
                                 >
-                                    <Bell className="w-4.5 h-4.5" />
-                                    <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                                    <Bell className="w-5 h-5 text-white/80" />
+                                    <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse border-2 border-[#0A0A14]" />
                                 </button>
                             )}
 
