@@ -342,7 +342,7 @@ function buildNavCategories(isRTL: boolean, user: any, tenant: any): NavCategory
                     { id: 'users', icon: Users, label: isRTL ? 'إدارة المستخدمين' : 'USERS', href: '/admin/users' },
                     { id: 'security', icon: Shield, label: isRTL ? 'الأمان والصلاحيات' : 'SECURITY', href: '/admin/security' },
                     { id: 'health', icon: Activity, label: isRTL ? 'صحة النظام' : 'SYSTEM HEALTH', href: '/admin/health' },
-                    { id: 'system', icon: Server, label: isRTL ? 'الفحص الشامل' : 'FULL SCAN', href: '/admin/system' },
+                    { id: 'notifications', icon: Bell, label: isRTL ? 'الإشعارات' : 'NOTIFICATIONS', href: '/admin/notifications' },
                 ] : []),
                 ...(hasP('manage_footer') || hasP('manage_whatsapp') ? [{ id: 'social', icon: Share2, label: isRTL ? 'القنوات الاجتماعية' : 'CHANNELS', href: '/admin/social' }] : []),
                 ...(isSuper || hasP('view_analytics') ? [{ id: 'reports', icon: TrendingUp, label: isRTL ? 'التقارير والإحصاءات' : 'REPORTS', href: '/admin/reports' }] : []),
