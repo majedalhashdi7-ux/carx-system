@@ -23,6 +23,7 @@ export const viewport: Viewport = {
   userScalable: true, // السماح للمستخدم بتكبير الصفحة لسهولة القراءة
   themeColor: "#000000",
   colorScheme: "dark",
+  viewportFit: "cover",
 };
 
 export async function generateMetadata(): Promise<Metadata> {
