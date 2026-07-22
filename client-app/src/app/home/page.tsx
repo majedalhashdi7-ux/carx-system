@@ -8,6 +8,7 @@ import {
     Share2, ExternalLink
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import HMCarLogo from '@/components/HMCarLogo';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useSettings } from '@/lib/SettingsContext';
 import { cn } from '@/lib/utils';
@@ -606,10 +607,11 @@ export default function HomePage() {
 
             {/* ─── Footer ─── */}
             <footer className="mt-auto py-10 bg-[#06060a] border-t border-white/5 relative z-10 text-center text-xs text-white/30">
-                <div className="max-w-7xl mx-auto px-4">
-                    <p className="mb-2">© {new Date().getFullYear()} {isRTL ? 'إتش إم كار لخدمات استيراد السيارات. جميع الحقوق محفوظة.' : 'HM CAR Automotive Imports. All rights reserved.'}</p>
+                <div className="max-w-7xl mx-auto px-4 flex flex-col items-center gap-4">
+                    <HMCarLogo variant="horizontal" size="md" />
+                    <p className="mb-1">© {new Date().getFullYear()} {isRTL ? 'إتش إم كار لخدمات استيراد السيارات. جميع الحقوق محفوظة.' : 'HM CAR Automotive Imports. All rights reserved.'}</p>
                     <p className="text-[10px] text-white/15">
-                        {isRTL ? 'تطبيق ويب آمن وعالي الأداء مدعوم بالكامل' : 'High performance secure web app'}
+                        {isRTL ? 'منصة استيراد ومزادات السيارات الفاخرة المعتمدة' : 'Official Luxury Car Export & Live Auction Platform'}
                     </p>
                 </div>
             </footer>

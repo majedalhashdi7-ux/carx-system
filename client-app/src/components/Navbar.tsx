@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { useStandalone } from '@/lib/useStandalone';
 import { useUI } from '@/lib/UIContext';
 import { useTenant } from '@/lib/TenantContext';
+import HMCarLogo from '@/components/HMCarLogo';
 
 const rawText = (value: string) => value;
 
@@ -144,14 +145,9 @@ export default function Navbar() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6">
                     <div className="flex items-center h-16 sm:h-18 gap-4">
 
-                        {/* ── شعار HM CAR (يمين في RTL) ── */}
-                        <Link href="/" className="group flex items-center gap-2.5 shrink-0">
-                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#a88520] flex items-center justify-center shadow-lg shadow-[#D4AF37]/35 border border-white/20 group-hover:scale-105 transition-transform duration-300">
-                                <Car className="w-5 h-5 text-black" strokeWidth={2.5} />
-                            </div>
-                            <span className="text-lg font-black tracking-wide text-white group-hover:text-[#D4AF37] transition-colors italic">
-                                {siteName}
-                            </span>
+                        {/* ── شعار HM CAR الفاخر ── */}
+                        <Link href="/" className="group flex items-center shrink-0">
+                            <HMCarLogo variant="horizontal" size="md" />
                         </Link>
 
                         {/* ── روابط التنقل (Desktop فقط - وسط) ── */}
