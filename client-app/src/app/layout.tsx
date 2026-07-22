@@ -13,6 +13,7 @@ import AppShell from "@/components/AppShell";
 import SmartPrefetchProvider from "@/components/SmartPrefetchProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import NetworkStatus from "@/components/NetworkStatus";
+import PWAAutoUpdateBanner from "@/components/PWAAutoUpdateBanner";
 import { getTenantConfigForHostname } from "@/lib/tenant-config";
 
 // إعدادات نافذة العرض (Viewport) للجوال والحاسوب
@@ -222,8 +223,10 @@ export default async function RootLayout({
             `
           }} />
         )}
+
         <Providers>
           <NetworkStatus />
+          <PWAAutoUpdateBanner />
           <ErrorBoundary>
             <SmartPrefetchProvider>
               <AppShell>

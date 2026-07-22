@@ -27,7 +27,7 @@ export default function Register() {
     const [step, setStep] = useState<1 | 2>(1); // خطوتان: بيانات أساسية، ثم كلمة المرور
 
     const { socket, isConnected } = useSocket();
-    const { user } = useAuth();
+    const { user, login } = useAuth();
 
     useEffect(() => {
         if (socket && isConnected) {
@@ -87,26 +87,18 @@ export default function Register() {
                 phone: formData.phone.trim() || undefined
             });
 
-            if (response.success) {
-                localStorage.setItem('hm_token', response.token);
-                localStorage.setItem('hm_user', JSON.stringify(response.user));
-                const savedRole = response.user?.role || 'buyer';
-                localStorage.setItem('hm_user_role', savedRole);
-
-                document.cookie = `hm_token=${response.token}; path=/; max-age=2592000; SameSite=Lax`;
-                document.cookie = `hm_user_role=${savedRole}; path=/; max-age=2592000; SameSite=Lax`;
-
+            if (response.success && response.token && response.user) {
+                login(response.token, response.user);
                 setSuccess(true);
                 setTimeout(() => {
-                    const isApp = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
-                    window.location.href = isApp ? "/" : "/client/dashboard";
-                }, 1500);
+                    window.location.href = "/client/dashboard";
+                }, 1200);
             } else {
                 const msg = response.message || response.error || '';
                 if (msg.toLowerCase().includes('already') || msg.includes('Conflict') || msg.includes('مستخدم')) {
                     setError(isRTL ? '⚠️ البريد الإلكتروني مستخدم بالفعل' : '⚠️ Email already in use');
                 } else {
-                    setError(isRTL ? 'فشل إنشاء الحساب، حاول مرة أخرى' : 'Registration failed, please try again');
+                    setError(isRTL ? (response.message || 'فشل إنشاء الحساب، حاول مرة أخرى') : (response.message || 'Registration failed, please try again'));
                 }
             }
         } catch (err: unknown) {

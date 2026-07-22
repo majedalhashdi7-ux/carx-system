@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import {
     Car, Wrench, Gavel, ShieldCheck, Globe, Sparkles, Star, HelpCircle, Users,
     Download, Smartphone, Eye, MessageSquare, ArrowRight, RefreshCw, Phone, Mail,
     Share2, ExternalLink
@@ -36,10 +36,10 @@ function HomeBrandLogo({ brand, isRTL }: { brand: any, isRTL: boolean }) {
                 <div className="relative w-full h-full flex items-center justify-center">
                     {!showLetter && logoSrc ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img 
-                            src={logoSrc} 
-                            alt={displayName} 
-                            className="w-full h-full object-contain pointer-events-none" 
+                        <img
+                            src={logoSrc}
+                            alt={displayName}
+                            className="w-full h-full object-contain pointer-events-none"
                             onError={() => {
                                 const cb = getClearbitLogoUrl(brand.name);
                                 if (cb && logoSrc !== cb) {
@@ -110,7 +110,7 @@ export default function HomePage() {
         }
 
         const msg = encodeURIComponent(
-            isRTL 
+            isRTL
                 ? `مرحباً إتش إم كار 👋\nأود الاستفسار عن سيارة المزاد/المعرض:\n🚗 *${title}*\n💰 السعر: ${price}\n🆔 رمز السيارة: #${car._id}`
                 : `Hello HM CAR 👋\nI would like to inquire about car:\n🚗 *${title}*\n💰 Price: ${price}\n🆔 Car ID: #${car._id}`
         );
@@ -134,11 +134,11 @@ export default function HomePage() {
             setShowInstallBtn(true);
         };
         window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-        
+
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
         const ua = navigator.userAgent.toLowerCase();
         const isMobile = /iphone|ipad|ipod|android/.test(ua);
-        
+
         if (isMobile && !isStandalone) {
             setShowInstallBtn(true);
         }
@@ -157,8 +157,8 @@ export default function HomePage() {
                 setShowInstallBtn(false);
             }
         } else {
-            alert(isRTL 
-                ? 'تثبيت التطبيق على جهازك:\n١. اضغط على زر "مشاركة" (Share) أسفل المتصفح.\n٢. اختر "إضافة إلى الشاشة الرئيسية" (Add to Home Screen).' 
+            alert(isRTL
+                ? 'تثبيت التطبيق على جهازك:\n١. اضغط على زر "مشاركة" (Share) أسفل المتصفح.\n٢. اختر "إضافة إلى الشاشة الرئيسية" (Add to Home Screen).'
                 : 'Install app on your device:\n1. Tap the "Share" button in your browser.\n2. Select "Add to Home Screen".'
             );
         }
@@ -166,14 +166,14 @@ export default function HomePage() {
 
     useEffect(() => {
         setCarsLoading(true);
-        
+
         Promise.all([
             api.cars.list({ isActive: true, limit: 100 }).catch(() => ({ success: false, data: { cars: [] } })),
             api.auctions.list({ status: 'running', limit: 100 }).catch(() => ({ success: false, auctions: [] }))
         ]).then(([carsRes, auctionsRes]) => {
             const combinedCars: any[] = [];
             const auctionItems: any[] = [];
-            
+
             if (carsRes?.success && carsRes.data?.cars) {
                 combinedCars.push(...carsRes.data.cars.map((c: any) => ({
                     ...c,
@@ -186,7 +186,7 @@ export default function HomePage() {
                     images: c.images || []
                 })));
             }
-            
+
             if (auctionsRes?.success && auctionsRes.auctions) {
                 auctionsRes.auctions.forEach((a: any) => {
                     const item = {
@@ -203,11 +203,11 @@ export default function HomePage() {
                     auctionItems.push(item);
                 });
             }
-            
+
             setFeaturedCars(combinedCars);
             setLiveAuctions(auctionItems);
         }).catch(err => console.error('Error fetching homepage data:', err))
-          .finally(() => setCarsLoading(false));
+            .finally(() => setCarsLoading(false));
     }, [isRTL]);
 
     // ─── Auto-rotating Live Auction 4-Cards Grid ───
@@ -262,7 +262,7 @@ export default function HomePage() {
 
     const displayCars = featuredCars.length > 0 ? featuredCars : FALLBACK_CARS;
     const auctionCarsSource = liveAuctions.length > 0 ? liveAuctions : displayCars;
-    
+
     // Rotating 4 cars selection
     const rotated4AuctionCars = Array.from({ length: Math.min(4, auctionCarsSource.length) }, (_, i) => {
         return auctionCarsSource[(auctionRotationIndex + i) % auctionCarsSource.length];
@@ -270,13 +270,13 @@ export default function HomePage() {
 
     // ─── Dynamic Social Links Configuration ───
     const socialPlatforms = [
-        { 
-            key: 'whatsapp', 
-            url: socialLinks?.whatsapp ? `https://wa.me/${socialLinks.whatsapp.replace(/\D/g, '')}` : '', 
-            labelAr: 'واتساب', labelEn: 'WhatsApp', color: '#25D366', 
+        {
+            key: 'whatsapp',
+            url: socialLinks?.whatsapp ? `https://wa.me/${socialLinks.whatsapp.replace(/\D/g, '')}` : '',
+            labelAr: 'واتساب', labelEn: 'WhatsApp', color: '#25D366',
             icon: (
                 <svg className="w-8 h-8 fill-[#25D366]" viewBox="0 0 24 24">
-                    <path d="M12.012 2c-5.506 0-9.989 4.478-9.989 9.984 0 1.758.459 3.474 1.33 4.988l-1.413 5.164 5.283-1.386c1.455.795 3.1 1.218 4.789 1.218 5.507 0 9.989-4.478 9.989-9.984s-4.482-9.984-9.989-9.984zm5.792 14.126c-.244.686-1.42 1.309-1.968 1.353-.51.041-1.157.184-3.771-.84-3.136-1.226-5.132-4.39-5.288-4.597-.156-.207-1.267-1.688-1.267-3.22 0-1.533.805-2.287 1.09-2.58.286-.293.626-.367.834-.367.208 0 .416.002.598.01.194.008.455-.074.71.539.26.626.885 2.159.963 2.316.078.157.13.34.026.547-.104.207-.156.335-.312.516-.156.182-.328.406-.468.545-.156.156-.319.327-.137.64.182.313.809 1.334 1.734 2.159 1.189 1.06 2.193 1.388 2.506 1.544.313.156.495.13.677-.078.182-.208.781-.911.989-1.224.208-.313.416-.26.703-.156.286.104 1.821.859 2.133 1.015.312.156.52.234.598.365.078.13.078.756-.166 1.442z"/>
+                    <path d="M12.012 2c-5.506 0-9.989 4.478-9.989 9.984 0 1.758.459 3.474 1.33 4.988l-1.413 5.164 5.283-1.386c1.455.795 3.1 1.218 4.789 1.218 5.507 0 9.989-4.478 9.989-9.984s-4.482-9.984-9.989-9.984zm5.792 14.126c-.244.686-1.42 1.309-1.968 1.353-.51.041-1.157.184-3.771-.84-3.136-1.226-5.132-4.39-5.288-4.597-.156-.207-1.267-1.688-1.267-3.22 0-1.533.805-2.287 1.09-2.58.286-.293.626-.367.834-.367.208 0 .416.002.598.01.194.008.455-.074.71.539.26.626.885 2.159.963 2.316.078.157.13.34.026.547-.104.207-.156.335-.312.516-.156.182-.328.406-.468.545-.156.156-.319.327-.137.64.182.313.809 1.334 1.734 2.159 1.189 1.06 2.193 1.388 2.506 1.544.313.156.495.13.677-.078.182-.208.781-.911.989-1.224.208-.313.416-.26.703-.156.286.104 1.821.859 2.133 1.015.312.156.52.234.598.365.078.13.078.756-.166 1.442z" />
                 </svg>
             )
         },
@@ -321,7 +321,7 @@ export default function HomePage() {
                     </h1>
 
                     <p className="text-xs sm:text-base text-white/50 max-w-2xl mx-auto mb-8 leading-relaxed">
-                        {isRTL 
+                        {isRTL
                             ? 'ادخل مباشرة لمزادات السيارات الكورية الحية، واطلب قطع الغيار الأصلية، وتتبع شحنتك حتى باب منزلك مع ضمان الجودة والفحص قبل الشحن.'
                             : 'Access live Korean car auctions directly, request original spare parts, and track your shipment home with guaranteed inspection and quality.'}
                     </p>
@@ -357,7 +357,7 @@ export default function HomePage() {
                             <div className="relative w-full overflow-hidden py-2">
                                 <div className="absolute inset-y-0 left-0 w-16 sm:w-24 bg-gradient-to-r from-[#08080c] to-transparent z-10 pointer-events-none" />
                                 <div className="absolute inset-y-0 right-0 w-16 sm:w-24 bg-gradient-to-l from-[#08080c] to-transparent z-10 pointer-events-none" />
-                                
+
                                 <div className="animate-marquee-infinite flex gap-4 sm:gap-6">
                                     {[...displayCars, ...displayCars, ...displayCars].map((car, idx) => (
                                         <div key={`car-marquee-${idx}`} className="relative aspect-square w-[220px] sm:w-[260px] rounded-3xl overflow-hidden border border-white/10 bg-[#101018] group flex-shrink-0 cursor-pointer shadow-xl hover:border-[#C9A96E]/50 transition-all duration-300">
@@ -368,13 +368,13 @@ export default function HomePage() {
                                                     <Car className="w-12 h-12 text-white/10" />
                                                 </div>
                                             )}
-                                            
+
                                             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex flex-col justify-end p-4 text-start">
                                                 <div className="flex items-center justify-between mb-1">
                                                     <span className={cn(
                                                         "px-2 py-0.5 rounded border text-[8.5px] font-black uppercase",
-                                                        car.type === 'auctions' 
-                                                            ? "bg-red-500/20 border-red-500/30 text-red-400" 
+                                                        car.type === 'auctions'
+                                                            ? "bg-red-500/20 border-red-500/30 text-red-400"
                                                             : "bg-orange-500/20 border-orange-500/30 text-[#C9A96E]"
                                                     )}>
                                                         {car.type === 'auctions' ? (isRTL ? 'مزاد' : 'AUCTION') : (isRTL ? 'معرض' : 'SHOWROOM')}
@@ -383,11 +383,11 @@ export default function HomePage() {
                                                         {formatPriceFromUsd(car.price)}
                                                     </span>
                                                 </div>
-                                                
+
                                                 <h4 className="text-xs sm:text-sm font-black text-white line-clamp-1 mb-1">
                                                     {car.title}
                                                 </h4>
-                                                
+
                                                 <div className="flex gap-2 text-[8.5px] text-white/40">
                                                     <span>{car.year || '2024'}</span>
                                                     <span>•</span>
@@ -396,7 +396,7 @@ export default function HomePage() {
                                                     <span>{car.fuel || (isRTL ? 'ديزل' : 'Diesel')}</span>
                                                 </div>
                                             </div>
-                                            
+
                                             {/* رابط مباشر لصفحة السيارة عند الضغط */}
                                             <Link href={car.type === 'auctions' ? `/auctions/${car._id}` : `/cars/${car._id}`} className="absolute inset-0 z-10" />
                                         </div>
@@ -460,7 +460,7 @@ export default function HomePage() {
                             const priceStr = formatPriceFromUsd(car.price || 0);
 
                             return (
-                                <motion.div 
+                                <motion.div
                                     key={`auction-card-${car._id || idx}`}
                                     layout
                                     initial={{ opacity: 0, scale: 0.95 }}
@@ -471,8 +471,8 @@ export default function HomePage() {
                                     <div>
                                         {/* الصورة */}
                                         <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-900">
-                                            <img 
-                                                src={image} 
+                                            <img
+                                                src={image}
                                                 alt={title}
                                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                                                 onError={(e) => {
