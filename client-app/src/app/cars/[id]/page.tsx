@@ -5,8 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactGA from 'react-ga4';
 import {
-    ChevronLeft, MessageCircle, Fuel, Gauge, Settings2,
-    Calendar, Car, Tag, CheckCircle, AlertCircle, Image as ImageIcon, Globe
+    ChevronLeft, ChevronRight, MessageCircle, Fuel, Gauge, Settings2,
+    Calendar, Car, Tag, CheckCircle, AlertCircle, Image as ImageIcon, Globe,
+    FileCheck2, ShieldCheck, ListFilter
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Image from 'next/image';
@@ -18,6 +19,7 @@ import { useSettings } from '@/lib/SettingsContext';
 import { useToast } from '@/lib/ToastContext';
 import { WhatsAppService } from '@/lib/WhatsAppService';
 import { cn } from '@/lib/utils';
+import { formatCarTitle } from '@/lib/brandTranslations';
 
 const DEFAULT_WHATSAPP = '+821080880014';
 const CURRENCY_SAR = 'SAR';
@@ -36,6 +38,7 @@ export default function LocalCarDetail() {
     const { showToast } = useToast();
     const [is360Mode, setIs360Mode] = useState(false);
     const [dragStartX, setDragStartX] = useState(0);
+    const [activeTab, setActiveTab] = useState<'INSPECTION' | 'SPECS' | 'SIMILAR'>('INSPECTION');
 
     const handle360Drag = (e: React.MouseEvent | React.TouchEvent) => {
         if (!is360Mode || !images.length || images.length <= 1) return;
@@ -91,7 +94,6 @@ export default function LocalCarDetail() {
     const [error, setError] = useState('');
     const [activeImage, setActiveImage] = useState(0);
     const [whatsapp, setWhatsapp] = useState('');
-    const [showInvoice, setShowInvoice] = useState(false);
     const [similarCars, setSimilarCars] = useState<any[]>([]);
 
     const loadSimilarCars = useCallback(async (currentMake: any, currentId: string) => {
@@ -127,7 +129,7 @@ export default function LocalCarDetail() {
                 .slice(0, 4)
                 .map((c: any) => ({
                     id: String(c._id || c.id),
-                    title: c.title || `${c.makeAr || c.make} ${c.model} ${c.year}`,
+                    title: formatCarTitle(c.title || `${c.makeAr || c.make} ${c.model} ${c.year}`, c.makeAr || c.make, isRTL),
                     make: c.make || '',
                     model: c.model || '',
                     year: Number(c.year) || 0,
@@ -145,16 +147,18 @@ export default function LocalCarDetail() {
         } catch (err) {
             console.error('Failed to load similar cars:', err);
         }
-    }, []);
+    }, [isRTL]);
 
     const loadCar = useCallback(async () => {
         try {
             setLoading(true);
             const res = await api.cars.getById(id as string);
             if (res?.success && res.data) {
-                setCar(res.data);
-                const carMake = res.data.make;
-                const carId = res.data._id || res.data.id || (id as string);
+                const rawCar = res.data;
+                const formattedTitle = formatCarTitle(rawCar.title || `${rawCar.make} ${rawCar.model}`, rawCar.make, isRTL);
+                setCar({ ...rawCar, title: formattedTitle });
+                const carMake = rawCar.make;
+                const carId = rawCar._id || rawCar.id || (id as string);
                 loadSimilarCars(carMake, carId);
             } else {
                 setError(isRTL ? 'لم يتم العثور على السيارة' : 'Car not found');
@@ -183,18 +187,16 @@ export default function LocalCarDetail() {
         });
     }, []);
 
-    const handleWhatsappPurchase = async () => {
+    const handleWhatsappOrder = async () => {
         if (!car) return;
         
-        // [[ARABIC_COMMENT]] تسجيل حدث التحويل في Google Analytics
         ReactGA.event({
             category: 'Conversion',
-            action: 'WhatsApp_Purchase_Click',
+            action: 'WhatsApp_Order_Click',
             label: car.title,
             value: Number(car.price || 0)
         });
 
-        // [[ARABIC_COMMENT]] تسجيل الطلب في القاعدة وإنشاء إشعار للأدمن قبل النقل للواتساب
         try {
             let buyerId = null;
             if (typeof window !== 'undefined') {
@@ -220,14 +222,19 @@ export default function LocalCarDetail() {
                     grandTotalSar: car.priceSar || car.price || 0
                 },
                 channel: 'whatsapp',
-                notes: `Clicked buy from Korean car page`
+                notes: `طلب شراء عبر الواتساب من صفحة السيارة الكورية`
             });
         } catch (err) {
             console.error('Failed to log order:', err);
         }
 
-        const url = WhatsAppService.generateCarLink(car, whatsapp || DEFAULT_WHATSAPP, isRTL, formatPrice);
-        window.open(url, '_blank');
+        const phone = (whatsapp || DEFAULT_WHATSAPP).replace(/\D/g, '');
+        const msg = encodeURIComponent(
+            isRTL 
+                ? `مرحباً إتش إم كار 👋\nأود طلب وتأكيد شراء سيارة المعرض/المزاد:\n🚗 *${car.title}*\n💰 السعر: ${displayPrice}\n🆔 رمز السيارة: #${(car as any)._id || id}`
+                : `Hello HM CAR 👋\nI want to order car:\n🚗 *${car.title}*\n💰 Price: ${displayPrice}\n🆔 ID: #${(car as any)._id || id}`
+        );
+        window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
     };
 
     if (loading) {
@@ -235,7 +242,7 @@ export default function LocalCarDetail() {
             <div className="min-h-screen bg-black flex items-center justify-center">
                 <Navbar />
                 <div className="text-center space-y-4">
-                    <div className="w-16 h-16 border-2 border-cinematic-neon-gold/30 border-t-cinematic-neon-gold rounded-full animate-spin mx-auto" />
+                    <div className="w-14 h-14 border-2 border-[#C9A96E]/30 border-t-[#C9A96E] rounded-full animate-spin mx-auto" />
                     <p className="text-white/30 text-[11px] uppercase tracking-[0.4em] font-black animate-pulse">
                         {isRTL ? rawText('جاري التحميل...') : rawText('LOADING...')}
                     </p>
@@ -253,10 +260,10 @@ export default function LocalCarDetail() {
                     {error || (isRTL ? rawText('لم يتم العثور على السيارة') : rawText('Car not found'))}
                 </h1>
                 <button
-                    onClick={() => router.back()}
-                    className="px-8 py-4 bg-cinematic-neon-gold/10 border border-cinematic-neon-gold/30 rounded-2xl text-cinematic-neon-gold text-[11px] font-black uppercase tracking-widest hover:bg-cinematic-neon-gold/20 transition-all"
+                    onClick={() => router.push('/cars')}
+                    className="px-8 py-4 bg-[#C9A96E]/10 border border-[#C9A96E]/30 rounded-2xl text-[#C9A96E] text-[11px] font-black uppercase tracking-widest hover:bg-[#C9A96E]/20 transition-all"
                 >
-                    {isRTL ? rawText('العودة') : rawText('GO BACK')}
+                    {isRTL ? rawText('العودة للمعرض') : rawText('GO BACK')}
                 </button>
             </div>
         );
@@ -286,299 +293,258 @@ export default function LocalCarDetail() {
         : (formatPrice ? formatPrice(Number(car.priceSar || car.price || 0)) : `${Number(car.priceSar || car.price || 0).toLocaleString()} ${CURRENCY_SAR}`);
 
     const specs = [
-        { icon: Calendar, label: isRTL ? 'السنة' : 'YEAR', value: car.year },
-        { icon: Gauge, label: isRTL ? 'المسافة' : 'MILEAGE', value: car.mileage ? `${car.mileage.toLocaleString()} ${isRTL ? 'كم' : 'KM'}` : '—' },
-        { icon: Fuel, label: isRTL ? 'الوقود' : 'FUEL', value: car.fuelType || '—' },
+        { icon: Calendar, label: isRTL ? 'سنة الصنع' : 'YEAR', value: car.year },
+        { icon: Gauge, label: isRTL ? 'المسافة المقطوعة' : 'MILEAGE', value: car.mileage ? `${car.mileage.toLocaleString()} ${isRTL ? 'كم' : 'KM'}` : '—' },
+        { icon: Fuel, label: isRTL ? 'نوع الوقود' : 'FUEL', value: car.fuelType || '—' },
         { icon: Settings2, label: isRTL ? 'ناقل الحركة' : 'TRANSMISSION', value: car.transmission || '—' },
-        { icon: Car, label: isRTL ? 'الفئة' : 'CATEGORY', value: car.category || '—' },
-        { icon: Tag, label: isRTL ? 'اللون' : 'COLOR', value: car.color || '—' },
+        { icon: Car, label: isRTL ? 'الفئة والهيكل' : 'CATEGORY', value: car.category || '—' },
+        { icon: Tag, label: isRTL ? 'اللون الخارجي' : 'COLOR', value: car.color || '—' },
     ];
 
     return (
-        <div className="relative min-h-screen bg-cinematic-darker text-white overflow-x-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
+        <div className="relative min-h-screen bg-[#08080c] text-white overflow-x-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
             <Navbar />
-            <div className="fixed inset-0 pointer-events-none z-0">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(201,169,110,0.05)_0%,transparent_60%)]" />
-            </div>
 
-            <main className="relative z-10 pt-28 pb-24 px-4 sm:px-6 max-w-7xl mx-auto">
+            <main className="relative z-10 pt-24 sm:pt-28 pb-28 px-3 sm:px-6 max-w-7xl mx-auto">
+                {/* Back button */}
                 <motion.button
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     onClick={() => router.push('/cars')}
-                    className="flex items-center gap-2 mb-10 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-all group w-fit"
+                    className="flex items-center gap-2 mb-6 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-all group w-fit text-xs font-black"
                 >
                     <ChevronLeft className={cn('w-4 h-4 transition-transform group-hover:-translate-x-1', isRTL && 'rotate-180 group-hover:translate-x-1')} />
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">
-                        {isRTL ? rawText('العودة للصفحة الرئيسية') : rawText('Back to Home Page')}
-                    </span>
+                    <span>{isRTL ? 'العودة لقائمة السيارات' : 'Back to Cars List'}</span>
                 </motion.button>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                    <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="space-y-4">
-                        {/* Desktop Image Viewer */}
-                        <div 
-                            className={cn(
-                                "hidden md:block relative aspect-[4/3] rounded-3xl overflow-hidden border border-white/10 bg-white/2",
-                                is360Mode ? "cursor-ew-resize select-none" : ""
-                            )}
-                            onMouseMove={is360Mode ? handle360Drag : undefined}
-                            onMouseDown={is360Mode ? (e) => setDragStartX(e.clientX) : undefined}
-                            onMouseUp={stop360Drag}
-                            onMouseLeave={stop360Drag}
-                            onTouchMove={is360Mode ? handle360Drag : undefined}
-                            onTouchStart={is360Mode ? (e) => setDragStartX(e.touches[0].clientX) : undefined}
-                            onTouchEnd={stop360Drag}
-                        >
-                            {images.length > 0 ? (
-                                <WatermarkImage src={images[activeImage]} alt={car.title} fill className="pointer-events-none select-none" unoptimized watermarkPosition="br" />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                    <ImageIcon className="w-20 h-20 text-white/10" />
-                                </div>
-                            )}
-                            
-                            {/* Toggle 360 View Button */}
-                            {images.length > 1 && (
-                                <div className="absolute top-4 left-4 z-20">
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setIs360Mode(p => !p);
-                                            showToast?.(isRTL ? "قم بالسحب يميناً ويساراً لتدوير السيارة" : "Drag left/right to rotate the car", "info");
-                                        }}
-                                        className={cn(
-                                            "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest backdrop-blur-md transition-all flex items-center gap-1.5 border border-white/15",
-                                            is360Mode 
-                                                ? "bg-[#C9A96E] text-black border-[#C9A96E]" 
-                                                : "bg-black/60 text-white/80 hover:bg-black/80"
-                                        )}
-                                    >
-                                        <Globe className="w-3.5 h-3.5 animate-pulse" />
-                                        {isRTL ? rawText('عرض 360°') : rawText('360° VIEW')}
-                                    </button>
-                                </div>
-                            )}
-
-                            <div className="absolute top-4 right-4 flex gap-2">
-                                <span className="px-3 py-1 bg-cinematic-neon-gold/20 border border-cinematic-neon-gold/40 rounded-lg text-[10px] font-black text-cinematic-neon-gold uppercase tracking-widest backdrop-blur-md">
-                                    {isRTL ? rawText('متجرنا') : rawText('STORE')}
-                                </span>
-                                {car.isActive && (
-                                    <span className="px-3 py-1 bg-green-400/20 border border-green-400/40 rounded-lg text-[10px] font-black text-green-400 uppercase tracking-widest backdrop-blur-md flex items-center gap-1">
-                                        <CheckCircle className="w-3 h-3" />
-                                        {isRTL ? rawText('متوفر') : rawText('AVAILABLE')}
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Mobile Swipeable Gallery */}
-                        <div className="relative md:hidden aspect-[4/3] rounded-3xl overflow-hidden border border-white/10 bg-white/2">
-                            <div 
-                                className="flex h-full overflow-x-auto snap-x snap-mandatory scrollbar-none"
-                                onScroll={(e) => {
-                                    const target = e.currentTarget;
-                                    const index = Math.round(target.scrollLeft / target.offsetWidth);
-                                    setActiveImage(index);
-                                }}
-                            >
-                                {images.length > 0 ? (
-                                    images.map((img: string, idx: number) => (
-                                        <div key={idx} className="w-full h-full shrink-0 snap-start relative">
-                                            <WatermarkImage src={img} alt={car.title} fill className="" unoptimized watermarkPosition="br" />
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center">
-                                        <ImageIcon className="w-20 h-20 text-white/10" />
-                                    </div>
-                                )}
-                            </div>
-                            <div className="absolute top-4 right-4 flex gap-2">
-                                <span className="px-3 py-1 bg-cinematic-neon-gold/20 border border-cinematic-neon-gold/40 rounded-lg text-[10px] font-black text-cinematic-neon-gold uppercase tracking-widest backdrop-blur-md">
-                                    {isRTL ? rawText('متجرنا') : rawText('STORE')}
-                                </span>
-                            </div>
-                            
-                            {/* Dot indicators */}
-                            {images.length > 1 && (
-                                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-20 bg-black/45 backdrop-blur-md px-2.5 py-1.5 rounded-full">
-                                    {images.map((_, idx) => (
-                                        <div 
-                                            key={idx} 
-                                            className={cn(
-                                                "w-1.5 h-1.5 rounded-full transition-all duration-300",
-                                                activeImage === idx ? "bg-[#C9A96E] w-3" : "bg-white/30"
-                                            )}
-                                        />
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {images.length > 1 && (
-                            <div className="hidden md:flex gap-3 overflow-x-auto pb-2 scrollbar-none">
-                                {images.map((img: string, idx: number) => (
-                                    <button
-                                        key={idx}
-                                        onClick={() => setActiveImage(idx)}
-                                        aria-label={isRTL ? `عرض الصورة ${idx + 1}` : `View image ${idx + 1}`}
-                                        className={cn(
-                                            'relative w-20 h-20 shrink-0 rounded-xl overflow-hidden border-2 transition-all',
-                                            activeImage === idx ? 'border-cinematic-neon-gold shadow-[0_0_15px_rgba(201,169,110,0.4)]' : 'border-white/10 opacity-50 hover:opacity-80'
-                                        )}
-                                    >
-                                        <WatermarkImage src={img} alt={`img ${idx + 1}`} fill className="" unoptimized showWatermark={false} />
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </motion.div>
-
-                    <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="space-y-8">
-                        <div>
-                            <div className="text-[11px] font-black text-cinematic-neon-gold/70 uppercase tracking-[0.4em] mb-2 italic">{carMake}</div>
-                            <h1 className="text-4xl md:text-5xl font-black uppercase italic tracking-tighter mb-4 leading-tight">{car.title}</h1>
-                            <div className="text-3xl font-black text-cinematic-neon-gold">{displayPrice}</div>
-                        </div>
-
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                            {specs.map((spec) => (
-                                <div key={spec.label} className="bg-white/2 border border-white/8 rounded-2xl p-4 space-y-2 hover:border-cinematic-neon-gold/20 transition-all">
-                                    <spec.icon className="w-4 h-4 text-cinematic-neon-gold/60" />
-                                    <div className="text-[9px] font-black uppercase tracking-[0.3em] text-white/30">{spec.label}</div>
-                                    <div className="text-sm font-black text-white/80 capitalize">{spec.value}</div>
-                                </div>
-                            ))}
-                        </div>
-
-                        {car.description && (
-                            <div className="bg-white/2 border border-white/8 rounded-2xl p-6">
-                                <div className="text-[9px] font-black uppercase tracking-[0.3em] text-white/30 mb-3">{isRTL ? rawText('الوصف') : rawText('DESCRIPTION')}</div>
-                                <p className="text-white/60 text-sm leading-relaxed">{car.description}</p>
-                            </div>
-                        )}
-
-                        {car.agency && (
-                            <div className="bg-white/2 border border-cinematic-neon-gold/10 rounded-2xl p-6 flex items-center gap-6 hover:border-cinematic-neon-gold/30 transition-all group">
-                                {car.agency.logoUrl ? (
-                                    <div className="relative w-20 h-20 shrink-0 rounded-2xl overflow-hidden bg-black/40 p-3 border border-white/5 group-hover:border-cinematic-neon-gold/20 transition-colors">
-                                        <Image src={car.agency.logoUrl} alt={car.agency.name} fill className="object-contain p-2" unoptimized />
-                                    </div>
-                                ) : (
-                                    <div className="w-20 h-20 shrink-0 rounded-2xl bg-black/40 border border-white/5 flex items-center justify-center">
-                                        <Car className="w-8 h-8 text-white/10" />
-                                    </div>
-                                )}
-                                <div className="space-y-1">
-                                    <div className="flex items-center gap-2">
-                                        <CheckCircle className="w-3 h-3 text-cinematic-neon-gold" />
-                                        <span className="text-[9px] font-black uppercase tracking-[0.3em] text-cinematic-neon-gold/70 italic">
-                                            {isRTL ? rawText('الوكالة المعتمدة') : rawText('OFFICIAL AGENCY')}
-                                        </span>
-                                    </div>
-                                    <div className="text-xl font-black italic uppercase tracking-tight text-white">{car.agency.name}</div>
-                                    {car.agency.location && (
-                                        <div className="text-[10px] text-white/40 font-medium ">{car.agency.location}</div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="space-y-4 pt-4">
-                            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleWhatsappPurchase} className="w-full py-5 bg-green-600 hover:bg-green-500 rounded-2xl text-white font-black uppercase text-[13px] tracking-[0.3em] shadow-[0_0_30px_rgba(22,163,74,0.3)] flex items-center justify-center gap-3">
-                                <MessageCircle className="w-5 h-5" />
-                                {isRTL ? rawText('شراء عبر واتساب') : rawText('PURCHASE VIA WHATSAPP')}
-                            </motion.button>
-                            <button onClick={() => setShowInvoice(true)} className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl text-white/60 font-black uppercase text-[11px] tracking-[0.3em] hover:bg-white/10 hover:text-white transition-all">
-                                {isRTL ? rawText('عرض الفاتورة') : rawText('VIEW INVOICE')}
-                            </button>
-                        </div>
-                    </motion.div>
+                {/* ── Top Header Section (Title & Price Banner matching Desert Korea Auto) ── */}
+                <div className="bg-[#10101a] border border-white/8 rounded-3xl p-5 sm:p-8 mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xl">
+                    <div>
+                        <span className="text-[10px] font-black text-[#C9A96E] uppercase tracking-widest block mb-1">
+                            {carMake} · {car.year}
+                        </span>
+                        <h1 className="text-2xl sm:text-4xl font-black text-white leading-tight">
+                            {car.title}
+                        </h1>
+                    </div>
+                    <div className="flex flex-col items-start sm:items-end bg-white/4 border border-white/8 px-5 py-3 rounded-2xl">
+                        <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">{isRTL ? 'السعر الشامل التقديري' : 'ESTIMATED PRICE'}</span>
+                        <span className="text-2xl sm:text-3xl font-black text-[#C9A96E] cockpit-num">{displayPrice}</span>
+                    </div>
                 </div>
 
-                {/* Similar Cars Section */}
-                {similarCars.length > 0 && (
-                    <div className="mt-20 border-t border-white/5 pt-12">
-                        <div className="mb-8">
-                            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white uppercase italic">
-                                {isRTL ? <><span className="text-[#C9A96E]">سيارات</span> مشابهة</> : <>SIMILAR <span className="text-[#C9A96E]">CARS</span></>}
-                            </h2>
-                            <p className="text-[10px] sm:text-xs font-medium tracking-widest text-white/30 mt-1 uppercase">
-                                {isRTL ? 'قد تثير اهتمامك هذه التشكيلة المتوفرة' : 'You might also be interested in these vehicles'}
-                            </p>
+                {/* ── Image Carousel Container with Navigation Arrows & Dots ── */}
+                <div className="relative aspect-[16/10] sm:aspect-[16/9] max-h-[550px] rounded-3xl overflow-hidden border border-white/10 bg-[#08080d] mb-6 shadow-2xl group">
+                    {images.length > 0 ? (
+                        <WatermarkImage src={images[activeImage]} alt={car.title} fill className="object-cover" unoptimized watermarkPosition="br" />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                            <ImageIcon className="w-20 h-20 text-white/10" />
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                            {similarCars.map((item, idx) => (
-                                <ModernCarCard key={item.id} car={item} index={idx} formatPrice={formatPrice} />
+                    )}
+
+                    {/* ── أسهم التبديل فوق الصورة الرئيسية (< >) ── */}
+                    {images.length > 1 && (
+                        <>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setActiveImage(prev => (prev === 0 ? images.length - 1 : prev - 1)); }}
+                                className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/80 hover:bg-white text-black flex items-center justify-center shadow-2xl backdrop-blur-md transition-all active:scale-90 z-30"
+                                aria-label="Previous image"
+                            >
+                                <ChevronLeft className="w-6 h-6 stroke-[2.5]" />
+                            </button>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setActiveImage(prev => (prev === images.length - 1 ? 0 : prev + 1)); }}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/80 hover:bg-white text-black flex items-center justify-center shadow-2xl backdrop-blur-md transition-all active:scale-90 z-30"
+                                aria-label="Next image"
+                            >
+                                <ChevronRight className="w-6 h-6 stroke-[2.5]" />
+                            </button>
+                        </>
+                    )}
+
+                    {/* ── نقاط التنفيذ أسفل الصورة الرئيسية (Pagination Dots) ── */}
+                    {images.length > 1 && (
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
+                            {images.map((_, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => setActiveImage(idx)}
+                                    className={cn(
+                                        "w-2 h-2 rounded-full transition-all duration-300",
+                                        activeImage === idx ? "bg-[#C9A96E] w-5" : "bg-white/30 hover:bg-white/60"
+                                    )}
+                                />
                             ))}
                         </div>
+                    )}
+                </div>
+
+                {/* ── الشريط المصغر للصور (Thumbnails Row) ── */}
+                {images.length > 1 && (
+                    <div className="flex gap-2.5 overflow-x-auto pb-4 scrollbar-none mb-10">
+                        {images.map((img: string, idx: number) => (
+                            <button
+                                key={idx}
+                                onClick={() => setActiveImage(idx)}
+                                className={cn(
+                                    'relative w-20 h-16 sm:w-24 sm:h-20 shrink-0 rounded-2xl overflow-hidden border-2 transition-all',
+                                    activeImage === idx ? 'border-[#C9A96E] shadow-[0_0_15px_rgba(201,169,110,0.4)] scale-105' : 'border-white/10 opacity-50 hover:opacity-80'
+                                )}
+                            >
+                                <WatermarkImage src={img} alt={`img ${idx + 1}`} fill className="object-cover" unoptimized showWatermark={false} />
+                            </button>
+                        ))}
                     </div>
                 )}
-            </main>
 
-            {/* ══ زر واتساب ثابت في الأسفل ══ */}
-            {car && (
-                <motion.div
-                    initial={{ y: 100, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.5, type: 'spring', damping: 20 }}
-                    className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-t from-black/90 via-black/60 to-transparent pointer-events-none lg:hidden"
-                >
-                    <div className="max-w-lg mx-auto pointer-events-auto">
-                        <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.97 }}
-                            onClick={handleWhatsappPurchase}
-                            className="w-full py-3.5 bg-green-600 hover:bg-green-500 active:bg-green-700 text-white font-black uppercase text-xs tracking-widest shadow-[0_8px_30px_rgba(22,163,74,0.4)] flex items-center justify-center gap-2.5 transition-all rounded-xl"
-                        >
-                            <MessageCircle className="w-4 h-4" />
-                            {isRTL ? rawText('تواصل واتساب للشراء') : rawText('Buy via WhatsApp')}
-                        </motion.button>
+                {/* ── زر الطلب الرئيسي المباشر عبر الواتساب (WhatsApp Direct Order) ── */}
+                <div className="mb-10">
+                    <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleWhatsappOrder}
+                        className="w-full py-4.5 sm:py-5 rounded-2xl text-white font-black uppercase text-sm sm:text-base tracking-wider flex items-center justify-center gap-3 shadow-2xl transition-all"
+                        style={{
+                            background: 'linear-gradient(135deg, #25D366, #128C7E)',
+                            boxShadow: '0 8px 30px rgba(37,211,102,0.4)'
+                        }}
+                    >
+                        <MessageCircle className="w-6 h-6 fill-white" />
+                        <span>{isRTL ? 'طلب عبر الواتساب' : 'Order via WhatsApp'}</span>
+                    </motion.button>
+                </div>
+
+                {/* ── التبويبات التفاعلية (Tabs: تقرير الفحص | المواصفات | سيارات مشابهة) ── */}
+                <div className="bg-[#101018] border border-white/8 rounded-3xl p-4 sm:p-6 mb-12">
+                    <div className="flex items-center gap-2 border-b border-white/8 pb-4 mb-6 overflow-x-auto">
+                        {[
+                            { key: 'INSPECTION', labelAr: 'تقرير الفحص 📋', labelEn: 'Inspection Report 📋', icon: FileCheck2 },
+                            { key: 'SPECS', labelAr: 'المواصفات ⚙️', labelEn: 'Specifications ⚙️', icon: ListFilter },
+                            { key: 'SIMILAR', labelAr: 'سيارات مشابهة 🚗', labelEn: 'Similar Cars 🚗', icon: Car },
+                        ].map(tab => (
+                            <button
+                                key={tab.key}
+                                onClick={() => setActiveTab(tab.key as any)}
+                                className={cn(
+                                    "px-5 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 whitespace-nowrap border",
+                                    activeTab === tab.key
+                                        ? "bg-[#d97706] text-white border-[#d97706] shadow-[0_0_20px_rgba(217,119,6,0.4)]"
+                                        : "bg-white/4 text-white/50 border-white/8 hover:text-white hover:bg-white/8"
+                                )}
+                            >
+                                <span>{isRTL ? tab.labelAr : tab.labelEn}</span>
+                            </button>
+                        ))}
                     </div>
-                </motion.div>
-            )}
 
-            <AnimatePresence>
-                {showInvoice && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-100 bg-black/90 backdrop-blur-xl flex items-center justify-center p-6" onClick={() => setShowInvoice(false)}>
-                        <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} onClick={e => e.stopPropagation()} className="bg-cinematic-dark border border-white/10 rounded-3xl w-full max-w-md overflow-hidden">
-                            <div className="p-8 border-b border-white/5 text-center bg-cinematic-neon-gold/5">
-                                <div className="text-2xl font-black text-cinematic-neon-gold mb-1">{rawText('HM CAR')}</div>
-                                <div className="text-[10px] text-white/40 uppercase tracking-[0.3em]">{isRTL ? rawText('فاتورة مبدئية') : rawText('PRELIMINARY INVOICE')}</div>
+                    {/* Tab 1: تقرير الفحص والتخطيط التوضيحي للهيكل (Inspection Body Diagram) */}
+                    {activeTab === 'INSPECTION' && (
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-black text-white flex items-center gap-2">
+                                    <ShieldCheck className="w-5 h-5 text-[#C9A96E]" />
+                                    {isRTL ? 'تقرير الفحص الفني المعتمد' : 'Certified Technical Inspection'}
+                                </h3>
+                                <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full text-xs font-black">
+                                    ✓ {isRTL ? 'مفحوصة بالكامل' : 'Fully Inspected'}
+                                </span>
                             </div>
-                            <div className="p-8 space-y-4">
-                                {[
-                                    { label: isRTL ? rawText('السيارة') : rawText('VEHICLE'), value: car.title },
-                                    { label: isRTL ? rawText('الماركة') : rawText('MAKE'), value: carMake },
-                                    { label: isRTL ? rawText('الموديل') : rawText('MODEL'), value: car.model },
-                                    { label: isRTL ? rawText('السنة') : rawText('YEAR'), value: car.year },
-                                    { label: isRTL ? rawText('اللون') : rawText('COLOR'), value: car.color || rawText('—') },
-                                ].map(item => (
-                                    <div key={item.label} className="flex justify-between items-center border-b border-white/5 pb-3">
-                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">{item.label}</span>
-                                        <span className="text-[12px] font-bold text-white/80">{item.value}</span>
+
+                            {/* رسم توضيحي لمجسم الفحص الهيكلي 2D Diagram */}
+                            <div className="bg-[#08080d] border border-white/8 rounded-2xl p-6 flex flex-col items-center">
+                                <div className="text-xs font-bold text-white/40 mb-4">{isRTL ? 'مخطط حالة جسم السيارة (الهيكل الخارجي)' : 'Vehicle Body Inspection Diagram'}</div>
+                                
+                                {/* SVG/Image 2D Inspection Diagram matching Desert Korea Auto */}
+                                <div className="relative w-full max-w-md aspect-[16/10] bg-white/95 rounded-2xl p-4 flex items-center justify-center border-2 border-[#C9A96E]/30 shadow-inner">
+                                    <svg viewBox="0 0 400 240" className="w-full h-full text-zinc-800">
+                                        {/* Car contour shapes */}
+                                        <rect x="50" y="30" width="300" height="180" rx="40" fill="none" stroke="#27272a" strokeWidth="3" />
+                                        <circle cx="100" cy="40" r="22" fill="#e4e4e7" stroke="#27272a" strokeWidth="2" />
+                                        <circle cx="300" cy="40" r="22" fill="#e4e4e7" stroke="#27272a" strokeWidth="2" />
+                                        <circle cx="100" cy="200" r="22" fill="#e4e4e7" stroke="#27272a" strokeWidth="2" />
+                                        <circle cx="300" cy="200" r="22" fill="#e4e4e7" stroke="#27272a" strokeWidth="2" />
+                                        
+                                        {/* Body Panels */}
+                                        <rect x="130" y="50" width="140" height="40" rx="8" fill="#f4f4f5" stroke="#71717a" strokeWidth="1.5" />
+                                        <text x="200" y="75" textAnchor="middle" fontSize="12" fontWeight="bold" fill="#18181b">P (وكالة)</text>
+
+                                        <rect x="130" y="100" width="140" height="40" rx="8" fill="#f4f4f5" stroke="#71717a" strokeWidth="1.5" />
+                                        <text x="200" y="125" textAnchor="middle" fontSize="12" fontWeight="bold" fill="#18181b">A (سليم)</text>
+
+                                        <rect x="130" y="150" width="140" height="40" rx="8" fill="#f4f4f5" stroke="#71717a" strokeWidth="1.5" />
+                                        <text x="200" y="175" textAnchor="middle" fontSize="12" fontWeight="bold" fill="#18181b">P (سليم)</text>
+                                    </svg>
+                                </div>
+
+                                {/* Legend guide (دليل الفحص) */}
+                                <div className="mt-6 flex flex-wrap justify-center gap-3 w-full">
+                                    <div className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
+                                        P : {isRTL ? 'طلاء وكالة (سليم)' : 'Original Paint'}
                                     </div>
-                                ))}
-                                <div className="flex justify-between items-center pt-4">
-                                    <span className="text-[11px] font-black uppercase tracking-[0.3em] text-cinematic-neon-gold">{isRTL ? rawText('السعر') : rawText('PRICE')}</span>
-                                    <span className="text-xl font-black text-cinematic-neon-gold">{displayPrice}</span>
+                                    <div className="px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-bold">
+                                        A : {isRTL ? 'خالي من الحوادث' : 'No Accident'}
+                                    </div>
+                                    <div className="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold">
+                                        W : {isRTL ? 'رش مصنع تجميلي' : 'Factory Touch-up'}
+                                    </div>
                                 </div>
                             </div>
-                            <div className="p-6 border-t border-white/5 grid grid-cols-2 gap-3">
-                                <button onClick={handleWhatsappPurchase} className="py-4 bg-green-500/90 rounded-xl text-black font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2">
-                                    <MessageCircle className="w-4 h-4" />
-                                    {isRTL ? rawText('تأكيد') : rawText('CONFIRM')}
-                                </button>
-                                <button onClick={() => setShowInvoice(false)} className="py-4 bg-white/5 border border-white/10 rounded-xl text-white/60 font-black text-[10px] uppercase tracking-widest">
-                                    {isRTL ? rawText('إلغاء') : rawText('CANCEL')}
-                                </button>
+                        </div>
+                    )}
+
+                    {/* Tab 2: المواصفات والتفاصيل */}
+                    {activeTab === 'SPECS' && (
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                {specs.map((spec) => (
+                                    <div key={spec.label} className="bg-white/3 border border-white/8 rounded-2xl p-4 space-y-1.5">
+                                        <spec.icon className="w-4 h-4 text-[#C9A96E]" />
+                                        <div className="text-[9px] font-black uppercase tracking-widest text-white/40">{spec.label}</div>
+                                        <div className="text-sm font-black text-white capitalize">{spec.value}</div>
+                                    </div>
+                                ))}
                             </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                            {car.description && (
+                                <div className="bg-white/2 border border-white/8 rounded-2xl p-5 mt-4">
+                                    <h4 className="text-xs font-black text-white/40 uppercase tracking-widest mb-2">{isRTL ? 'الوصف والملاحظات' : 'Description'}</h4>
+                                    <p className="text-xs sm:text-sm text-white/70 leading-relaxed">{car.description}</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Tab 3: سيارات مشابهة */}
+                    {activeTab === 'SIMILAR' && (
+                        <div>
+                            {similarCars.length > 0 ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    {similarCars.map((item, idx) => (
+                                        <ModernCarCard key={item.id} car={item} index={idx} formatPrice={formatPrice} />
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-white/40 text-center py-8">{isRTL ? 'لا توجد سيارات مشابهة حالياً' : 'No similar cars found'}</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </main>
+
+            {/* ── Floating Mobile WhatsApp Order Button ── */}
+            <div className="fixed bottom-0 inset-x-0 z-50 p-4 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none lg:hidden">
+                <div className="max-w-lg mx-auto pointer-events-auto">
+                    <motion.button
+                        whileTap={{ scale: 0.96 }}
+                        onClick={handleWhatsappOrder}
+                        className="w-full py-3.5 rounded-xl text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-2xl"
+                        style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)' }}
+                    >
+                        <MessageCircle className="w-4 h-4 fill-white" />
+                        <span>{isRTL ? 'طلب عبر الواتساب' : 'Order via WhatsApp'}</span>
+                    </motion.button>
+                </div>
+            </div>
         </div>
     );
 }

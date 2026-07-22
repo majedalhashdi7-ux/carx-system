@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Car, Wrench, Gavel, ShieldCheck, Globe, Sparkles, Star, HelpCircle, Users,
-    Download, Smartphone, Eye, MessageSquare, Check, ArrowRight
+    Download, Smartphone, Eye, MessageSquare, ArrowRight, RefreshCw, Phone, Mail,
+    Share2, ExternalLink
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -13,36 +14,6 @@ import { cn } from '@/lib/utils';
 import { api } from '@/lib/api-original';
 import Link from 'next/link';
 import { getBrandDisplayName, getClearbitLogoUrl, isLocalPath, formatCarTitle } from '@/lib/brandTranslations';
-
-// ─── Calculator Data ───
-const COUNTRIES = [
-    { nameAr: 'المملكة العربية السعودية', nameEn: 'Saudi Arabia', code: 'KSA' as const },
-    { nameAr: 'الإمارات العربية المتحدة', nameEn: 'United Arab Emirates', code: 'UAE' as const },
-    { nameAr: 'اليمن', nameEn: 'Yemen', code: 'YE' as const },
-    { nameAr: 'الأردن', nameEn: 'Jordan', code: 'JO' as const }
-];
-
-const PORTS = {
-    KSA: [
-        { nameAr: 'ميناء جدة الإسلامي', nameEn: 'Jeddah Islamic Port', fee: 0 },
-        { nameAr: 'ميناء الملك عبدالعزيز بالدمام', nameEn: 'King Abdulaziz Port (Dammam)', fee: 100 }
-    ],
-    UAE: [
-        { nameAr: 'ميناء جبل علي', nameEn: 'Jebel Ali Port', fee: 50 }
-    ],
-    YE: [
-        { nameAr: 'ميناء عدن', nameEn: 'Aden Port', fee: 200 }
-    ],
-    JO: [
-        { nameAr: 'ميناء العقبة', nameEn: 'Aqaba Port', fee: 150 }
-    ]
-};
-
-const CAR_SIZES = [
-    { nameAr: 'سيدان (Sedan)', nameEn: 'Sedan', basePrice: 1200 },
-    { nameAr: 'دفع رباعي / عائلية (SUV)', nameEn: 'SUV', basePrice: 1500 },
-    { nameAr: 'شاحنة / نقل ثقيل (Heavy)', nameEn: 'Heavy Duty', basePrice: 2200 }
-];
 
 function HomeBrandLogo({ brand, isRTL }: { brand: any, isRTL: boolean }) {
     const displayName = getBrandDisplayName(brand.nameAr || brand.name, isRTL);
@@ -55,12 +26,12 @@ function HomeBrandLogo({ brand, isRTL }: { brand: any, isRTL: boolean }) {
     })();
     const [logoSrc, setLogoSrc] = useState(initialSrc);
     const [showLetter, setShowLetter] = useState(false);
-    const firstLetter = (displayName || brand.name).trim().charAt(0).toUpperCase();
+    const firstLetter = (displayName || brand.name || 'C').trim().charAt(0).toUpperCase();
 
     return (
-        <div className="flex flex-col items-center gap-3 select-none">
+        <Link href={`/cars?make=${encodeURIComponent(brand.name)}`} className="flex flex-col items-center gap-2.5 select-none group">
             {/* Circular Logo Frame */}
-            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white flex items-center justify-center p-4 border-2 border-[#C9A96E]/20 shadow-[0_0_15px_rgba(201,169,110,0.1)] hover:border-[#C9A96E] hover:shadow-[0_0_20px_rgba(201,169,110,0.2)] transition-all duration-300">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white flex items-center justify-center p-3.5 border-2 border-[#C9A96E]/30 shadow-[0_0_20px_rgba(201,169,110,0.15)] group-hover:border-[#C9A96E] group-hover:scale-108 group-hover:shadow-[0_0_25px_rgba(201,169,110,0.35)] transition-all duration-300">
                 <div className="relative w-full h-full flex items-center justify-center">
                     {!showLetter && logoSrc ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -84,10 +55,10 @@ function HomeBrandLogo({ brand, isRTL }: { brand: any, isRTL: boolean }) {
                     )}
                 </div>
             </div>
-            <span className="text-xs font-bold text-white/70 hover:text-white transition-colors">
+            <span className="text-[11px] font-black text-white/80 group-hover:text-[#C9A96E] transition-colors text-center">
                 {displayName}
             </span>
-        </div>
+        </Link>
     );
 }
 
@@ -96,13 +67,14 @@ export default function HomePage() {
     const { formatPriceFromUsd, homeContent, socialLinks } = useSettings();
     const WHATSAPP_NUMBER = (socialLinks?.whatsapp || '+821080880014').replace(/\D/g, '');
 
-    // ─── Brand & Featured Stock State ───
+    // ─── State ───
     const [brands, setBrands] = useState<any[]>([]);
     const [featuredCars, setFeaturedCars] = useState<any[]>([]);
+    const [liveAuctions, setLiveAuctions] = useState<any[]>([]);
     const [carsLoading, setCarsLoading] = useState(true);
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
     const [showInstallBtn, setShowInstallBtn] = useState(false);
-    const [selectedCategory, setSelectedCategory] = useState<'ALL' | 'HYUNDAI' | 'KIA' | 'BMW' | 'MERCEDES' | 'AUCTIONS'>('ALL');
+    const [auctionRotationIndex, setAuctionRotationIndex] = useState(0);
 
     const formatCarImage = (url: string | undefined): string => {
         if (!url) return 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?q=80&w=1000&auto=format&fit=crop';
@@ -138,7 +110,7 @@ export default function HomePage() {
 
         const msg = encodeURIComponent(
             isRTL 
-                ? `مرحباً إتش إم كار 👋\nأود الاستفسار والطلب لسيارة:\n🚗 *${title}*\n💰 السعر: ${price}\n🆔 رمز السيارة: #${car._id}\n\nيرجى تزويدي بالتفاصيل وإجراءات الشحن.`
+                ? `مرحباً إتش إم كار 👋\nأود الاستفسار عن سيارة المزاد/المعرض:\n🚗 *${title}*\n💰 السعر: ${price}\n🆔 رمز السيارة: #${car._id}`
                 : `Hello HM CAR 👋\nI would like to inquire about car:\n🚗 *${title}*\n💰 Price: ${price}\n🆔 Car ID: #${car._id}`
         );
         window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, '_blank');
@@ -148,7 +120,7 @@ export default function HomePage() {
         // Fetch active car brands
         api.brands.list('cars').then(res => {
             if (res?.success && res.brands) {
-                const activeWithLogos = res.brands.filter((b: any) => b.isActive !== false && b.logoUrl);
+                const activeWithLogos = res.brands.filter((b: any) => b.isActive !== false);
                 setBrands(activeWithLogos);
             }
         }).catch(err => console.error('Error fetching brands:', err));
@@ -162,7 +134,6 @@ export default function HomePage() {
         };
         window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
         
-        // Check if iOS/Android or already stand-alone
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
         const ua = navigator.userAgent.toLowerCase();
         const isMobile = /iphone|ipad|ipod|android/.test(ua);
@@ -195,15 +166,15 @@ export default function HomePage() {
     useEffect(() => {
         setCarsLoading(true);
         
-        // Fetch both local/imported showroom cars and running auctions to display a full combined series
         Promise.all([
             api.cars.list({ isActive: true, limit: 100 }).catch(() => ({ success: false, data: { cars: [] } })),
             api.auctions.list({ status: 'running', limit: 100 }).catch(() => ({ success: false, auctions: [] }))
         ]).then(([carsRes, auctionsRes]) => {
-            const combined: any[] = [];
+            const combinedCars: any[] = [];
+            const auctionItems: any[] = [];
             
             if (carsRes?.success && carsRes.data?.cars) {
-                combined.push(...carsRes.data.cars.map((c: any) => ({
+                combinedCars.push(...carsRes.data.cars.map((c: any) => ({
                     ...c,
                     _id: c.id || c._id,
                     type: 'showroom',
@@ -216,22 +187,36 @@ export default function HomePage() {
             }
             
             if (auctionsRes?.success && auctionsRes.auctions) {
-                combined.push(...auctionsRes.auctions.map((a: any) => ({
-                    ...a,
-                    _id: a._id || a.id,
-                    type: 'auctions',
-                    price: a.currentBid || a.startingPrice || 0,
-                    year: a.year || '2024',
-                    transmission: a.transmission || (isRTL ? 'أوتوماتيك' : 'Auto'),
-                    fuel: a.fuelType || (isRTL ? 'ديزل' : 'Diesel'),
-                    images: a.images || []
-                })));
+                auctionsRes.auctions.forEach((a: any) => {
+                    const item = {
+                        ...a,
+                        _id: a._id || a.id,
+                        type: 'auctions',
+                        price: a.currentBid || a.startingPrice || 0,
+                        year: a.year || '2024',
+                        transmission: a.transmission || (isRTL ? 'أوتوماتيك' : 'Auto'),
+                        fuel: a.fuelType || (isRTL ? 'ديزل' : 'Diesel'),
+                        images: a.images || []
+                    };
+                    combinedCars.push(item);
+                    auctionItems.push(item);
+                });
             }
             
-            setFeaturedCars(combined);
-        }).catch(err => console.error('Error fetching combined homepage fleet:', err))
+            setFeaturedCars(combinedCars);
+            setLiveAuctions(auctionItems);
+        }).catch(err => console.error('Error fetching homepage data:', err))
           .finally(() => setCarsLoading(false));
     }, [isRTL]);
+
+    // ─── Auto-rotating Live Auction 4-Cards Grid ───
+    useEffect(() => {
+        if (liveAuctions.length <= 4) return;
+        const interval = setInterval(() => {
+            setAuctionRotationIndex(prev => (prev + 1) % liveAuctions.length);
+        }, 5000); // rotates every 5 seconds
+        return () => clearInterval(interval);
+    }, [liveAuctions.length]);
 
     const FALLBACK_BRANDS = [
         { name: 'Hyundai', logoUrl: '/brands/hyundai.png' },
@@ -239,10 +224,9 @@ export default function HomePage() {
         { name: 'Genesis', logoUrl: '/brands/genesis.png' },
         { name: 'BMW', logoUrl: '/brands/bmw.png' },
         { name: 'Mercedes-Benz', logoUrl: '/brands/mercedes.png' },
-        { name: 'Toyota', logoUrl: '/brands/toyota.png' },
     ];
-    const displayBrands = brands.length > 0 ? brands : FALLBACK_BRANDS;
-    const marqueeBrands = [...displayBrands, ...displayBrands, ...displayBrands];
+    // Display exactly 5 circular brand logos (as requested: "ويكون العدد خمس دواير شعارات سيارات")
+    const display5Brands = (brands.length > 0 ? brands : FALLBACK_BRANDS).slice(0, 5);
 
     const FALLBACK_CARS = [
         {
@@ -250,105 +234,59 @@ export default function HomePage() {
             title: isRTL ? 'هيونداي سانتا في 2024' : 'Hyundai Santa Fe 2024',
             images: ['https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&q=80&w=600'],
             price: 32000,
-            specs: { year: '2024', transmission: isRTL ? 'أوتوماتيك' : 'Automatic', fuel: isRTL ? 'بنزين' : 'Petrol' }
+            year: '2024', transmission: isRTL ? 'أوتوماتيك' : 'Automatic', fuel: isRTL ? 'بنزين' : 'Petrol'
         },
         {
             _id: '2',
             title: isRTL ? 'كيا سورينتو 2023' : 'Kia Sorento 2023',
             images: ['https://images.unsplash.com/photo-1606016159991-dfe4f2746ad5?auto=format&fit=crop&q=80&w=600'],
             price: 28000,
-            specs: { year: '2023', transmission: isRTL ? 'أوتوماتيك' : 'Automatic', fuel: isRTL ? 'ديزل' : 'Diesel' }
+            year: '2023', transmission: isRTL ? 'أوتوماتيك' : 'Automatic', fuel: isRTL ? 'ديزل' : 'Diesel'
         },
         {
             _id: '3',
             title: isRTL ? 'جينيسيس GV80 2023' : 'Genesis GV80 2023',
             images: ['https://images.unsplash.com/photo-1619767886558-efdc259cde1a?auto=format&fit=crop&q=80&w=600'],
             price: 65000,
-            specs: { year: '2023', transmission: isRTL ? 'أوتوماتيك' : 'Automatic', fuel: isRTL ? 'بنزين' : 'Petrol' }
+            year: '2023', transmission: isRTL ? 'أوتوماتيك' : 'Automatic', fuel: isRTL ? 'بنزين' : 'Petrol'
         },
         {
             _id: '4',
             title: isRTL ? 'بي إم دبليو الفئة الخامسة 2023' : 'BMW 5 Series 2023',
             images: ['https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=600'],
             price: 49000,
-            specs: { year: '2023', transmission: isRTL ? 'أوتوماتيك' : 'Automatic', fuel: isRTL ? 'هجين' : 'Hybrid' }
+            year: '2023', transmission: isRTL ? 'أوتوماتيك' : 'Automatic', fuel: isRTL ? 'هجين' : 'Hybrid'
         }
     ];
+
     const displayCars = featuredCars.length > 0 ? featuredCars : FALLBACK_CARS;
-    const marqueeCars = [...displayCars, ...displayCars, ...displayCars];
+    const auctionCarsSource = liveAuctions.length > 0 ? liveAuctions : displayCars;
+    
+    // Rotating 4 cars selection
+    const rotated4AuctionCars = Array.from({ length: Math.min(4, auctionCarsSource.length) }, (_, i) => {
+        return auctionCarsSource[(auctionRotationIndex + i) % auctionCarsSource.length];
+    });
 
-    // ─── Calculator State ───
-    const [countryCode, setCountryCode] = useState<'KSA' | 'UAE' | 'YE' | 'JO'>('KSA');
-    const [portIndex, setPortIndex] = useState(0);
-    const [carSizeIndex, setCarSizeIndex] = useState(0);
+    // ─── Dynamic Social Links Configuration ───
+    const socialPlatforms = [
+        { key: 'whatsapp', url: socialLinks?.whatsapp ? `https://wa.me/${socialLinks.whatsapp.replace(/\D/g, '')}` : '', labelAr: 'واتساب', labelEn: 'WhatsApp', color: '#25D366', icon: '💬' },
+        { key: 'instagram', url: socialLinks?.instagram || '', labelAr: 'إنستغرام', labelEn: 'Instagram', color: '#E4405F', icon: '📸' },
+        { key: 'facebook', url: socialLinks?.facebook || '', labelAr: 'فيسبوك', labelEn: 'Facebook', color: '#1877F2', icon: '📘' },
+        { key: 'tiktok', url: (socialLinks as any)?.tiktok || '', labelAr: 'تيك توك', labelEn: 'TikTok', color: '#000000', icon: '🎵' },
+        { key: 'snapchat', url: (socialLinks as any)?.snapchat || '', labelAr: 'سناب شات', labelEn: 'Snapchat', color: '#FFFC00', icon: '👻' },
+        { key: 'youtube', url: (socialLinks as any)?.youtube || '', labelAr: 'يوتيوب', labelEn: 'YouTube', color: '#FF0000', icon: '▶️' },
+        { key: 'twitter', url: socialLinks?.twitter || '', labelAr: 'تويتر (X)', labelEn: 'X (Twitter)', color: '#1DA1F2', icon: '𝕏' },
+    ].filter(p => Boolean(p.url && p.url.trim() !== ''));
 
-    const availablePorts = PORTS[countryCode] || [];
-    const selectedPort = availablePorts[portIndex] || availablePorts[0] || { fee: 0 };
-    const selectedSize = CAR_SIZES[carSizeIndex];
-    const totalUsd = selectedSize.basePrice + selectedPort.fee;
-
-    // ─── Testimonials Data ───
-    const testimonials = [
-        {
-            nameAr: 'أبو فهد القحطاني',
-            nameEn: 'Abu Fahad Al-Qahtani',
-            roleAr: 'مستورد سيارات من الرياض',
-            roleEn: 'Car Importer from Riyadh',
-            textAr: 'تجربتي مع HM CAR كانت استثنائية. استوردت مرسيدس S-Class 2023 والسيارة وصلت مفحوصة بدقة مطابقة لتقرير الكشط الكوري تماماً.',
-            textEn: 'My experience with HM CAR was exceptional. Imported a 2023 Mercedes S-Class; it arrived inspected and matched the Korean report perfectly.',
-            avatar: 'A',
-            rating: 5
-        },
-        {
-            nameAr: 'م. طارق اليوسفي',
-            nameEn: 'Eng. Tariq Al-Yousefi',
-            roleAr: 'عميل من جدة',
-            roleEn: 'Client from Jeddah',
-            textAr: 'المصداقية هي أهم ميزة. الدخول للمزادات الكورية مباشرة بنقرة واحدة وشفافية الأسعار وتتبع الشحن جعلني أثق بالمنصة بالكامل.',
-            textEn: 'Transparency is key. Bidding directly in Korean auctions with transparent shipping tracking built a lot of trust.',
-            avatar: 'T',
-            rating: 5
-        },
-        {
-            nameAr: 'خالد دبيان',
-            nameEn: 'Khaled Dubayan',
-            roleAr: 'تاجر سيارات من دبي',
-            roleEn: 'Car Dealer from Dubai',
-            textAr: 'أفضل منصة للحصول على قطع غيار كورية أصلية بأسعار منافسة وسرعة استيراد لم أشهدها في أي مكان آخر.',
-            textEn: 'The absolute best platform for original Korean spare parts with competitive prices and unmatched delivery speed.',
-            avatar: 'K',
-            rating: 5
-        }
-    ];
-
-    // ─── FAQs Data ───
-    const faqs = [
-        {
-            qAr: 'كيف تضمنون سلامة وفحص السيارات المستوردة؟',
-            qEn: 'How do you guarantee the quality and inspection of imported cars?',
-            aAr: 'يتم فحص جميع السيارات مباشرة في كوريا بواسطة مفتشين خبراء، ونقدم تقريراً شاملاً بالصور والفيديو لضمان المطابقة الكاملة للمواصفات.',
-            aEn: 'All cars are inspected directly in Korea by expert inspectors. We provide detailed photographic and video reports to ensure full quality compliance.'
-        },
-        {
-            qAr: 'ما هي المدة الزمنية المستغرقة للشحن والوصول؟',
-            qEn: 'How long does the shipping and delivery take?',
-            aAr: 'تستغرق عملية الشحن البحري من كوريا الجنوبية إلى موانئ الخليج العربي ما بين 25 إلى 35 يوماً عمل شاملة تجهيز الأوراق الرسمية.',
-            aEn: 'Shipping from South Korea to Arabian Gulf ports takes between 25 to 35 business days, including export paperwork preparation.'
-        },
-        {
-            qAr: 'هل يمكنني المزايدة مباشرة في المزادات الكورية؟',
-            qEn: 'Can I bid directly in Korean auctions?',
-            aAr: 'نعم، نوفر وصولاً حياً ومباشراً لكافة لوائح المزادات الجارية مع خيار المزايدة بالوكالة (Proxy Bidding) وإشعارك لحظة بلحظة.',
-            aEn: 'Yes, we provide live access to active Korean auction systems with proxy bidding options and real-time updates.'
-        }
-    ];
+    const contactEmail = (socialLinks as any)?.email || 'info@hmcar.app';
+    const contactPhone = (socialLinks as any)?.phone || socialLinks?.whatsapp || '+821080880014';
 
     return (
         <div className="min-h-screen bg-[#08080c] text-white flex flex-col selection:bg-[#C9A96E] selection:text-black overflow-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
             <Navbar />
 
             {/* ─── Hero Section ─── */}
-            <header className="relative pt-32 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col items-center text-center z-10">
+            <header className="relative pt-24 sm:pt-32 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col items-center text-center z-10">
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -360,7 +298,7 @@ export default function HomePage() {
                         {isRTL ? 'بوابتك المباشرة لأسواق السيارات الكورية' : 'YOUR DIRECT ACCESS TO KOREAN AUTOMOTIVE MARKET'}
                     </div>
 
-                    <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.1] mb-8 bg-gradient-to-b from-white via-white to-white/40 bg-clip-text text-transparent uppercase italic">
+                    <h1 className="text-3xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.1] mb-6 bg-gradient-to-b from-white via-white to-white/40 bg-clip-text text-transparent uppercase italic">
                         {isRTL ? (
                             <>
                                 استورد سيارتك <span className="text-[#C9A96E] drop-shadow-[0_0_20px_rgba(201,169,110,0.3)]">الكورية الفاخرة</span> مباشرة بنقرة واحدة
@@ -372,64 +310,75 @@ export default function HomePage() {
                         )}
                     </h1>
 
-                    <p className="text-sm sm:text-lg text-white/50 max-w-2xl mx-auto mb-10 leading-relaxed">
+                    <p className="text-xs sm:text-base text-white/50 max-w-2xl mx-auto mb-8 leading-relaxed">
                         {isRTL 
                             ? 'ادخل مباشرة لمزادات السيارات الكورية الحية، واطلب قطع الغيار الأصلية، وتتبع شحنتك حتى باب منزلك مع ضمان الجودة والفحص قبل الشحن.'
                             : 'Access live Korean car auctions directly, request original spare parts, and track your shipment home with guaranteed inspection and quality.'}
                     </p>
 
-                    <div className="flex flex-wrap items-center justify-center gap-4">
-                        <Link href="/cars" className="px-8 py-4 rounded-2xl bg-[#C9A96E] border border-[#b8955b] text-black font-black uppercase tracking-widest text-xs hover:bg-[#b8955b] transition-all hover:scale-105 shadow-xl shadow-[#C9A96E]/20">
+                    <div className="flex flex-wrap items-center justify-center gap-3">
+                        <Link href="/cars" className="px-7 py-3.5 rounded-2xl bg-[#C9A96E] border border-[#b8955b] text-black font-black uppercase tracking-widest text-xs hover:bg-[#b8955b] transition-all hover:scale-105 shadow-xl shadow-[#C9A96E]/20">
                             {isRTL ? 'تصفح المعرض' : 'BROWSE SHOWROOM'}
                         </Link>
-                        <Link href="/auctions" className="px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest text-xs hover:bg-white/10 hover:border-white/20 transition-all">
+                        <Link href="/auctions" className="px-7 py-3.5 rounded-2xl bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest text-xs hover:bg-white/10 hover:border-white/20 transition-all">
                             {isRTL ? 'المزادات الحية' : 'LIVE AUCTIONS'}
                         </Link>
                     </div>
 
-                    {/* Featured Cars Marquee (Premium Square Card Slider) */}
-                    <div className="mt-16 w-full max-w-7xl relative overflow-hidden select-none">
+                    {/* ─── 4. شريط متحرك لا نهائي لبطاقات سيارات المعرض ─── */}
+                    <div className="mt-12 w-full max-w-7xl relative overflow-hidden select-none">
+                        <div className="flex items-center justify-between px-2 mb-3">
+                            <span className="text-[10px] font-black text-[#C9A96E] uppercase tracking-widest flex items-center gap-1.5">
+                                <Car className="w-3.5 h-3.5" />
+                                {isRTL ? 'معرض أسطول السيارات المتاحة' : 'AVAILABLE CARS FLEET'}
+                            </span>
+                            <Link href="/cars" className="text-[10px] font-black text-white/40 hover:text-[#C9A96E] transition-colors flex items-center gap-1">
+                                {isRTL ? 'عرض الكل' : 'View All'}
+                                <ArrowRight className={cn("w-3 h-3", isRTL && "rotate-180")} />
+                            </Link>
+                        </div>
+
                         {carsLoading ? (
-                            <div className="flex gap-4 justify-center items-center py-16">
+                            <div className="flex gap-4 justify-center items-center py-12">
                                 <div className="w-6 h-6 rounded-full border-2 border-t-transparent border-[#C9A96E] animate-spin" />
-                                <span className="text-[10px] uppercase tracking-widest text-[#C9A96E] font-black italic animate-pulse">Loading Luxury Fleet...</span>
+                                <span className="text-[10px] uppercase tracking-widest text-[#C9A96E] font-black italic animate-pulse">جاري تحميل السيارات...</span>
                             </div>
                         ) : (
-                            <div className="relative w-full overflow-hidden py-4">
-                                <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-black to-transparent z-10 pointer-events-none" />
-                                <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-black to-transparent z-10 pointer-events-none" />
+                            <div className="relative w-full overflow-hidden py-2">
+                                <div className="absolute inset-y-0 left-0 w-16 sm:w-24 bg-gradient-to-r from-[#08080c] to-transparent z-10 pointer-events-none" />
+                                <div className="absolute inset-y-0 right-0 w-16 sm:w-24 bg-gradient-to-l from-[#08080c] to-transparent z-10 pointer-events-none" />
                                 
-                                <div className="animate-marquee-infinite flex gap-6">
-                                    {displayCars.map((car, idx) => (
-                                        <div key={`car-a-${idx}`} className="relative aspect-square w-[240px] sm:w-[280px] rounded-3xl overflow-hidden border border-white/10 bg-white/2 group flex-shrink-0">
+                                <div className="animate-marquee-infinite flex gap-4 sm:gap-6">
+                                    {[...displayCars, ...displayCars, ...displayCars].map((car, idx) => (
+                                        <div key={`car-marquee-${idx}`} className="relative aspect-square w-[220px] sm:w-[260px] rounded-3xl overflow-hidden border border-white/10 bg-[#101018] group flex-shrink-0 cursor-pointer shadow-xl hover:border-[#C9A96E]/50 transition-all duration-300">
                                             {car.images && car.images.length > 0 ? (
-                                                <img src={car.images[0]} alt={car.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 pointer-events-none" />
+                                                <img src={formatCarImage(car.images[0])} alt={car.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 pointer-events-none" />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center bg-white/5">
                                                     <Car className="w-12 h-12 text-white/10" />
                                                 </div>
                                             )}
                                             
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex flex-col justify-end p-5 text-start">
-                                                <div className="flex items-center justify-between mb-1.5">
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex flex-col justify-end p-4 text-start">
+                                                <div className="flex items-center justify-between mb-1">
                                                     <span className={cn(
-                                                        "px-2 py-0.5 rounded border text-[9px] font-black uppercase",
+                                                        "px-2 py-0.5 rounded border text-[8.5px] font-black uppercase",
                                                         car.type === 'auctions' 
                                                             ? "bg-red-500/20 border-red-500/30 text-red-400" 
                                                             : "bg-orange-500/20 border-orange-500/30 text-[#C9A96E]"
                                                     )}>
-                                                        {car.type === 'auctions' ? (isRTL ? 'مزاد مباشر' : 'LIVE AUCTION') : (isRTL ? 'معرض' : 'SHOWROOM')}
+                                                        {car.type === 'auctions' ? (isRTL ? 'مزاد' : 'AUCTION') : (isRTL ? 'معرض' : 'SHOWROOM')}
                                                     </span>
-                                                    <span className="text-sm font-black text-[#C9A96E] cockpit-num">
+                                                    <span className="text-xs sm:text-sm font-black text-[#C9A96E] cockpit-num">
                                                         {formatPriceFromUsd(car.price)}
                                                     </span>
                                                 </div>
                                                 
-                                                <h4 className="text-sm font-black text-white line-clamp-1 mb-1.5">
+                                                <h4 className="text-xs sm:text-sm font-black text-white line-clamp-1 mb-1">
                                                     {car.title}
                                                 </h4>
                                                 
-                                                <div className="flex gap-3 text-[9px] text-white/40">
+                                                <div className="flex gap-2 text-[8.5px] text-white/40">
                                                     <span>{car.year || '2024'}</span>
                                                     <span>•</span>
                                                     <span>{car.transmission || (isRTL ? 'أوتوماتيك' : 'Auto')}</span>
@@ -438,47 +387,7 @@ export default function HomePage() {
                                                 </div>
                                             </div>
                                             
-                                            <Link href={car.type === 'auctions' ? `/auctions/${car._id}` : `/cars/${car._id}`} className="absolute inset-0 z-10" />
-                                        </div>
-                                    ))}
-                                    {displayCars.map((car, idx) => (
-                                        <div key={`car-b-${idx}`} className="relative aspect-square w-[240px] sm:w-[280px] rounded-3xl overflow-hidden border border-white/10 bg-white/2 group flex-shrink-0">
-                                            {car.images && car.images.length > 0 ? (
-                                                <img src={car.images[0]} alt={car.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 pointer-events-none" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center bg-white/5">
-                                                    <Car className="w-12 h-12 text-white/10" />
-                                                </div>
-                                            )}
-                                            
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex flex-col justify-end p-5 text-start">
-                                                <div className="flex items-center justify-between mb-1.5">
-                                                    <span className={cn(
-                                                        "px-2 py-0.5 rounded border text-[9px] font-black uppercase",
-                                                        car.type === 'auctions' 
-                                                            ? "bg-red-500/20 border-red-500/30 text-red-400" 
-                                                            : "bg-orange-500/20 border-orange-500/30 text-[#C9A96E]"
-                                                    )}>
-                                                        {car.type === 'auctions' ? (isRTL ? 'مزاد مباشر' : 'LIVE AUCTION') : (isRTL ? 'معرض' : 'SHOWROOM')}
-                                                    </span>
-                                                    <span className="text-sm font-black text-[#C9A96E] cockpit-num">
-                                                        {formatPriceFromUsd(car.price)}
-                                                    </span>
-                                                </div>
-                                                
-                                                <h4 className="text-sm font-black text-white line-clamp-1 mb-1.5">
-                                                    {car.title}
-                                                </h4>
-                                                
-                                                <div className="flex gap-3 text-[9px] text-white/40">
-                                                    <span>{car.year || '2024'}</span>
-                                                    <span>•</span>
-                                                    <span>{car.transmission || (isRTL ? 'أوتوماتيك' : 'Auto')}</span>
-                                                    <span>•</span>
-                                                    <span>{car.fuel || (isRTL ? 'ديزل' : 'Diesel')}</span>
-                                                </div>
-                                            </div>
-                                            
+                                            {/* رابط مباشر لصفحة السيارة عند الضغط */}
                                             <Link href={car.type === 'auctions' ? `/auctions/${car._id}` : `/cars/${car._id}`} className="absolute inset-0 z-10" />
                                         </div>
                                     ))}
@@ -489,289 +398,208 @@ export default function HomePage() {
                 </motion.div>
             </header>
 
-            {/* ─── قسم معرض السيارات التفاعلي الفاخر (Featured Fleet Grid) ─── */}
-            <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative z-10">
-                <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
-                    <div>
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#C9A96E]/10 border border-[#C9A96E]/30 text-[10px] font-black uppercase tracking-widest text-[#C9A96E] mb-3">
-                            <Sparkles className="w-3.5 h-3.5" />
-                            {isRTL ? 'معرض أسطول السيارات الكورية والمزادات الحية' : 'FEATURED AUTOMOTIVE FLEET & LIVE AUCTIONS'}
-                        </div>
-                        <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white italic uppercase">
-                            {isRTL ? 'استكشف أحدث السيارات المتاحة' : 'Explore Featured Vehicles'}
-                        </h2>
-                    </div>
-
-                    {/* فلاتر التصنيف */}
-                    <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-                        {[
-                            { key: 'ALL', labelAr: 'الكل', labelEn: 'All' },
-                            { key: 'HYUNDAI', labelAr: 'هيونداي', labelEn: 'Hyundai' },
-                            { key: 'KIA', labelAr: 'كيا', labelEn: 'Kia' },
-                            { key: 'BMW', labelAr: 'بي ام دبليو', labelEn: 'BMW' },
-                            { key: 'MERCEDES', labelAr: 'مرسيدس', labelEn: 'Mercedes' },
-                            { key: 'AUCTIONS', labelAr: 'المزادات الحية 🔴', labelEn: 'Live Auctions 🔴' },
-                        ].map((tab) => (
-                            <button
-                                key={tab.key}
-                                onClick={() => setSelectedCategory(tab.key as any)}
-                                className={cn(
-                                    "px-4 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap border",
-                                    selectedCategory === tab.key
-                                        ? "bg-[#C9A96E] text-black border-[#C9A96E] shadow-[0_0_15px_rgba(201,169,110,0.3)]"
-                                        : "bg-white/5 text-white/70 border-white/10 hover:border-white/20 hover:text-white"
-                                )}
-                            >
-                                {isRTL ? tab.labelAr : tab.labelEn}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {carsLoading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 py-12">
-                        {[1, 2, 3, 4, 5, 6].map(i => (
-                            <div key={i} className="h-80 rounded-3xl bg-white/[0.03] border border-white/5 animate-pulse" />
-                        ))}
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {displayCars
-                            .filter(car => {
-                                if (selectedCategory === 'ALL') return true;
-                                if (selectedCategory === 'AUCTIONS') return car.type === 'auctions';
-                                const make = String(car.make || car.title || '').toUpperCase();
-                                return make.includes(selectedCategory);
-                            })
-                            .slice(0, 9)
-                            .map((car, idx) => {
-                                const rawMake = typeof car.make === 'object' ? car.make?.name : car.make;
-                                const title = formatCarTitle(car.title || `${rawMake || ''} ${car.model || ''} ${car.year || ''}`, rawMake || '', isRTL);
-                                const image = formatCarImage(Array.isArray(car.images) && car.images.length > 0 ? car.images[0] : undefined);
-                                const priceStr = formatPriceFromUsd(car.price || 0);
-
-                                return (
-                                    <div 
-                                        key={`grid-car-${idx}`}
-                                        className="group relative rounded-3xl overflow-hidden bg-[#101018] border border-white/10 hover:border-[#C9A96E]/50 transition-all duration-500 shadow-2xl flex flex-col justify-between"
-                                    >
-                                        <div>
-                                            {/* صورة السيارة */}
-                                            <div className="relative h-56 w-full overflow-hidden bg-zinc-900">
-                                                <img 
-                                                    src={image} 
-                                                    alt={title}
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                                                    onError={(e) => {
-                                                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?q=80&w=1000&auto=format&fit=crop';
-                                                    }}
-                                                />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-[#101018] via-transparent to-transparent" />
-                                                
-                                                {/* شارة النوع */}
-                                                <div className="absolute top-4 start-4">
-                                                    <span className={cn(
-                                                        "px-3 py-1 rounded-full text-[10px] font-black uppercase border backdrop-blur-md shadow-lg",
-                                                        car.type === 'auctions'
-                                                            ? "bg-red-500/20 border-red-500/40 text-red-400"
-                                                            : "bg-emerald-500/20 border-emerald-500/40 text-emerald-400"
-                                                    )}>
-                                                        {car.type === 'auctions' ? (isRTL ? '🔴 مزاد مباشر' : '🔴 LIVE AUCTION') : (isRTL ? '✨ معرض أونلاين' : '✨ SHOWROOM')}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* تفاصيل السيارة */}
-                                            <div className="p-6">
-                                                <h3 className="text-lg font-bold text-white mb-3 line-clamp-1 group-hover:text-[#C9A96E] transition-colors" title={title}>
-                                                    {title}
-                                                </h3>
-
-                                                {/* المواصفات السريعة */}
-                                                <div className="flex items-center gap-3 text-xs text-white/50 mb-6 flex-wrap font-mono">
-                                                    <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/5">{car.year || '2024'}</span>
-                                                    <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/5">{car.transmission || (isRTL ? 'أوتوماتيك' : 'Auto')}</span>
-                                                    <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/5">{car.fuel || (isRTL ? 'بنزين / ديزل' : 'Petrol')}</span>
-                                                </div>
-
-                                                {/* السعر */}
-                                                <div className="flex items-baseline justify-between pt-4 border-t border-white/5">
-                                                    <div>
-                                                        <span className="text-[10px] font-black text-white/40 uppercase tracking-widest block mb-0.5">
-                                                            {isRTL ? 'السعر التقديري' : 'ESTIMATED PRICE'}
-                                                        </span>
-                                                        <span className="text-2xl font-black text-[#C9A96E] cockpit-num">
-                                                            {priceStr}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* أزرار التفاعل */}
-                                        <div className="p-6 pt-0 grid grid-cols-2 gap-3">
-                                            <button
-                                                onClick={() => handleHomeWhatsAppOrder(car)}
-                                                className="h-11 rounded-2xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 font-bold text-xs hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.15)]"
-                                            >
-                                                <MessageSquare className="w-4 h-4" />
-                                                <span>{isRTL ? 'طلب واتساب' : 'WhatsApp'}</span>
-                                            </button>
-                                            <Link
-                                                href={car.type === 'auctions' ? `/auctions/${car._id}` : `/cars/${car._id}`}
-                                                className="h-11 rounded-2xl bg-white/5 border border-white/10 text-white font-bold text-xs hover:bg-[#C9A96E] hover:text-black hover:border-[#C9A96E] transition-all flex items-center justify-center gap-2"
-                                            >
-                                                <Eye className="w-4 h-4" />
-                                                <span>{isRTL ? 'التفاصيل' : 'Details'}</span>
-                                            </Link>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                    </div>
-                )}
-
-                <div className="mt-12 text-center">
-                    <Link
-                        href="/cars"
-                        className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-[#C9A96E] to-[#b8955b] text-black font-black text-xs uppercase tracking-widest hover:scale-105 transition-all shadow-[0_0_25px_rgba(201,169,110,0.3)]"
-                    >
-                        <span>{isRTL ? 'عرض جميع سيارات المعرض والمزادات' : 'VIEW ALL SHOWROOM & AUCTION CARS'}</span>
-                        <ArrowRight className={cn("w-4 h-4", isRTL && "rotate-180")} />
-                    </Link>
-                </div>
-            </section>
-
-            {/* ─── Car Brands Ribbon Section (Circular Logos & Moving Marquee) ─── */}
+            {/* ─── 5. شعارات السيارات الدائرية الخمسة المثبتة (5 Circular Brand Cards) ─── */}
             {(homeContent?.showBrandCatalog ?? true) && (
-                <section className="py-16 border-y border-white/5 bg-gradient-to-b from-transparent via-white/[0.01] to-transparent relative z-10 overflow-hidden">
-                    <div className="max-w-7xl mx-auto px-4 mb-8 text-center">
-                        <span className="text-[10px] font-black text-[#C9A96E] tracking-[0.3em] uppercase">
+                <section className="py-12 border-y border-white/5 bg-gradient-to-b from-transparent via-white/[0.01] to-transparent relative z-10">
+                    <div className="max-w-7xl mx-auto px-4 text-center">
+                        <span className="text-[10px] font-black text-[#C9A96E] tracking-[0.3em] uppercase block mb-1">
                             {isRTL ? 'الشركات المصنعة والوكالات' : 'PREMIUM BRANDS'}
                         </span>
-                        <h2 className="text-2xl sm:text-3xl font-black mt-2">
-                            {isRTL ? 'تصفح السيارات حسب العلامة التجارية' : 'Browse By Car Brand'}
+                        <h2 className="text-xl sm:text-2xl font-black mb-8">
+                            {isRTL ? 'تصفح بالماركة التجاريـة' : 'Browse By Car Brand'}
                         </h2>
-                    </div>
-                    
-                    {/* Marquee Track */}
-                    <div className="relative w-full overflow-hidden py-4">
-                        <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-black to-transparent z-10 pointer-events-none" />
-                        <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-black to-transparent z-10 pointer-events-none" />
-                        
-                        <div className="animate-marquee-infinite flex gap-12 items-center">
-                            {displayBrands.map((brand, idx) => (
-                                <HomeBrandLogo key={`brand-a-${idx}`} brand={brand} isRTL={isRTL} />
-                            ))}
-                            {displayBrands.map((brand, idx) => (
-                                <HomeBrandLogo key={`brand-b-${idx}`} brand={brand} isRTL={isRTL} />
+
+                        {/* 5 شعارات دائرية محددة */}
+                        <div className="flex items-center justify-center gap-4 sm:gap-10 flex-wrap max-w-4xl mx-auto">
+                            {display5Brands.map((brand, idx) => (
+                                <HomeBrandLogo key={`brand-circle-${idx}`} brand={brand} isRTL={isRTL} />
                             ))}
                         </div>
                     </div>
                 </section>
             )}
 
-            {/* ─── Why Choose Us Section ─── */}
+            {/* ─── 6. بطاقات المزاد المباشر التناوبية في الرئيسية (Auto-Rotating 4 Live Auction Cards) ─── */}
+            {(homeContent?.showLiveAuctions ?? true) && (
+                <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative z-10">
+                    <div className="flex items-center justify-between mb-8">
+                        <div>
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-[10px] font-black uppercase tracking-widest text-red-400 mb-2">
+                                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                                {isRTL ? 'المزاد المباشر الحي' : 'LIVE AUCTION FLEET'}
+                            </div>
+                            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white italic uppercase">
+                                {isRTL ? 'سيارات المزاد المباشر' : 'Live Auction Cars'}
+                            </h2>
+                        </div>
+                        <Link
+                            href="/auctions"
+                            className="text-xs font-black text-[#C9A96E] hover:underline flex items-center gap-1.5"
+                        >
+                            <span>{isRTL ? 'كل المزادات' : 'All Auctions'}</span>
+                            <ArrowRight className={cn("w-3.5 h-3.5", isRTL && "rotate-180")} />
+                        </Link>
+                    </div>
+
+                    {/* شبكة 4 بطاقات تتغير تلقائياً كل فترة زمنية */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+                        {rotated4AuctionCars.map((car, idx) => {
+                            const rawMake = typeof car.make === 'object' ? car.make?.name : car.make;
+                            const title = formatCarTitle(car.title || `${rawMake || ''} ${car.model || ''} ${car.year || ''}`, rawMake || '', isRTL);
+                            const image = formatCarImage(Array.isArray(car.images) && car.images.length > 0 ? car.images[0] : undefined);
+                            const priceStr = formatPriceFromUsd(car.price || 0);
+
+                            return (
+                                <motion.div 
+                                    key={`auction-card-${car._id || idx}`}
+                                    layout
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ duration: 0.4 }}
+                                    className="group relative rounded-2xl sm:rounded-3xl overflow-hidden bg-[#101018] border border-white/10 hover:border-red-500/40 transition-all duration-300 shadow-xl flex flex-col justify-between"
+                                >
+                                    <div>
+                                        {/* الصورة */}
+                                        <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-900">
+                                            <img 
+                                                src={image} 
+                                                alt={title}
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?q=80&w=1000&auto=format&fit=crop';
+                                                }}
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-[#101018] via-transparent to-transparent" />
+                                            <div className="absolute top-2.5 start-2.5">
+                                                <span className="px-2 py-0.5 rounded-md text-[8px] sm:text-[9px] font-black uppercase bg-red-500/20 border border-red-500/40 text-red-400 backdrop-blur-md">
+                                                    🔴 {isRTL ? 'مزاد حي' : 'LIVE'}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* التفاصيل */}
+                                        <div className="p-3 sm:p-4">
+                                            <h3 className="text-xs sm:text-sm font-bold text-white mb-2 line-clamp-1 group-hover:text-red-400 transition-colors" title={title}>
+                                                {title}
+                                            </h3>
+
+                                            <div className="flex items-baseline justify-between pt-2 border-t border-white/5">
+                                                <div>
+                                                    <span className="text-[8px] font-bold text-white/30 uppercase tracking-widest block">
+                                                        {isRTL ? 'أعلى مزايدة' : 'HIGHEST BID'}
+                                                    </span>
+                                                    <span className="text-xs sm:text-base font-black text-[#C9A96E]">
+                                                        {priceStr}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* زر المزايدة الطلب */}
+                                    <div className="p-3 pt-0">
+                                        <Link
+                                            href={`/auctions/${car._id}`}
+                                            className="w-full h-9 rounded-xl bg-red-500/20 border border-red-500/30 text-red-300 font-bold text-[10px] sm:text-xs hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-1.5"
+                                        >
+                                            <Gavel className="w-3.5 h-3.5" />
+                                            <span>{isRTL ? 'زايد الآن' : 'Bid Now'}</span>
+                                        </Link>
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+                    </div>
+                </section>
+            )}
+
+            {/* ─── 7. قسم "لماذا تختار منصتنا؟" والتواصل الاجتماعي الديناميكي (Why Choose Us & Dynamic Social Footer) ─── */}
             {(homeContent?.showPlatformFeatures ?? true) && (
-                <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                    <div className="text-center mb-16">
-                        <span className="text-[10px] font-black text-[#C9A96E] tracking-[0.3em] uppercase">
+                <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                    <div className="text-center mb-12">
+                        <span className="text-[10px] font-black text-[#C9A96E] tracking-[0.3em] uppercase block mb-1">
                             {isRTL ? 'ضمان وجودة إتش إم كار' : 'HM CAR TRUST HUB'}
                         </span>
-                        <h2 className="text-3xl sm:text-4xl font-black tracking-tight mt-2 uppercase italic">
+                        <h2 className="text-2xl sm:text-4xl font-black tracking-tight uppercase italic">
                             {isRTL ? 'لماذا تختار منصتنا؟' : 'Why Choose Us?'}
                         </h2>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {/* الميزات الأربع: كل ثنتين جنب بعض في الجوال (grid-cols-2) */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-16">
                         {[
-                            { icon: ShieldCheck, titleAr: 'فحص فني شامل', titleEn: 'Guaranteed Inspection', descAr: 'يتم فحص كل سيارة بدقة في كوريا عبر مهندسينا قبل الشحن لضمان خلوها من أي مشاكل.', descEn: 'Every car is thoroughly inspected in Korea by our engineers before shipping.' },
-                            { icon: Gavel, titleAr: 'مزادات كورية مباشرة', titleEn: 'Direct Auction Access', descAr: 'شاهد وزايد في المزادات الحية مباشرة دون وسطاء وبمنتهى الشفافية والسهولة.', descEn: 'Watch and bid in live Korean auctions directly without intermediaries.' },
-                            { icon: Wrench, titleAr: 'قطع غيار أصلية', titleEn: 'Original Parts Catalog', descAr: 'استورد قطع غيار كورية أصلية وتتبع الشحنات بأسعار منافسة للمخزون والتجزئة.', descEn: 'Import original Korean spare parts directly at competitive retail rates.' },
-                            { icon: Users, titleAr: 'دعم العملاء 24/7', titleEn: 'Expert Support 24/7', descAr: 'فريقنا جاهز لمساعدتك في كل خطوة من المزايدة والشراء وحتى الشحن والتسجيل.', descEn: 'Our team is ready to guide you from bidding and purchasing to registration.' }
+                            { icon: ShieldCheck, titleAr: 'فحص فني شامل', titleEn: 'Guaranteed Inspection', descAr: 'فحص كل سيارة بدقة في كوريا عبر مهندسينا قبل الشحن.', descEn: 'Every car is thoroughly inspected in Korea before shipping.' },
+                            { icon: Gavel, titleAr: 'مزادات مباشرة', titleEn: 'Direct Auction Access', descAr: 'مزايدة حية ومباشرة بدون وسطاء وبمنتهى الشفافية.', descEn: 'Watch and bid in live Korean auctions directly.' },
+                            { icon: Wrench, titleAr: 'قطع غيار أصلية', titleEn: 'Original Parts Catalog', descAr: 'استيراد قطع غيار كورية أصلية وتتبع الشحنات.', descEn: 'Import original Korean spare parts directly.' },
+                            { icon: Users, titleAr: 'دعم العملاء 24/7', titleEn: 'Expert Support 24/7', descAr: 'فريقنا جاهز لمساعدتك في المزايدة والشراء والتسجيل.', descEn: 'Our team is ready to guide you step-by-step.' }
                         ].map((item, idx) => (
-                            <div key={idx} className="bg-[#101018] border border-white/5 p-6 rounded-2xl relative overflow-hidden group hover:border-[#C9A96E]/30 transition-all duration-300">
-                                <div className="w-12 h-12 rounded-xl bg-[#C9A96E]/5 border border-[#C9A96E]/20 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-                                    <item.icon className="w-6 h-6 text-[#C9A96E]" />
+                            <div key={idx} className="bg-[#101018] border border-white/5 p-4 sm:p-6 rounded-2xl relative overflow-hidden group hover:border-[#C9A96E]/30 transition-all duration-300">
+                                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#C9A96E]/10 border border-[#C9A96E]/20 flex items-center justify-center mb-3 sm:mb-5 group-hover:scale-110 transition-transform">
+                                    <item.icon className="w-5 h-5 sm:w-6 sm:h-6 text-[#C9A96E]" />
                                 </div>
-                                <h3 className="text-base font-black mb-2 text-white">
+                                <h3 className="text-xs sm:text-base font-black mb-1.5 text-white">
                                     {isRTL ? item.titleAr : item.titleEn}
                                 </h3>
-                                <p className="text-xs text-white/45 leading-relaxed">
+                                <p className="text-[10px] sm:text-xs text-white/45 leading-relaxed line-clamp-3">
                                     {isRTL ? item.descAr : item.descEn}
                                 </p>
                             </div>
                         ))}
                     </div>
-                </section>
-            )}
 
-            {/* ─── Testimonials Section ─── */}
-            {(homeContent?.showTestimonials ?? true) && (
-                <section className="py-20 bg-gradient-to-b from-transparent via-white/[0.01] to-transparent border-t border-white/5 relative z-10">
-                    <div className="max-w-5xl mx-auto px-4 sm:px-6">
-                        <div className="text-center mb-16">
-                            <span className="text-[10px] font-black text-[#C9A96E] tracking-[0.3em] uppercase">
-                                {isRTL ? 'آراء شركاء النجاح' : 'TESTIMONIALS'}
+                    {/* ─── قسم منصات التواصل الاجتماعي الديناميكي والاتصال ─── */}
+                    <div className="bg-[#0c0c14] border border-white/8 rounded-3xl p-6 sm:p-10 text-center relative overflow-hidden">
+                        <div className="max-w-2xl mx-auto">
+                            <span className="text-[10px] font-black text-[#C9A96E] tracking-[0.3em] uppercase block mb-2">
+                                {isRTL ? 'تواصل معنا مباشرة' : 'CONNECT WITH US'}
                             </span>
-                            <h2 className="text-3xl font-black mt-2">
-                                {isRTL ? 'ماذا يقول عملاؤنا عنا؟' : 'What Our Customers Say'}
-                            </h2>
-                        </div>
+                            <h3 className="text-xl sm:text-3xl font-black mb-6">
+                                {isRTL ? 'تابعنا على منصات التواصل الاجتماعي' : 'Follow Us On Social Media'}
+                            </h3>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {testimonials.map((t, idx) => (
-                                <div key={idx} className="bg-[#11111a] border border-white/5 rounded-2xl p-6 relative flex flex-col justify-between">
-                                    <div>
-                                        <div className="flex gap-1 mb-4">
-                                            {Array.from({ length: t.rating }).map((_, i) => (
-                                                <Star key={i} className="w-3.5 h-3.5 text-[#C9A96E] fill-[#C9A96E]" />
-                                            ))}
-                                        </div>
-                                        <p className="text-xs text-white/60 leading-relaxed italic mb-6">
-                                            "{isRTL ? t.textAr : t.textEn}"
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center gap-3 pt-4 border-t border-white/5">
-                                        <div className="w-8 h-8 rounded-full bg-[#C9A96E]/20 text-[#C9A96E] border border-[#C9A96E]/30 flex items-center justify-center font-black text-xs">
-                                            {t.avatar}
-                                        </div>
-                                        <div>
-                                            <div className="text-xs font-black text-white">{isRTL ? t.nameAr : t.nameEn}</div>
-                                            <div className="text-[9px] text-[#C9A96E]/70 font-semibold mt-0.5">{isRTL ? t.roleAr : t.roleEn}</div>
-                                        </div>
-                                    </div>
+                            {/* الأيقونات الدائرية الديناميكية — لا تظهر إلا إذا أضاف الأدمن الرابط */}
+                            {socialPlatforms.length > 0 ? (
+                                <div className="flex items-center justify-center gap-4 sm:gap-8 flex-wrap mb-8">
+                                    {socialPlatforms.map((platform) => (
+                                        <a
+                                            key={platform.key}
+                                            href={platform.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex flex-col items-center gap-2 group cursor-pointer"
+                                        >
+                                            <div
+                                                className="w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-2xl border-2 border-white/10 bg-white/5 group-hover:scale-110 group-hover:border-[#C9A96E] transition-all shadow-lg"
+                                                style={{ boxShadow: `0 0 15px ${platform.color}30` }}
+                                            >
+                                                <span>{platform.icon}</span>
+                                            </div>
+                                            <span className="text-[10px] sm:text-xs font-bold text-white/70 group-hover:text-[#C9A96E] transition-colors">
+                                                {isRTL ? platform.labelAr : platform.labelEn}
+                                            </span>
+                                        </a>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-            )}
+                            ) : (
+                                <p className="text-xs text-white/40 mb-6">{isRTL ? 'يسعدنا تواصلكم معنا عبر البريد والهاتف' : 'Contact us via email or phone'}</p>
+                            )}
 
-            {/* ─── FAQs Section ─── */}
-            {(homeContent?.showFAQ ?? true) && (
-                <section className="py-24 max-w-4xl mx-auto px-4 sm:px-6 relative z-10">
-                    <div className="text-center mb-16">
-                        <span className="text-[10px] font-black text-[#C9A96E] tracking-[0.3em] uppercase">
-                            {isRTL ? 'الأسئلة المتكررة' : 'FREQUENTLY ASKED QUESTIONS'}
-                        </span>
-                        <h2 className="text-3xl font-black mt-2">
-                            {isRTL ? 'إجابات على استفساراتك' : 'Answers To Your Questions'}
-                        </h2>
-                    </div>
-
-                    <div className="space-y-4">
-                        {faqs.map((faq, idx) => (
-                            <div key={idx} className="bg-[#101018] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-colors">
-                                <h3 className="text-sm sm:text-base font-black flex items-start gap-2.5 text-white mb-2 leading-snug">
-                                    <HelpCircle className="w-5 h-5 text-[#C9A96E] shrink-0 mt-0.5" />
-                                    {isRTL ? faq.qAr : faq.qEn}
-                                </h3>
-                                <p className="text-xs sm:text-sm text-white/50 pl-7 leading-relaxed">
-                                    {isRTL ? faq.aAr : faq.aEn}
-                                </p>
+                            {/* البريد الإلكتروني ورقم الهاتف */}
+                            <div className="flex flex-wrap items-center justify-center gap-6 pt-6 border-t border-white/5 text-xs font-bold text-white/60">
+                                {contactPhone && (
+                                    <a href={`tel:${contactPhone}`} className="flex items-center gap-2 hover:text-[#C9A96E] transition-colors">
+                                        <Phone className="w-4 h-4 text-[#C9A96E]" />
+                                        <span dir="ltr">{contactPhone}</span>
+                                    </a>
+                                )}
+                                {contactEmail && (
+                                    <a href={`mailto:${contactEmail}`} className="flex items-center gap-2 hover:text-[#C9A96E] transition-colors">
+                                        <Mail className="w-4 h-4 text-[#C9A96E]" />
+                                        <span>{contactEmail}</span>
+                                    </a>
+                                )}
                             </div>
-                        ))}
+                        </div>
                     </div>
                 </section>
             )}
@@ -785,6 +613,7 @@ export default function HomePage() {
                     </p>
                 </div>
             </footer>
+
             {/* Premium PWA Install Floating Trigger */}
             <AnimatePresence>
                 {showInstallBtn && (homeContent?.showAppConversion ?? true) && (
@@ -792,7 +621,7 @@ export default function HomePage() {
                         initial={{ opacity: 0, scale: 0.8, y: 50 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.8, y: 50 }}
-                        className="fixed bottom-24 right-4 z-[100]"
+                        className="fixed bottom-20 right-4 z-[100]"
                     >
                         <motion.button
                             whileHover={{ scale: 1.05 }}

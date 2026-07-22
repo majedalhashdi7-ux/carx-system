@@ -235,8 +235,8 @@ export default function AuctionsPage() {
         const phone = car.whatsappNumber || globalWhatsapp;
         const text = encodeURIComponent(
             isRTL
-                ? `السلام عليكم، أريد تقديم طلب مزايدة على سيارة من المزاد المباشر:\nالسيارة: ${car.title}\nالمزاد: ${car.sessionTitle}\nرقم اللوت: ${car.lotNumber || 'N/A'}`
-                : `Hello, I'm interested in bidding on this car from the Live Auction:\nCar: ${car.title}\nAuction: ${car.sessionTitle}\nLot #: ${car.lotNumber || 'N/A'}`
+                ? `مرحباً إتش إم كار 👋\nأود تقديم طلب وتأكيد الشراء لسيارة المزاد المباشر:\n🚗 السيارة: ${carTitle}\n💰 التقدير: ${car.priceEstimate || 'حسب الطلب'}\n🆔 الجلسة: ${car.sessionTitle || 'مزاد كوري مباشر'}`
+                : `Hello HM CAR 👋\nI want to place an order for Live Auction car:\n🚗 Car: ${carTitle}\n💰 Estimate: ${car.priceEstimate || 'N/A'}\n🆔 Session: ${car.sessionTitle || 'Live Auction'}`
         );
         window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${text}`, '_blank');
     };
@@ -266,7 +266,7 @@ export default function AuctionsPage() {
                             <h1 className="text-3xl sm:text-5xl font-black italic tracking-tighter uppercase text-white">
                                 {isRTL ? 'المزاد المباشر' : 'LIVE AUCTION'}
                                 <span className="block text-xs not-italic font-light tracking-[0.4em] text-white/25 mt-2">
-                                    {isRTL ? 'مزايدة مباشرة · استفسار سريع · تواصل مباشر' : 'DIRECT BIDDING · QUICK ENQUIRY · DIRECT CONTACT'}
+                                    {isRTL ? 'طلب سريع · تواصل مباشر عبر الواتساب' : 'QUICK ORDER · DIRECT WHATSAPP CONTACT'}
                                 </span>
                             </h1>
                         </div>
@@ -277,7 +277,7 @@ export default function AuctionsPage() {
 
             <main className="max-w-7xl mx-auto px-4 pb-28 pt-8">
                 {loading ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                         {[1, 2, 3, 4, 5, 6].map(n => <AuctionSkeleton key={n} />)}
                     </div>
                 ) : cars.length === 0 ? (
@@ -297,7 +297,7 @@ export default function AuctionsPage() {
                         </p>
                     </motion.div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                         {cars.map((car, idx) => {
                             const carImg = resolveAuctionCarImg(car);
                             const carTitle = formatCarTitle(car.title || `${car.make || ''} ${car.model || ''}`, car.make || '', isRTL);
@@ -308,7 +308,7 @@ export default function AuctionsPage() {
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: idx * 0.05 }}
                                     whileHover={{ y: -6 }}
-                                    className="glass-card bg-white/[0.01] border-white/5 p-5 space-y-4 cursor-pointer group rounded-2xl md:rounded-3xl"
+                                    className="glass-card bg-white/[0.01] border-white/5 p-4 sm:p-5 space-y-4 cursor-pointer group rounded-2xl md:rounded-3xl"
                                     onClick={() => setSelectedCar(car)}
                                 >
                                     <div className="relative aspect-video rounded-xl md:rounded-2xl overflow-hidden border border-white/5 bg-zinc-900">
@@ -326,26 +326,22 @@ export default function AuctionsPage() {
                                                     LOT #{car.lotNumber}
                                                 </div>
                                             )}
-                                            {car.condition && (
-                                                <div className="px-2.5 py-1 bg-black/60 backdrop-blur-md rounded-lg border border-white/10 text-[8px] font-black uppercase tracking-widest">
-                                                    {car.condition}
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
 
                                     <div className="space-y-3">
-                                        <h3 className="text-base md:text-lg font-black uppercase italic truncate" title={carTitle}>{carTitle}</h3>
-                                        <div className="flex justify-between items-end border-t border-white/5 pt-3 gap-3">
+                                        <h3 className="text-sm md:text-lg font-black uppercase italic truncate" title={carTitle}>{carTitle}</h3>
+                                        <div className="flex justify-between items-center border-t border-white/5 pt-3 gap-2">
                                             <div className="min-w-0">
-                                                <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest block">{isRTL ? 'تقدير السعر' : 'ESTIMATE'}</span>
-                                                <div className="text-sm md:text-base font-black text-[#C9A96E] tracking-tighter truncate">{car.priceEstimate || (isRTL ? 'تواصل معنا' : 'Contact Us')}</div>
+                                                <span className="text-[8px] sm:text-[9px] font-bold text-white/20 uppercase tracking-widest block">{isRTL ? 'تقدير السعر' : 'ESTIMATE'}</span>
+                                                <div className="text-xs sm:text-base font-black text-[#C9A96E] tracking-tighter truncate">{car.priceEstimate || (isRTL ? 'تواصل معنا' : 'Contact Us')}</div>
                                             </div>
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); handleBuyRequest(car); }}
-                                                className="shrink-0 px-4 md:px-5 py-2.5 bg-[#C9A96E]/10 border border-[#C9A96E]/30 rounded-xl hover:bg-[#C9A96E]/20 hover:text-[#C9A96E] transition-all text-[8px] md:text-[9px] font-black uppercase tracking-[0.15em] text-[#C9A96E]"
+                                                className="shrink-0 px-3.5 py-2 sm:px-5 sm:py-2.5 bg-emerald-600/20 border border-emerald-500/40 rounded-xl hover:bg-emerald-600 hover:text-white transition-all text-[9px] sm:text-xs font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5"
                                             >
-                                                {isRTL ? 'مزايدة' : 'BID'}
+                                                <MessageCircle className="w-3.5 h-3.5" />
+                                                <span>{isRTL ? 'طلب' : 'ORDER'}</span>
                                             </button>
                                         </div>
                                     </div>

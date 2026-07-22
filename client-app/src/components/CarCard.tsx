@@ -116,33 +116,30 @@ export default function CarCard({ car, index = 0, onClick, onLoginRequired }: Ca
                     </div>
 
                     {/* ── أزرار القلب والسلة ── */}
-                    <div className="absolute top-3 right-3 flex flex-col gap-2">
-                        {/* قلب المفضلة */}
+                    <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
+                        {/* قلب المفضلة بتصميم شفاف ناعم حديث */}
                         <motion.button
-                            whileTap={{ scale: 0.85 }}
+                            whileTap={{ scale: 0.82 }}
                             onClick={toggleFav}
                             className={cn(
-                                "w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md border transition-all duration-300 shadow-lg",
+                                "w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-xl border transition-all duration-300 shadow-xl",
                                 isFav
-                                    ? "bg-red-500/90 border-red-400/50 shadow-red-500/30"
-                                    : "bg-black/60 border-white/15 hover:bg-red-500/20 hover:border-red-400/40"
+                                    ? "bg-red-500/90 border-red-400/60 shadow-red-500/40 scale-105"
+                                    : "bg-black/30 border-white/25 hover:bg-red-500/30 hover:border-red-400/50"
                             )}
                             title={isRTL ? 'المفضلة' : 'Favorite'}
                         >
-                            <Heart className={cn("w-4 h-4 transition-all", isFav ? "fill-white text-white" : "text-white/60")} />
+                            <Heart className={cn("w-4 h-4 transition-all duration-300", isFav ? "fill-white text-white drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" : "text-white/90 drop-shadow-md")} />
                         </motion.button>
 
                         {/* زر التفاصيل (الوصف) */}
                         <motion.button
                             whileTap={{ scale: 0.85 }}
                             onClick={(e) => { e.stopPropagation(); onClick?.(); }}
-                            className={cn(
-                                "w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md border transition-all duration-300 shadow-lg",
-                                "bg-black/60 border-white/15 hover:bg-blue-500/20 hover:border-blue-400/40"
-                            )}
+                            className="w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-xl border border-white/20 bg-black/30 hover:bg-blue-500/30 hover:border-blue-400/50 transition-all duration-300 shadow-xl"
                             title={isRTL ? 'الوصف والتفاصيل' : 'Details'}
                         >
-                            <FileText className="w-4 h-4 text-white/60" />
+                            <FileText className="w-4 h-4 text-white/90" />
                         </motion.button>
 
                         {/* سلة التسوق */}
@@ -150,16 +147,16 @@ export default function CarCard({ car, index = 0, onClick, onLoginRequired }: Ca
                             whileTap={{ scale: 0.85 }}
                             onClick={addToCart}
                             className={cn(
-                                "w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md border transition-all duration-300 shadow-lg",
+                                "w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-xl border transition-all duration-300 shadow-xl",
                                 inCart
-                                    ? "bg-emerald-500/90 border-emerald-400/50 shadow-emerald-500/30"
-                                    : "bg-black/60 border-white/15 hover:bg-amber-500/20 hover:border-amber-400/40"
+                                    ? "bg-emerald-500/90 border-emerald-400/60 shadow-emerald-500/40"
+                                    : "bg-black/30 border-white/20 hover:bg-amber-500/30 hover:border-amber-400/50"
                             )}
                             title={isRTL ? 'أضف للسلة' : 'Add to Cart'}
                         >
                             {cartAdded || inCart
                                 ? <Check className="w-4 h-4 text-white" />
-                                : <ShoppingCart className="w-4 h-4 text-white/60" />
+                                : <ShoppingCart className="w-4 h-4 text-white/90" />
                             }
                         </motion.button>
                     </div>

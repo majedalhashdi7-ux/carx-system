@@ -140,12 +140,17 @@ function CarCard({ car, onWhatsApp }: { car: CarItem; onWhatsApp: (car: CarItem)
                         {car.year}
                     </div>
 
-                    {/* Like button — top-right */}
+                    {/* Like button — top-right بتصميم شفاف أنيق */}
                     <button
                         onClick={toggleLike}
-                        className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 backdrop-blur-md border border-white/10 flex items-center justify-center transition-all hover:scale-110 active:scale-95 z-10"
+                        className={cn(
+                            "absolute top-3 right-3 w-9 h-9 rounded-full backdrop-blur-xl border flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 z-10 shadow-xl",
+                            liked
+                                ? "bg-red-500/80 border-red-400/60 shadow-red-500/40"
+                                : "bg-black/30 border-white/20 hover:bg-red-500/30 hover:border-red-400/50"
+                        )}
                     >
-                        <Heart className={cn('w-4 h-4 transition-colors', liked ? 'fill-red-500 text-red-500' : 'text-white/70')} />
+                        <Heart className={cn('w-4.5 h-4.5 transition-colors duration-300', liked ? 'fill-white text-white drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'text-white/90 drop-shadow-md')} />
                     </button>
 
                     {/* Inspected badge */}
@@ -758,51 +763,72 @@ function CarsContent() {
                                     ))}
                                 </div>
 
-                                {/* ── Pagination ── */}
+                                {/* ── Pagination بالنمط الدائري الأنيق ── */}
                                 {totalPages > 1 && (
-                                    <div className="mt-12 flex items-center justify-center gap-2">
-                                        {/* Previous Button - Aligning with LTR/RTL reading order */}
-                                        <button
-                                            onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                                            disabled={page === 1}
-                                            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-white/10 text-xs font-black text-white/50 hover:bg-[#C9A96E] hover:text-black hover:border-[#C9A96E] disabled:opacity-20 transition-all">
-                                            {isRTL ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-                                            {isRTL ? 'السابق' : 'Previous'}
-                                        </button>
+                                    <div className="mt-12 flex flex-col items-center gap-3">
+                                        <div className="flex items-center justify-center gap-2 flex-wrap" dir="ltr">
+                                            {/* Previous Button - Arrow < */}
+                                            <button
+                                                onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                                disabled={page === 1}
+                                                className="w-11 h-11 rounded-2xl border border-[#C9A96E]/30 bg-[#121018] text-[#C9A96E] hover:bg-[#C9A96E] hover:text-black disabled:opacity-20 flex items-center justify-center transition-all shadow-md active:scale-95"
+                                                title={isRTL ? 'السابق' : 'Previous'}
+                                            >
+                                                <ChevronLeft className="w-5 h-5" />
+                                            </button>
 
-                                        <div className="flex items-center gap-1">
-                                            {Array.from({ length: Math.min(7, totalPages) }, (_, i) => {
+                                            {/* Page numbers */}
+                                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                                                 let p: number;
-                                                if (totalPages <= 7) p = i + 1;
-                                                else if (page <= 4) p = i + 1;
-                                                else if (page >= totalPages - 3) p = totalPages - 6 + i;
-                                                else p = page - 3 + i;
+                                                if (totalPages <= 5) p = i + 1;
+                                                else if (page <= 3) p = i + 1;
+                                                else if (page >= totalPages - 2) p = totalPages - 4 + i;
+                                                else p = page - 2 + i;
                                                 return (
-                                                    <button key={p} onClick={() => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                                    <button
+                                                        key={p}
+                                                        onClick={() => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                                                         className={cn(
-                                                            "w-9 h-9 rounded-xl text-xs font-black transition-all",
-                                                            p === page ? "bg-[#C9A96E] text-black shadow-[0_0_16px_rgba(201,169,110,0.4)]" : "bg-white/4 border border-white/8 text-white/40 hover:bg-white/10"
-                                                        )}>
+                                                            "min-w-[44px] h-11 px-3 rounded-2xl text-xs font-black transition-all shadow-md flex items-center justify-center border",
+                                                            p === page
+                                                                ? "bg-[#d97706] text-white border-[#d97706] shadow-[0_0_20px_rgba(217,119,6,0.5)] scale-105"
+                                                                : "bg-[#161420] border-white/10 text-[#fef08a] hover:bg-[#C9A96E]/20 hover:border-[#C9A96E]/50"
+                                                        )}
+                                                    >
                                                         {p}
                                                     </button>
                                                 );
                                             })}
+
+                                            {/* Ellipsis if totalPages > 5 */}
+                                            {totalPages > 5 && page < totalPages - 2 && (
+                                                <>
+                                                    <span className="text-white/30 text-xs px-1">...</span>
+                                                    <button
+                                                        onClick={() => { setPage(totalPages); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                                        className="min-w-[44px] h-11 px-3 rounded-2xl text-xs font-black bg-[#161420] border border-white/10 text-[#fef08a] hover:bg-[#C9A96E]/20 transition-all flex items-center justify-center"
+                                                    >
+                                                        {totalPages}
+                                                    </button>
+                                                </>
+                                            )}
+
+                                            {/* Next Button - Arrow > */}
+                                            <button
+                                                onClick={() => { setPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                                disabled={page === totalPages}
+                                                className="w-11 h-11 rounded-2xl border border-[#C9A96E]/30 bg-[#121018] text-[#C9A96E] hover:bg-[#C9A96E] hover:text-black disabled:opacity-20 flex items-center justify-center transition-all shadow-md active:scale-95"
+                                                title={isRTL ? 'التالي' : 'Next'}
+                                            >
+                                                <ChevronRight className="w-5 h-5" />
+                                            </button>
                                         </div>
 
-                                        {/* Next Button - Aligning with LTR/RTL reading order */}
-                                        <button
-                                            onClick={() => { setPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                                            disabled={page === totalPages}
-                                            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-white/10 text-xs font-black text-white/50 hover:bg-[#C9A96E] hover:text-black hover:border-[#C9A96E] disabled:opacity-20 transition-all">
-                                            {isRTL ? 'التالي' : 'Next'}
-                                            {isRTL ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                                        </button>
+                                        <p className="text-center text-xs font-bold text-[#C9A96E]/80">
+                                            {isRTL ? `صفحة ${page} من ${totalPages.toLocaleString()}` : `Page ${page} of ${totalPages.toLocaleString()}`}
+                                        </p>
                                     </div>
                                 )}
-
-                                <p className="text-center text-[10px] text-white/15 mt-4">
-                                    {isRTL ? `صفحة ${page} من ${totalPages} · إجمالي ${filtered.length} سيارة` : `Page ${page} of ${totalPages} · Total ${filtered.length} cars`}
-                                </p>
                             </>
                         )}
                     </div>
