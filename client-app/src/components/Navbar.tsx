@@ -145,9 +145,9 @@ export default function Navbar() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6">
                     <div className="flex items-center h-16 sm:h-18 gap-4">
 
-                        {/* ── شعار HM CAR الفاخر ── */}
+                        {/* ── شعار HM CAR الفاخر المدمج والبارز ── */}
                         <Link href="/" className="group flex items-center shrink-0">
-                            <HMCarLogo variant="horizontal" size="md" />
+                            <HMCarLogo variant="horizontal" size="lg" />
                         </Link>
 
                         {/* ── روابط التنقل (Desktop فقط - وسط) ── */}

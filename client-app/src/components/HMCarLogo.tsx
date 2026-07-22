@@ -16,16 +16,16 @@ export default function HMCarLogo({
     size = 'md',
 }: HMCarLogoProps) {
     if (variant === 'badge' || variant === 'badge-3d') {
-        const badgeSrc = variant === 'badge-3d' ? '/images/logo/logo-badge-3d.png' : '/images/logo/logo-badge.png';
+        const badgeSrc = '/images/logo/logo-badge.png';
         const dimMap = {
-            sm: 'w-8 h-8',
-            md: 'w-10 h-10',
-            lg: 'w-14 h-14',
-            xl: 'w-20 h-20',
+            sm: 'w-9 h-9',
+            md: 'w-11 h-11',
+            lg: 'w-16 h-16',
+            xl: 'w-24 h-24',
         };
 
         return (
-            <div className={cn('relative rounded-full overflow-hidden shrink-0 shadow-lg shadow-[#C9A96E]/20 border border-[#C9A96E]/30', dimMap[size], className)}>
+            <div className={cn('relative rounded-full overflow-hidden shrink-0 shadow-md shadow-[#C9A96E]/20', dimMap[size], className)}>
                 <Image
                     src={badgeSrc}
                     alt="HM CAR Badge"
@@ -37,22 +37,22 @@ export default function HMCarLogo({
         );
     }
 
-    // Default: Horizontal Gold Crest & Text Logo (Transparent blending seamlessly into page)
+    // Horizontal Crest Logo: Perfectly blended (mix-blend-screen), zero box/border, large & integrated
     const dimMap = {
-        sm: 'h-8 w-32 sm:h-9 sm:w-36',
-        md: 'h-9 w-36 sm:h-11 sm:w-44',
-        lg: 'h-12 w-48 sm:h-14 sm:w-56',
-        xl: 'h-16 w-64 sm:h-20 sm:w-80',
+        sm: 'h-10 w-44 sm:h-12 sm:w-52',
+        md: 'h-12 w-52 sm:h-14 sm:w-60',
+        lg: 'h-14 w-60 sm:h-16 sm:w-72',
+        xl: 'h-20 w-80 sm:h-24 sm:w-96',
     };
 
     return (
         <div className={cn('flex items-center shrink-0 select-none group', className)}>
-            <div className={cn('relative shrink-0', dimMap[size])}>
+            <div className={cn('relative shrink-0 flex items-center justify-center overflow-visible', dimMap[size])}>
                 <Image
                     src="/images/logo/logo-horizontal.png"
                     alt="HM CAR SOUTH KOREA"
                     fill
-                    className="object-contain filter drop-shadow-[0_2px_12px_rgba(201,169,110,0.4)] group-hover:scale-105 transition-transform duration-300 mix-blend-lighten"
+                    className="object-contain mix-blend-screen group-hover:scale-105 transition-transform duration-300"
                     unoptimized
                     priority
                 />
