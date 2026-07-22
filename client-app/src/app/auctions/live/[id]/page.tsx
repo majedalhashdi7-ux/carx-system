@@ -57,7 +57,6 @@ export default function LiveAuctionDetails() {
     // ثم تسجيل الطلب في قاعدة البيانات للحفاظ عليه، وتحويل العميل للواتساب.
     // ==========================================
     const handleBuyRequest = async (car: any) => {
-        // [[ARABIC_COMMENT]] استخلاص بيانات العميل من التخزين المحلي (LocalStorage)
         let buyerName = 'زائر';
         let buyerPhone = 'غير محدد';
         let buyerId = null;
@@ -75,7 +74,6 @@ export default function LiveAuctionDetails() {
         }
 
         try {
-            // [[ARABIC_COMMENT]] إرسال الطلب للسيرفر وإنشاء إشعار للمشرف
             await api.liveAuctionRequests.create({
                 userId: buyerId,
                 guestName: buyerName,
@@ -89,18 +87,40 @@ export default function LiveAuctionDetails() {
                     image: car.images?.[0] || ''
                 }
             });
-            // Show brief alert to user
-            alert(isRTL ? "تم تسجيل طلبك بنجاح، جاري تحويلك للواتساب..." : "Request registered, redirecting to WhatsApp...");
         } catch (err) {
             console.error('Failed to log auction request:', err);
         }
 
-        // [[ARABIC_COMMENT]] تجهيز رسالة الواتساب وفتح التطبيق للتواصل المباشر مع الدعم
-        const phone = session.whatsappNumber || globalWhatsapp; // استخدم رقم المزاد أو الرقم العام الافتراضي
+        try {
+            const token = typeof window !== 'undefined' ? localStorage.getItem('hm_token') : null;
+            await fetch('/api/v2/orders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify({
+                    orderType: 'live_auction',
+                    customerName: buyerName,
+                    customerPhone: buyerPhone,
+                    carTitle: car.title,
+                    carImage: car.images?.[0] || '',
+                    lotNumber: car.lotNumber,
+                    sessionTitle: session.title,
+                    totalAmount: car.priceEstimate || 0,
+                    status: 'new',
+                    notes: `طلب سيارة مزاد مباشر: ${car.title} (LOT #${car.lotNumber || 'N/A'})`
+                })
+            });
+        } catch (e) {
+            console.warn('Orders API creation failed:', e);
+        }
+
+        const phone = session.whatsappNumber || globalWhatsapp;
         const text = encodeURIComponent(
             isRTL
-                ? `السلام عليكم، أريد تقديم طلب مزايدة على سيارة من المزاد المباشر:\nالسيارة: ${car.title}\nالمزاد: ${session.title}\nرقم اللوت: ${car.lotNumber || 'N/A'}`
-                : `Hello, I'm interested in bidding on this car from the Live Auction:\nCar: ${car.title}\nAuction: ${session.title}\nLot #: ${car.lotNumber || 'N/A'}`
+                ? `السلام عليكم، أريد طلب هذه السيارة من المزاد المباشر:\n🚗 السيارة: ${car.title}\n🏷️ المزاد: ${session.title}\n🔢 رقم اللوت: ${car.lotNumber || 'N/A'}\n💰 السعر المتوقع: ${car.priceEstimate || 'حسب التواصل'}\n👤 اسم العميل: ${buyerName}\n📞 الهاتف: ${buyerPhone}`
+                : `Hello, I would like to request this vehicle from Live Auction:\nCar: ${car.title}\nAuction: ${session.title}\nLot #: ${car.lotNumber || 'N/A'}\nEstimate: ${car.priceEstimate || 'N/A'}\nCustomer: ${buyerName}`
         );
         window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${text}`, '_blank');
     };
@@ -238,9 +258,10 @@ export default function LiveAuctionDetails() {
                                                 </div>
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); handleBuyRequest(car); }}
-                                                    className="shrink-0 px-4 md:px-5 py-2.5 bg-cinematic-neon-blue/10 border border-cinematic-neon-blue/30 rounded-xl hover:bg-cinematic-neon-blue/20 hover:text-cinematic-neon-blue transition-all text-[8px] md:text-[9px] font-black uppercase tracking-[0.15em] text-cinematic-neon-blue"
+                                                    className="shrink-0 px-4 md:px-5 py-2.5 bg-green-500/15 border border-green-500/30 rounded-xl hover:bg-green-500/30 text-green-400 transition-all text-[8px] md:text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5"
                                                 >
-                                                    {isRTL ? 'مزايدة' : 'BID'}
+                                                    <MessageCircle className="w-3.5 h-3.5" />
+                                                    {isRTL ? 'طلب عبر الواتساب' : 'WHATSAPP ORDER'}
                                                 </button>
                                             </div>
                                         </div>
@@ -341,9 +362,10 @@ export default function LiveAuctionDetails() {
                                     <div className="flex flex-col sm:flex-row gap-4 pt-10">
                                         <button
                                             onClick={() => handleBuyRequest(selectedCar)}
-                                            className="flex-1 py-5 bg-cinematic-neon-blue text-black font-black uppercase text-xs tracking-[0.4em] rounded-2xl shadow-[0_0_40px_rgba(0,240,255,0.3)] hover:scale-105 transition-all"
+                                            className="flex-1 py-5 bg-green-500 text-black font-black uppercase text-xs tracking-[0.2em] rounded-2xl shadow-[0_0_30px_rgba(34,197,94,0.4)] hover:bg-green-400 transition-all flex items-center justify-center gap-2"
                                         >
-                                            {isRTL ? 'طلب مزايدة مسبق' : 'REQUEST PRE-BID'}
+                                            <MessageCircle className="w-4 h-4" />
+                                            {isRTL ? 'طلب عبر الواتساب' : 'REQUEST VIA WHATSAPP'}
                                         </button>
                                         <button onClick={() => setSelectedCar(null)} className="px-10 py-5 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">
                                             {isRTL ? 'العودة' : 'CANCEL'}

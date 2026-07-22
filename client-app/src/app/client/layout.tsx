@@ -1,6 +1,7 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -22,7 +23,6 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
-import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useUI } from '@/lib/UIContext';
 
@@ -335,6 +335,16 @@ function ClientTopBar() {
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
     const { isRTL } = useLanguage();
+    const { isAdmin, isLoading } = useAuth();
+    const pathname = usePathname();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!isLoading && isAdmin && (pathname === '/client/dashboard' || pathname === '/client')) {
+            router.replace('/admin/dashboard');
+        }
+    }, [isLoading, isAdmin, pathname, router]);
+
     return (
         <div className={cn('min-h-screen bg-[#080809] text-white flex', isRTL ? 'rtl' : 'ltr')}>
             {/* الشريط الجانبي - شاشات الكمبيوتر */}

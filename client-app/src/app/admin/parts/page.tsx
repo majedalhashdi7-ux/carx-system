@@ -310,38 +310,18 @@ export default function AdminPartsPage() {
                             </motion.button>
                             <motion.button
                                 whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
+                                onClick={() => setShowImportModal(true)}
+                                className="ck-btn-ghost flex items-center gap-2 text-blue-400 border-blue-500/20 hover:bg-blue-500/10">
+                                <Upload className="w-4 h-4" />
+                                {isRTL ? 'تعيين رابط الاستيراد' : 'SET IMPORT URL'}
+                            </motion.button>
+                            <motion.button
+                                whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
                                 onClick={handleScrape}
                                 disabled={scraping}
                                 className="ck-btn-primary bg-orange-500 hover:bg-orange-400 text-black flex items-center gap-2 border-none">
                                 {scraping ? <div className="ck-radar w-4 h-4" /> : <RefreshCcw className="w-4 h-4" />}
-                                {isRTL ? 'استيراد تلقائي' : 'AUTO SCRAPE'}
-                            </motion.button>
-                            <motion.button
-                                whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
-                                onClick={() => setShowImportModal(true)}
-                                className="ck-btn-ghost flex items-center gap-2 text-blue-400 border-blue-500/20 hover:bg-blue-500/10">
-                                <Upload className="w-4 h-4" />
-                                {isRTL ? 'استيراد يدوي (رابط)' : 'MANUAL IMPORT (LINK)'}
-                            </motion.button>
-                            <motion.button
-                                whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
-                                onClick={async () => {
-                                    try {
-                                        const token = localStorage.getItem('hm_token');
-                                        const res = await fetch('/api/v2/parts/fix-brand-links', {
-                                            method: 'POST',
-                                            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-                                        });
-                                        const data = await res.json();
-                                        showToast(data.message || '✅ تم ربط القطع', 'success');
-                                        loadParts();
-                                    } catch {
-                                        showToast('❌ فشل ربط القطع بالوكالات', 'error');
-                                    }
-                                }}
-                                className="ck-btn-ghost flex items-center gap-2 text-green-400 border-green-500/20 hover:bg-green-500/10">
-                                <RefreshCcw className="w-4 h-4" />
-                                {isRTL ? 'ربط القطع بوكالاتها' : 'FIX BRAND LINKS'}
+                                {isRTL ? 'استيراد تلقائي للوكالات والقطع' : 'AUTO SCRAPE BRANDS & PARTS'}
                             </motion.button>
                         </div>
                     </div>

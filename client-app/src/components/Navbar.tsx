@@ -37,7 +37,8 @@ export default function Navbar() {
     const currencyRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
 
-    const { isLoggedIn } = useAuth();
+    const { isLoggedIn, isAdmin } = useAuth();
+    const accountHref = isAdmin ? '/admin/dashboard' : '/client/dashboard';
     const { isRTL, toggleLanguage } = useLanguage();
     const { siteInfo, displayCurrency, setDisplayCurrency } = useSettings();
     const { setNotificationsOpen } = useUI();
@@ -238,7 +239,7 @@ export default function Navbar() {
                             {/* حسابي أو تسجيل الدخول */}
                             {isLoggedIn ? (
                                 <Link
-                                    href="/client/dashboard"
+                                    href={accountHref}
                                     className="flex items-center gap-2 px-4.5 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-[#D4AF37]/30 text-xs font-black text-white/80 hover:text-white hover:bg-white/10 transition-all"
                                 >
                                     <User className="w-4.5 h-4.5" />
@@ -377,7 +378,7 @@ export default function Navbar() {
                                 {/* تسجيل الدخول أو حسابي */}
                                 {isLoggedIn ? (
                                     <Link
-                                        href="/client/dashboard"
+                                        href={accountHref}
                                         onClick={() => setIsOpen(false)}
                                         className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white/8 border border-white/10 text-sm font-bold text-white hover:bg-white/12 transition-all"
                                     >
