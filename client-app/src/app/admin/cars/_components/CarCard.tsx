@@ -27,18 +27,19 @@ interface Car {
     displayCurrency?: string;
 }
 
-// ── خصائص المكوّن ──
 interface CarCardProps {
     car: Car;
     index: number;
     usdToSar: number;
+    isSelected?: boolean;
+    onToggleSelect?: (id: string) => void;
     onEdit: (car: Car) => void;
     onDelete: (id: string) => void;
     onMarkSold: (id: string, title: string) => void;
     onToggleActive?: (id: string, current: boolean) => void;
 }
 
-export default function CarCard({ car, index, usdToSar, onEdit, onDelete, onMarkSold, onToggleActive }: CarCardProps) {
+export default function CarCard({ car, index, usdToSar, isSelected, onToggleSelect, onEdit, onDelete, onMarkSold, onToggleActive }: CarCardProps) {
     const { isRTL } = useLanguage();
 
     // استخراج وترجمة اسم الماركة وعنوان السيارة حسب اللغة المحددة (عربي / إنجليزي)
@@ -51,7 +52,7 @@ export default function CarCard({ car, index, usdToSar, onEdit, onDelete, onMark
         ? `${((car.price || 0) / usdToSar).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} USD`
         : `${Number(car.price || 0).toLocaleString()} SAR`;
 
-    // معالجة رابط الصورة لإصلاح الروابط الكورية
+    // معالجة رابط الصورة لإصلاح الروابط الكورية وتمريرها عبر Proxy لمنع 403
     const getImageUrl = (url: string | undefined): string => {
         if (!url) return 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?q=80&w=1000&auto=format&fit=crop';
         
@@ -63,20 +64,24 @@ export default function CarCard({ car, index, usdToSar, onEdit, onDelete, onMark
         // إصلاح الروابط التي تنتهي بـ _
         if (url.endsWith('_')) {
             if (url.startsWith('http')) {
-                return `${url}001.jpg`;
+                url = `${url}001.jpg`;
+            } else {
+                url = `https://ci.encar.com${url}001.jpg`;
             }
-            return `https://ci.encar.com${url}001.jpg`;
         }
         
         // إضافة النطاق إذا كان الرابط نسبي
         if (url.startsWith('/carpicture')) {
-            return `https://ci.encar.com${url}`;
+            url = `https://ci.encar.com${url}`;
+        } else if (url.startsWith('/') && !url.startsWith('http')) {
+            url = `https://ci.encar.com/carpicture${url}`;
         }
         
-        if (url.startsWith('/') && !url.startsWith('http')) {
-            return `https://ci.encar.com/carpicture${url}`;
+        // تمرير الصور الكورية عبر proxy لمنع حظر Vercel (403 Forbidden)
+        if (url.includes('encar.com') || url.includes('encar.co.kr')) {
+            return `/api/v2/image-proxy?url=${encodeURIComponent(url)}`;
         }
-        
+
         return url;
     };
 
@@ -87,10 +92,25 @@ export default function CarCard({ car, index, usdToSar, onEdit, onDelete, onMark
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.07 }}
-            className="ck-card overflow-hidden group ck-hover-lift"
+            className={cn(
+                "ck-card overflow-hidden group ck-hover-lift relative transition-all",
+                isSelected && "border-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.3)] bg-orange-500/5"
+            )}
         >
             {/* ── صورة السيارة ── */}
             <div className="relative h-52 overflow-hidden bg-zinc-900">
+                {/* مربع الاختيار للتحديد المباشر */}
+                {onToggleSelect && (
+                    <div className="absolute top-3 start-3 z-30" onClick={(e) => e.stopPropagation()}>
+                        <input
+                            type="checkbox"
+                            checked={isSelected || false}
+                            onChange={() => onToggleSelect(car.id)}
+                            className="w-5 h-5 rounded border-white/30 bg-black/70 text-orange-500 focus:ring-orange-500 cursor-pointer accent-orange-500 shadow-md"
+                        />
+                    </div>
+                )}
+
                 <Image
                     src={imageUrl}
                     alt={car.title}
@@ -102,7 +122,6 @@ export default function CarCard({ car, index, usdToSar, onEdit, onDelete, onMark
                     referrerPolicy="no-referrer"
                     unoptimized
                     onError={(e) => {
-                        // في حالة فشل تحميل الصورة، نستخدم صورة افتراضية
                         const target = e.target as HTMLImageElement;
                         target.src = 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?q=80&w=1000&auto=format&fit=crop';
                     }}

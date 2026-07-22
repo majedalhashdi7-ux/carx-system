@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { 
-    Plus, Download, RefreshCw,
+    Plus, Download, RefreshCw, Trash2,
     Car as CarIcon
 } from 'lucide-react';
 import NextLink from 'next/link';
@@ -277,6 +277,54 @@ function CarsContent() {
     const activeCount = cars.filter(c => c.isActive && !c.isSold).length;
     const soldCount = cars.filter(c => c.isSold).length;
 
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+    const handleToggleSelect = (id: string) => {
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+        );
+    };
+
+    const handleSelectAll = () => {
+        if (selectedIds.length === filteredCars.length) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(filteredCars.map(c => c.id));
+        }
+    };
+
+    const handleDeleteSelected = async () => {
+        if (selectedIds.length === 0) return;
+        if (!confirm(isRTL ? `هل أنت متأكد من حذف ${selectedIds.length} سيارات محددة؟` : `Delete ${selectedIds.length} selected cars?`)) return;
+        try {
+            showToast(isRTL ? '⏳ جاري حذف السيارات المحددة...' : '⏳ Deleting selected cars...', 'info');
+            for (const id of selectedIds) {
+                await api.cars.delete(id);
+            }
+            setSelectedIds([]);
+            showToast(isRTL ? '🗑️ تم حذف السيارات المحددة بنجاح!' : '🗑️ Selected cars deleted!', 'success');
+            await loadData();
+        } catch {
+            showToast(isRTL ? '❌ فشل حذف بعض السيارات' : '❌ Delete failed', 'error');
+        }
+    };
+
+    const handleDeleteAll = async () => {
+        if (cars.length === 0) return;
+        if (!confirm(isRTL ? `⚠️ تحذير: هل أنت متأكد من حذف كــافة السيارات (${cars.length} سيارة) من المعرض؟` : `Delete ALL ${cars.length} cars?`)) return;
+        try {
+            showToast(isRTL ? '⏳ جاري تنظيف المعرض ومسح كافة السيارات...' : '⏳ Clearing showroom...', 'info');
+            for (const car of cars) {
+                await api.cars.delete(car.id);
+            }
+            setSelectedIds([]);
+            showToast(isRTL ? '🗑️ تم مسح المعرض بالكامل بنجاح!' : '🗑️ Showroom cleared!', 'success');
+            await loadData();
+        } catch {
+            showToast(isRTL ? '❌ فشل مسح المعرض' : '❌ Clear failed', 'error');
+        }
+    };
+
     // فلترة السيارات بالبحث
     const filteredCars = searchQuery.trim()
         ? cars.filter(c => {
@@ -379,6 +427,42 @@ function CarsContent() {
                             isRTL={isRTL}
                             className="mb-6"
                         />
+
+                        {/* شريط الإجراءات الجماعية وتحديد الكل */}
+                        <div className="flex items-center justify-between gap-4 mb-6 p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex-wrap">
+                            <div className="flex items-center gap-3">
+                                <label className="flex items-center gap-2.5 cursor-pointer text-xs font-bold text-white/80 hover:text-white select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={filteredCars.length > 0 && selectedIds.length === filteredCars.length}
+                                        onChange={handleSelectAll}
+                                        className="w-4 h-4 rounded border-white/30 bg-black/50 text-orange-500 focus:ring-orange-500 accent-orange-500"
+                                    />
+                                    <span>{isRTL ? 'تحديد الكل' : 'Select All'} ({selectedIds.length} / {filteredCars.length})</span>
+                                </label>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                {selectedIds.length > 0 && (
+                                    <button
+                                        onClick={handleDeleteSelected}
+                                        className="px-4 py-2 rounded-xl bg-red-500/20 border border-red-500/40 text-red-400 text-xs font-bold hover:bg-red-500 hover:text-white transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(239,68,68,0.2)]"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                        {isRTL ? `حذف السيارات المحددة (${selectedIds.length})` : `Delete Selected (${selectedIds.length})`}
+                                    </button>
+                                )}
+                                {cars.length > 0 && (
+                                    <button
+                                        onClick={handleDeleteAll}
+                                        className="px-4 py-2 rounded-xl bg-red-950/40 border border-red-500/20 text-red-400/70 text-xs font-bold hover:bg-red-600 hover:text-white transition-all flex items-center gap-2"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                        {isRTL ? 'حذف كافة السيارات بالمعرض' : 'Delete All Showroom Cars'}
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-8">
                             {filteredCars.map((car, i) => (
                                 <CarCard
@@ -386,6 +470,8 @@ function CarsContent() {
                                     car={car}
                                     index={i}
                                     usdToSar={usdToSar}
+                                    isSelected={selectedIds.includes(car.id)}
+                                    onToggleSelect={handleToggleSelect}
                                     onEdit={handleEdit}
                                     onDelete={handleDelete}
                                     onMarkSold={handleMarkSold}
