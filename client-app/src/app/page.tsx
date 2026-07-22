@@ -1,9 +1,9 @@
-﻿import { redirect } from 'next/navigation';
+import HomePage from './home/page';
 
 /**
- * الصفحة الرئيسية — تعيد التوجيه فوراً إلى صفحة السيارات
- * الصفحة التسويقية متاحة عبر /home
+ * الصفحة الرئيسية الأساسية لـ HM CAR
+ * تعرض معرض السيارات والمزادات التفاعلية والوكالات
  */
 export default function RootPage() {
-    redirect('/cars');
+    return <HomePage />;
 }
