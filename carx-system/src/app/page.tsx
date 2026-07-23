@@ -45,17 +45,26 @@ export default function Home() {
       setLoading(true);
       setCarsError(false);
       try {
-        const res = await api.cars.getFeatured() as any;
+        let res = await api.cars.getFeatured() as any;
+        let cars: any[] = [];
         if (res.data) {
           const result = res.data;
-          const cars = result.data?.cars || result.cars || [];
-          setFeaturedCars(cars);
-          if (cars.length === 0) setCarsError(true);
-        } else {
-          setCarsError(true);
+          cars = result.data?.cars || result.cars || [];
         }
+        
+        // إذا لم تكن هناك سيارات مميزة، جلب كافة سيارات المعرض
+        if (cars.length === 0) {
+          res = await api.cars.getAll({ limit: '12' }) as any;
+          if (res.data) {
+            const result = res.data;
+            cars = result.data?.cars || result.cars || [];
+          }
+        }
+
+        setFeaturedCars(cars);
+        if (cars.length === 0) setCarsError(true);
       } catch (err) {
-        console.error('Failed to fetch featured cars', err);
+        console.error('Failed to fetch cars for home page', err);
         setCarsError(true);
       } finally {
         setLoading(false);
