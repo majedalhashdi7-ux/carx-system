@@ -476,9 +476,11 @@ router.post('/showroom', requireAuthAPI, requireAdmin, async (req, res, next) =>
  */
 router.post('/parts', requireAuthAPI, requireAdmin, async (req, res, next) => {
     try {
+        const { targetUrl = '' } = req.body;
         const adminUser = req.user?.name || req.user?.email || 'Admin';
 
         const result = await partsImportService.importAllParts(req, {
+            targetUrl,
             adminUser
         });
 
@@ -495,11 +497,12 @@ router.post('/parts', requireAuthAPI, requireAdmin, async (req, res, next) => {
  */
 router.post('/live-auctions', requireAuthAPI, requireAdmin, async (req, res, next) => {
     try {
-        const { limit = 10 } = req.body;
+        const { limit = 10, targetUrl = '' } = req.body;
         const adminUser = req.user?.name || req.user?.email || 'Admin';
 
         const result = await liveAuctionImportService.importLiveAuctionCars(req, {
             limit: parseInt(limit) || 10,
+            targetUrl,
             adminUser
         });
 
