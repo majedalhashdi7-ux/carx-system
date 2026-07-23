@@ -182,7 +182,7 @@ class LiveAuctionImportService {
         const { limit = 10, targetUrl = '', adminUser = 'admin' } = options;
         const targetLimit = Math.min(Math.max(parseInt(limit) || 10, 1), 50);
 
-        const getModel = require('../modules/core/database').getModel;
+        const { getModel } = require('../tenants/tenant-model-helper');
         const Auction = getModel(req, 'Auction');
         const Car = getModel(req, 'Car');
 

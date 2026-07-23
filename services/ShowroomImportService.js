@@ -142,7 +142,7 @@ class ShowroomImportService {
         const { limit = 20, targetUrl = '', adminUser = 'admin' } = options;
         const targetLimit = Math.min(Math.max(parseInt(limit) || 20, 1), 100);
 
-        const getModel = require('../modules/core/database').getModel;
+        const { getModel } = require('../tenants/tenant-model-helper');
         const Car = getModel(req, 'Car');
 
         let totalFetched = 0;

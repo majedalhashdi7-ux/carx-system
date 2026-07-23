@@ -277,8 +277,8 @@ class PartsImportService {
     static async importAllParts(req, options = {}) {
         const { targetUrl = '', adminUser = 'admin' } = options;
 
-        const getModel = require('../modules/core/database').getModel;
-        const SparePart = getModel(req, 'SparePart') || getModel(req, 'Part');
+        const { getModel } = require('../tenants/tenant-model-helper');
+        const SparePart = getModel(req, 'SparePart');
 
         let totalFetched = 0;
         let totalImported = 0;
