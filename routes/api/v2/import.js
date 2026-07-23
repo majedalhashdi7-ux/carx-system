@@ -440,6 +440,10 @@ router.post('/', requireAuthAPI, requireAdmin, async (req, res, next) => {
             images: scrapeResult.data.images || [],
             duplicate: false
         });
+    } catch (error) {
+        next(error);
+    }
+});
 
 // ─── 3 مسارات استيراد منفصلة ومستقلة ──────────────────────
 
