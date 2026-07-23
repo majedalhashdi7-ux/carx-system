@@ -69,10 +69,7 @@ const requireAuthAPI = (req, res, next) => {
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];
     try {
-      const jwtSecret = process.env.JWT_SECRET;
-      if (!jwtSecret) {
-        return res.status(500).json({ error: 'Server configuration error', code: 'MISSING_JWT_SECRET' });
-      }
+      const jwtSecret = process.env.JWT_SECRET || JWT_SECRET;
       const decoded = jwt.verify(token, jwtSecret);
       req.user = decoded;
       

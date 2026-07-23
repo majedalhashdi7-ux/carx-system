@@ -454,11 +454,12 @@ const ImportLog = require('../../../models/ImportLog');
  */
 router.post('/showroom', requireAuthAPI, requireAdmin, async (req, res, next) => {
     try {
-        const { limit = 20 } = req.body;
+        const { limit = 20, targetUrl = '' } = req.body;
         const adminUser = req.user?.name || req.user?.email || 'Admin';
 
         const result = await showroomImportService.importShowroomCars(req, {
             limit: parseInt(limit) || 20,
+            targetUrl,
             adminUser
         });
 

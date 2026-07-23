@@ -27,6 +27,7 @@ export default function AdminImportHub() {
     // --- Limits and States ---
     const [showroomLimit, setShowroomLimit] = useState<number>(20);
     const [auctionLimit, setAuctionLimit] = useState<number>(10);
+    const [targetUrl, setTargetUrl] = useState<string>("");
     
     // --- Stats & Log Results ---
     const [lastImportResult, setLastImportResult] = useState<any>(null);
@@ -57,7 +58,7 @@ export default function AdminImportHub() {
         setLoading(true);
         setLastImportResult(null);
         try {
-            const res = await api.import.showroom(showroomLimit);
+            const res = await api.import.showroom(showroomLimit, targetUrl);
             if (res.success) {
                 showToast(res.message || (isRTL ? "✅ تم استيراد سيارات المعرض بنجاح" : "✅ Showroom cars imported successfully"), "success");
                 setLastImportResult(res);
@@ -234,6 +235,37 @@ export default function AdminImportHub() {
                                         <p className="text-sm font-bold text-white">{isRTL ? "حفظ MongoDB دائم للعملاء" : "Instant DB Save"}</p>
                                     </div>
                                 </div>
+                            </div>
+
+                            {/* Custom URL Input Field */}
+                            <div className="bg-slate-950/60 p-6 rounded-2xl border border-slate-800 space-y-3">
+                                <label className="block text-sm font-semibold text-slate-300 flex items-center gap-2">
+                                    <Globe className="w-4 h-4 text-amber-400" />
+                                    <span>{isRTL ? "رابط الموقع المخصص للاستيراد منه (مستورد الروابط المباشر):" : "Target Website URL (Direct Import URL):"}</span>
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="url"
+                                        value={targetUrl}
+                                        onChange={(e) => setTargetUrl(e.target.value)}
+                                        placeholder={isRTL ? "ضع رابط الموقع الخارجي هنا (مثال: https://car.encar.com/cat/car/search...)" : "Paste target website URL here (e.g. https://car.encar.com/...)"}
+                                        className="w-full bg-slate-900 border border-slate-700/80 focus:border-amber-500 rounded-xl px-4 py-3.5 text-sm text-white placeholder-slate-500 focus:outline-none transition-colors dir-ltr text-left"
+                                    />
+                                    {targetUrl && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setTargetUrl("")}
+                                            className="absolute left-3 top-1/2 -translate-y-1/2 text-xs bg-slate-800 hover:bg-slate-700 text-slate-400 px-2 py-1 rounded-lg"
+                                        >
+                                            {isRTL ? "مسح" : "Clear"}
+                                        </button>
+                                    )}
+                                </div>
+                                <p className="text-xs text-slate-500">
+                                    {isRTL 
+                                        ? "عند إدخال رابط الموقع، سيقوم النظام باستخراج وتخزين السيارات المتاحة في هذا الرابط مع ضغط الصور ومنع التكرار تلقائياً." 
+                                        : "When a URL is supplied, the system will extract & store available cars from that link with image compression & duplicate checking."}
+                                </p>
                             </div>
 
                             {/* Quantity Selection */}

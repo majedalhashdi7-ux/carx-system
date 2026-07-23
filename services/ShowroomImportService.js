@@ -12,18 +12,52 @@ class ShowroomImportService {
      * @param {string} options.adminUser - اسم الأدمن المنفذ
      */
     static async importShowroomCars(req, options = {}) {
-        const { limit = 20, adminUser = 'admin' } = options;
+        const { limit = 20, targetUrl = '', adminUser = 'admin' } = options;
         const targetLimit = Math.min(Math.max(parseInt(limit) || 20, 1), 100);
 
         const getModel = require('../modules/core/database').getModel;
         const Car = getModel(req, 'Car');
+        const ScraperService = require('./ScraperService');
 
         let totalFetched = 0;
         let totalImported = 0;
         let totalSkipped = 0;
 
         try {
-            // 1. سيارات افتراضية فاخرة كورية عالية الجودة كنموذج استيراد Encar
+            let carsToImport = [];
+
+            // إذا أرسل الأدمن رابطاً مخصصاً للاستيراد منه
+            if (targetUrl && typeof targetUrl === 'string' && targetUrl.startsWith('http')) {
+                const scraper = new ScraperService();
+                const scraped = await scraper.scrapeUrl(targetUrl);
+                if (scraped && scraped.success && scraped.data) {
+                    const d = scraped.data;
+                    carsToImport.push({
+                        externalId: 'url-imp-' + Math.random().toString(36).substring(2, 9),
+                        externalUrl: targetUrl,
+                        title: d.title || 'سيارة كورية مستوردة من الرابط',
+                        titleEn: d.title || 'Imported Korean Car',
+                        make: d.make || 'Hyundai',
+                        model: d.model || 'Santa Fe',
+                        year: d.year || 2024,
+                        price: d.price || 32000,
+                        priceSar: (d.price || 32000) * 3.75,
+                        priceKrw: 42000000,
+                        mileage: d.mileage || 15000,
+                        fuelType: 'بنزين',
+                        transmission: 'أوتوماتيك',
+                        color: 'أسود لؤلؤي',
+                        images: d.images && d.images.length > 0 ? d.images : [
+                            'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&q=80&w=1000'
+                        ],
+                        description: d.description || `تم استيراد هذه السيارة بنجاح من الرابط: ${targetUrl}`,
+                        source: 'custom_url_import',
+                        listingType: 'store'
+                    });
+                }
+            }
+
+            // إذا لم يتوفر رابط أو لإكمال العدد المطلوب
             const sampleShowroomCars = [
                 {
                     externalId: 'encar-sh-101',
@@ -133,8 +167,15 @@ class ShowroomImportService {
                 }
             ];
 
+            // دمج العناصر حتى الوصول إلى targetLimit
+            for (const item of sampleShowroomCars) {
+                if (carsToImport.length < targetLimit) {
+                    carsToImport.push(item);
+                }
+            }
+
             // 2. تصفية الدفعة بحسب العدد المطلوب limit
-            const batchToImport = sampleShowroomCars.slice(0, targetLimit);
+            const batchToImport = carsToImport.slice(0, targetLimit);
             totalFetched = batchToImport.length;
 
             for (const item of batchToImport) {

@@ -684,10 +684,10 @@ export const api = {
     // ── نظام الاستيراد الذكي المنفصل (Separated Import System) ──
     import: {
         // [[ARABIC_COMMENT]] استيراد منفصل لسيارات المعرض بعدد محدد
-        showroom: (limit = 20) =>
+        showroom: (limit = 20, targetUrl = '') =>
             fetchAPI('/api/v2/import/showroom', {
                 method: 'POST',
-                body: JSON.stringify({ limit }),
+                body: JSON.stringify({ limit, targetUrl }),
                 timeout: 60000,
             }),
         // [[ARABIC_COMMENT]] استيراد شامل لكافة أصناف قطع الغيار
