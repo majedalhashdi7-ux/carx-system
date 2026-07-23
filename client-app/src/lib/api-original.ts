@@ -681,8 +681,31 @@ export const api = {
             }),
         deleteDevice: (id: string) => fetchAPI(`/api/v2/security/devices/${id}`, { method: 'DELETE' }),
     },
-    // ── نظام الاستيراد الذكي (Import System) ──
+    // ── نظام الاستيراد الذكي المنفصل (Separated Import System) ──
     import: {
+        // [[ARABIC_COMMENT]] استيراد منفصل لسيارات المعرض بعدد محدد
+        showroom: (limit = 20) =>
+            fetchAPI('/api/v2/import/showroom', {
+                method: 'POST',
+                body: JSON.stringify({ limit }),
+                timeout: 60000,
+            }),
+        // [[ARABIC_COMMENT]] استيراد شامل لكافة أصناف قطع الغيار
+        parts: () =>
+            fetchAPI('/api/v2/import/parts', {
+                method: 'POST',
+                body: JSON.stringify({}),
+                timeout: 60000,
+            }),
+        // [[ARABIC_COMMENT]] استيراد منفصل لسيارات المزاد المباشر بعدد محدد
+        liveAuctions: (limit = 10) =>
+            fetchAPI('/api/v2/import/live-auctions', {
+                method: 'POST',
+                body: JSON.stringify({ limit }),
+                timeout: 60000,
+            }),
+        // [[ARABIC_COMMENT]] جلب سجلات وتاريخ جميع الدفعات المنفصلة
+        getLogs: () => fetchAPI('/api/v2/import/logs'),
         // [[ARABIC_COMMENT]] معاينة بيانات سيارة أو قطعة غيار من رابط خارجي قبل الحفظ
         preview: (url: string, type: 'car' | 'part') =>
             fetchAPI('/api/v2/import/preview', {

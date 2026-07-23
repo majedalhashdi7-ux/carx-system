@@ -441,9 +441,95 @@ router.post('/', requireAuthAPI, requireAdmin, async (req, res, next) => {
             duplicate: false
         });
 
+// ─── 3 مسارات استيراد منفصلة ومستقلة ──────────────────────
+
+const showroomImportService = require('../../../services/ShowroomImportService');
+const partsImportService = require('../../../services/PartsImportService');
+const liveAuctionImportService = require('../../../services/LiveAuctionImportService');
+const ImportLog = require('../../../models/ImportLog');
+
+/**
+ * POST /api/v2/import/showroom
+ * استيراد منفصل لسيارات المعرض بعدد محدد
+ */
+router.post('/showroom', requireAuthAPI, requireAdmin, async (req, res, next) => {
+    try {
+        const { limit = 20 } = req.body;
+        const adminUser = req.user?.name || req.user?.email || 'Admin';
+
+        const result = await showroomImportService.importShowroomCars(req, {
+            limit: parseInt(limit) || 20,
+            adminUser
+        });
+
+        invalidateCache('/api/v2/cars');
+        res.json(result);
+    } catch (error) {
+        next(error);
+    }
+});
+
+/**
+ * POST /api/v2/import/parts
+ * استيراد شامل ومنفصل لكافة أصناف قطع الغيار
+ */
+router.post('/parts', requireAuthAPI, requireAdmin, async (req, res, next) => {
+    try {
+        const adminUser = req.user?.name || req.user?.email || 'Admin';
+
+        const result = await partsImportService.importAllParts(req, {
+            adminUser
+        });
+
+        invalidateCache('/api/v2/parts');
+        res.json(result);
+    } catch (error) {
+        next(error);
+    }
+});
+
+/**
+ * POST /api/v2/import/live-auctions
+ * استيراد منفصل لسيارات المزادات المباشرة الحية بعدد محدد
+ */
+router.post('/live-auctions', requireAuthAPI, requireAdmin, async (req, res, next) => {
+    try {
+        const { limit = 10 } = req.body;
+        const adminUser = req.user?.name || req.user?.email || 'Admin';
+
+        const result = await liveAuctionImportService.importLiveAuctionCars(req, {
+            limit: parseInt(limit) || 10,
+            adminUser
+        });
+
+        invalidateCache('/api/v2/auctions');
+        invalidateCache('/api/v2/live-auctions');
+        res.json(result);
+    } catch (error) {
+        next(error);
+    }
+});
+
+/**
+ * GET /api/v2/import/logs
+ * جلب سجلات وتاريخ جميع دفعة الاستيراد المنفذة
+ */
+router.get('/logs', requireAuthAPI, requireAdmin, async (req, res, next) => {
+    try {
+        const logs = await ImportLog.find({ tenantId: req.tenantId || 'default' })
+            .sort({ createdAt: -1 })
+            .limit(50)
+            .lean();
+
+        res.json({
+            success: true,
+            count: logs.length,
+            logs
+        });
     } catch (error) {
         next(error);
     }
 });
 
 module.exports = router;
+
