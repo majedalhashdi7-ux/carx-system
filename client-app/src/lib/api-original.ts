@@ -691,17 +691,17 @@ export const api = {
                 timeout: 60000,
             }),
         // [[ARABIC_COMMENT]] استيراد شامل لكافة أصناف قطع الغيار
-        parts: () =>
+        parts: (targetUrl = '') =>
             fetchAPI('/api/v2/import/parts', {
                 method: 'POST',
-                body: JSON.stringify({}),
+                body: JSON.stringify({ targetUrl }),
                 timeout: 60000,
             }),
         // [[ARABIC_COMMENT]] استيراد منفصل لسيارات المزاد المباشر بعدد محدد
-        liveAuctions: (limit = 10) =>
+        liveAuctions: (limit = 10, targetUrl = '') =>
             fetchAPI('/api/v2/import/live-auctions', {
                 method: 'POST',
-                body: JSON.stringify({ limit }),
+                body: JSON.stringify({ limit, targetUrl }),
                 timeout: 60000,
             }),
         // [[ARABIC_COMMENT]] جلب سجلات وتاريخ جميع الدفعات المنفصلة

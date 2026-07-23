@@ -2,10 +2,9 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Download, Globe, Database, RefreshCw, Layers, Plus, 
-    CheckCircle2, AlertOctagon, Info, Save, Activity, Car,
-    Gavel, ExternalLink, ArrowRight, DollarSign, Sparkles,
-    Package, History, ShieldCheck, Image as ImageIcon, Zap
+    Download, Globe, RefreshCw, Car, Gavel, Package,
+    CheckCircle2, History, ShieldCheck, Zap, ExternalLink,
+    AlertTriangle
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
@@ -13,567 +12,546 @@ import { useLanguage } from "@/lib/LanguageContext";
 import { api } from "@/lib/api";
 import { useToast } from "@/lib/ToastContext";
 import AdminPageShell from "@/components/AdminPageShell";
-import ImportSystem from "@/components/admin/ImportSystem";
+import NextLink from "next/link";
 
-type ActiveTab = "showroom" | "parts" | "live_auctions" | "logs";
+type ActiveTab = "cars" | "parts" | "auctions";
 
 export default function AdminImportHub() {
     const { isRTL } = useLanguage();
     const { showToast } = useToast();
 
-    const [activeTab, setActiveTab] = useState<ActiveTab>("showroom");
+    const [activeTab, setActiveTab] = useState<ActiveTab>("cars");
     const [loading, setLoading] = useState(false);
-    
-    // --- Limits and States ---
-    const [showroomLimit, setShowroomLimit] = useState<number>(20);
-    const [auctionLimit, setAuctionLimit] = useState<number>(10);
-    const [targetUrl, setTargetUrl] = useState<string>("");
-    
-    // --- Stats & Log Results ---
-    const [lastImportResult, setLastImportResult] = useState<any>(null);
+
+    // --- State per pipeline ---
+    const [carsUrl, setCarsUrl] = useState("");
+    const [carsLimit, setCarsLimit] = useState(20);
+
+    const [partsUrl, setPartsUrl] = useState("");
+
+    const [auctionsUrl, setAuctionsUrl] = useState("");
+    const [auctionsLimit, setAuctionsLimit] = useState(10);
+
+    // --- Import result & logs ---
+    const [lastResult, setLastResult] = useState<any>(null);
     const [importLogs, setImportLogs] = useState<any[]>([]);
     const [logsLoading, setLogsLoading] = useState(false);
+    const [showLogs, setShowLogs] = useState(false);
 
-    // Fetch Import Logs
     const loadImportLogs = useCallback(async () => {
+        setLogsLoading(true);
         try {
-            setLogsLoading(true);
             const res = await api.import.getLogs();
-            if (res.success) {
-                setImportLogs(res.logs || []);
-            }
-        } catch (err) {
-            console.error("Failed to fetch import logs:", err);
-        } finally {
+            if (res?.success) setImportLogs(res.logs || []);
+        } catch { /* silent */ } finally {
             setLogsLoading(false);
         }
     }, []);
 
-    useEffect(() => {
-        loadImportLogs();
-    }, [loadImportLogs]);
+    useEffect(() => { loadImportLogs(); }, [loadImportLogs]);
 
-    // 🚗 Handle Showroom Cars Import
-    const handleImportShowroom = async () => {
+    // ─── Handlers ────────────────────────────────────────────
+    const handleImportCars = async () => {
         setLoading(true);
-        setLastImportResult(null);
+        setLastResult(null);
         try {
-            const res = await api.import.showroom(showroomLimit, targetUrl);
-            if (res.success) {
-                showToast(res.message || (isRTL ? "✅ تم استيراد سيارات المعرض بنجاح" : "✅ Showroom cars imported successfully"), "success");
-                setLastImportResult(res);
+            const res = await api.import.showroom(carsLimit, carsUrl);
+            if (res?.success) {
+                showToast(res.message || "✅ تم استيراد السيارات بنجاح", "success");
+                setLastResult({ type: "cars", ...res });
                 loadImportLogs();
             } else {
-                showToast(res.error || (isRTL ? "❌ فشل استيراد سيارات المعرض" : "❌ Showroom import failed"), "error");
+                showToast(res?.error || "❌ فشل استيراد السيارات", "error");
             }
-        } catch (err: any) {
-            showToast(err.message || (isRTL ? "❌ حدث خطأ غير متوقع" : "❌ Unexpected error occurred"), "error");
-        } finally {
-            setLoading(false);
-        }
+        } catch (e: any) {
+            showToast(e.message || "❌ خطأ غير متوقع", "error");
+        } finally { setLoading(false); }
     };
 
-    // 🔧 Handle Spare Parts Import
     const handleImportParts = async () => {
         setLoading(true);
-        setLastImportResult(null);
+        setLastResult(null);
         try {
-            const res = await api.import.parts();
-            if (res.success) {
-                showToast(res.message || (isRTL ? "✅ تم استيراد قطع الغيار بنجاح" : "✅ Spare parts imported successfully"), "success");
-                setLastImportResult(res);
+            const res = await api.import.parts(partsUrl);
+            if (res?.success) {
+                showToast(res.message || "✅ تم استيراد قطع الغيار بنجاح", "success");
+                setLastResult({ type: "parts", ...res });
                 loadImportLogs();
             } else {
-                showToast(res.error || (isRTL ? "❌ فشل استيراد قطع الغيار" : "❌ Parts import failed"), "error");
+                showToast(res?.error || "❌ فشل استيراد قطع الغيار", "error");
             }
-        } catch (err: any) {
-            showToast(err.message || (isRTL ? "❌ حدث خطأ غير متوقع" : "❌ Unexpected error occurred"), "error");
-        } finally {
-            setLoading(false);
-        }
+        } catch (e: any) {
+            showToast(e.message || "❌ خطأ غير متوقع", "error");
+        } finally { setLoading(false); }
     };
 
-    // 🔨 Handle Live Auctions Import
-    const handleImportLiveAuctions = async () => {
+    const handleImportAuctions = async () => {
         setLoading(true);
-        setLastImportResult(null);
+        setLastResult(null);
         try {
-            const res = await api.import.liveAuctions(auctionLimit);
-            if (res.success) {
-                showToast(res.message || (isRTL ? "✅ تم استيراد سيارات المزادات المباشرة بنجاح" : "✅ Live auction cars imported successfully"), "success");
-                setLastImportResult(res);
+            const res = await api.import.liveAuctions(auctionsLimit, auctionsUrl);
+            if (res?.success) {
+                showToast(res.message || "✅ تم استيراد المزادات بنجاح", "success");
+                setLastResult({ type: "auctions", ...res });
                 loadImportLogs();
             } else {
-                showToast(res.error || (isRTL ? "❌ فشل استيراد سيارات المزادات" : "❌ Auction import failed"), "error");
+                showToast(res?.error || "❌ فشل استيراد المزادات", "error");
             }
-        } catch (err: any) {
-            showToast(err.message || (isRTL ? "❌ حدث خطأ غير متوقع" : "❌ Unexpected error occurred"), "error");
-        } finally {
-            setLoading(false);
-        }
+        } catch (e: any) {
+            showToast(e.message || "❌ خطأ غير متوقع", "error");
+        } finally { setLoading(false); }
     };
+
+    // ─── UI Helpers ───────────────────────────────────────────
+    const UrlInput = ({
+        value, onChange, placeholder
+    }: { value: string; onChange: (v: string) => void; placeholder: string }) => (
+        <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm font-semibold text-slate-300">
+                <Globe className="w-4 h-4 text-amber-400" />
+                <span>{isRTL ? "رابط موقع الاستيراد (اختياري)" : "Import Source URL (optional)"}</span>
+            </label>
+            <input
+                type="url"
+                value={value}
+                onChange={e => onChange(e.target.value)}
+                placeholder={placeholder}
+                className="w-full bg-slate-900 border border-slate-700 focus:border-amber-500 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none transition-colors"
+                dir="ltr"
+            />
+            <p className="text-xs text-slate-500">
+                {isRTL
+                    ? "أدخل رابط الموقع الخارجي لجلب البيانات منه، أو اتركه فارغاً للاستيراد من قاعدة البيانات الكورية الافتراضية."
+                    : "Enter the external site URL to scrape from, or leave empty to use the default Korean database."}
+            </p>
+        </div>
+    );
+
+    const FeatureCard = ({ icon: Icon, color, title, desc }: any) => (
+        <div className="p-4 rounded-2xl bg-slate-800/50 border border-slate-700/50 flex items-center gap-3">
+            <div className={`p-3 ${color} rounded-xl`}><Icon className="w-5 h-5" /></div>
+            <div>
+                <p className="text-xs text-slate-400">{title}</p>
+                <p className="text-sm font-bold text-white">{desc}</p>
+            </div>
+        </div>
+    );
+
+    const LimitSelector = ({
+        value, onChange, options, label
+    }: { value: number; onChange: (v: number) => void; options: number[]; label: string }) => (
+        <div className="space-y-3">
+            <label className="block text-sm font-semibold text-slate-300">{label}</label>
+            <div className="flex flex-wrap gap-3">
+                {options.map(qty => (
+                    <button
+                        key={qty}
+                        type="button"
+                        onClick={() => onChange(qty)}
+                        className={cn(
+                            "px-5 py-2.5 rounded-xl text-sm font-bold transition-all border",
+                            value === qty
+                                ? "bg-amber-500 text-slate-950 border-amber-400 shadow-md"
+                                : "bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800"
+                        )}
+                    >
+                        {qty}
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+
+    const ImportButton = ({
+        onClick, loading: isLoading, label, loadingLabel, color = "amber"
+    }: any) => (
+        <button
+            onClick={onClick}
+            disabled={isLoading}
+            className={cn(
+                "w-full py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-3 transition-all shadow-xl",
+                isLoading
+                    ? "bg-slate-800 text-slate-500 cursor-not-allowed"
+                    : color === "red"
+                        ? "bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white shadow-red-500/25 active:scale-[0.99]"
+                        : "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-amber-500/25 active:scale-[0.99]"
+            )}
+        >
+            {isLoading
+                ? <><RefreshCw className="w-5 h-5 animate-spin" /><span>{loadingLabel}</span></>
+                : <><Download className="w-5 h-5" /><span>{label}</span></>
+            }
+        </button>
+    );
 
     return (
         <AdminPageShell
-            title={isRTL ? "مركز الاستيراد المنفصل والمحسّن" : "Separated Import Hub"}
-            subtitle={isRTL ? "إدارة مسارات استيراد سيارات المعرض، قطع الغيار، والمزادات المباشرة مع ضغط الصور ومنع التكرار" : "Manage separated import pipelines with image compression & duplicate prevention"}
-            badge={isRTL ? "نظام V2 الذكي" : "Smart System V2"}
+            title={isRTL ? "بوابة الاستيراد" : "Import Gateway"}
+            subtitle={isRTL
+                ? "استيراد السيارات وقطع الغيار والمزادات من روابط خارجية مع منع التكرار وضغط الصور"
+                : "Import cars, spare parts and auctions from external links with deduplication & image compression"}
+            badge={isRTL ? "مزود بمانع التكرار" : "Deduplication Enabled"}
         >
-            <div className="space-y-6 dir-rtl text-right">
-                
-                {/* ── Navbar / Tabs Navigation ── */}
-                <div className="flex flex-wrap items-center gap-3 p-2 bg-slate-900/60 backdrop-blur-md rounded-2xl border border-slate-800">
-                    <button
-                        onClick={() => setActiveTab("showroom")}
-                        className={cn(
-                            "flex items-center gap-2 px-5 py-3 rounded-xl font-medium text-sm transition-all duration-300",
-                            activeTab === "showroom"
-                                ? "bg-amber-500 text-slate-950 font-bold shadow-lg shadow-amber-500/25 scale-[1.02]"
-                                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-                        )}
-                    >
-                        <Car className="w-5 h-5" />
-                        <span>{isRTL ? "🚗 استيراد سيارات المعرض" : "Showroom Cars Import"}</span>
-                    </button>
+            <div className="space-y-6">
 
-                    <button
-                        onClick={() => setActiveTab("parts")}
-                        className={cn(
-                            "flex items-center gap-2 px-5 py-3 rounded-xl font-medium text-sm transition-all duration-300",
-                            activeTab === "parts"
-                                ? "bg-amber-500 text-slate-950 font-bold shadow-lg shadow-amber-500/25 scale-[1.02]"
-                                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-                        )}
-                    >
-                        <Package className="w-5 h-5" />
-                        <span>{isRTL ? "🔧 استيراد قطع الغيار الشامل" : "Comprehensive Parts Import"}</span>
-                    </button>
+                {/* ── Tab Navigation ── */}
+                <div className="flex flex-wrap gap-2 p-2 bg-slate-900/60 backdrop-blur-md rounded-2xl border border-slate-800">
+                    {[
+                        { key: "cars", icon: Car, label: isRTL ? "🚗 استيراد السيارات" : "🚗 Import Cars" },
+                        { key: "parts", icon: Package, label: isRTL ? "🔧 استيراد قطع الغيار" : "🔧 Import Parts" },
+                        { key: "auctions", icon: Gavel, label: isRTL ? "🔴 استيراد المزادات" : "🔴 Import Auctions" },
+                    ].map(tab => (
+                        <button
+                            key={tab.key}
+                            onClick={() => { setActiveTab(tab.key as ActiveTab); setLastResult(null); }}
+                            className={cn(
+                                "flex items-center gap-2 px-5 py-3 rounded-xl font-medium text-sm transition-all duration-300",
+                                activeTab === tab.key
+                                    ? "bg-amber-500 text-slate-950 font-bold shadow-lg shadow-amber-500/25 scale-[1.02]"
+                                    : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                            )}
+                        >
+                            <tab.icon className="w-4 h-4" />
+                            <span>{tab.label}</span>
+                        </button>
+                    ))}
 
+                    {/* Logs toggle */}
                     <button
-                        onClick={() => setActiveTab("live_auctions")}
-                        className={cn(
-                            "flex items-center gap-2 px-5 py-3 rounded-xl font-medium text-sm transition-all duration-300",
-                            activeTab === "live_auctions"
-                                ? "bg-amber-500 text-slate-950 font-bold shadow-lg shadow-amber-500/25 scale-[1.02]"
-                                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-                        )}
+                        onClick={() => setShowLogs(v => !v)}
+                        className="ms-auto flex items-center gap-2 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60 text-sm transition-all"
                     >
-                        <Gavel className="w-5 h-5" />
-                        <span>{isRTL ? "🔴 استيراد المزادات المباشرة" : "Live Auctions Import"}</span>
-                    </button>
-
-                    <button
-                        onClick={() => setActiveTab("logs")}
-                        className={cn(
-                            "flex items-center gap-2 px-5 py-3 rounded-xl font-medium text-sm transition-all duration-300 ms-auto",
-                            activeTab === "logs"
-                                ? "bg-slate-800 text-amber-400 border border-amber-500/30 font-bold"
-                                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-                        )}
-                    >
-                        <History className="w-5 h-5" />
-                        <span>{isRTL ? "📋 سجل وسجلات الاستيراد" : "Import Logs History"}</span>
+                        <History className="w-4 h-4" />
+                        <span>{isRTL ? "سجل الاستيراد" : "Import Logs"}</span>
                     </button>
                 </div>
 
-                {/* ── Active Tab Content Area ── */}
+                {/* ── Tab Content ── */}
                 <AnimatePresence mode="wait">
-                    
-                    {/* TAB 1: SHOWROOM CARS IMPORT */}
-                    {activeTab === "showroom" && (
-                        <motion.div
-                            key="showroom-tab"
-                            initial={{ opacity: 0, y: 15 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -15 }}
-                            className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-6"
+
+                    {/* ─── TAB: CARS ─── */}
+                    {activeTab === "cars" && (
+                        <motion.div key="cars"
+                            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
+                            className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 space-y-6 shadow-2xl"
                         >
-                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <h3 className="text-xl font-bold text-white">
-                                            {isRTL ? "مسار استيراد سيارات المعرض المتاحة" : "Showroom Cars Import Pipeline"}
-                                        </h3>
-                                        <span className="bg-amber-500/10 text-amber-400 text-xs px-3 py-1 rounded-full border border-amber-500/30 font-mono">
-                                            Encar Showroom
-                                        </span>
-                                    </div>
-                                    <p className="text-sm text-slate-400 mt-1">
-                                        {isRTL 
-                                            ? "استيراد السيارات المتاحة في المعرض الكوري مع منع التكرار وتحديث الأسعار والافتراضات." 
-                                            : "Import available cars from Encar showroom with duplicate filtering and price conversion."}
-                                    </p>
+                            {/* Header */}
+                            <div className="pb-5 border-b border-slate-800">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <h3 className="text-xl font-bold text-white">
+                                        {isRTL ? "استيراد السيارات إلى المعرض" : "Import Cars to Showroom"}
+                                    </h3>
+                                    <span className="bg-amber-500/10 text-amber-400 text-xs px-3 py-1 rounded-full border border-amber-500/30 font-mono">
+                                        → /admin/cars
+                                    </span>
                                 </div>
-                            </div>
-
-                            {/* Features Banner */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div className="p-4 rounded-2xl bg-slate-800/50 border border-slate-700/50 flex items-center gap-3">
-                                    <div className="p-3 bg-amber-500/10 text-amber-400 rounded-xl">
-                                        <ShieldCheck className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-slate-400">{isRTL ? "الحماية من التكرار" : "Duplicate Check"}</p>
-                                        <p className="text-sm font-bold text-white">{isRTL ? "مفعل تلقائياً (VIN / ExternalId)" : "Auto Filter Enabled"}</p>
-                                    </div>
-                                </div>
-                                <div className="p-4 rounded-2xl bg-slate-800/50 border border-slate-700/50 flex items-center gap-3">
-                                    <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl">
-                                        <ImageIcon className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-slate-400">{isRTL ? "معالجة الصور" : "Image Processing"}</p>
-                                        <p className="text-sm font-bold text-white">{isRTL ? "ضغط وتقليل سعة الصور WebP" : "WebP Compression"}</p>
-                                    </div>
-                                </div>
-                                <div className="p-4 rounded-2xl bg-slate-800/50 border border-slate-700/50 flex items-center gap-3">
-                                    <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl">
-                                        <Zap className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-slate-400">{isRTL ? "الحفظ والعرض" : "Retention & Sync"}</p>
-                                        <p className="text-sm font-bold text-white">{isRTL ? "حفظ MongoDB دائم للعملاء" : "Instant DB Save"}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Custom URL Input Field */}
-                            <div className="bg-slate-950/60 p-6 rounded-2xl border border-slate-800 space-y-3">
-                                <label className="block text-sm font-semibold text-slate-300 flex items-center gap-2">
-                                    <Globe className="w-4 h-4 text-amber-400" />
-                                    <span>{isRTL ? "رابط الموقع المخصص للاستيراد منه (مستورد الروابط المباشر):" : "Target Website URL (Direct Import URL):"}</span>
-                                </label>
-                                <div className="relative">
-                                    <input
-                                        type="url"
-                                        value={targetUrl}
-                                        onChange={(e) => setTargetUrl(e.target.value)}
-                                        placeholder={isRTL ? "ضع رابط الموقع الخارجي هنا (مثال: https://car.encar.com/cat/car/search...)" : "Paste target website URL here (e.g. https://car.encar.com/...)"}
-                                        className="w-full bg-slate-900 border border-slate-700/80 focus:border-amber-500 rounded-xl px-4 py-3.5 text-sm text-white placeholder-slate-500 focus:outline-none transition-colors dir-ltr text-left"
-                                    />
-                                    {targetUrl && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setTargetUrl("")}
-                                            className="absolute left-3 top-1/2 -translate-y-1/2 text-xs bg-slate-800 hover:bg-slate-700 text-slate-400 px-2 py-1 rounded-lg"
-                                        >
-                                            {isRTL ? "مسح" : "Clear"}
-                                        </button>
-                                    )}
-                                </div>
-                                <p className="text-xs text-slate-500">
-                                    {isRTL 
-                                        ? "عند إدخال رابط الموقع، سيقوم النظام باستخراج وتخزين السيارات المتاحة في هذا الرابط مع ضغط الصور ومنع التكرار تلقائياً." 
-                                        : "When a URL is supplied, the system will extract & store available cars from that link with image compression & duplicate checking."}
+                                <p className="text-sm text-slate-400">
+                                    {isRTL
+                                        ? "السيارات المستوردة ستظهر فوراً في صفحة إدارة السيارات وفي معرض العملاء."
+                                        : "Imported cars will appear immediately in Cars Management and the client showroom."}
                                 </p>
                             </div>
 
-                            {/* Quantity Selection */}
-                            <div className="bg-slate-950/60 p-6 rounded-2xl border border-slate-800 space-y-4">
-                                <label className="block text-sm font-semibold text-slate-300">
-                                    {isRTL ? "تحديد عدد السيارات المطلوب استيرادها في هذه الدفعة:" : "Select number of cars to import in this batch:"}
-                                </label>
-                                <div className="flex flex-wrap items-center gap-3">
-                                    {[10, 20, 50, 100].map(qty => (
-                                        <button
-                                            key={qty}
-                                            type="button"
-                                            onClick={() => setShowroomLimit(qty)}
-                                            className={cn(
-                                                "px-6 py-3 rounded-xl text-sm font-bold transition-all border",
-                                                showroomLimit === qty
-                                                    ? "bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20"
-                                                    : "bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800"
-                                            )}
-                                        >
-                                            {qty} {isRTL ? "سيارة" : "Cars"}
-                                        </button>
-                                    ))}
-                                </div>
+                            {/* Feature badges */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <FeatureCard icon={ShieldCheck} color="bg-amber-500/10 text-amber-400"
+                                    title={isRTL ? "مانع التكرار" : "Deduplication"}
+                                    desc={isRTL ? "مفعّل تلقائياً (VIN / ID)" : "Auto (VIN / ExternalId)"} />
+                                <FeatureCard icon={Zap} color="bg-blue-500/10 text-blue-400"
+                                    title={isRTL ? "ضغط الصور" : "Image Compression"}
+                                    desc="WebP" />
+                                <FeatureCard icon={Car} color="bg-emerald-500/10 text-emerald-400"
+                                    title={isRTL ? "الوجهة" : "Destination"}
+                                    desc={isRTL ? "إدارة السيارات" : "Cars Management"} />
                             </div>
 
-                            {/* Action Button */}
-                            <button
-                                onClick={handleImportShowroom}
-                                disabled={loading}
-                                className={cn(
-                                    "w-full py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-3 transition-all shadow-xl",
-                                    loading
-                                        ? "bg-slate-800 text-slate-500 cursor-not-allowed"
-                                        : "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-amber-500/25 active:scale-[0.99]"
-                                )}
+                            {/* URL input */}
+                            <div className="bg-slate-950/50 p-5 rounded-2xl border border-slate-800">
+                                <UrlInput
+                                    value={carsUrl}
+                                    onChange={setCarsUrl}
+                                    placeholder="https://car.encar.com/cat/car/search?..."
+                                />
+                            </div>
+
+                            {/* Limit */}
+                            <div className="bg-slate-950/50 p-5 rounded-2xl border border-slate-800">
+                                <LimitSelector
+                                    value={carsLimit}
+                                    onChange={setCarsLimit}
+                                    options={[10, 20, 50, 100]}
+                                    label={isRTL ? "عدد السيارات المطلوب استيرادها:" : "Number of cars to import:"}
+                                />
+                            </div>
+
+                            {/* Action */}
+                            <ImportButton
+                                onClick={handleImportCars}
+                                loading={loading}
+                                label={isRTL ? `استيراد ${carsLimit} سيارة الآن` : `Import ${carsLimit} Cars Now`}
+                                loadingLabel={isRTL ? "جاري الاستيراد..." : "Importing..."}
+                            />
+
+                            {/* Quick link */}
+                            <NextLink href="/admin/cars"
+                                className="flex items-center gap-2 text-sm text-amber-400 hover:text-amber-300 transition-colors"
                             >
-                                {loading ? (
-                                    <>
-                                        <RefreshCw className="w-5 h-5 animate-spin" />
-                                        <span>{isRTL ? "جاري استيراد وضغط صور سيارات المعرض..." : "Importing and compressing showroom cars..."}</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Download className="w-5 h-5" />
-                                        <span>{isRTL ? `بدء استيراد ${showroomLimit} سيارة معرض الآن` : `Start Importing ${showroomLimit} Showroom Cars Now`}</span>
-                                    </>
-                                )}
-                            </button>
+                                <ExternalLink className="w-4 h-4" />
+                                <span>{isRTL ? "انتقل إلى صفحة إدارة السيارات ←" : "Go to Cars Management →"}</span>
+                            </NextLink>
                         </motion.div>
                     )}
 
-                    {/* TAB 2: SPARE PARTS IMPORT */}
+                    {/* ─── TAB: PARTS ─── */}
                     {activeTab === "parts" && (
-                        <motion.div
-                            key="parts-tab"
-                            initial={{ opacity: 0, y: 15 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -15 }}
-                            className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-6"
+                        <motion.div key="parts"
+                            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
+                            className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 space-y-6 shadow-2xl"
                         >
-                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <h3 className="text-xl font-bold text-white">
-                                            {isRTL ? "مسار استيراد قطع الغيار الشامل" : "Comprehensive Parts Import Pipeline"}
-                                        </h3>
-                                        <span className="bg-amber-500/10 text-amber-400 text-xs px-3 py-1 rounded-full border border-amber-500/30 font-mono">
-                                            MOBIS Parts Catalog
-                                        </span>
-                                    </div>
-                                    <p className="text-sm text-slate-400 mt-1">
-                                        {isRTL 
-                                            ? "استيراد شامل لجميع الفئات والأصناف مع المطابقة برقم القطعة OEM وحفظ الصور المضغوطة." 
-                                            : "Comprehensive import of all OEM spare parts with image compression and part number matching."}
-                                    </p>
+                            {/* Header */}
+                            <div className="pb-5 border-b border-slate-800">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <h3 className="text-xl font-bold text-white">
+                                        {isRTL ? "استيراد قطع الغيار" : "Import Spare Parts"}
+                                    </h3>
+                                    <span className="bg-blue-500/10 text-blue-400 text-xs px-3 py-1 rounded-full border border-blue-500/30 font-mono">
+                                        → /admin/parts
+                                    </span>
                                 </div>
+                                <p className="text-sm text-slate-400">
+                                    {isRTL
+                                        ? "القطع المستوردة ستظهر في صفحة إدارة قطع الغيار مصنفةً حسب الوكالة (Mobis, OEM)."
+                                        : "Imported parts will appear in Parts Management, organized by brand (Mobis, OEM, etc.)."}
+                                </p>
                             </div>
 
-                            {/* Info Callout */}
-                            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-sm flex items-start gap-3">
-                                <Info className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                                <div>
-                                    <p className="font-bold">{isRTL ? "استيراد شامل ومكتمل" : "Full Catalog Import"}</p>
-                                    <p className="text-xs text-amber-200/80 mt-1">
-                                        {isRTL 
-                                            ? "يقوم هذا المسار بجلب كافة قطع الغيار الكورية الأصلية (فلاتر، مساعدات، قماشات، إضاءة، رديترات) وتصنيفها فوراً لعرضها للعميل في المتجر." 
-                                            : "Imports all original Korean spare parts (filters, shocks, brake pads, lighting, cooling) categorized for instant client store display."}
-                                    </p>
-                                </div>
+                            {/* Feature badges */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <FeatureCard icon={ShieldCheck} color="bg-amber-500/10 text-amber-400"
+                                    title={isRTL ? "مانع التكرار" : "Deduplication"}
+                                    desc={isRTL ? "برقم القطعة OEM" : "By OEM Part Number"} />
+                                <FeatureCard icon={Package} color="bg-blue-500/10 text-blue-400"
+                                    title={isRTL ? "الاستيراد" : "Import Mode"}
+                                    desc={isRTL ? "شامل لجميع الأصناف" : "Full Catalog"} />
+                                <FeatureCard icon={Zap} color="bg-emerald-500/10 text-emerald-400"
+                                    title={isRTL ? "الوجهة" : "Destination"}
+                                    desc={isRTL ? "إدارة قطع الغيار" : "Parts Management"} />
                             </div>
 
-                            {/* Action Button */}
-                            <button
+                            {/* URL input */}
+                            <div className="bg-slate-950/50 p-5 rounded-2xl border border-slate-800">
+                                <UrlInput
+                                    value={partsUrl}
+                                    onChange={setPartsUrl}
+                                    placeholder="https://www.autospare.com/parts/..."
+                                />
+                            </div>
+
+                            {/* Info note */}
+                            <div className="flex items-start gap-3 p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-300 text-sm">
+                                <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5 text-blue-400" />
+                                <p>
+                                    {isRTL
+                                        ? "سيقوم النظام باستيراد جميع الأصناف المتاحة تلقائياً وتصنيفها حسب الماركة والفئة. ستظهر داخل كل وكالة قطع الغيار المخصصة لها."
+                                        : "The system will import all available parts automatically and organize them by brand and category under each dealer."}
+                                </p>
+                            </div>
+
+                            {/* Action */}
+                            <ImportButton
                                 onClick={handleImportParts}
-                                disabled={loading}
-                                className={cn(
-                                    "w-full py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-3 transition-all shadow-xl",
-                                    loading
-                                        ? "bg-slate-800 text-slate-500 cursor-not-allowed"
-                                        : "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-amber-500/25 active:scale-[0.99]"
-                                )}
+                                loading={loading}
+                                label={isRTL ? "استيراد قطع الغيار الكاملة الآن" : "Import Full Parts Catalog Now"}
+                                loadingLabel={isRTL ? "جاري استيراد القطع..." : "Importing parts..."}
+                            />
+
+                            {/* Quick link */}
+                            <NextLink href="/admin/parts"
+                                className="flex items-center gap-2 text-sm text-amber-400 hover:text-amber-300 transition-colors"
                             >
-                                {loading ? (
-                                    <>
-                                        <RefreshCw className="w-5 h-5 animate-spin" />
-                                        <span>{isRTL ? "جاري استيراد كفافة قطع الغيار والأصناف..." : "Importing all spare parts catalog..."}</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Package className="w-5 h-5" />
-                                        <span>{isRTL ? "بدء الاستيراد الشامل لقطع الغيار الآن" : "Start Comprehensive Parts Import Now"}</span>
-                                    </>
-                                )}
-                            </button>
+                                <ExternalLink className="w-4 h-4" />
+                                <span>{isRTL ? "انتقل إلى صفحة إدارة قطع الغيار ←" : "Go to Parts Management →"}</span>
+                            </NextLink>
                         </motion.div>
                     )}
 
-                    {/* TAB 3: LIVE AUCTIONS IMPORT */}
-                    {activeTab === "live_auctions" && (
-                        <motion.div
-                            key="auctions-tab"
-                            initial={{ opacity: 0, y: 15 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -15 }}
-                            className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-6"
+                    {/* ─── TAB: AUCTIONS ─── */}
+                    {activeTab === "auctions" && (
+                        <motion.div key="auctions"
+                            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
+                            className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 space-y-6 shadow-2xl"
                         >
-                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <h3 className="text-xl font-bold text-white">
-                                            {isRTL ? "مسار استيراد سيارات المزادات المباشرة" : "Live Auction Cars Import Pipeline"}
-                                        </h3>
-                                        <span className="bg-red-500/10 text-red-400 text-xs px-3 py-1 rounded-full border border-red-500/30 font-mono flex items-center gap-1">
-                                            <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
-                                            Live Auction
-                                        </span>
-                                    </div>
-                                    <p className="text-sm text-slate-400 mt-1">
-                                        {isRTL 
-                                            ? "استيراد المزادات الحية الجارية وتوقيتاتها وأعلى سعر للمزايدة وتوليد شارة المزاد الحي." 
-                                            : "Import live ongoing auctions with bidding timers, starting bids, and live badges."}
-                                    </p>
+                            {/* Header */}
+                            <div className="pb-5 border-b border-slate-800">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <h3 className="text-xl font-bold text-white">
+                                        {isRTL ? "استيراد المزادات المباشرة" : "Import Live Auctions"}
+                                    </h3>
+                                    <span className="bg-red-500/10 text-red-400 text-xs px-3 py-1 rounded-full border border-red-500/30 font-mono flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span>
+                                        → /admin/auctions
+                                    </span>
                                 </div>
+                                <p className="text-sm text-slate-400">
+                                    {isRTL
+                                        ? "المزادات المستوردة ستظهر مباشرةً في صفحة إدارة المزادات جاهزةً للتفعيل والمزايدة."
+                                        : "Imported auctions will appear directly in Auctions Management, ready to activate and receive bids."}
+                                </p>
                             </div>
 
-                            {/* Quantity Selection */}
-                            <div className="bg-slate-950/60 p-6 rounded-2xl border border-slate-800 space-y-4">
-                                <label className="block text-sm font-semibold text-slate-300">
-                                    {isRTL ? "تحديد عدد سيارات المزادات المباشرة المطلوب استيرادها:" : "Select number of live auction cars to import:"}
-                                </label>
-                                <div className="flex flex-wrap items-center gap-3">
-                                    {[5, 10, 20, 50].map(qty => (
-                                        <button
-                                            key={qty}
-                                            type="button"
-                                            onClick={() => setAuctionLimit(qty)}
-                                            className={cn(
-                                                "px-6 py-3 rounded-xl text-sm font-bold transition-all border",
-                                                auctionLimit === qty
-                                                    ? "bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20"
-                                                    : "bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800"
-                                            )}
-                                        >
-                                            {qty} {isRTL ? "مزاد حي" : "Live Auctions"}
-                                        </button>
-                                    ))}
-                                </div>
+                            {/* Feature badges */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <FeatureCard icon={ShieldCheck} color="bg-amber-500/10 text-amber-400"
+                                    title={isRTL ? "مانع التكرار" : "Deduplication"}
+                                    desc={isRTL ? "مفعّل تلقائياً" : "Auto Enabled"} />
+                                <FeatureCard icon={Zap} color="bg-red-500/10 text-red-400"
+                                    title={isRTL ? "البيانات" : "Data"} 
+                                    desc={isRTL ? "توقيت + سعر البداية + صور" : "Timer + Start Price + Images"} />
+                                <FeatureCard icon={Gavel} color="bg-emerald-500/10 text-emerald-400"
+                                    title={isRTL ? "الوجهة" : "Destination"}
+                                    desc={isRTL ? "إدارة المزادات" : "Auctions Management"} />
                             </div>
 
-                            {/* Action Button */}
-                            <button
-                                onClick={handleImportLiveAuctions}
-                                disabled={loading}
-                                className={cn(
-                                    "w-full py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-3 transition-all shadow-xl",
-                                    loading
-                                        ? "bg-slate-800 text-slate-500 cursor-not-allowed"
-                                        : "bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white shadow-red-500/25 active:scale-[0.99]"
-                                )}
+                            {/* URL input */}
+                            <div className="bg-slate-950/50 p-5 rounded-2xl border border-slate-800">
+                                <UrlInput
+                                    value={auctionsUrl}
+                                    onChange={setAuctionsUrl}
+                                    placeholder="https://lotte-auction.com/auction/cars/..."
+                                />
+                            </div>
+
+                            {/* Limit */}
+                            <div className="bg-slate-950/50 p-5 rounded-2xl border border-slate-800">
+                                <LimitSelector
+                                    value={auctionsLimit}
+                                    onChange={setAuctionsLimit}
+                                    options={[5, 10, 20, 50]}
+                                    label={isRTL ? "عدد المزادات المطلوب استيرادها:" : "Number of auctions to import:"}
+                                />
+                            </div>
+
+                            {/* Action */}
+                            <ImportButton
+                                onClick={handleImportAuctions}
+                                loading={loading}
+                                label={isRTL ? `استيراد ${auctionsLimit} مزاد حي الآن` : `Import ${auctionsLimit} Live Auctions Now`}
+                                loadingLabel={isRTL ? "جاري استيراد المزادات..." : "Importing auctions..."}
+                                color="red"
+                            />
+
+                            {/* Quick link */}
+                            <NextLink href="/admin/auctions"
+                                className="flex items-center gap-2 text-sm text-amber-400 hover:text-amber-300 transition-colors"
                             >
-                                {loading ? (
-                                    <>
-                                        <RefreshCw className="w-5 h-5 animate-spin" />
-                                        <span>{isRTL ? "جاري استيراد مزادات السيارات المباشرة..." : "Importing live auction cars..."}</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Gavel className="w-5 h-5" />
-                                        <span>{isRTL ? `بدء استيراد ${auctionLimit} سيارات مزاد مباشر الآن` : `Start Importing ${auctionLimit} Live Auctions Now`}</span>
-                                    </>
-                                )}
-                            </button>
-                        </motion.div>
-                    )}
-
-                    {/* TAB 4: IMPORT LOGS HISTORY */}
-                    {activeTab === "logs" && (
-                        <motion.div
-                            key="logs-tab"
-                            initial={{ opacity: 0, y: 15 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -15 }}
-                            className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-6"
-                        >
-                            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-                                <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                                    <History className="w-6 h-6 text-amber-400" />
-                                    <span>{isRTL ? "سجل ودفعات الاستيراد المنفذة" : "Executed Import Logs & Batches"}</span>
-                                </h3>
-                                <button
-                                    onClick={loadImportLogs}
-                                    disabled={logsLoading}
-                                    className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
-                                >
-                                    <RefreshCw className={cn("w-4 h-4", logsLoading && "animate-spin")} />
-                                </button>
-                            </div>
-
-                            {logsLoading ? (
-                                <div className="py-12 text-center text-slate-400">
-                                    <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2 text-amber-400" />
-                                    <p>{isRTL ? "جاري تحميل سجلات الاستيراد..." : "Loading import history logs..."}</p>
-                                </div>
-                            ) : importLogs.length === 0 ? (
-                                <div className="py-12 text-center text-slate-500">
-                                    <History className="w-12 h-12 mx-auto mb-2 opacity-30" />
-                                    <p>{isRTL ? "لا توجد سجلات استيراد سابقة" : "No prior import logs found"}</p>
-                                </div>
-                            ) : (
-                                <div className="overflow-x-auto rounded-2xl border border-slate-800">
-                                    <table className="w-full text-sm text-right">
-                                        <thead className="bg-slate-950 text-slate-400 text-xs font-semibold">
-                                            <tr>
-                                                <th className="p-4">{isRTL ? "تاريخ الاستيراد" : "Date"}</th>
-                                                <th className="p-4">{isRTL ? "نوع المسار" : "Pipeline Type"}</th>
-                                                <th className="p-4">{isRTL ? "العدد المستورد" : "Imported"}</th>
-                                                <th className="p-4">{isRTL ? "المتجاوز (مكرر)" : "Skipped"}</th>
-                                                <th className="p-4">{isRTL ? "الحالة" : "Status"}</th>
-                                                <th className="p-4">{isRTL ? "التفاصيل" : "Details"}</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-800/60 text-slate-300">
-                                            {importLogs.map((log) => (
-                                                <tr key={log._id} className="hover:bg-slate-800/40 transition-colors">
-                                                    <td className="p-4 font-mono text-xs text-slate-400 dir-ltr text-right">
-                                                        {new Date(log.createdAt).toLocaleString(isRTL ? 'ar-SA' : 'en-US')}
-                                                    </td>
-                                                    <td className="p-4 font-bold">
-                                                        {log.importType === 'showroom_cars' && <span className="text-amber-400">🚗 سيارات معرض</span>}
-                                                        {log.importType === 'parts' && <span className="text-blue-400">🔧 قطع غيار</span>}
-                                                        {log.importType === 'live_auctions' && <span className="text-red-400">🔴 مزاد حي</span>}
-                                                    </td>
-                                                    <td className="p-4 font-bold text-emerald-400">+{log.totalImported || 0}</td>
-                                                    <td className="p-4 text-slate-400">{log.totalSkipped || 0}</td>
-                                                    <td className="p-4">
-                                                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                                                            {log.status}
-                                                        </span>
-                                                    </td>
-                                                    <td className="p-4 text-xs text-slate-400 max-w-xs truncate">
-                                                        {log.details}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
+                                <ExternalLink className="w-4 h-4" />
+                                <span>{isRTL ? "انتقل إلى صفحة إدارة المزادات ←" : "Go to Auctions Management →"}</span>
+                            </NextLink>
                         </motion.div>
                     )}
                 </AnimatePresence>
 
-                {/* ── Summary Result Card (If Any Batch Ran) ── */}
-                {lastImportResult && (
+                {/* ── Import Result Card ── */}
+                {lastResult && (
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.98 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="bg-emerald-950/40 border border-emerald-500/30 p-6 rounded-3xl space-y-4"
+                        initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
+                        className="bg-emerald-950/40 border border-emerald-500/30 p-5 rounded-3xl space-y-3"
                     >
                         <div className="flex items-center gap-3 text-emerald-400">
-                            <CheckCircle2 className="w-6 h-6" />
-                            <h4 className="font-bold text-lg">{isRTL ? "ملخص نتيجة الدفعة الحالية:" : "Current Batch Import Summary:"}</h4>
+                            <CheckCircle2 className="w-5 h-5" />
+                            <h4 className="font-bold">{isRTL ? "نتيجة الاستيراد:" : "Import Result:"}</h4>
                         </div>
-                        <p className="text-sm text-emerald-200">{lastImportResult.message}</p>
-                        {lastImportResult.stats && (
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-2">
-                                <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
-                                    <span className="text-slate-400 block">{isRTL ? "العدد المستورد:" : "Imported:"}</span>
-                                    <span className="text-base font-bold text-emerald-400">+{lastImportResult.stats.totalImported}</span>
+                        <p className="text-sm text-emerald-200">{lastResult.message}</p>
+                        {lastResult.stats && (
+                            <div className="flex gap-4 text-sm pt-1">
+                                <div className="bg-slate-900/60 px-4 py-2 rounded-xl border border-slate-800">
+                                    <span className="text-slate-400">{isRTL ? "مستورد: " : "Imported: "}</span>
+                                    <span className="font-bold text-emerald-400">+{lastResult.stats.totalImported ?? 0}</span>
                                 </div>
-                                <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
-                                    <span className="text-slate-400 block">{isRTL ? "المتجاوز للمنع من التكرار:" : "Skipped Duplicates:"}</span>
-                                    <span className="text-base font-bold text-amber-400">{lastImportResult.stats.totalSkipped}</span>
+                                <div className="bg-slate-900/60 px-4 py-2 rounded-xl border border-slate-800">
+                                    <span className="text-slate-400">{isRTL ? "متجاوز (مكرر): " : "Skipped: "}</span>
+                                    <span className="font-bold text-amber-400">{lastResult.stats.totalSkipped ?? 0}</span>
                                 </div>
+                            </div>
+                        )}
+                        {/* Destination link */}
+                        <NextLink
+                            href={lastResult.type === "cars" ? "/admin/cars" : lastResult.type === "parts" ? "/admin/parts" : "/admin/auctions"}
+                            className="inline-flex items-center gap-2 text-sm text-amber-400 hover:text-amber-300 pt-1"
+                        >
+                            <ExternalLink className="w-4 h-4" />
+                            <span>{isRTL ? "عرض البيانات المستوردة ←" : "View Imported Data →"}</span>
+                        </NextLink>
+                    </motion.div>
+                )}
+
+                {/* ── Import Logs ── */}
+                {showLogs && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                        className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-2xl"
+                    >
+                        <div className="flex items-center justify-between">
+                            <h3 className="font-bold text-white flex items-center gap-2">
+                                <History className="w-5 h-5 text-amber-400" />
+                                <span>{isRTL ? "سجل عمليات الاستيراد" : "Import History Logs"}</span>
+                            </h3>
+                            <button onClick={loadImportLogs} disabled={logsLoading}
+                                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+                            >
+                                <RefreshCw className={cn("w-4 h-4", logsLoading && "animate-spin")} />
+                            </button>
+                        </div>
+
+                        {logsLoading ? (
+                            <p className="text-center text-slate-400 py-8">
+                                <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-amber-400" />
+                            </p>
+                        ) : importLogs.length === 0 ? (
+                            <p className="text-center text-slate-500 py-8">{isRTL ? "لا توجد سجلات بعد" : "No logs yet"}</p>
+                        ) : (
+                            <div className="overflow-x-auto rounded-2xl border border-slate-800">
+                                <table className="w-full text-sm text-right">
+                                    <thead className="bg-slate-950 text-slate-400 text-xs">
+                                        <tr>
+                                            <th className="p-3">{isRTL ? "التاريخ" : "Date"}</th>
+                                            <th className="p-3">{isRTL ? "النوع" : "Type"}</th>
+                                            <th className="p-3">{isRTL ? "مستورد" : "Imported"}</th>
+                                            <th className="p-3">{isRTL ? "متجاوز" : "Skipped"}</th>
+                                            <th className="p-3">{isRTL ? "الحالة" : "Status"}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                                        {importLogs.map(log => (
+                                            <tr key={log._id} className="hover:bg-slate-800/40 transition-colors">
+                                                <td className="p-3 text-xs text-slate-400 font-mono" dir="ltr">
+                                                    {new Date(log.createdAt).toLocaleString(isRTL ? 'ar-SA' : 'en-US')}
+                                                </td>
+                                                <td className="p-3 font-bold">
+                                                    {log.importType === 'showroom_cars' && <span className="text-amber-400">🚗 سيارات</span>}
+                                                    {log.importType === 'parts' && <span className="text-blue-400">🔧 قطع غيار</span>}
+                                                    {log.importType === 'live_auctions' && <span className="text-red-400">🔴 مزادات</span>}
+                                                </td>
+                                                <td className="p-3 font-bold text-emerald-400">+{log.totalImported || 0}</td>
+                                                <td className="p-3 text-slate-400">{log.totalSkipped || 0}</td>
+                                                <td className="p-3">
+                                                    <span className={cn(
+                                                        "px-2 py-1 rounded-full text-xs font-bold border",
+                                                        log.status === 'completed'
+                                                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                                                            : "bg-red-500/10 text-red-400 border-red-500/30"
+                                                    )}>
+                                                        {log.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
                         )}
                     </motion.div>
                 )}
-
-                {/* Legacy Import System Component for Scrape URL compatibility */}
-                <div className="pt-8 border-t border-slate-800">
-                    <h3 className="text-lg font-bold text-slate-300 mb-4 flex items-center gap-2">
-                        <Globe className="w-5 h-5 text-amber-400" />
-                        <span>{isRTL ? "أداة المعاينة المباشرة من الروابط الخارجية" : "Direct External URL Preview Tool"}</span>
-                    </h3>
-                    <ImportSystem />
-                </div>
             </div>
         </AdminPageShell>
     );
