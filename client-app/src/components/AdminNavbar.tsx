@@ -300,15 +300,6 @@ function buildNavCategories(isRTL: boolean, user: any, tenant: any): NavCategory
     const hasP = (p: string) => isSuper || permissions.includes(p);
 
     const categories: NavCategory[] = [
-        // ─── قسم CAR X (للمستأجر carx فقط) ───
-        ...(tenant?.id === 'carx' ? [{
-            label: isRTL ? 'إدارة CAR X' : 'CAR X MANAGER',
-            items: [
-                { id: 'carx-settings', icon: Settings, label: isRTL ? 'إعدادات المنصة' : 'SETTINGS', href: '/admin/carx-settings' },
-                { id: 'carx-permissions', icon: Shield, label: isRTL ? 'الصلاحيات' : 'PERMISSIONS', href: '/admin/carx-permissions' }
-            ]
-        }] : []),
-
         // ─── القسم الرئيسي ───
         {
             label: isRTL ? '🏠 الرئيسية' : '🏠 HOME',
