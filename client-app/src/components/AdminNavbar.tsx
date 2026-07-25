@@ -324,8 +324,7 @@ function buildNavCategories(isRTL: boolean, user: any, tenant: any): NavCategory
             label: isRTL ? '⚡ المزادات' : '⚡ AUCTIONS',
             items: [
                 ...(hasP('manage_auctions') ? [
-                    { id: 'market', icon: Gavel, label: isRTL ? 'إدارة المزادات' : 'AUCTIONS MGR', href: '/admin/market' },
-                    { id: 'live-auctions', icon: Database, label: isRTL ? 'المزادات المباشرة' : 'LIVE AUCTIONS', href: '/admin/live-auctions' },
+                    { id: 'auctions-hub', icon: Gavel, label: isRTL ? 'إدارة المزادات والشراء' : 'AUCTIONS HUB', href: '/admin/auctions' },
                 ] : []),
             ]
         },
