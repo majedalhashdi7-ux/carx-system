@@ -345,7 +345,7 @@ class PartsImportService {
             totalFetched = partsToImport.length;
             console.log(`📊 [PartsImport] Processing ${totalFetched} parts...`);
 
-            // ─── حفظ كل قطعة ─────────────────────────────────────────
+            // ─── حفظ كل قطعة (upsert: إنشاء أو تحديث) ──────────────────
             for (const item of partsToImport) {
                 try {
                     const partName = item.name || item.nameAr || item.title || 'قطعة غيار';
@@ -353,15 +353,6 @@ class PartsImportService {
                         'AS-' + Math.random().toString(36).substring(2, 8).toUpperCase();
                     const brandName = item.brand || item.brandSlug || item.manufacturer || 'غير محدد';
                     const externalId = `autospare-${partNumber.replace(/[^a-zA-Z0-9]/g, '-')}`;
-
-                    // ─── منع التكرار ─────────────────────────────────
-                    const existing = await SparePart.findOne({
-                        $or: [
-                            { externalId },
-                            { partNumber: partNumber, carMake: item.carMake || item.brand },
-                        ]
-                    });
-                    if (existing) { totalSkipped++; continue; }
 
                     // ─── تحضير الصور ─────────────────────────────────
                     const rawImages = item.images || (item.image ? [item.image] : []);
@@ -378,7 +369,6 @@ class PartsImportService {
 
                     // ─── حساب السعر بالريال السعودي ──────────────────
                     const rawPrice = Number(item.price || item.priceSar || item.priceEgp || 0);
-                    // إذا كان بالجنيه المصري → تحويل تقريبي
                     const priceSar = item.priceSar ||
                         (rawPrice > 0 && !item.currency?.includes('SAR')
                             ? Number((rawPrice / 13.5).toFixed(2))  // EGP → SAR تقريبي
@@ -387,8 +377,7 @@ class PartsImportService {
                     // ─── تحديد فئة القطعة ─────────────────────────────
                     const category = item.category || item.partType || item.categoryAr || 'قطع غيار عامة';
 
-                    // ─── حفظ القطعة ──────────────────────────────────
-                    await SparePart.create({
+                    const partData = {
                         name: partName,
                         nameAr: item.nameAr || partName,
                         nameEn: item.nameEn || item.name || partName,
@@ -413,19 +402,29 @@ class PartsImportService {
                         externalUrl: item.url || `${sourceUrl}/${item.brandSlug || ''}`,
                         source: 'autospare_eg',
                         tenantId: req.tenantId || 'default',
-                        createdAt: new Date(),
-                    });
+                    };
+
+                    // ─── upsert: أنشئ أو حدِّث ──────────────────────
+                    await SparePart.findOneAndUpdate(
+                        {
+                            $or: [
+                                { externalId },
+                                { partNumber: partNumber, carMake: item.carMake || item.brand },
+                            ]
+                        },
+                        { $set: partData },
+                        { upsert: true, new: true, setDefaultsOnInsert: true }
+                    );
 
                     totalImported++;
                     importedItems.push({ name: partName, image: mainImage });
-                    console.log(`✅ [PartsImport] Imported: ${partName}`);
+                    console.log(`✅ [PartsImport] Upserted: ${partName}`);
 
                 } catch (itemErr) {
                     console.warn(`⚠️ [PartsImport] Item error: ${itemErr.message}`);
                     totalSkipped++;
                 }
             }
-
             // ─── تسجيل في ImportLog (fire-and-forget) ───────────────────
             safeLogImport(req, {
                 importType: 'parts',
