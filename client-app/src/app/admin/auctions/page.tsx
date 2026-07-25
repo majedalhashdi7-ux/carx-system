@@ -1,9 +1,10 @@
 import { redirect } from 'next/navigation';
 
 /**
- * إعادة توجيه من /admin/auctions إلى /admin/market
- * نظراً لأن صفحة المزادات الرئيسية موجودة في /admin/market
+ * إعادة توجيه من /admin/auctions إلى /admin/live-auctions
+ * لضمان وصول المشرف مباشرة لصفحة إدارة المزادات المباشرة ومزادات الاستيراد
  */
 export default function AdminAuctionsRedirect() {
-    redirect('/admin/market');
+    redirect('/admin/live-auctions');
 }
+
