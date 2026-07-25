@@ -524,7 +524,13 @@ router.post('/live-auctions', requireAuthAPI, requireAdmin, async (req, res, nex
  */
 router.get('/logs', requireAuthAPI, requireAdmin, async (req, res, next) => {
     try {
-        const logs = await ImportLog.find({ tenantId: req.tenantId || 'default' })
+        const db = req.tenantDb || (require('mongoose').connection.readyState === 1 ? require('mongoose').connection : null);
+        if (!db) {
+            return res.json({ success: true, count: 0, logs: [] });
+        }
+        const ImportLogModel = db.models.ImportLog ||
+            db.model('ImportLog', ImportLog.schema);
+        const logs = await ImportLogModel.find({ tenantId: req.tenantId || 'default' })
             .sort({ createdAt: -1 })
             .limit(50)
             .lean();
@@ -535,7 +541,9 @@ router.get('/logs', requireAuthAPI, requireAdmin, async (req, res, next) => {
             logs
         });
     } catch (error) {
-        next(error);
+        // إذا فشل جلب السجلات لا نوقف السيرفر — نرجع قائمة فارغة
+        console.warn('⚠️ [ImportLogs] Could not fetch logs:', error.message);
+        res.json({ success: true, count: 0, logs: [] });
     }
 });
 

@@ -1,9 +1,26 @@
 // [[ARABIC_HEADER]] هذا الملف (services/PartsImportService.js) يستورد قطع الغيار الحقيقية من autospare.com.eg
 
 const imageOptimizationService = require('./ImageOptimizationService');
-const ImportLog = require('../models/ImportLog');
 const https = require('https');
 const http = require('http');
+
+/**
+ * حفظ سجل الاستيراد بشكل آمن (fire-and-forget) دون تعليق العملية الرئيسية
+ */
+async function safeLogImport(req, logData) {
+    try {
+        // استخدام اتصال المستأجر إذا كان متاحاً
+        const db = req.tenantDb || (require('mongoose').connection.readyState === 1 ? require('mongoose').connection : null);
+        if (!db) return null;
+        // إنشاء الـ schema على الاتصال المتاح
+        const ImportLog = db.models.ImportLog ||
+            db.model('ImportLog', require('mongoose').model('ImportLog').schema);
+        return await ImportLog.create({ ...logData, tenantId: req.tenantId || 'default' });
+    } catch (e) {
+        console.warn('⚠️ [ImportLog] Log save skipped (non-fatal):', e.message);
+        return null;
+    }
+}
 
 /**
  * جلب HTTP مع redirect support وJSON fallback
@@ -409,9 +426,8 @@ class PartsImportService {
                 }
             }
 
-            // ─── تسجيل في ImportLog ──────────────────────────────────
-            const logEntry = await ImportLog.create({
-                tenantId: req.tenantId || 'default',
+            // ─── تسجيل في ImportLog (fire-and-forget) ───────────────────
+            safeLogImport(req, {
                 importType: 'parts',
                 requestedLimit: totalFetched,
                 totalFetched,
@@ -421,7 +437,7 @@ class PartsImportService {
                 status: 'completed',
                 details: `تم استيراد ${totalImported} قطعة من autospare.com.eg. متجاوز (مكرر): ${totalSkipped}`,
                 adminUser,
-            });
+            }).catch(() => {});
 
             return {
                 success: true,
@@ -429,13 +445,12 @@ class PartsImportService {
                 stats: { totalFetched, totalImported, totalSkipped },
                 source: sourceUrl,
                 items: importedItems,
-                log: logEntry,
             };
 
         } catch (error) {
             console.error('❌ [PartsImportService]', error);
-            await ImportLog.create({
-                tenantId: req.tenantId || 'default',
+            // log error non-blocking
+            safeLogImport(req, {
                 importType: 'parts',
                 status: 'failed',
                 details: `فشل الاستيراد: ${error.message}`,

@@ -2,9 +2,24 @@
 // يدعم الاستيراد الحقيقي من desert-korea-auto.com أو أي رابط خارجي مماثل
 
 const imageOptimizationService = require('./ImageOptimizationService');
-const ImportLog = require('../models/ImportLog');
 const https = require('https');
 const http = require('http');
+
+/**
+ * حفظ سجل الاستيراد بشكل آمن دون تعليق العملية الرئيسية
+ */
+async function safeLogImport(req, logData) {
+    try {
+        const db = req.tenantDb || (require('mongoose').connection.readyState === 1 ? require('mongoose').connection : null);
+        if (!db) return null;
+        const ImportLog = db.models.ImportLog ||
+            db.model('ImportLog', require('mongoose').model('ImportLog').schema);
+        return await ImportLog.create({ ...logData, tenantId: req.tenantId || 'default' });
+    } catch (e) {
+        console.warn('⚠️ [ImportLog] Log save skipped (non-fatal):', e.message);
+        return null;
+    }
+}
 
 // خريطة ترجمة أسماء الماركات
 const BRAND_MAP = {
@@ -352,9 +367,8 @@ class LiveAuctionImportService {
                 }
             }
 
-            // ─── تسجيل في ImportLog ─────────────────────────────────────
-            const logEntry = await ImportLog.create({
-                tenantId: req.tenantId || 'default',
+            // ─── تسجيل في ImportLog (fire-and-forget) ───────────────────
+            safeLogImport(req, {
                 importType: 'live_auctions',
                 requestedLimit: targetLimit,
                 totalFetched,
@@ -364,7 +378,7 @@ class LiveAuctionImportService {
                 status: 'completed',
                 details: `تم استيراد ${totalImported} مزاد من ${sourceUrl}. متجاوز (مكرر): ${totalSkipped}.`,
                 adminUser,
-            });
+            }).catch(() => {});
 
             return {
                 success: true,
@@ -372,13 +386,11 @@ class LiveAuctionImportService {
                 stats: { requestedLimit: targetLimit, totalFetched, totalImported, totalSkipped },
                 source: sourceUrl,
                 items: importedItems,
-                log: logEntry,
             };
 
         } catch (error) {
             console.error('❌ [LiveAuctionImportService] Fatal error:', error);
-            await ImportLog.create({
-                tenantId: req.tenantId || 'default',
+            safeLogImport(req, {
                 importType: 'live_auctions',
                 requestedLimit: targetLimit,
                 status: 'failed',

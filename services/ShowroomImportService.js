@@ -1,9 +1,24 @@
 // [[ARABIC_HEADER]] هذا الملف (services/ShowroomImportService.js) يستورد سيارات المعرض الحقيقية من Encar كوريا
 
 const imageOptimizationService = require('./ImageOptimizationService');
-const ImportLog = require('../models/ImportLog');
 const https = require('https');
 const http = require('http');
+
+/**
+ * حفظ سجل الاستيراد بشكل آمن دون تعليق العملية الرئيسية
+ */
+async function safeLogImport(req, logData) {
+    try {
+        const db = req.tenantDb || (require('mongoose').connection.readyState === 1 ? require('mongoose').connection : null);
+        if (!db) return null;
+        const ImportLog = db.models.ImportLog ||
+            db.model('ImportLog', require('mongoose').model('ImportLog').schema);
+        return await ImportLog.create({ ...logData, tenantId: req.tenantId || 'default' });
+    } catch (e) {
+        console.warn('⚠️ [ImportLog] Log save skipped (non-fatal):', e.message);
+        return null;
+    }
+}
 
 // ─── خريطة الماركات ──────────────────────────────────────────
 const BRAND_TRANSLATE = {
@@ -258,9 +273,8 @@ class ShowroomImportService {
                 }
             }
 
-            // ─── تسجيل في ImportLog ─────────────────────────────────
-            const logEntry = await ImportLog.create({
-                tenantId: req.tenantId || 'default',
+            // ─── تسجيل في ImportLog (fire-and-forget) ───────────────────
+            safeLogImport(req, {
                 importType: 'showroom_cars',
                 requestedLimit: targetLimit,
                 totalFetched,
@@ -270,7 +284,7 @@ class ShowroomImportService {
                 status: 'completed',
                 details: `تم استيراد ${totalImported} سيارة معرض من ${new URL(sourceUrl).hostname}. متجاوز: ${totalSkipped}`,
                 adminUser,
-            });
+            }).catch(() => {});
 
             return {
                 success: true,
@@ -278,13 +292,11 @@ class ShowroomImportService {
                 stats: { requestedLimit: targetLimit, totalFetched, totalImported, totalSkipped },
                 source: sourceUrl,
                 items: importedItems,
-                log: logEntry,
             };
 
         } catch (error) {
             console.error('❌ [ShowroomImportService]', error);
-            await ImportLog.create({
-                tenantId: req.tenantId || 'default',
+            safeLogImport(req, {
                 importType: 'showroom_cars',
                 requestedLimit: targetLimit,
                 status: 'failed',
