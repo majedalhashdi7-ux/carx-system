@@ -59,7 +59,7 @@ function updateSWVersion() {
 // ──────────────────────────────────────────────────────────────
 function run(cmd, cwd, label) {
     try {
-        execSync(cmd, { cwd, stdio: 'inherit', encoding: 'utf-8' });
+        execSync(cmd, { cwd, stdio: 'inherit', encoding: 'utf-8', env: { ...process.env, NODE_OPTIONS: '--max-old-space-size=4096' } });
         return true;
     } catch (err) {
         log.error(`فشل: ${label}`);

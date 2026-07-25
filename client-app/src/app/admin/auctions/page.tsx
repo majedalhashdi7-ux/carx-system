@@ -3,14 +3,15 @@
 /**
  * [[ARABIC_HEADER]] مركز إدارة المزادات الموحد - HM CAR Master Auction Hub
  * يدمج جميع أنواع المزادات (المباشرة، الكورية، الفورية، الطلبات) في صفحة قيادية واحدة متكاملة
+ * مجهز بنظام أمان فائق ضد أخطاء البيانات (Null-Safe & Bulletproof)
  */
 
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Plus, Trash2, Edit2, X, Link as LinkIcon,
+    Plus, Trash2, X,
     Play, Square, ExternalLink, RefreshCw,
-    Zap, Radio, Info, Car, Clock, Gavel, Search,
-    CheckCircle2, AlertTriangle, ArrowUpRight, TrendingUp
+    Radio, Car, Gavel, Search,
+    CheckCircle2, ArrowUpRight
 } from "lucide-react";
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -66,20 +67,24 @@ function MasterAuctionsContent() {
         endsAt: ''
     });
 
-    // ── Data Loaders ──
+    // ── Safe Data Loaders ──
     const loadLiveSessions = useCallback(async () => {
         setLoading(true);
         try {
             const [sessRes, impRes] = await Promise.all([
-                api.liveAuctions.list(),
-                api.auctions.list({ limit: 100, status: 'all' })
+                api.liveAuctions.list().catch(() => ({ success: false, data: [] })),
+                api.auctions.list({ limit: 100, status: 'all' }).catch(() => ({ success: false, data: [] }))
             ]);
 
-            const rawSessions = Array.isArray(sessRes?.data) ? sessRes.data : (Array.isArray(sessRes?.sessions) ? sessRes.sessions : []);
+            const rawSessions = Array.isArray(sessRes?.data) 
+                ? sessRes.data 
+                : (Array.isArray(sessRes?.sessions) ? sessRes.sessions : []);
             setSessions(rawSessions.filter((s: any) => s && typeof s === 'object'));
 
-            const rawAuctions = Array.isArray(impRes?.data) ? impRes.data : (Array.isArray(impRes?.auctions) ? impRes.auctions : []);
-            setImportedAuctions(rawAuctions);
+            const rawAuctions = Array.isArray(impRes?.data) 
+                ? impRes.data 
+                : (Array.isArray(impRes?.auctions) ? impRes.auctions : []);
+            setImportedAuctions(rawAuctions.filter((a: any) => a && typeof a === 'object'));
         } catch {
             setSessions([]);
             setImportedAuctions([]);
@@ -92,15 +97,19 @@ function MasterAuctionsContent() {
         setLoading(true);
         try {
             const [aucRes, carRes] = await Promise.all([
-                api.auctions.list({ status: auctionStatusFilter, limit: 100 }),
-                api.cars.list({ status: 'active', limit: 100 })
+                api.auctions.list({ status: auctionStatusFilter, limit: 100 }).catch(() => ({ success: false, data: [] })),
+                api.cars.list({ status: 'active', limit: 100 }).catch(() => ({ success: false, data: { cars: [] } }))
             ]);
 
-            const list = Array.isArray(aucRes?.data) ? aucRes.data : (Array.isArray(aucRes?.auctions) ? aucRes.auctions : []);
-            setClassicAuctions(list);
+            const list = Array.isArray(aucRes?.data) 
+                ? aucRes.data 
+                : (Array.isArray(aucRes?.auctions) ? aucRes.auctions : []);
+            setClassicAuctions(list.filter((a: any) => a && typeof a === 'object'));
 
-            const carList = Array.isArray(carRes?.data?.cars) ? carRes.data.cars : (Array.isArray(carRes?.data) ? carRes.data : []);
-            setAvailableCars(carList);
+            const carList = Array.isArray(carRes?.data?.cars) 
+                ? carRes.data.cars 
+                : (Array.isArray(carRes?.data) ? carRes.data : []);
+            setAvailableCars(carList.filter((c: any) => c && typeof c === 'object'));
         } catch {
             setClassicAuctions([]);
             setAvailableCars([]);
@@ -183,6 +192,7 @@ function MasterAuctionsContent() {
     };
 
     const handleActivateImportedAuction = async (auctionId: string) => {
+        if (!auctionId) return;
         setActivatingId(auctionId);
         try {
             const res = await api.auctions.update(auctionId, { status: 'running' });
@@ -200,7 +210,7 @@ function MasterAuctionsContent() {
     };
 
     const handleDeleteAuction = async (id: string, title: string) => {
-        if (!confirm(isRTL ? `هل أنت تأكد من حذف المزاد "${title}"؟` : `Delete auction "${title}"?`)) return;
+        if (!confirm(isRTL ? `هل أنت تأكد من حذف المزاد "${title || ''}"؟` : `Delete auction "${title || ''}"?`)) return;
         try {
             await api.auctions.delete(id);
             showToast(isRTL ? '✅ تم حذف المزاد' : '✅ Auction deleted', 'success');
@@ -241,10 +251,14 @@ function MasterAuctionsContent() {
         }
     };
 
-    // Stats Calculations
-    const activeCount = importedAuctions.filter(a => a.status === 'running').length + classicAuctions.filter(a => a.status === 'running').length;
-    const pendingCount = importedAuctions.filter(a => a.status === 'pending' || a.status === 'scheduled').length;
-    const liveSessionsCount = sessions.length;
+    // Safe Stats Calculations
+    const safeImported = Array.isArray(importedAuctions) ? importedAuctions : [];
+    const safeClassic = Array.isArray(classicAuctions) ? classicAuctions : [];
+    const safeSessions = Array.isArray(sessions) ? sessions : [];
+
+    const activeCount = safeImported.filter(a => a && a.status === 'running').length + safeClassic.filter(a => a && a.status === 'running').length;
+    const pendingCount = safeImported.filter(a => a && (a.status === 'pending' || a.status === 'scheduled')).length;
+    const liveSessionsCount = safeSessions.length;
 
     return (
         <AdminPageShell
@@ -290,7 +304,7 @@ function MasterAuctionsContent() {
                     >
                         <Radio className={cn("w-4 h-4", activeTab === 'live' && "animate-pulse")} />
                         <span>{isRTL ? 'المزادات المباشرة والاستيراد' : 'Live & Import Auctions'}</span>
-                        <span className="bg-black/30 px-2 py-0.5 rounded-full text-[10px] font-mono">{sessions.length + importedAuctions.length}</span>
+                        <span className="bg-black/30 px-2 py-0.5 rounded-full text-[10px] font-mono">{safeSessions.length + safeImported.length}</span>
                     </button>
 
                     <button
@@ -304,7 +318,7 @@ function MasterAuctionsContent() {
                     >
                         <Gavel className="w-4 h-4" />
                         <span>{isRTL ? 'المزادات الفورية والمحلية' : 'Instant Auctions'}</span>
-                        <span className="bg-black/30 px-2 py-0.5 rounded-full text-[10px] font-mono">{classicAuctions.length}</span>
+                        <span className="bg-black/30 px-2 py-0.5 rounded-full text-[10px] font-mono">{safeClassic.length}</span>
                     </button>
                 </div>
 
@@ -339,23 +353,23 @@ function MasterAuctionsContent() {
                             </Link>
                         </div>
 
-                        {importedAuctions.length === 0 ? (
+                        {safeImported.length === 0 ? (
                             <div className="p-8 text-center rounded-2xl bg-white/[0.02] border border-white/10 text-white/40 text-xs">
                                 {isRTL ? 'لا توجد مزادات مستوردة حالياً. يمكنك استخدام بوابة الاستيراد لاستيراد المزادات الكورية.' : 'No imported auctions found.'}
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {importedAuctions
-                                    .filter(a => !search || a.title?.toLowerCase().includes(search.toLowerCase()))
+                                {safeImported
+                                    .filter(a => a && (!search || (a.title || '').toLowerCase().includes(search.toLowerCase())))
                                     .slice(0, 9)
                                     .map((auction) => {
-                                        const isRunning = auction.status === 'running';
-                                        const isActivating = activatingId === auction._id;
-                                        const mainImg = auction.images?.[0] || auction.carId?.images?.[0] || '';
+                                        const isRunning = auction?.status === 'running';
+                                        const isActivating = activatingId === auction?._id;
+                                        const mainImg = auction?.images?.[0] || auction?.carId?.images?.[0] || '';
 
                                         return (
                                             <motion.div
-                                                key={auction._id}
+                                                key={auction._id || Math.random()}
                                                 whileHover={{ y: -3 }}
                                                 className="relative group rounded-2xl bg-[#0e0f1d] border border-white/10 p-4 hover:border-orange-500/40 transition-all flex flex-col justify-between"
                                             >
@@ -364,7 +378,7 @@ function MasterAuctionsContent() {
                                                     <div className="relative h-40 rounded-xl overflow-hidden bg-black/50 mb-3">
                                                         {mainImg ? (
                                                             // eslint-disable-next-line @next/next/no-img-element
-                                                            <img src={mainImg} alt={auction.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                                            <img src={mainImg} alt={auction.title || 'Car'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                                                         ) : (
                                                             <div className="w-full h-full flex items-center justify-center text-white/20">
                                                                 <Car className="w-12 h-12" />
@@ -392,7 +406,7 @@ function MasterAuctionsContent() {
                                                 <div className="flex items-center gap-2 pt-2 border-t border-white/5">
                                                     {!isRunning ? (
                                                         <button
-                                                            onClick={() => handleActivate(auction._id)}
+                                                            onClick={() => handleActivateImportedAuction(auction._id)}
                                                             disabled={isActivating}
                                                             className="flex-1 py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-bold hover:bg-emerald-500/30 transition-colors flex items-center justify-center gap-1.5"
                                                         >
@@ -429,19 +443,19 @@ function MasterAuctionsContent() {
                             </h2>
                         </div>
 
-                        {sessions.length === 0 ? (
+                        {safeSessions.length === 0 ? (
                             <div className="p-8 text-center rounded-2xl bg-white/[0.02] border border-white/10 text-white/40 text-xs">
                                 {isRTL ? 'لا توجد جلسات بث مباشر مضافة. اضغط "إنشاء جلسة بث/مزاد" لإضافة بث جديد.' : 'No live streams found.'}
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                {sessions.map((session) => {
-                                    const isLive = session.status === 'live';
-                                    const isSyncing = syncingId === session._id;
+                                {safeSessions.map((session) => {
+                                    const isLive = session?.status === 'live';
+                                    const isSyncing = syncingId === session?._id;
 
                                     return (
                                         <div
-                                            key={session._id}
+                                            key={session._id || Math.random()}
                                             className="p-4 rounded-2xl bg-[#0e0f1d] border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-white/20 transition-all"
                                         >
                                             <div className="flex items-center gap-4">
@@ -453,7 +467,7 @@ function MasterAuctionsContent() {
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center gap-2">
-                                                        <h3 className="font-bold text-sm text-white">{session.title}</h3>
+                                                        <h3 className="font-bold text-sm text-white">{session.title || 'بث مباشر'}</h3>
                                                         <span className={cn(
                                                             "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border",
                                                             isLive ? "bg-red-500/20 border-red-500/30 text-red-400" : "bg-white/5 border-white/10 text-white/40"
@@ -528,27 +542,27 @@ function MasterAuctionsContent() {
                         ))}
                     </div>
 
-                    {classicAuctions.length === 0 ? (
+                    {safeClassic.length === 0 ? (
                         <div className="p-12 text-center rounded-2xl bg-white/[0.02] border border-white/10 text-white/40 text-xs">
                             {isRTL ? 'لا توجد مزادات في هذه الفئة حالياً. اضغط "إضافة مزاد جديد" للبدء.' : 'No auctions found.'}
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {classicAuctions.map((auc) => {
-                                const mainImg = auc.images?.[0] || auc.carId?.images?.[0] || '';
+                            {safeClassic.map((auc) => {
+                                const mainImg = auc?.images?.[0] || auc?.carId?.images?.[0] || '';
                                 return (
-                                    <div key={auc._id} className="rounded-2xl bg-[#0e0f1d] border border-white/10 p-4 space-y-3">
+                                    <div key={auc._id || Math.random()} className="rounded-2xl bg-[#0e0f1d] border border-white/10 p-4 space-y-3">
                                         <div className="relative h-40 rounded-xl overflow-hidden bg-black/40">
                                             {mainImg ? (
                                                 // eslint-disable-next-line @next/next/no-img-element
-                                                <img src={mainImg} alt={auc.title} className="w-full h-full object-cover" />
+                                                <img src={mainImg} alt={auc.title || 'Car'} className="w-full h-full object-cover" />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-white/20">
                                                     <Car className="w-10 h-10" />
                                                 </div>
                                             )}
                                         </div>
-                                        <h3 className="font-bold text-sm text-white line-clamp-1">{auc.title}</h3>
+                                        <h3 className="font-bold text-sm text-white line-clamp-1">{auc.title || 'مزاد سيارة'}</h3>
                                         <div className="flex justify-between text-xs text-white/60 font-mono">
                                             <span>{isRTL ? 'أعلى مزايدة:' : 'Current Bid:'}</span>
                                             <span className="text-orange-400 font-bold">{(auc.currentBid || auc.startingPrice || 0).toLocaleString()} ر.س</span>
