@@ -21,7 +21,15 @@ export default function AdminImportHub() {
     const { showToast } = useToast();
 
     const [activeTab, setActiveTab] = useState<ActiveTab>("cars");
-    const [loading, setLoading] = useState(false);
+
+    // ── حالات مستقلة لكل بوابة استيراد ────────────────────────────
+    const [carsLoading, setCarsLoading] = useState(false);
+    const [partsLoading, setPartsLoading] = useState(false);
+    const [auctionsLoading, setAuctionsLoading] = useState(false);
+
+    const [carsResult, setCarsResult] = useState<any>(null);
+    const [partsResult, setPartsResult] = useState<any>(null);
+    const [auctionsResult, setAuctionsResult] = useState<any>(null);
 
     const [carsUrl, setCarsUrl] = useState("");
     const [carsLimit, setCarsLimit] = useState(20);
@@ -31,7 +39,6 @@ export default function AdminImportHub() {
     const [auctionsUrl, setAuctionsUrl] = useState("");
     const [auctionsLimit, setAuctionsLimit] = useState(10);
 
-    const [lastResult, setLastResult] = useState<any>(null);
     const [importLogs, setImportLogs] = useState<any[]>([]);
     const [logsLoading, setLogsLoading] = useState(false);
     const [showLogs, setShowLogs] = useState(false);
@@ -46,34 +53,46 @@ export default function AdminImportHub() {
 
     useEffect(() => { loadImportLogs(); }, [loadImportLogs]);
 
+    // ── استيراد سيارات المعرض (مستقل) ─────────────────────────────
     const handleImportCars = async () => {
-        setLoading(true); setLastResult(null);
+        setCarsLoading(true); setCarsResult(null);
         try {
             const res = await api.import.showroom(carsLimit, carsUrl);
-            if (res?.success) { showToast(res.message || "✅ تم استيراد السيارات بنجاح", "success"); setLastResult({ type: "cars", ...res }); loadImportLogs(); }
-            else showToast(res?.error || "❌ فشل الاستيراد", "error");
+            if (res?.success) {
+                showToast(res.message || "✅ تم استيراد السيارات بنجاح", "success");
+                setCarsResult({ type: "cars", ...res });
+                loadImportLogs();
+            } else showToast(res?.error || "❌ فشل الاستيراد", "error");
         } catch (e: any) { showToast(e.message || "❌ خطأ", "error"); }
-        finally { setLoading(false); }
+        finally { setCarsLoading(false); }
     };
 
+    // ── استيراد قطع الغيار (مستقل) ─────────────────────────────────
     const handleImportParts = async () => {
-        setLoading(true); setLastResult(null);
+        setPartsLoading(true); setPartsResult(null);
         try {
             const res = await api.import.parts(partsUrl);
-            if (res?.success) { showToast(res.message || "✅ تم استيراد قطع الغيار", "success"); setLastResult({ type: "parts", ...res }); loadImportLogs(); }
-            else showToast(res?.error || "❌ فشل الاستيراد", "error");
+            if (res?.success) {
+                showToast(res.message || "✅ تم استيراد قطع الغيار", "success");
+                setPartsResult({ type: "parts", ...res });
+                loadImportLogs();
+            } else showToast(res?.error || "❌ فشل الاستيراد", "error");
         } catch (e: any) { showToast(e.message || "❌ خطأ", "error"); }
-        finally { setLoading(false); }
+        finally { setPartsLoading(false); }
     };
 
+    // ── استيراد المزادات المباشرة (مستقل) ──────────────────────────
     const handleImportAuctions = async () => {
-        setLoading(true); setLastResult(null);
+        setAuctionsLoading(true); setAuctionsResult(null);
         try {
             const res = await api.import.liveAuctions(auctionsLimit, auctionsUrl);
-            if (res?.success) { showToast(res.message || "✅ تم استيراد المزادات", "success"); setLastResult({ type: "auctions", ...res }); loadImportLogs(); }
-            else showToast(res?.error || "❌ فشل الاستيراد", "error");
+            if (res?.success) {
+                showToast(res.message || "✅ تم استيراد المزادات", "success");
+                setAuctionsResult({ type: "auctions", ...res });
+                loadImportLogs();
+            } else showToast(res?.error || "❌ فشل الاستيراد", "error");
         } catch (e: any) { showToast(e.message || "❌ خطأ", "error"); }
-        finally { setLoading(false); }
+        finally { setAuctionsLoading(false); }
     };
 
     // ── Shared sub-components ──────────────────────────────────
@@ -150,6 +169,39 @@ export default function AdminImportHub() {
         </button>
     );
 
+    // ── مكوّن نتيجة الاستيراد المستقل لكل بوابة ────────────────────
+    const ImportResult = ({ result }: { result: any }) => {
+        if (!result) return null;
+        return (
+            <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
+                className="bg-emerald-950/40 border border-emerald-500/30 p-5 rounded-2xl space-y-3">
+                <div className="flex items-center gap-2 text-emerald-400">
+                    <CheckCircle2 className="w-5 h-5" />
+                    <span className="font-bold">{isRTL ? "تم الاستيراد بنجاح" : "Import Successful"}</span>
+                </div>
+                <p className="text-sm text-emerald-200">{result.message}</p>
+                {result.stats && (
+                    <div className="flex gap-3 text-sm">
+                        <div className="px-4 py-2 rounded-xl bg-slate-900/60 border border-slate-800">
+                            <span className="text-slate-400">{isRTL ? "مستورد: " : "Imported: "}</span>
+                            <span className="font-bold text-emerald-400">+{result.stats.totalImported ?? 0}</span>
+                        </div>
+                        <div className="px-4 py-2 rounded-xl bg-slate-900/60 border border-slate-800">
+                            <span className="text-slate-400">{isRTL ? "مكرر: " : "Skipped: "}</span>
+                            <span className="font-bold text-amber-400">{result.stats.totalSkipped ?? 0}</span>
+                        </div>
+                    </div>
+                )}
+                <NextLink
+                    href={result.type === "cars" ? "/admin/cars" : result.type === "parts" ? "/admin/parts" : "/admin/auctions"}
+                    className="flex items-center gap-2 text-sm text-amber-400 hover:underline">
+                    <ExternalLink className="w-4 h-4" />
+                    <span>{isRTL ? "عرض البيانات المستوردة ←" : "View Imported Data →"}</span>
+                </NextLink>
+            </motion.div>
+        );
+    };
+
     return (
         <AdminPageShell
             title={isRTL ? "بوابة الاستيراد" : "Import Gateway"}
@@ -165,7 +217,7 @@ export default function AdminImportHub() {
                         { key: "parts", icon: Package, ar: "🔧 قطع الغيار", en: "🔧 Parts" },
                         { key: "auctions", icon: Gavel, ar: "🔴 المزادات", en: "🔴 Auctions" },
                     ].map(t => (
-                        <button key={t.key} onClick={() => { setActiveTab(t.key as ActiveTab); setLastResult(null); }}
+                        <button key={t.key} onClick={() => setActiveTab(t.key as ActiveTab)}
                             className={cn(
                                 "flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all duration-200",
                                 activeTab === t.key
@@ -225,8 +277,11 @@ export default function AdminImportHub() {
                                 <InfoChip icon={Car} color="bg-emerald-500/10 text-emerald-400" label={isRTL ? "الوجهة" : "Dest."} value={isRTL ? "إدارة السيارات" : "Cars Mgmt"} />
                             </div>
 
-                            <RunButton onClick={handleImportCars} isLoading={loading}
+                            <RunButton onClick={handleImportCars} isLoading={carsLoading}
                                 label={isRTL ? `استيراد ${carsLimit} سيارة الآن →` : `Import ${carsLimit} Cars Now →`} />
+
+                            {/* نتيجة استيراد السيارات المستقلة */}
+                            <ImportResult result={carsResult} />
 
                             <NextLink href="/admin/cars" className="flex items-center gap-2 text-sm text-amber-400 hover:text-amber-300">
                                 <ExternalLink className="w-4 h-4" /><span>{isRTL ? "عرض صفحة إدارة السيارات" : "Open Cars Management"}</span>
@@ -271,8 +326,11 @@ export default function AdminImportHub() {
                                 <InfoChip icon={Zap} color="bg-emerald-500/10 text-emerald-400" label={isRTL ? "الوجهة" : "Dest."} value={isRTL ? "قطع الغيار" : "Parts Mgmt"} />
                             </div>
 
-                            <RunButton onClick={handleImportParts} isLoading={loading}
+                            <RunButton onClick={handleImportParts} isLoading={partsLoading}
                                 label={isRTL ? "استيراد قطع الغيار الكاملة الآن →" : "Import Full Parts Catalog →"} />
+
+                            {/* نتيجة استيراد قطع الغيار المستقلة */}
+                            <ImportResult result={partsResult} />
 
                             <NextLink href="/admin/parts" className="flex items-center gap-2 text-sm text-amber-400 hover:text-amber-300">
                                 <ExternalLink className="w-4 h-4" /><span>{isRTL ? "عرض صفحة إدارة قطع الغيار" : "Open Parts Management"}</span>
@@ -322,8 +380,11 @@ export default function AdminImportHub() {
                                 <InfoChip icon={Gavel} color="bg-emerald-500/10 text-emerald-400" label={isRTL ? "الوجهة" : "Dest."} value={isRTL ? "المزادات" : "Auctions"} />
                             </div>
 
-                            <RunButton onClick={handleImportAuctions} isLoading={loading} color="red"
+                            <RunButton onClick={handleImportAuctions} isLoading={auctionsLoading} color="red"
                                 label={isRTL ? `استيراد ${auctionsLimit} مزاد حي الآن →` : `Import ${auctionsLimit} Live Auctions →`} />
+
+                            {/* نتيجة استيراد المزادات المستقلة */}
+                            <ImportResult result={auctionsResult} />
 
                             <NextLink href="/admin/auctions" className="flex items-center gap-2 text-sm text-amber-400 hover:text-amber-300">
                                 <ExternalLink className="w-4 h-4" /><span>{isRTL ? "عرض صفحة إدارة المزادات" : "Open Auctions Management"}</span>
@@ -332,35 +393,7 @@ export default function AdminImportHub() {
                     )}
                 </AnimatePresence>
 
-                {/* ── Result ── */}
-                {lastResult && (
-                    <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
-                        className="bg-emerald-950/40 border border-emerald-500/30 p-5 rounded-2xl space-y-3">
-                        <div className="flex items-center gap-2 text-emerald-400">
-                            <CheckCircle2 className="w-5 h-5" />
-                            <span className="font-bold">{isRTL ? "تم الاستيراد بنجاح" : "Import Successful"}</span>
-                        </div>
-                        <p className="text-sm text-emerald-200">{lastResult.message}</p>
-                        {lastResult.stats && (
-                            <div className="flex gap-3 text-sm">
-                                <div className="px-4 py-2 rounded-xl bg-slate-900/60 border border-slate-800">
-                                    <span className="text-slate-400">{isRTL ? "مستورد: " : "Imported: "}</span>
-                                    <span className="font-bold text-emerald-400">+{lastResult.stats.totalImported ?? 0}</span>
-                                </div>
-                                <div className="px-4 py-2 rounded-xl bg-slate-900/60 border border-slate-800">
-                                    <span className="text-slate-400">{isRTL ? "مكرر: " : "Skipped: "}</span>
-                                    <span className="font-bold text-amber-400">{lastResult.stats.totalSkipped ?? 0}</span>
-                                </div>
-                            </div>
-                        )}
-                        <NextLink
-                            href={lastResult.type === "cars" ? "/admin/cars" : lastResult.type === "parts" ? "/admin/parts" : "/admin/auctions"}
-                            className="flex items-center gap-2 text-sm text-amber-400 hover:underline">
-                            <ExternalLink className="w-4 h-4" />
-                            <span>{isRTL ? "عرض البيانات المستوردة ←" : "View Imported Data →"}</span>
-                        </NextLink>
-                    </motion.div>
-                )}
+
 
                 {/* ── Logs toggle ── */}
                 <div>
