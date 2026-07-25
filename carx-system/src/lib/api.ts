@@ -109,7 +109,7 @@ export const api = {
         body: JSON.stringify({ identifier, email: identifier, password, role }),
       });
     },
-    register: (data: any) => fetchAPI('/auth/client-register', {
+    register: (data: any) => fetchAPI('/auth/register', {
       method: 'POST',
       body: JSON.stringify({
         ...data,
