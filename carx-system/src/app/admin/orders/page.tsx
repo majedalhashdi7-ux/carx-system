@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, Eye, X, CheckCircle2, Clock, XCircle, AlertCircle, ShoppingBag, User, CreditCard, Loader2, RefreshCw } from 'lucide-react';
+import { Search, Eye, X, CheckCircle2, Clock, XCircle, AlertCircle, ShoppingBag, User, CreditCard, Loader2, RefreshCw } from 'lucide-react';
 
 import { api } from '../../../lib/api';
 
