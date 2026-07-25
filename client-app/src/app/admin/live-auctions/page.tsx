@@ -8,7 +8,8 @@ import {
     Plus, Trash2, Edit2, X, Link as LinkIcon,
     Play, Square, ExternalLink, Image as ImageIcon, RefreshCw,
     CheckCircle, AlertCircle, Zap, ToggleLeft, ToggleRight,
-    Save, Download, Eye, Radio, Info
+    Save, Download, Eye, Radio, Info, ChevronDown, ChevronUp,
+    Car, DollarSign, Clock, Tag
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
@@ -51,6 +52,12 @@ export default function AdminLiveAuctions() {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [isImporting, setIsImporting] = useState<string | null>(null);
     const [isStarting, setIsStarting] = useState<string | null>(null);
+    // تتبع أي جلسات تعرض سياراتها
+    const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set());
+    // السيارات المستوردة من بوابة الاستيراد (desert_korea_auto)
+    const [importedAuctions, setImportedAuctions] = useState<any[]>([]);
+    const [importedLoading, setImportedLoading] = useState(false);
+    const [activatingId, setActivatingId] = useState<string | null>(null);
 
     // Wrapper to keep the same API surface as the old addToast
     const addToast = useCallback((type: 'success' | 'error' | 'info' | 'loading', message: string, _duration = 4000) => {
@@ -70,7 +77,36 @@ export default function AdminLiveAuctions() {
         cars: [] as any[]
     });
 
-    useEffect(() => { loadSessions(); }, []);
+    useEffect(() => { loadSessions(); loadImportedAuctions(); }, []);
+
+    const loadImportedAuctions = async () => {
+        setImportedLoading(true);
+        try {
+            const res = await api.auctions.list({ limit: 100, status: 'all' });
+            if (res?.success) {
+                // عرض السيارات القادمة من desert_korea_auto أو غير المفعّلة
+                const imported = (res.data || []).filter((a: any) =>
+                    a.status === 'pending' || a.status === 'scheduled' || a.status === 'running' || a.status === 'ended'
+                );
+                setImportedAuctions(imported);
+            }
+        } catch { }
+        finally { setImportedLoading(false); }
+    };
+
+    const handleActivate = async (auctionId: string) => {
+        setActivatingId(auctionId);
+        try {
+            const res = await api.auctions.update(auctionId, { status: 'running' });
+            if (res?.success) {
+                showToast(isRTL ? '✅ تم تفعيل المزاد بنجاح' : '✅ Auction activated!', 'success');
+                loadImportedAuctions();
+            } else {
+                showToast(res?.error || (isRTL ? '❌ فشل التفعيل' : '❌ Activation failed'), 'error');
+            }
+        } catch { showToast(isRTL ? '❌ خطأ في الاتصال' : '❌ Connection error', 'error'); }
+        finally { setActivatingId(null); }
+    };
 
     const loadSessions = async () => {
         setIsLoading(true);
@@ -181,6 +217,14 @@ export default function AdminLiveAuctions() {
     const resetForm = () => {
         setFormData({ title: '', externalUrl: '', whatsappNumber: '', auctionUsername: '', auctionPassword: '', autoSync: false, cars: [] });
         setEditingId(null);
+    };
+
+    const toggleExpand = (id: string) => {
+        setExpandedSessions(prev => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+        });
     };
 
     const openEdit = (session: any) => {
@@ -478,9 +522,263 @@ export default function AdminLiveAuctions() {
                                         </motion.button>
                                     </div>
                                 </div>
+
+                                    {/* ── قسم السيارات المستوردة ── */}
+                                    {session.cars && session.cars.length > 0 && (
+                                        <div className="mt-4 border-t border-white/[0.05] pt-4">
+                                            <button
+                                                onClick={() => toggleExpand(session._id)}
+                                                className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-colors w-full"
+                                            >
+                                                <Car className="w-3.5 h-3.5 text-amber-400" />
+                                                <span className="text-amber-400/80">
+                                                    {isRTL ? `${session.cars.length} سيارة مستوردة` : `${session.cars.length} Imported Cars`}
+                                                </span>
+                                                <span className="flex-1" />
+                                                {expandedSessions.has(session._id)
+                                                    ? <ChevronUp className="w-4 h-4" />
+                                                    : <ChevronDown className="w-4 h-4" />}
+                                            </button>
+
+                                            {expandedSessions.has(session._id) && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, height: 0 }}
+                                                    animate={{ opacity: 1, height: 'auto' }}
+                                                    exit={{ opacity: 0, height: 0 }}
+                                                    className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
+                                                >
+                                                    {session.cars.map((car: any, ci: number) => (
+                                                        <div key={ci}
+                                                            className="bg-white/[0.03] border border-white/[0.07] rounded-xl overflow-hidden hover:border-amber-500/30 transition-all group"
+                                                        >
+                                                            {/* صورة السيارة */}
+                                                            <div className="relative h-36 bg-black/40">
+                                                                {(car.images?.[0] || car.image) ? (
+                                                                    <img
+                                                                        src={car.images?.[0] || car.image}
+                                                                        alt={car.title || ''}
+                                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                                        onError={(e: any) => { e.target.src = '/placeholder-car.jpg'; }}
+                                                                    />
+                                                                ) : (
+                                                                    <div className="w-full h-full flex items-center justify-center">
+                                                                        <Car className="w-10 h-10 text-white/10" />
+                                                                    </div>
+                                                                )}
+                                                                {/* شارة الحالة */}
+                                                                <div className="absolute top-2 right-2">
+                                                                    <span className={cn(
+                                                                        "px-2 py-0.5 rounded-full text-[8px] font-black uppercase",
+                                                                        car.condition === 'new' || car.condition === 'جديد'
+                                                                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                                                            : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                                                                    )}>
+                                                                        {car.condition || (isRTL ? 'مستعملة' : 'Used')}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* بيانات السيارة */}
+                                                            <div className="p-3 space-y-2">
+                                                                <p className="text-xs font-bold text-white truncate">{car.title || `${isRTL ? 'سيارة' : 'Car'} ${ci + 1}`}</p>
+
+                                                                {car.priceEstimate && (
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <DollarSign className="w-3 h-3 text-amber-400" />
+                                                                        <span className="text-amber-400 font-bold text-xs">
+                                                                            {Number(car.priceEstimate).toLocaleString()} {isRTL ? 'ر.س' : 'SAR'}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+
+                                                                {car.description && (
+                                                                    <p className="text-[10px] text-white/40 line-clamp-2">{car.description}</p>
+                                                                )}
+
+                                                                {car.externalUrl && (
+                                                                    <a
+                                                                        href={car.externalUrl}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="flex items-center gap-1 text-[9px] text-orange-400/70 hover:text-orange-400 transition-colors"
+                                                                    >
+                                                                        <ExternalLink className="w-2.5 h-2.5" />
+                                                                        <span>{isRTL ? 'عرض المصدر' : 'View Source'}</span>
+                                                                    </a>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </motion.div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* رسالة: لا توجد سيارات بعد */}
+                                    {(!session.cars || session.cars.length === 0) && (
+                                        <div className="mt-4 border-t border-white/[0.05] pt-4 flex items-center gap-2 text-[10px] text-white/25">
+                                            <Car className="w-3.5 h-3.5" />
+                                            <span>{isRTL ? 'لا توجد سيارات — اضغط "استيراد" لجلبها من الرابط الخارجي' : 'No cars yet — click Import to fetch from external URL'}</span>
+                                        </div>
+                                    )}
+
                             </motion.div>
                         ))}
                     </AnimatePresence>
+                </div>
+
+                {/* ════════════════════════════════════════════
+                    قسم: السيارات المستوردة من بوابة الاستيراد
+                ════════════════════════════════════════════ */}
+                <div className="mt-8 pt-8 border-t border-white/[0.05] space-y-5">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-[9px] text-white/25 uppercase tracking-widest font-black">
+                                {isRTL ? 'سيارات المزادات المستوردة' : 'IMPORTED AUCTION CARS'}
+                            </p>
+                            <h3 className="text-lg font-black uppercase italic tracking-tighter mt-1">
+                                {isRTL ? 'من بوابة الاستيراد' : 'From Import Gateway'}
+                            </h3>
+                            <p className="text-[10px] text-white/30 mt-0.5">
+                                {isRTL
+                                    ? 'السيارات المستوردة عبر /admin/import — فعّل أي مزاد لإتاحته للعملاء'
+                                    : 'Cars imported via /admin/import — activate any auction to make it live'}
+                            </p>
+                        </div>
+                        <button onClick={loadImportedAuctions} disabled={importedLoading}
+                            className="p-2 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-white hover:bg-white/10 transition-all">
+                            <RefreshCw className={cn('w-4 h-4', importedLoading && 'animate-spin')} />
+                        </button>
+                    </div>
+
+                    {importedLoading && (
+                        <div className="flex items-center justify-center py-12">
+                            <RefreshCw className="w-6 h-6 text-white/20 animate-spin" />
+                        </div>
+                    )}
+
+                    {!importedLoading && importedAuctions.length === 0 && (
+                        <div className="flex flex-col items-center justify-center py-12 gap-4 border border-dashed border-white/10 rounded-2xl">
+                            <Car className="w-12 h-12 text-white/5" />
+                            <p className="text-white/25 text-xs uppercase tracking-widest text-center">
+                                {isRTL
+                                    ? 'لا توجد سيارات مستوردة بعد — اذهب لبوابة الاستيراد لإضافتها'
+                                    : 'No imported cars yet — go to Import Gateway to add cars'}
+                            </p>
+                            <Link href="/admin/import"
+                                className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold rounded-xl hover:bg-amber-500/20 transition-all">
+                                <Download className="w-3.5 h-3.5" />
+                                {isRTL ? 'بوابة الاستيراد ←' : 'Import Gateway →'}
+                            </Link>
+                        </div>
+                    )}
+
+                    {!importedLoading && importedAuctions.length > 0 && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            {importedAuctions.map((auction: any) => {
+                                const car = auction.car || {};
+                                const img = auction.images?.[0] || car.images?.[0] || car.image || '';
+                                const title = auction.title || car.title || `${car.make || ''} ${car.model || ''} ${car.year || ''}`;
+                                const price = auction.currentPrice || auction.startingPrice || car.price || 0;
+                                const isActive = auction.status === 'running';
+                                const isPending = auction.status === 'pending' || auction.status === 'scheduled';
+
+                                return (
+                                    <motion.div key={auction._id}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className={cn(
+                                            'rounded-2xl border overflow-hidden group transition-all',
+                                            isActive
+                                                ? 'border-red-500/40 bg-red-500/[0.03] shadow-[0_0_20px_rgba(239,68,68,0.08)]'
+                                                : 'border-white/[0.07] bg-white/[0.02] hover:border-amber-500/30'
+                                        )}
+                                    >
+                                        {/* صورة */}
+                                        <div className="relative h-40 bg-black/50">
+                                            {img ? (
+                                                <img src={img} alt={title}
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                    onError={(e: any) => { e.target.style.display = 'none'; }} />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center">
+                                                    <Car className="w-12 h-12 text-white/10" />
+                                                </div>
+                                            )}
+                                            {/* شارة الحالة */}
+                                            <div className="absolute top-2 right-2">
+                                                <span className={cn(
+                                                    'px-2 py-0.5 rounded-full text-[8px] font-black uppercase border',
+                                                    isActive
+                                                        ? 'bg-red-500/20 text-red-400 border-red-500/40 animate-pulse'
+                                                        : isPending
+                                                        ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                                                        : 'bg-white/5 text-white/30 border-white/10'
+                                                )}>
+                                                    {isActive ? (isRTL ? '🔴 مباشر' : '🔴 LIVE')
+                                                        : isPending ? (isRTL ? '⏳ معلّق' : '⏳ PENDING')
+                                                        : (isRTL ? '✅ منتهي' : '✅ ENDED')}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* البيانات */}
+                                        <div className="p-4 space-y-3">
+                                            <p className="text-sm font-bold text-white leading-tight line-clamp-2">{title}</p>
+
+                                            <div className="flex items-center gap-4 text-[10px] text-white/40">
+                                                {car.year && <span>📅 {car.year}</span>}
+                                                {car.mileage > 0 && <span>🚗 {Number(car.mileage).toLocaleString()} km</span>}
+                                                {car.fuelType && <span>{car.fuelType}</span>}
+                                            </div>
+
+                                            {price > 0 && (
+                                                <div className="flex items-center gap-1.5">
+                                                    <DollarSign className="w-3 h-3 text-amber-400" />
+                                                    <span className="text-amber-400 font-bold text-sm">
+                                                        {Number(price).toLocaleString()} {isRTL ? 'ر.س' : 'SAR'}
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            <div className="flex gap-2 pt-1">
+                                                {/* زر تفعيل */}
+                                                {!isActive && (
+                                                    <button
+                                                        onClick={() => handleActivate(auction._id)}
+                                                        disabled={activatingId === auction._id}
+                                                        className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-[10px] font-black uppercase hover:bg-red-500/20 transition-all disabled:opacity-40"
+                                                    >
+                                                        {activatingId === auction._id
+                                                            ? <RefreshCw className="w-3 h-3 animate-spin" />
+                                                            : <Play className="w-3 h-3" />}
+                                                        {isRTL ? 'تفعيل' : 'ACTIVATE'}
+                                                    </button>
+                                                )}
+                                                {isActive && (
+                                                    <button
+                                                        onClick={() => handleActivate(auction._id)}
+                                                        disabled
+                                                        className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-500/5 border border-red-500/20 text-red-400/50 rounded-xl text-[10px] font-black uppercase cursor-default"
+                                                    >
+                                                        <Zap className="w-3 h-3" />
+                                                        {isRTL ? 'مفعّل' : 'ACTIVE'}
+                                                    </button>
+                                                )}
+                                                {/* معاينة */}
+                                                {auction._id && (
+                                                    <Link href={`/auctions/${auction._id}`} target="_blank"
+                                                        className="flex items-center justify-center px-3 py-2 bg-white/5 border border-white/10 text-white/30 rounded-xl hover:text-cyan-400 hover:border-cyan-500/20 transition-all">
+                                                        <Eye className="w-3.5 h-3.5" />
+                                                    </Link>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
 
             </AdminPageShell>
