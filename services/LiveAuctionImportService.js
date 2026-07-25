@@ -114,7 +114,7 @@ async function fetchCarDetails(carUrl) {
         if (og && og[1] && !og[1].includes('default')) images.push(og[1]);
 
         // صور S3 أو amazonaws
-        const imgRe = /<img[^>]+(?:src|data-src)=["']([^"']*(?:s3|amazonaws|desert-korea)[^"']*\.(?:jpg|jpeg|webp|png))[^"']*)["']/gi;
+        const imgRe = /<img[^>]+(?:src|data-src)=["']([^"']*(?:s3|amazonaws|desert-korea)[^"']*\.(?:jpg|jpeg|webp|png))["']/gi;
         let im;
         while ((im = imgRe.exec(html)) !== null && images.length < 8) {
             if (!images.includes(im[1])) images.push(im[1]);
