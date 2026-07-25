@@ -84,6 +84,7 @@ export default function AdminLiveAuctions() {
     auctionUsername: '',
     auctionPassword: '',
     autoSync: false,
+    startTime: '',
     cars: [] as any[]
   });
 
@@ -200,7 +201,7 @@ export default function AdminLiveAuctions() {
   };
 
   const resetForm = () => {
-    setFormData({ title: '', externalUrl: '', whatsappNumber: '', auctionUsername: '', auctionPassword: '', autoSync: false, cars: [] });
+    setFormData({ title: '', externalUrl: '', whatsappNumber: '', auctionUsername: '', auctionPassword: '', autoSync: false, startTime: '', cars: [] });
     setEditingId(null);
   };
 
@@ -212,6 +213,7 @@ export default function AdminLiveAuctions() {
       auctionUsername: session.auctionUsername || '',
       auctionPassword: session.auctionPassword || '',
       autoSync: session.autoSync || false,
+      startTime: session.startTime ? new Date(session.startTime).toISOString().slice(0, 16) : '',
       cars: session.cars || []
     });
     setEditingId(session._id);
@@ -524,6 +526,17 @@ export default function AdminLiveAuctions() {
                     </div>
 
                     <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-white/60">تاريخ ووقت البدء</label>
+                      <input
+                        type="datetime-local"
+                        value={formData.startTime}
+                        onChange={e => setFormData({ ...formData, startTime: e.target.value })}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-luxury-gold/50 transition-colors text-left"
+                        dir="ltr"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
                       <label className="text-xs font-bold text-white/60">اسم مستخدم الحساب الخارجي (اختياري)</label>
                       <input
                         type="text"
@@ -580,7 +593,7 @@ export default function AdminLiveAuctions() {
                   </div>
                 </div>
 
-                {/* القسم 3: إدارة السيارات */}
+                {/* القسم 2: إدارة السيارات */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between pb-2 border-b border-white/5">
                     <div className="flex items-center gap-3">

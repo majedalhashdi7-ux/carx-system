@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Filter, Eye, X, CheckCircle2, Clock, XCircle, AlertCircle, ShoppingBag, User, Calendar, CreditCard, ChevronRight, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Search, Filter, Eye, X, CheckCircle2, Clock, XCircle, AlertCircle, ShoppingBag, User, CreditCard, Loader2, RefreshCw } from 'lucide-react';
 
 import { api } from '../../../lib/api';
 
@@ -65,64 +66,77 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return (
-          <span className="inline-flex items-center gap-1 text-xs font-bold text-green-400 bg-green-400/10 px-3 py-1.5 rounded-full">
-            <CheckCircle2 className="w-3.5 h-3.5" /> مكتمل / مقبول
-          </span>
-        );
-      case 'cancelled':
-        return (
-          <span className="inline-flex items-center gap-1 text-xs font-bold text-red-400 bg-red-400/10 px-3 py-1.5 rounded-full">
-            <XCircle className="w-3.5 h-3.5" /> ملغي
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center gap-1 text-xs font-bold text-yellow-400 bg-yellow-400/10 px-3 py-1.5 rounded-full">
-            <Clock className="w-3.5 h-3.5" /> قيد المعالجة
-          </span>
-        );
-    }
+  const STATUS_CONFIG: Record<string, { label: string; icon: any; cls: string }> = {
+    pending:    { label: 'قيد الانتظار',  icon: Clock,        cls: 'text-yellow-400 bg-yellow-400/10 border border-yellow-400/20' },
+    processing: { label: 'قيد المعالجة', icon: RefreshCw,    cls: 'text-blue-400 bg-blue-400/10 border border-blue-400/20' },
+    completed:  { label: 'مكتمل',         icon: CheckCircle2, cls: 'text-green-400 bg-green-400/10 border border-green-400/20' },
+    approved:   { label: 'مقبول',         icon: CheckCircle2, cls: 'text-emerald-400 bg-emerald-400/10 border border-emerald-400/20' },
+    cancelled:  { label: 'ملغي',          icon: XCircle,      cls: 'text-red-400 bg-red-400/10 border border-red-400/20' },
+    rejected:   { label: 'مرفوض',        icon: AlertCircle,  cls: 'text-red-500 bg-red-500/10 border border-red-500/20' },
   };
+
+  const getStatusBadge = (status: string) => {
+    const cfg = STATUS_CONFIG[status] || STATUS_CONFIG['pending'];
+    const Icon = cfg.icon;
+    return (
+      <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full ${cfg.cls}`}>
+        <Icon className="w-3.5 h-3.5" /> {cfg.label}
+      </span>
+    );
+  };
+
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const filteredOrders = orders.filter(order => {
     const term = searchTerm.toLowerCase();
     const orderNum = order.orderNumber || order._id || '';
     const buyerName = order.buyer?.name || '';
-    return orderNum.toLowerCase().includes(term) || buyerName.toLowerCase().includes(term);
+    const matchesSearch = orderNum.toLowerCase().includes(term) || buyerName.toLowerCase().includes(term);
+    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+    return matchesSearch && matchesStatus;
   });
 
   return (
     <div className="space-y-6" dir="rtl">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 pb-6 border-b border-white/5">
           <div>
-            <h1 className="text-3xl font-black">إدارة الطلبات</h1>
+            <h1 className="text-3xl font-black">إدارة <span className="text-luxury-gold">الطلبات</span></h1>
             <p className="text-white/40 text-sm mt-1">تتبع وعالج طلبات حجز السيارات وسلة قطع الغيار</p>
+          </div>
+          {/* Status Summary Pills */}
+          <div className="flex flex-wrap gap-2">
+            {['all', 'pending', 'processing', 'completed', 'approved', 'cancelled', 'rejected'].map(s => {
+              const count = s === 'all' ? orders.length : orders.filter(o => o.status === s).length;
+              const labels: Record<string, string> = { all: 'الكل', pending: 'انتظار', processing: 'معالجة', completed: 'مكتمل', approved: 'مقبول', cancelled: 'ملغي', rejected: 'مرفوض' };
+              return (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                    statusFilter === s
+                      ? 'bg-luxury-gold text-black border-luxury-gold'
+                      : 'bg-white/5 text-white/40 border-white/10 hover:bg-white/10'
+                  }`}
+                >
+                  {labels[s]} ({count})
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Filters & Search */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
-          <div className="relative flex-1">
-            <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
-            <input 
-              type="text"
-              placeholder="ابحث برقم الطلب أو اسم العميل..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pr-11 pl-4 text-sm focus:outline-none focus:border-luxury-gold/40 transition-all"
-              dir="rtl"
-            />
-          </div>
-          <div className="flex gap-2">
-            <button className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm flex items-center gap-2 hover:bg-white/10">
-              <Filter className="w-4 h-4" />
-              تصفية
-            </button>
-          </div>
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+          <input 
+            type="text"
+            placeholder="ابحث برقم الطلب أو اسم العميل..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pr-11 pl-4 text-sm focus:outline-none focus:border-luxury-gold/40 transition-all"
+            dir="rtl"
+          />
         </div>
 
         {/* Table */}
@@ -142,21 +156,34 @@ export default function AdminOrdersPage() {
               </thead>
               <tbody className="divide-y divide-white/5">
                 {loading ? (
-                  [1, 2, 3].map(i => (
-                    <tr key={i} className="animate-pulse">
-                      <td colSpan={7} className="px-6 py-8 h-20 bg-white/[0.01]" />
+                  [1, 2, 3, 4, 5].map(i => (
+                    <tr key={i}>
+                      {[1,2,3,4,5,6,7].map(j => (
+                        <td key={j} className="px-6 py-5">
+                          <div className="h-4 bg-white/[0.04] rounded-lg animate-pulse" style={{ width: `${60 + Math.random() * 40}%` }} />
+                        </td>
+                      ))}
                     </tr>
                   ))
                 ) : filteredOrders.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-20 text-center text-white/20">
-                      لا توجد طلبات مطابقة أو مضافة حالياً
+                    <td colSpan={7} className="px-6 py-20 text-center">
+                      <div className="flex flex-col items-center gap-4">
+                        <ShoppingBag className="w-12 h-12 text-white/10" />
+                        <p className="text-white/20 font-bold">لا توجد طلبات مطابقة</p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
-                  filteredOrders.map((order) => (
-                    <tr key={order._id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="px-6 py-4 font-mono text-sm text-white/60">
+                  filteredOrders.map((order, idx) => (
+                    <motion.tr
+                      key={order._id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: idx * 0.03 }}
+                      className="hover:bg-white/[0.02] transition-colors"
+                    >
+                      <td className="px-6 py-4 font-mono text-sm text-luxury-gold font-bold">
                         {order.orderNumber || `CARX-${order._id.substring(0, 6).toUpperCase()}`}
                       </td>
                       <td className="px-6 py-4">
@@ -167,13 +194,13 @@ export default function AdminOrdersPage() {
                       </td>
                       <td className="px-6 py-4 text-sm">
                         {order.items?.[0]?.typeSnapshot === 'spare_part' ? (
-                          <span className="text-xs text-purple-400 bg-purple-400/10 px-2 py-1 rounded">قطع غيار</span>
+                          <span className="text-xs text-purple-400 bg-purple-400/10 border border-purple-400/20 px-2.5 py-1 rounded-lg font-bold">قطع غيار</span>
                         ) : (
-                          <span className="text-xs text-luxury-gold bg-luxury-gold/10 px-2 py-1 rounded">حجز سيارة</span>
+                          <span className="text-xs text-luxury-gold bg-luxury-gold/10 border border-luxury-gold/20 px-2.5 py-1 rounded-lg font-bold">حجز سيارة</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 font-mono font-bold text-sm text-luxury-gold">
-                        {(order.pricing?.grandTotalSar || order.totalAmount || 0).toLocaleString()} ر.س
+                      <td className="px-6 py-4 font-mono font-bold text-sm text-white">
+                        {(order.pricing?.grandTotalSar || order.totalAmount || 0).toLocaleString()} <span className="text-white/40 text-xs">ر.س</span>
                       </td>
                       <td className="px-6 py-4">{getStatusBadge(order.status)}</td>
                       <td className="px-6 py-4 text-xs text-white/40">
@@ -188,7 +215,7 @@ export default function AdminOrdersPage() {
                           <Eye className="w-4 h-4" />
                         </button>
                       </td>
-                    </tr>
+                    </motion.tr>
                   ))
                 )}
               </tbody>
@@ -328,31 +355,49 @@ export default function AdminOrdersPage() {
 
                 {/* Status Update Actions */}
                 <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 space-y-4">
-                  <h3 className="text-xs font-bold text-white/40 tracking-wider mb-2">تحديث حالة المعالجة</h3>
+                  <h3 className="text-xs font-bold text-white/40 tracking-wider mb-2 uppercase">تحديث حالة الطلب</h3>
                   
                   <div className="flex flex-col gap-2">
                     <button
                       disabled={updatingStatus || selectedOrder.status === 'approved'}
                       onClick={() => handleStatusChange('approved')}
-                      className="w-full py-3 bg-green-500/10 hover:bg-green-500 text-green-400 hover:text-black font-bold rounded-xl text-xs flex items-center justify-center gap-2 border border-green-500/20 hover:border-transparent transition-all disabled:opacity-50"
+                      className="w-full py-3 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-black font-bold rounded-xl text-xs flex items-center justify-center gap-2 border border-emerald-500/20 hover:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {updatingStatus ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                      قبول وإكمال الطلب
+                      قبول الطلب
+                    </button>
+
+                    <button
+                      disabled={updatingStatus || selectedOrder.status === 'completed'}
+                      onClick={() => handleStatusChange('completed')}
+                      className="w-full py-3 bg-green-500/10 hover:bg-green-500 text-green-400 hover:text-black font-bold rounded-xl text-xs flex items-center justify-center gap-2 border border-green-500/20 hover:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {updatingStatus ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                      تمييز كمكتمل
+                    </button>
+
+                    <button
+                      disabled={updatingStatus || selectedOrder.status === 'processing'}
+                      onClick={() => handleStatusChange('processing')}
+                      className="w-full py-3 bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-black font-bold rounded-xl text-xs flex items-center justify-center gap-2 border border-blue-500/20 hover:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {updatingStatus ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                      قيد المعالجة
                     </button>
 
                     <button
                       disabled={updatingStatus || selectedOrder.status === 'pending'}
                       onClick={() => handleStatusChange('pending')}
-                      className="w-full py-3 bg-yellow-500/10 hover:bg-yellow-500 text-yellow-400 hover:text-black font-bold rounded-xl text-xs flex items-center justify-center gap-2 border border-yellow-500/20 hover:border-transparent transition-all disabled:opacity-50"
+                      className="w-full py-3 bg-yellow-500/10 hover:bg-yellow-500 text-yellow-400 hover:text-black font-bold rounded-xl text-xs flex items-center justify-center gap-2 border border-yellow-500/20 hover:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {updatingStatus ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Clock className="w-3.5 h-3.5" />}
-                      تعيين كقيد الانتظار
+                      إعادة لقيد الانتظار
                     </button>
 
                     <button
                       disabled={updatingStatus || selectedOrder.status === 'cancelled'}
                       onClick={() => handleStatusChange('cancelled')}
-                      className="w-full py-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 border border-red-500/20 hover:border-transparent transition-all disabled:opacity-50"
+                      className="w-full py-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 border border-red-500/20 hover:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {updatingStatus ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
                       إلغاء الطلب
