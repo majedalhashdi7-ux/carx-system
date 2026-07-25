@@ -72,6 +72,118 @@ function LiveDot({ colorClass = 'bg-green-400' }: { colorClass?: string }) {
     );
 }
 
+// ── Nav Category Group Component ─────────────────────────────
+function NavCategoryGroup({
+    cat,
+    pathname,
+    queryString,
+    isRTL,
+    pendingOrders,
+    onClose
+}: {
+    cat: NavCategory;
+    pathname: string | null;
+    queryString: string;
+    isRTL: boolean;
+    pendingOrders: number;
+    onClose?: () => void;
+}) {
+    const [isCollapsed, setIsCollapsed] = useState(false);
+    const toggleCollapse = () => setIsCollapsed(prev => !prev);
+
+    return (
+        <div className="flex flex-col items-center gap-1.5 w-full">
+            <div className="w-full px-4 mt-2 mb-1">
+                <div className="h-[1px] w-full bg-white/[0.05] mb-2" />
+                <button
+                    onClick={toggleCollapse}
+                    className="w-full flex items-center justify-between text-right font-mono text-[9px] font-black uppercase tracking-[0.2em] text-white/30 hover:text-white/60 transition-colors"
+                >
+                    <span>{cat.label}</span>
+                    <ChevronDown className={cn("w-3 h-3 transition-transform duration-300", isCollapsed ? "rotate-90" : "rotate-0")} />
+                </button>
+            </div>
+
+            <AnimatePresence initial={false}>
+                {!isCollapsed && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="flex flex-col items-center gap-1 w-full overflow-hidden"
+                    >
+                        {cat.items.map((item) => {
+                            const [itemPath, itemQuery = ''] = item.href.split('?');
+                            const pathMatch = pathname === itemPath ||
+                                (itemPath !== '/admin/dashboard' && itemPath !== '/admin/cars' && !!pathname?.startsWith(itemPath));
+
+                            let queryMatch = true;
+                            if (itemQuery) {
+                                const required = new URLSearchParams(itemQuery);
+                                const current = new URLSearchParams(queryString);
+                                queryMatch = Array.from(required.entries()).every(([k, v]) => current.get(k) === v);
+                            }
+                            const isActive = pathMatch && queryMatch;
+                            const Icon = item.icon as IconComponent;
+                            const isOrders = item.id === 'fulfillment';
+
+                            return (
+                                <Link
+                                    href={item.href}
+                                    key={item.id}
+                                    className="w-full px-2"
+                                    onClick={onClose}
+                                >
+                                    <motion.div
+                                        whileHover={{ x: isRTL ? -5 : 5, backgroundColor: 'rgba(255,255,255,0.05)' }}
+                                        whileTap={{ scale: 0.98 }}
+                                        className={cn(
+                                            'relative flex items-center justify-between py-3.5 px-4 rounded-2xl w-full cursor-pointer transition-all duration-200',
+                                            isActive
+                                                ? 'bg-orange-500/10 text-orange-400 shadow-[0_0_20px_rgba(249,115,22,0.05)] border border-orange-500/20'
+                                                : 'text-white/40 hover:text-white/80'
+                                        )}
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            {isActive && (
+                                                <motion.div
+                                                    layoutId="cockpitActiveBar"
+                                                    className={cn(
+                                                        'absolute top-3 bottom-3 w-[3px] rounded-full bg-orange-500',
+                                                        isRTL ? '-right-1' : '-left-1'
+                                                    )}
+                                                    style={{ boxShadow: '0 0 12px #f97316' }}
+                                                />
+                                            )}
+                                            <Icon
+                                                className={cn('shrink-0 transition-transform duration-200',
+                                                    isActive ? 'w-5 h-5 drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]' : 'w-5 h-5 opacity-60'
+                                                )}
+                                                strokeWidth={isActive ? 2.5 : 1.5}
+                                            />
+                                            <span className={cn(
+                                                'font-bold tracking-wide transition-colors whitespace-nowrap',
+                                                isActive ? 'text-[13px]' : 'text-[12px]'
+                                            )}>
+                                                {item.label}
+                                            </span>
+                                        </div>
+                                        {isOrders && pendingOrders > 0 && (
+                                            <span className="bg-orange-500 text-black font-black text-[9px] px-2 py-0.5 rounded-full shadow-[0_0_10px_rgba(249,115,22,0.4)] shrink-0">
+                                                {pendingOrders}
+                                            </span>
+                                        )}
+                                    </motion.div>
+                                </Link>
+                            );
+                        })}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+}
+
 // ── Sidebar Content ──
 function SidebarInner({
     categories, pathname, queryString, isRTL, lang, time, dateStr, ping, pendingOrders,
@@ -102,103 +214,17 @@ function SidebarInner({
 
             {/* Nav Categories */}
             <nav className="flex-1 flex flex-col gap-4 py-6 px-2 overflow-y-auto scrollbar-hide">
-                {categories.map((cat, idx) => {
-                    // eslint-disable-next-line react-hooks/rules-of-hooks
-                    const [isCollapsed, setIsCollapsed] = useState(false);
-                    const toggleCollapse = () => setIsCollapsed(prev => !prev);
-
-                    return (
-                        <div key={idx} className="flex flex-col items-center gap-1.5 w-full">
-                            <div className="w-full px-4 mt-2 mb-1">
-                                <div className="h-[1px] w-full bg-white/[0.05] mb-2" />
-                                <button 
-                                    onClick={toggleCollapse}
-                                    className="w-full flex items-center justify-between text-right font-mono text-[9px] font-black uppercase tracking-[0.2em] text-white/30 hover:text-white/60 transition-colors"
-                                >
-                                    <span>{cat.label}</span>
-                                    <ChevronDown className={cn("w-3 h-3 transition-transform duration-300", isCollapsed ? "rotate-90" : "rotate-0")} />
-                                </button>
-                            </div>
-                            
-                            <AnimatePresence initial={false}>
-                                {!isCollapsed && (
-                                    <motion.div 
-                                        initial={{ height: 0, opacity: 0 }}
-                                        animate={{ height: "auto", opacity: 1 }}
-                                        exit={{ height: 0, opacity: 0 }}
-                                        className="flex flex-col items-center gap-1 w-full overflow-hidden"
-                                    >
-                                        {cat.items.map((item) => {
-                                            const [itemPath, itemQuery = ''] = item.href.split('?');
-                                            const pathMatch = pathname === itemPath ||
-                                                (itemPath !== '/admin/dashboard' && itemPath !== '/admin/cars' && !!pathname?.startsWith(itemPath));
-                                            
-                                            let queryMatch = true;
-                                            if (itemQuery) {
-                                                const required = new URLSearchParams(itemQuery);
-                                                const current = new URLSearchParams(queryString);
-                                                queryMatch = Array.from(required.entries()).every(([k, v]) => current.get(k) === v);
-                                            }
-                                            const isActive = pathMatch && queryMatch;
-                                            const Icon = item.icon as IconComponent;
-                                            const isOrders = item.id === 'fulfillment';
-                                            
-                                            return (
-                                                <Link
-                                                    href={item.href}
-                                                    key={item.id}
-                                                    className="w-full px-2"
-                                                    onClick={onClose}
-                                                >
-                                                    <motion.div
-                                                        whileHover={{ x: isRTL ? -5 : 5, backgroundColor: 'rgba(255,255,255,0.05)' }}
-                                                        whileTap={{ scale: 0.98 }}
-                                                        className={cn(
-                                                            'relative flex items-center justify-between py-3.5 px-4 rounded-2xl w-full cursor-pointer transition-all duration-200',
-                                                            isActive
-                                                                ? 'bg-orange-500/10 text-orange-400 shadow-[0_0_20px_rgba(249,115,22,0.05)] border border-orange-500/20'
-                                                                : 'text-white/40 hover:text-white/80'
-                                                        )}
-                                                    >
-                                                        <div className="flex items-center gap-4">
-                                                            {isActive && (
-                                                                <motion.div
-                                                                    layoutId="cockpitActiveBar"
-                                                                    className={cn(
-                                                                        'absolute top-3 bottom-3 w-[3px] rounded-full bg-orange-500',
-                                                                        isRTL ? '-right-1' : '-left-1'
-                                                                    )}
-                                                                    style={{ boxShadow: '0 0 12px #f97316' }}
-                                                                />
-                                                            )}
-                                                            <Icon
-                                                                className={cn('shrink-0 transition-transform duration-200',
-                                                                    isActive ? 'w-5 h-5 drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]' : 'w-5 h-5 opacity-60'
-                                                                )}
-                                                                strokeWidth={isActive ? 2.5 : 1.5}
-                                                            />
-                                                            <span className={cn(
-                                                                'font-bold tracking-wide transition-colors whitespace-nowrap',
-                                                                isActive ? 'text-[13px]' : 'text-[12px]'
-                                                            )}>
-                                                                {item.label}
-                                                            </span>
-                                                        </div>
-                                                        {isOrders && pendingOrders > 0 && (
-                                                            <span className="bg-orange-500 text-black font-black text-[9px] px-2 py-0.5 rounded-full shadow-[0_0_10px_rgba(249,115,22,0.4)] shrink-0">
-                                                                {pendingOrders}
-                                                            </span>
-                                                        )}
-                                                    </motion.div>
-                                                </Link>
-                                            );
-                                        })}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
-                    );
-                })}
+                {categories.map((cat, idx) => (
+                    <NavCategoryGroup
+                        key={idx}
+                        cat={cat}
+                        pathname={pathname}
+                        queryString={queryString}
+                        isRTL={isRTL}
+                        pendingOrders={pendingOrders}
+                        onClose={onClose}
+                    />
+                ))}
             </nav>
 
             {/* Bottom Controls */}
