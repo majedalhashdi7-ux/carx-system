@@ -246,102 +246,109 @@ class ShowroomImportService {
 
             totalFetched = rawCars.length;
 
-            for (const rawCar of rawCars) {
-                try {
-                    const carId = String(rawCar.Id || rawCar.id || rawCar.CarId || `encar-${Date.now()}`);
-                    const externalId = `encar-${carId}`;
-                    const externalUrl = `https://car.encar.com/detail/${carId}`;
+            // معالجة دفعة السيارات بالتوازي (مجموعات 4 سيارات) لسرعة فنية فائقة تمنع مهلة Vercel
+            const chunkSize = 4;
+            for (let i = 0; i < rawCars.length; i += chunkSize) {
+                const chunk = rawCars.slice(i, i + chunkSize);
+                await Promise.allSettled(chunk.map(async (rawCar) => {
+                    try {
+                        const carId = String(rawCar.Id || rawCar.id || rawCar.CarId || `encar-${Date.now()}`);
+                        const externalId = `encar-${carId}`;
+                        const externalUrl = `https://car.encar.com/detail/${carId}`;
 
-                    // جلب تفاصيل السيارة وتقارير الفحص من API تسلسلياً
-                    const [detailData, inspectionData] = await Promise.allSettled([
-                        fetchEncarCarDetail(carId),
-                        fetchEncarCarInspection(carId)
-                    ]);
-                    const detail = detailData.status === 'fulfilled' ? detailData.value : null;
-                    const insp = inspectionData.status === 'fulfilled' ? inspectionData.value : null;
+                        // جلب تفاصيل السيارة وتقارير الفحص بالتوازي لكل سيارة
+                        const [detailData, inspectionData] = await Promise.allSettled([
+                            fetchEncarCarDetail(carId),
+                            fetchEncarCarInspection(carId)
+                        ]);
+                        const detail = detailData.status === 'fulfilled' ? detailData.value : null;
+                        const insp = inspectionData.status === 'fulfilled' ? inspectionData.value : null;
 
-                    const manufacturer = rawCar.Manufacturer || detail?.Manufacturer || '';
-                    const model = rawCar.Model || detail?.Model || '';
-                    const badge = rawCar.Badge || detail?.Badge || '';
-                    const year = parseInt(rawCar.Year || detail?.Year || rawCar.year) || new Date().getFullYear();
-                    const mileage = parseInt(rawCar.Mileage || detail?.Mileage || rawCar.mileage) || 0;
-                    const fuelType = rawCar.FuelType || detail?.FuelType || 'G';
-                    const rawPrice = rawCar.Price || detail?.Price || 0;
-                    const color = rawCar.Color || detail?.Color || '';
-                    const condition = 'ممتازة (مفحوصة بالكامل)';
+                        const manufacturer = rawCar.Manufacturer || detail?.Manufacturer || '';
+                        const model = rawCar.Model || detail?.Model || '';
+                        const badge = rawCar.Badge || detail?.Badge || '';
+                        const year = parseInt(rawCar.Year || detail?.Year || rawCar.year) || new Date().getFullYear();
+                        const mileage = parseInt(rawCar.Mileage || detail?.Mileage || rawCar.mileage) || 0;
+                        const fuelType = rawCar.FuelType || detail?.FuelType || 'G';
+                        const rawPrice = rawCar.Price || detail?.Price || 0;
+                        const color = rawCar.Color || detail?.Color || '';
+                        const condition = 'ممتازة (مفحوصة بالكامل)';
 
-                    const brand = normalizeBrand(manufacturer);
-                    const { priceKrw, priceUsd, priceSar } = convertEncarPrice(rawPrice);
-                    const fuel = normalizeFuel(fuelType);
-                    const carTitle = `${brand} ${model}${badge ? ' ' + badge : ''} ${year}`;
+                        const brand = normalizeBrand(manufacturer);
+                        const { priceKrw, priceUsd, priceSar } = convertEncarPrice(rawPrice);
+                        const fuel = normalizeFuel(fuelType);
+                        const carTitle = `${brand} ${model}${badge ? ' ' + badge : ''} ${year}`;
 
-                    // استخراج كافة الصور (حتى 40 صورة كاملة)
-                    const listPhotos = rawCar.Photos || [];
-                    const detailPhotos = detail?.Photos || [];
-                    const extraPhotos = detail?.ExtraImages || [];
-                    const allPhotoObjs = detailPhotos.length > 0 ? [...detailPhotos, ...extraPhotos] : listPhotos;
-                    let images = allPhotoObjs.map(buildEncarImageUrl).filter(Boolean);
-                    images = [...new Set(images)].slice(0, 40);
+                        // استخراج كافة الصور (حتى 40 صورة كاملة)
+                        const listPhotos = rawCar.Photos || [];
+                        const detailPhotos = detail?.Photos || [];
+                        const extraPhotos = detail?.ExtraImages || [];
+                        const allPhotoObjs = detailPhotos.length > 0 ? [...detailPhotos, ...extraPhotos] : listPhotos;
+                        let images = allPhotoObjs.map(buildEncarImageUrl).filter(Boolean);
+                        images = [...new Set(images)].slice(0, 40);
 
-                    if (images.length === 0 && rawCar.image) images = [rawCar.image];
+                        if (images.length === 0 && rawCar.image) images = [rawCar.image];
 
-                    const mainImage = images[0] || 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=1200';
-                    const carDescription = `سيارة ${carTitle} مستوردة مفحوصة ومخصصة للمعرض مباشرة من Encar الكوري. سنة الصنع: ${year}، المسافة: ${mileage.toLocaleString('ar-SA')} كم، نوع الوقود: ${fuel}، ناقل الحركة: أوتوماتيك. تتضمن كافة الفحوصات والصور الأصلية وتخضع لضمان الفحص المعتمد.`;
+                        const mainImage = images[0] || 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=1200';
+                        const carDescription = `سيارة ${carTitle} مستوردة مفحوصة ومخصصة للمعرض مباشرة من Encar الكوري. سنة الصنع: ${year}، المسافة: ${mileage.toLocaleString('ar-SA')} كم، نوع الوقود: ${fuel}، ناقل الحركة: أوتوماتيك. تتضمن كافة الفحوصات والصور الأصلية وتخضع لضمان الفحص المعتمد.`;
 
-                    // ─── إنشاء السيارة في المعرض ────────────────────────────
-                    await Car.create({
-                        title: carTitle,
-                        titleAr: carTitle,
-                        make: brand,
-                        makeAr: brand,
-                        model: model,
-                        year: year,
-                        price: priceSar || 15000,
-                        priceSar: priceSar || 15000,
-                        priceKrw: priceKrw,
-                        priceUsd: priceUsd,
-                        mileage: mileage,
-                        fuelType: fuel,
-                        transmission: 'أوتوماتيك',
-                        color: color,
-                        condition: condition,
-                        description: carDescription,
-                        images: images,
-                        image: mainImage,
-                        specs: {
-                            manufacturer_en: brand,
-                            manufacturer_ar: brand,
-                            model,
-                            badge,
-                            year,
-                            mileage,
-                            fuelType_ar: fuel,
-                            transmission: 'أوتوماتيك',
-                            color,
-                            vin: detail?.Vin || '',
-                        },
-                        inspectionReport: insp || null,
-                        isActive: true,
-                        isSold: false,
-                        listingType: 'showroom',
-                        externalId: externalId,
-                        externalUrl: externalUrl,
-                        source: 'encar_korea',
-                        tenantId: req.tenantId || 'default',
-                        createdAt: new Date(),
-                    });
+                        // ─── إنشاء السيارة في المعرض ────────────────────────────
+                        await Car.findOneAndUpdate(
+                            { externalId },
+                            {
+                                $set: {
+                                    title: carTitle,
+                                    titleAr: carTitle,
+                                    make: brand,
+                                    makeAr: brand,
+                                    model: model,
+                                    year: year,
+                                    price: priceSar || 15000,
+                                    priceSar: priceSar || 15000,
+                                    priceKrw: priceKrw,
+                                    priceUsd: priceUsd,
+                                    mileage: mileage,
+                                    fuelType: fuel,
+                                    transmission: 'أوتوماتيك',
+                                    color: color,
+                                    condition: condition,
+                                    description: carDescription,
+                                    images: images,
+                                    image: mainImage,
+                                    specs: {
+                                        manufacturer_en: brand,
+                                        manufacturer_ar: brand,
+                                        model,
+                                        badge,
+                                        year,
+                                        mileage,
+                                        fuelType_ar: fuel,
+                                        transmission: 'أوتوماتيك',
+                                        color,
+                                        vin: detail?.Vin || '',
+                                    },
+                                    inspectionReport: insp || null,
+                                    isActive: true,
+                                    isSold: false,
+                                    listingType: 'showroom',
+                                    externalId: externalId,
+                                    externalUrl: externalUrl,
+                                    source: 'encar_korea',
+                                    tenantId: req.tenantId || 'default',
+                                    updatedAt: new Date()
+                                }
+                            },
+                            { upsert: true, new: true, setDefaultsOnInsert: true }
+                        );
 
-                    totalImported++;
-                    importedItems.push({ title: carTitle, image: mainImage });
-                    console.log(`✅ [ShowroomImport] Imported: ${carTitle} (${images.length} photos)`);
-
-                    // تأخير بسيط لتجنب حظر Encar API
-                    await new Promise(r => setTimeout(r, 200));
-
-                } catch (itemErr) {
-                    console.warn(`⚠️ [ShowroomImport] Item error: ${itemErr.message}`);
-                    totalSkipped++;
-                }
+                        totalImported++;
+                        importedItems.push({ title: carTitle, image: mainImage });
+                        console.log(`✅ [ShowroomImport] Imported: ${carTitle} (${images.length} photos)`);
+                    } catch (itemErr) {
+                        console.warn(`⚠️ [ShowroomImport] Item error: ${itemErr.message}`);
+                        totalSkipped++;
+                    }
+                }));
             }
 
             // ─── تسجيل في ImportLog (fire-and-forget) ───────────────────
