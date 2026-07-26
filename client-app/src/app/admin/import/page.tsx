@@ -368,21 +368,78 @@ export default function AdminImportHub() {
                             <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-red-500/5 border border-red-500/20">
                                 <span className="relative flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span></span>
                                 <div className="flex-1">
-                                    <p className="text-sm font-bold text-red-300">{isRTL ? "استيراد المزادات المباشرة" : "Live Auctions Import"}</p>
-                                    <p className="text-xs text-slate-400">{isRTL ? "المزادات ستظهر في صفحة إدارة المزادات جاهزةً للتفعيل" : "Auctions appear in Auctions Management ready to activate"}</p>
+                                    <p className="text-sm font-bold text-red-300">{isRTL ? "استيراد المزادات المباشرة — Encar الكوري 🇰🇷" : "Live Auctions Import — Encar Korea 🇰🇷"}</p>
+                                    <p className="text-xs text-slate-400">{isRTL ? "يستورد السيارات كاملةً: جميع الصور + تقرير الفحص + المواصفات + تحويل العملة" : "Full import: all images + inspection report + specs + currency conversion"}</p>
                                 </div>
                                 <span className="bg-red-500/10 text-red-400 text-xs px-2 py-1 rounded-lg font-mono border border-red-500/20">/admin/auctions</span>
                             </div>
 
-                            {/* ★ URL INPUT — MAIN FOCUS ★ */}
-                            <div className="bg-slate-900 border-2 border-red-500/30 rounded-2xl p-5 shadow-lg shadow-red-500/5">
-                                <BigUrlInput
-                                    value={auctionsUrl}
-                                    onChange={setAuctionsUrl}
-                                    placeholder="https://lotte-auction.com/auction/cars/..."
-                                    label={isRTL ? "رابط موقع المزاد الخارجي" : "Auction Source URL"}
-                                    hint={isRTL ? "ضع رابط موقع المزاد المراد الاستيراد منه" : "Paste the auction website URL to import from"}
-                                />
+                            {/* Encar Source Banner */}
+                            <div className="bg-gradient-to-r from-blue-950/60 to-slate-900 border border-blue-500/30 rounded-2xl p-4 flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center shrink-0">
+                                    <Globe className="w-6 h-6 text-blue-400" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-black text-blue-300">{isRTL ? "🇰🇷 مصدر الاستيراد: Encar (إنكار)" : "🇰🇷 Import Source: Encar Korea"}</p>
+                                    <p className="text-xs text-slate-400 mt-0.5">
+                                        {isRTL
+                                            ? "أكبر منصة سيارات مستعملة في كوريا الجنوبية — يستورد الصور الكاملة + تقرير الفحص + جميع المواصفات"
+                                            : "Korea's largest used car marketplace — imports all images + inspection report + full specs"}
+                                    </p>
+                                </div>
+                                <a href="https://www.encar.com" target="_blank" rel="noopener noreferrer"
+                                    className="shrink-0 flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors">
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                    <span>encar.com</span>
+                                </a>
+                            </div>
+
+                            {/* ★ URL / Car ID INPUT ★ */}
+                            <div className="bg-slate-900 border-2 border-red-500/30 rounded-2xl p-5 shadow-lg shadow-red-500/5 space-y-4">
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 rounded-lg bg-red-500/15 border border-red-500/30">
+                                            <Link2 className="w-5 h-5 text-red-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-white">{isRTL ? "رابط Encar أو رقم السيارة" : "Encar URL or Car ID"}</p>
+                                            <p className="text-xs text-slate-400">
+                                                {isRTL
+                                                    ? "اترك فارغاً للاستيراد العام — أو ضع رابطاً مباشراً لسيارة واحدة من Encar"
+                                                    : "Leave empty for general import — or paste a direct Encar car link"}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3 bg-slate-950 border-2 border-slate-700 focus-within:border-red-500 rounded-2xl px-4 py-3 transition-colors">
+                                        <Globe className="w-5 h-5 text-slate-500 flex-shrink-0" />
+                                        <input
+                                            type="text"
+                                            value={auctionsUrl}
+                                            onChange={e => setAuctionsUrl(e.target.value)}
+                                            placeholder="https://www.encar.com/dc/dc/dcCarDetlView.do?carid=42157084"
+                                            className="flex-1 bg-transparent text-white placeholder-slate-500 text-sm focus:outline-none"
+                                            dir="ltr"
+                                        />
+                                        {auctionsUrl && (
+                                            <button onClick={() => setAuctionsUrl("")} className="text-slate-500 hover:text-red-400 text-xs transition-colors">✕</button>
+                                        )}
+                                    </div>
+
+                                    {/* أمثلة على الروابط */}
+                                    <div className="flex flex-wrap gap-2">
+                                        <span className="text-xs text-slate-500">{isRTL ? "أمثلة سريعة:" : "Quick examples:"}</span>
+                                        {[
+                                            { label: isRTL ? "📋 قائمة عامة" : "📋 General List", val: "" },
+                                            { label: "Hyundai Tucson", val: "https://www.encar.com/dc/dc/dcCarDetlView.do?carid=42337181" },
+                                            { label: "Genesis GV70", val: "https://www.encar.com/dc/dc/dcCarDetlView.do?carid=42194278" },
+                                        ].map(ex => (
+                                            <button key={ex.label} onClick={() => setAuctionsUrl(ex.val)}
+                                                className="text-xs px-2.5 py-1 rounded-lg bg-slate-800 text-slate-400 hover:text-red-400 hover:bg-slate-700 border border-slate-700 transition-all">
+                                                {ex.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Quantity */}
@@ -391,24 +448,24 @@ export default function AdminImportHub() {
                                     value={auctionsLimit}
                                     onChange={setAuctionsLimit}
                                     options={[5, 10, 20, 50]}
-                                    label={isRTL ? "عدد المزادات المطلوب استيرادها:" : "Auctions to import:"}
+                                    label={isRTL ? "عدد السيارات المطلوب استيرادها من Encar:" : "Cars to import from Encar:"}
                                 />
                             </div>
 
                             <div className="grid grid-cols-3 gap-3">
-                                <InfoChip icon={ShieldCheck} color="bg-amber-500/10 text-amber-400" label={isRTL ? "مانع التكرار" : "Dedup"} value="Auto" />
-                                <InfoChip icon={Zap} color="bg-red-500/10 text-red-400" label={isRTL ? "البيانات" : "Data"} value={isRTL ? "صور + توقيت" : "Images + Timer"} />
+                                <InfoChip icon={ShieldCheck} color="bg-amber-500/10 text-amber-400" label={isRTL ? "مانع التكرار" : "Dedup"} value="Encar ID" />
+                                <InfoChip icon={Zap} color="bg-red-500/10 text-red-400" label={isRTL ? "البيانات" : "Data"} value={isRTL ? "صور + فحص + عملة" : "Images+Inspect+FX"} />
                                 <InfoChip icon={Gavel} color="bg-emerald-500/10 text-emerald-400" label={isRTL ? "الوجهة" : "Dest."} value={isRTL ? "المزادات" : "Auctions"} />
                             </div>
 
                             <RunButton onClick={handleImportAuctions} isLoading={auctionsLoading} color="red"
-                                label={isRTL ? `استيراد ${auctionsLimit} مزاد حي الآن →` : `Import ${auctionsLimit} Live Auctions →`} />
+                                label={isRTL ? `🇰🇷 استيراد ${auctionsLimit} سيارة من Encar الآن →` : `🇰🇷 Import ${auctionsLimit} Cars from Encar →`} />
 
                             {/* نتيجة استيراد المزادات المستقلة */}
                             <ImportResult result={auctionsResult} />
 
                             <NextLink href="/admin/auctions" className="flex items-center gap-2 text-sm text-amber-400 hover:text-amber-300">
-                                <ExternalLink className="w-4 h-4" /><span>{isRTL ? "عرض صفحة إدارة المزادات" : "Open Auctions Management"}</span>
+                                <ExternalLink className="w-4 h-4" /><span>{isRTL ? "عرض صفحة إدارة المزادات والشراء" : "Open Auctions Management"}</span>
                             </NextLink>
                         </motion.div>
                     )}
