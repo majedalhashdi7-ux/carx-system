@@ -218,10 +218,10 @@ class ShowroomImportService {
                     const fuel = normalizeFuel(fuelType);
                     const carTitle = `${brand} ${model}${badge ? ' ' + badge : ''} ${year}`;
 
-                    // ─── استخراج الصور ────────────────────────────────────
+                    // ─── استخراج الصور (استيراد جميع الصور حتى 40 صورة لكل سيارة) ────────
                     let images = [];
                     if (Array.isArray(photos) && photos.length > 0) {
-                        images = photos.slice(0, 8).map(buildEncarImageUrl).filter(Boolean);
+                        images = photos.map(buildEncarImageUrl).filter(Boolean);
                     }
 
                     // ضغط الصور
@@ -235,8 +235,9 @@ class ShowroomImportService {
                     }
 
                     const mainImage = optimizedImages[0] || '';
+                    const carDescription = `سيارة ${carTitle} مستوردة مباشرة من Encar الكوري. سنة الصنع: ${year}، الكيلومترات: ${mileage.toLocaleString()} كم، نوع الوقود: ${fuel}، حالة السيارة: ${condition}. تتضمن كافة الفحوصات والصور الأصلية.`;
 
-                    // ─── إنشاء السيارة ────────────────────────────────────
+                    // ─── إنشاء السيارة في المعرض ────────────────────────────
                     await Car.create({
                         title: carTitle,
                         make: brand,
@@ -251,11 +252,12 @@ class ShowroomImportService {
                         transmission: 'أوتوماتيك',
                         color: color,
                         condition: condition,
+                        description: carDescription,
                         images: optimizedImages,
                         image: mainImage,
                         isActive: true,
                         isSold: false,
-                        listingType: 'store',
+                        listingType: 'showroom',
                         externalId: externalId,
                         externalUrl: externalUrl,
                         source: 'encar_korea',
