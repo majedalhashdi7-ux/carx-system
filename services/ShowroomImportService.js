@@ -78,38 +78,47 @@ function fetchJson(url, options = {}) {
 }
 
 /**
- * جلب قائمة سيارات Encar عبر API الرسمي
+ * جلب قائمة سيارات Encar المفحوصة والمشخصة المعتمدة (Encar Diagnosis)
  */
-async function fetchEncarCars(limit = 20) {
-    // Encar API الرسمي للبحث عن سيارات
-    const apiUrl = `https://api.encar.com/search/car/list/general?count=true&q=(And.Hidden.N._.CarType.A.)&sr=%7CMobileModifiedDate%7C0%7C${limit}`;
+async function fetchEncarCars(limit = 20, page = 0) {
+    const offset = page * 20;
+    // استعلام Encar Diagnosis الخاص بالسيارات المفحوصة بالكامل مع كافة الصور
+    const encarActionQuery = '(And.Hidden.N._.CarType.A._.(Or.ServiceMark.EncarDiagnosisP0._.ServiceMark.EncarDiagnosisP1._.ServiceMark.EncarDiagnosisP2.))';
+    const apiUrl = `https://api.encar.com/search/car/list/general?count=true&q=${encodeURIComponent(encarActionQuery)}&sr=%7CMobileModifiedDate%7C${offset}%7C${limit}`;
 
     try {
+        console.log(`🔍 [EncarShowroom] Fetching Diagnosis cars list: ${apiUrl}`);
         const data = await fetchJson(apiUrl, { timeout: 25000 });
 
         if (data && data.SearchResults && Array.isArray(data.SearchResults)) {
             return data.SearchResults;
         }
-        // محاولة بديلة: Encar catalog API
-        const altUrl = `https://api.encar.com/search/car/list/general?count=true&q=(And.Hidden.N._.CarType.A.)&sr=%7CMobileModifiedDate%7C0%7C${limit}&fields=Id,Manufacturer,Model,ModelDetail,Badge,BadgeDetail,Year,Mileage,FuelType,Price,Photos,Condition,Color`;
-        const altData = await fetchJson(altUrl, { timeout: 25000 });
-        if (altData && altData.SearchResults) return altData.SearchResults;
     } catch (err) {
-        console.warn(`⚠️ [Encar API] Primary failed: ${err.message}`);
+        console.warn(`⚠️ [EncarShowroom API] Primary fetch failed: ${err.message}`);
     }
 
-    // Fallback: صفحة HTML
     return [];
 }
 
 /**
- * استخراج بيانات السيارة من صفحة Encar الفردية
+ * جلب تفاصيل تقرير الفحص والتشخيص من Encar
+ */
+async function fetchEncarCarInspection(carId) {
+    try {
+        const url = `https://api.encar.com/cars/${carId}/inspection`;
+        const data = await fetchJson(url, { timeout: 12000 });
+        return data || null;
+    } catch { return null; }
+}
+
+/**
+ * جلب تفاصيل السيارة الفردية الكاملة من Encar
  */
 async function fetchEncarCarDetail(carId) {
     try {
-        const detailUrl = `https://api.encar.com/v1/readside/car/${carId}/detail`;
-        const data = await fetchJson(detailUrl, { timeout: 12000 });
-        return data;
+        const detailUrl = `https://api.encar.com/cars/${carId}`;
+        const data = await fetchJson(detailUrl, { timeout: 15000 });
+        return data || null;
     } catch { return null; }
 }
 
@@ -168,79 +177,88 @@ class ShowroomImportService {
         try {
             // ─── تحديد مصدر الاستيراد ────────────────────────────────
             const isCustomUrl = targetUrl && typeof targetUrl === 'string' && targetUrl.startsWith('http');
-            const sourceUrl = isCustomUrl ? targetUrl : 'https://car.encar.com/list/car';
-
-            console.log(`🚗 [ShowroomImport] Source: ${sourceUrl}`);
-
+            // ─── جلب قائمة السيارات الفردية وغير المكررة من Encar ─────────────
             let rawCars = [];
+            let page = 0;
+            const existingCars = await Car.find({ tenantId: req.tenantId || 'default' }, { externalId: 1 }).lean();
+            const existingIds = new Set(existingCars.map(c => String(c.externalId)));
 
-            // ─── جلب البيانات من Encar ────────────────────────────────
             if (!isCustomUrl || targetUrl.includes('encar.com')) {
-                rawCars = await fetchEncarCars(targetLimit * 2);
-                console.log(`📊 [ShowroomImport] Encar returned ${rawCars.length} cars`);
+                while (rawCars.length < targetLimit && page < 5) {
+                    const pageResults = await fetchEncarCars(20, page);
+                    if (!pageResults || pageResults.length === 0) break;
+
+                    for (const item of pageResults) {
+                        const cId = String(item.Id || item.id || '');
+                        if (cId && !existingIds.has(`encar-${cId}`)) {
+                            rawCars.push(item);
+                            existingIds.add(`encar-${cId}`);
+                            if (rawCars.length >= targetLimit) break;
+                        } else {
+                            totalSkipped++;
+                        }
+                    }
+                    page++;
+                }
+                console.log(`📊 [ShowroomImport] Found ${rawCars.length} NEW Diagnosis cars`);
             }
 
-            // ─── إذا كان رابط مخصص آخر أو Encar API فشل ──────────────
+            // ─── إذا كان الكتالوج الاحتياطي مطلوباً ─────────────────────────
             if (rawCars.length === 0) {
                 console.log('⚠️ [ShowroomImport] No cars from API, using embedded catalog data');
-                // استخدام بيانات مؤهلة من كتالوج Encar كنسخة احتياطية
-                rawCars = generateEncarFallbackCars(targetLimit * 2);
+                rawCars = generateEncarFallbackCars(targetLimit);
             }
 
-            totalFetched = Math.min(rawCars.length, targetLimit);
-            const batch = rawCars.slice(0, targetLimit);
+            totalFetched = rawCars.length;
 
-            for (const rawCar of batch) {
+            for (const rawCar of rawCars) {
                 try {
-                    // ─── استخراج البيانات من استجابة Encar API ──────────
-                    const carId = rawCar.Id || rawCar.id || rawCar.CarId || `encar-${Date.now()}`;
-                    const manufacturer = rawCar.Manufacturer || rawCar.manufacturer || '';
-                    const model = rawCar.Model || rawCar.model || '';
-                    const badge = rawCar.Badge || rawCar.badge || '';
-                    const year = parseInt(rawCar.Year || rawCar.year) || new Date().getFullYear();
-                    const mileage = parseInt(rawCar.Mileage || rawCar.mileage) || 0;
-                    const fuelType = rawCar.FuelType || rawCar.fuelType || 'G';
-                    const rawPrice = rawCar.Price || rawCar.price || 0;
-                    const color = rawCar.Color || rawCar.color || '';
-                    const photos = rawCar.Photos || rawCar.photos || [];
-                    const condition = rawCar.Condition || rawCar.condition || 'Used';
-
+                    const carId = String(rawCar.Id || rawCar.id || rawCar.CarId || `encar-${Date.now()}`);
                     const externalId = `encar-${carId}`;
                     const externalUrl = `https://car.encar.com/detail/${carId}`;
 
-                    // ─── منع التكرار ─────────────────────────────────────
-                    const existing = await Car.findOne({ externalId });
-                    if (existing) { totalSkipped++; continue; }
+                    // جلب تفاصيل السيارة وتقارير الفحص من API تسلسلياً
+                    const [detailData, inspectionData] = await Promise.allSettled([
+                        fetchEncarCarDetail(carId),
+                        fetchEncarCarInspection(carId)
+                    ]);
+                    const detail = detailData.status === 'fulfilled' ? detailData.value : null;
+                    const insp = inspectionData.status === 'fulfilled' ? inspectionData.value : null;
 
-                    // ─── تحويل البيانات ───────────────────────────────────
+                    const manufacturer = rawCar.Manufacturer || detail?.Manufacturer || '';
+                    const model = rawCar.Model || detail?.Model || '';
+                    const badge = rawCar.Badge || detail?.Badge || '';
+                    const year = parseInt(rawCar.Year || detail?.Year || rawCar.year) || new Date().getFullYear();
+                    const mileage = parseInt(rawCar.Mileage || detail?.Mileage || rawCar.mileage) || 0;
+                    const fuelType = rawCar.FuelType || detail?.FuelType || 'G';
+                    const rawPrice = rawCar.Price || detail?.Price || 0;
+                    const color = rawCar.Color || detail?.Color || '';
+                    const condition = 'ممتازة (مفحوصة بالكامل)';
+
                     const brand = normalizeBrand(manufacturer);
                     const { priceKrw, priceUsd, priceSar } = convertEncarPrice(rawPrice);
                     const fuel = normalizeFuel(fuelType);
                     const carTitle = `${brand} ${model}${badge ? ' ' + badge : ''} ${year}`;
 
-                    // ─── استخراج الصور (استيراد جميع الصور حتى 40 صورة لكل سيارة) ────────
-                    let images = [];
-                    if (Array.isArray(photos) && photos.length > 0) {
-                        images = photos.map(buildEncarImageUrl).filter(Boolean);
-                    }
+                    // استخراج كافة الصور (حتى 40 صورة كاملة)
+                    const listPhotos = rawCar.Photos || [];
+                    const detailPhotos = detail?.Photos || [];
+                    const extraPhotos = detail?.ExtraImages || [];
+                    const allPhotoObjs = detailPhotos.length > 0 ? [...detailPhotos, ...extraPhotos] : listPhotos;
+                    let images = allPhotoObjs.map(buildEncarImageUrl).filter(Boolean);
+                    images = [...new Set(images)].slice(0, 40);
 
-                    // ضغط الصور
-                    let optimizedImages = images;
-                    if (images.length > 0) {
-                        try {
-                            optimizedImages = await imageOptimizationService.optimizeImagesList(images, {
-                                folder: 'hmcar-showroom-cars'
-                            });
-                        } catch { optimizedImages = images; }
-                    }
+                    if (images.length === 0 && rawCar.image) images = [rawCar.image];
 
-                    const mainImage = optimizedImages[0] || '';
-                    const carDescription = `سيارة ${carTitle} مستوردة مباشرة من Encar الكوري. سنة الصنع: ${year}، الكيلومترات: ${mileage.toLocaleString()} كم، نوع الوقود: ${fuel}، حالة السيارة: ${condition}. تتضمن كافة الفحوصات والصور الأصلية.`;
+                    const mainImage = images[0] || 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=1200';
+                    const carDescription = `سيارة ${carTitle} مستوردة مفحوصة ومخصصة للمعرض مباشرة من Encar الكوري. سنة الصنع: ${year}، المسافة: ${mileage.toLocaleString('ar-SA')} كم، نوع الوقود: ${fuel}، ناقل الحركة: أوتوماتيك. تتضمن كافة الفحوصات والصور الأصلية وتخضع لضمان الفحص المعتمد.`;
 
                     // ─── إنشاء السيارة في المعرض ────────────────────────────
                     await Car.create({
                         title: carTitle,
+                        titleAr: carTitle,
                         make: brand,
+                        makeAr: brand,
                         model: model,
                         year: year,
                         price: priceSar || 15000,
@@ -253,8 +271,21 @@ class ShowroomImportService {
                         color: color,
                         condition: condition,
                         description: carDescription,
-                        images: optimizedImages,
+                        images: images,
                         image: mainImage,
+                        specs: {
+                            manufacturer_en: brand,
+                            manufacturer_ar: brand,
+                            model,
+                            badge,
+                            year,
+                            mileage,
+                            fuelType_ar: fuel,
+                            transmission: 'أوتوماتيك',
+                            color,
+                            vin: detail?.Vin || '',
+                        },
+                        inspectionReport: insp || null,
                         isActive: true,
                         isSold: false,
                         listingType: 'showroom',
@@ -267,7 +298,10 @@ class ShowroomImportService {
 
                     totalImported++;
                     importedItems.push({ title: carTitle, image: mainImage });
-                    console.log(`✅ [ShowroomImport] Imported: ${carTitle}`);
+                    console.log(`✅ [ShowroomImport] Imported: ${carTitle} (${images.length} photos)`);
+
+                    // تأخير بسيط لتجنب حظر Encar API
+                    await new Promise(r => setTimeout(r, 200));
 
                 } catch (itemErr) {
                     console.warn(`⚠️ [ShowroomImport] Item error: ${itemErr.message}`);

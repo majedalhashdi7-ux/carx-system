@@ -40,7 +40,9 @@ export default function AdminImportHub() {
     const [partsResult, setPartsResult] = useState<any>(null);
     const [auctionsResult, setAuctionsResult] = useState<any>(null);
 
-    const [carsUrl, setCarsUrl] = useState("");
+    const ENCAR_DIAGNOSIS_URL = "https://car.encar.com/list/car?page=1&search=%7B%22type%22%3A%22car%22%2C%22action%22%3A%22(And.Hidden.N._.CarType.A._.(Or.ServiceMark.EncarDiagnosisP0._.ServiceMark.EncarDiagnosisP1._.ServiceMark.EncarDiagnosisP2.))%22%2C%22title%22%3A%22%22%2C%22toggle%22%3A%7B%7D%2C%22layer%22%3A%22%22%2C%22sort%22%3A%22MobileModifiedDate%22%7D";
+
+    const [carsUrl, setCarsUrl] = useState(ENCAR_DIAGNOSIS_URL);
     const [carsLimit, setCarsLimit] = useState(10);
 
     const [partsUrl, setPartsUrl] = useState("");
@@ -65,6 +67,7 @@ export default function AdminImportHub() {
                 if (cars) setSavedCarsLinks(JSON.parse(cars));
                 const savedCarsUrl = localStorage.getItem('hm_cars_import_url');
                 if (savedCarsUrl) setCarsUrl(savedCarsUrl);
+                else setCarsUrl(ENCAR_DIAGNOSIS_URL);
 
                 const parts = localStorage.getItem('hm_saved_parts_links');
                 if (parts) setSavedPartsLinks(JSON.parse(parts));
