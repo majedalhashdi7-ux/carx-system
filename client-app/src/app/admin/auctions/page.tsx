@@ -74,7 +74,9 @@ function MasterAuctionsContent() {
         try {
             const [sessRes, impRes] = await Promise.all([
                 api.liveAuctions.list().catch(() => ({ success: false, data: [] })),
-                api.auctions.list({ limit: 100, status: 'all' }).catch(() => ({ success: false, data: [] }))
+                // جلب جميع المزادات المستوردة من Encar (بغض النظر عن الحالة)
+                api.auctions.list({ limit: 200, source: 'encar' })
+                    .catch(() => api.auctions.list({ limit: 200 }).catch(() => ({ success: false, data: [] })))
             ]);
 
             let rawSessions = Array.isArray(sessRes?.data) 
@@ -103,10 +105,23 @@ function MasterAuctionsContent() {
 
             setSessions(rawSessions.filter((s: any) => s && typeof s === 'object'));
 
-            const rawAuctions = Array.isArray(impRes?.data) 
+            // المزادات المستوردة: تشمل جميع السيارات المستوردة من Encar
+            const allAuctions = Array.isArray(impRes?.data) 
                 ? impRes.data 
                 : (Array.isArray(impRes?.auctions) ? impRes.auctions : (Array.isArray(impRes) ? impRes : []));
-            setImportedAuctions(rawAuctions.filter((a: any) => a && typeof a === 'object'));
+
+            // فلترة سيارات Encar + السيارات ذات externalId المبدوءة بـ encar-
+            const encarAuctions = allAuctions.filter((a: any) => 
+                a && typeof a === 'object' && (
+                    a.source === 'encar' || 
+                    a.source === 'desert_korea_auto' ||
+                    (a.externalId && String(a.externalId).startsWith('encar-'))
+                )
+            );
+
+            // إذا لم نجد Encar محدداً، نعرض الكل (للسماح بعرض أي مزاد تم استيراده)
+            const finalAuctions = encarAuctions.length > 0 ? encarAuctions : allAuctions;
+            setImportedAuctions(finalAuctions.filter((a: any) => a && typeof a === 'object'));
         } catch {
             setSessions([]);
             setImportedAuctions([]);
@@ -116,6 +131,7 @@ function MasterAuctionsContent() {
     }, [isRTL]);
 
     const loadClassicAuctions = useCallback(async () => {
+
         setLoading(true);
         try {
             const [aucRes, carRes] = await Promise.all([
@@ -376,78 +392,132 @@ function MasterAuctionsContent() {
                         </div>
 
                         {safeImported.length === 0 ? (
-                            <div className="p-8 text-center rounded-2xl bg-white/[0.02] border border-white/10 text-white/40 text-xs">
-                                {isRTL ? 'لا توجد مزادات مستوردة حالياً. يمكنك استخدام بوابة الاستيراد لاستيراد المزادات الكورية.' : 'No imported auctions found.'}
+                            <div className="p-10 text-center rounded-2xl bg-white/[0.02] border border-white/10">
+                                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+                                    <Car className="w-8 h-8 text-orange-400/40" />
+                                </div>
+                                <p className="text-white/40 text-sm font-bold mb-1">
+                                    {isRTL ? 'لا توجد سيارات مستوردة من Encar بعد' : 'No imported cars yet'}
+                                </p>
+                                <p className="text-white/20 text-xs mb-4">
+                                    {isRTL ? 'اذهب إلى بوابة الاستيراد ← تبويب المزادات ← استورد من Encar' : 'Go to Import Hub → Auctions tab → Import from Encar'}
+                                </p>
+                                <Link href="/admin/import?tab=auctions"
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-500/20 border border-orange-500/30 text-orange-400 text-xs font-bold hover:bg-orange-500/30 transition-colors">
+                                    <ArrowUpRight className="w-3.5 h-3.5" />
+                                    {isRTL ? 'فتح بوابة الاستيراد' : 'Open Import Hub'}
+                                </Link>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {safeImported
                                     .filter(a => a && (!search || (a.title || '').toLowerCase().includes(search.toLowerCase())))
-                                    .slice(0, 9)
                                     .map((auction) => {
                                         const isRunning = auction?.status === 'running';
                                         const isActivating = activatingId === auction?._id;
-                                        const mainImg = auction?.images?.[0] || auction?.carId?.images?.[0] || '';
+                                        const imgs = auction?.images || auction?.carId?.images || [];
+                                        const mainImg = imgs[0] || '';
+                                        const specs = auction?.specs || auction?.carId?.specs || {};
+                                        const priceSar = auction?.startingPrice || auction?.priceSar || auction?.currentBid || 0;
+                                        const priceKrw = auction?.priceKrw || 0;
+                                        const mileage = auction?.mileage || specs?.mileage || '';
+                                        const year = specs?.year || auction?.year || '';
+                                        const fuel = auction?.fuelType || specs?.fuelType || '';
 
                                         return (
                                             <motion.div
                                                 key={auction._id || Math.random()}
                                                 whileHover={{ y: -3 }}
-                                                className="relative group rounded-2xl bg-[#0e0f1d] border border-white/10 p-4 hover:border-orange-500/40 transition-all flex flex-col justify-between"
+                                                className="relative group rounded-2xl bg-[#0e0f1d] border border-white/10 overflow-hidden hover:border-orange-500/40 transition-all flex flex-col"
                                             >
-                                                <div>
-                                                    {/* Image + Status */}
-                                                    <div className="relative h-40 rounded-xl overflow-hidden bg-black/50 mb-3">
-                                                        {mainImg ? (
-                                                            // eslint-disable-next-line @next/next/no-img-element
-                                                            <img src={mainImg} alt={auction.title || 'Car'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                                                        ) : (
-                                                            <div className="w-full h-full flex items-center justify-center text-white/20">
-                                                                <Car className="w-12 h-12" />
-                                                            </div>
-                                                        )}
-                                                        <div className="absolute top-2 right-2">
-                                                            <span className={cn(
-                                                                "px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border backdrop-blur-md",
-                                                                isRunning ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400" : "bg-amber-500/20 border-amber-500/40 text-amber-400"
-                                                            )}>
-                                                                {isRunning ? (isRTL ? 'نشط ومفعل' : 'Active') : (isRTL ? 'بانتظار الموافقة' : 'Pending')}
-                                                            </span>
+                                                {/* Image */}
+                                                <div className="relative h-44 bg-black/50">
+                                                    {mainImg ? (
+                                                        // eslint-disable-next-line @next/next/no-img-element
+                                                        <img src={mainImg} alt={auction.title || 'Car'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-white/10">
+                                                            <Car className="w-14 h-14" />
+                                                        </div>
+                                                    )}
+
+                                                    {/* Status badge */}
+                                                    <div className="absolute top-2 right-2">
+                                                        <span className={cn(
+                                                            "px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border backdrop-blur-md",
+                                                            isRunning ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400" : "bg-amber-500/20 border-amber-500/40 text-amber-400"
+                                                        )}>
+                                                            {isRunning ? (isRTL ? '✅ نشط' : '✅ Active') : (isRTL ? '⏳ انتظار' : '⏳ Pending')}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Image count */}
+                                                    {imgs.length > 1 && (
+                                                        <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-lg border border-white/10">
+                                                            <span className="text-[9px] font-bold text-white/60">📷 {imgs.length}</span>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Korea source tag */}
+                                                    <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm border border-white/10 px-2 py-0.5 rounded-lg">
+                                                        <span className="text-[9px] font-black text-white/50">🇰🇷 Encar</span>
+                                                    </div>
+
+                                                    {/* Gradient */}
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-[#0e0f1d] via-transparent to-transparent opacity-60" />
+                                                </div>
+
+                                                <div className="p-4 flex flex-col flex-1 gap-3">
+                                                    {/* Title */}
+                                                    <h3 className="font-bold text-sm text-white line-clamp-1">
+                                                        {isRTL ? (auction.titleAr || auction.title) : (auction.titleEn || auction.title) || 'سيارة كورية'}
+                                                    </h3>
+
+                                                    {/* Specs chips */}
+                                                    {(year || mileage || fuel) && (
+                                                        <div className="flex flex-wrap gap-1.5">
+                                                            {year && <span className="text-[10px] px-2 py-0.5 rounded-md bg-white/5 border border-white/8 text-white/50">{year}</span>}
+                                                            {mileage && <span className="text-[10px] px-2 py-0.5 rounded-md bg-white/5 border border-white/8 text-white/50">{Number(mileage).toLocaleString()} كم</span>}
+                                                            {fuel && <span className="text-[10px] px-2 py-0.5 rounded-md bg-white/5 border border-white/8 text-white/50">{fuel}</span>}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Prices */}
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <div className="p-2 rounded-xl bg-orange-500/5 border border-orange-500/15">
+                                                            <p className="text-[8px] text-orange-400/60 uppercase">SAR 🇸🇦</p>
+                                                            <p className="text-xs font-black text-orange-400">{priceSar > 0 ? `${priceSar.toLocaleString()} ر.س` : '—'}</p>
+                                                        </div>
+                                                        <div className="p-2 rounded-xl bg-white/3 border border-white/8">
+                                                            <p className="text-[8px] text-white/30 uppercase">KRW 🇰🇷</p>
+                                                            <p className="text-xs font-bold text-white/50">{priceKrw > 0 ? `₩${priceKrw.toLocaleString()}` : '—'}</p>
                                                         </div>
                                                     </div>
 
-                                                    {/* Title & Info */}
-                                                    <h3 className="font-bold text-sm text-white mb-2 line-clamp-1">{auction.title || 'مزاد سيارة'}</h3>
-                                                    <div className="flex items-center justify-between text-xs text-white/60 mb-4 font-mono">
-                                                        <span>{isRTL ? 'السعر الابتدائي:' : 'Start Price:'}</span>
-                                                        <span className="text-orange-400 font-bold">{(auction.startingPrice || auction.currentBid || 0).toLocaleString()} ر.س</span>
-                                                    </div>
-                                                </div>
-
-                                                {/* Action Buttons */}
-                                                <div className="flex items-center gap-2 pt-2 border-t border-white/5">
-                                                    {!isRunning ? (
+                                                    {/* Actions */}
+                                                    <div className="flex items-center gap-2 pt-1 mt-auto border-t border-white/5">
+                                                        {!isRunning ? (
+                                                            <button
+                                                                onClick={() => handleActivateImportedAuction(auction._id)}
+                                                                disabled={isActivating}
+                                                                className="flex-1 py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-bold hover:bg-emerald-500/30 transition-colors flex items-center justify-center gap-1.5"
+                                                            >
+                                                                {isActivating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                                                                <span>{isRTL ? 'تفعيل وعرض للعملاء' : 'Activate Now'}</span>
+                                                            </button>
+                                                        ) : (
+                                                            <span className="flex-1 text-center py-2 text-[10px] text-emerald-400 font-bold bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+                                                                {isRTL ? '✓ مفعل ومتاح للعملاء' : '✓ Live for Buyers'}
+                                                            </span>
+                                                        )}
                                                         <button
-                                                            onClick={() => handleActivateImportedAuction(auction._id)}
-                                                            disabled={isActivating}
-                                                            className="flex-1 py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-bold hover:bg-emerald-500/30 transition-colors flex items-center justify-center gap-1.5"
+                                                            onClick={() => handleDeleteAuction(auction._id, auction.title)}
+                                                            className="p-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors"
+                                                            title={isRTL ? 'حذف' : 'Delete'}
                                                         >
-                                                            {isActivating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                                                            <span>{isRTL ? 'تفعيل المزاد الآن' : 'Activate Auction'}</span>
+                                                            <Trash2 className="w-4 h-4" />
                                                         </button>
-                                                    ) : (
-                                                        <span className="flex-1 text-center py-2 text-[10px] text-emerald-400 font-bold bg-emerald-500/10 rounded-xl border border-emerald-500/20">
-                                                            {isRTL ? 'مفعل ومتاح للعملاء ✓' : 'Live for Buyers ✓'}
-                                                        </span>
-                                                    )}
-
-                                                    <button
-                                                        onClick={() => handleDeleteAuction(auction._id, auction.title)}
-                                                        className="p-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors"
-                                                        title={isRTL ? 'حذف المزاد' : 'Delete'}
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
+                                                    </div>
                                                 </div>
                                             </motion.div>
                                         );

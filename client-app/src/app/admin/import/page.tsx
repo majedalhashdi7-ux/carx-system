@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     Download, Globe, RefreshCw, Car, Gavel, Package,
     CheckCircle2, History, ShieldCheck, Zap, ExternalLink,
-    AlertCircle, Link2
+    AlertCircle, Link2, Trash2, Play, Bookmark, Copy
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,14 @@ import AdminPageShell from "@/components/AdminPageShell";
 import NextLink from "next/link";
 
 type ActiveTab = "cars" | "parts" | "auctions";
+
+interface SavedLink {
+    id: string;
+    url: string;
+    title?: string;
+    lastImportedAt?: string;
+    lastCount?: number;
+}
 
 export default function AdminImportHub() {
     const { isRTL } = useLanguage();
@@ -43,17 +51,93 @@ export default function AdminImportHub() {
     const [logsLoading, setLogsLoading] = useState(false);
     const [showLogs, setShowLogs] = useState(false);
 
-    // استعادة الروابط المحفوظة من localStorage
+    // ── الروابط المحفوظة منفصلة لكل قسم ─────────────────────────────
+    const [savedCarsLinks, setSavedCarsLinks] = useState<SavedLink[]>([]);
+    const [savedPartsLinks, setSavedPartsLinks] = useState<SavedLink[]>([]);
+    const [savedAuctionsLinks, setSavedAuctionsLinks] = useState<SavedLink[]>([]);
+
+    // استعادة الروابط المحفوظة من localStorage لكل قسم
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            const savedCars = localStorage.getItem('hm_cars_import_url');
-            if (savedCars) setCarsUrl(savedCars);
-            const savedParts = localStorage.getItem('hm_parts_import_url');
-            if (savedParts) setPartsUrl(savedParts);
-            const savedAuctions = localStorage.getItem('hm_auctions_import_url');
-            if (savedAuctions) setAuctionsUrl(savedAuctions);
+            try {
+                const cars = localStorage.getItem('hm_saved_cars_links');
+                if (cars) setSavedCarsLinks(JSON.parse(cars));
+                const savedCarsUrl = localStorage.getItem('hm_cars_import_url');
+                if (savedCarsUrl) setCarsUrl(savedCarsUrl);
+
+                const parts = localStorage.getItem('hm_saved_parts_links');
+                if (parts) setSavedPartsLinks(JSON.parse(parts));
+                const savedPartsUrl = localStorage.getItem('hm_parts_import_url');
+                if (savedPartsUrl) setPartsUrl(savedPartsUrl);
+
+                const auctions = localStorage.getItem('hm_saved_auctions_links');
+                if (auctions) setSavedAuctionsLinks(JSON.parse(auctions));
+                const savedAuctionsUrl = localStorage.getItem('hm_auctions_import_url');
+                if (savedAuctionsUrl) setAuctionsUrl(savedAuctionsUrl);
+            } catch { }
         }
     }, []);
+
+    // حفظ رابط في قسم محدد
+    const saveLinkForSection = (section: ActiveTab, url: string, count?: number) => {
+        if (!url || typeof window === 'undefined') return;
+        const newEntry: SavedLink = {
+            id: Date.now().toString(),
+            url,
+            title: url.length > 50 ? url.substring(0, 47) + '...' : url,
+            lastImportedAt: new Date().toISOString(),
+            lastCount: count || 0,
+        };
+
+        if (section === 'cars') {
+            localStorage.setItem('hm_cars_import_url', url);
+            setSavedCarsLinks(prev => {
+                const filtered = prev.filter(l => l.url !== url);
+                const updated = [newEntry, ...filtered];
+                localStorage.setItem('hm_saved_cars_links', JSON.stringify(updated));
+                return updated;
+            });
+        } else if (section === 'parts') {
+            localStorage.setItem('hm_parts_import_url', url);
+            setSavedPartsLinks(prev => {
+                const filtered = prev.filter(l => l.url !== url);
+                const updated = [newEntry, ...filtered];
+                localStorage.setItem('hm_saved_parts_links', JSON.stringify(updated));
+                return updated;
+            });
+        } else if (section === 'auctions') {
+            localStorage.setItem('hm_auctions_import_url', url);
+            setSavedAuctionsLinks(prev => {
+                const filtered = prev.filter(l => l.url !== url);
+                const updated = [newEntry, ...filtered];
+                localStorage.setItem('hm_saved_auctions_links', JSON.stringify(updated));
+                return updated;
+            });
+        }
+    };
+
+    const deleteSavedLink = (section: ActiveTab, id: string) => {
+        if (typeof window === 'undefined') return;
+        if (section === 'cars') {
+            setSavedCarsLinks(prev => {
+                const updated = prev.filter(l => l.id !== id);
+                localStorage.setItem('hm_saved_cars_links', JSON.stringify(updated));
+                return updated;
+            });
+        } else if (section === 'parts') {
+            setSavedPartsLinks(prev => {
+                const updated = prev.filter(l => l.id !== id);
+                localStorage.setItem('hm_saved_parts_links', JSON.stringify(updated));
+                return updated;
+            });
+        } else if (section === 'auctions') {
+            setSavedAuctionsLinks(prev => {
+                const updated = prev.filter(l => l.id !== id);
+                localStorage.setItem('hm_saved_auctions_links', JSON.stringify(updated));
+                return updated;
+            });
+        }
+    };
 
     const loadImportLogs = useCallback(async () => {
         setLogsLoading(true);
@@ -66,52 +150,49 @@ export default function AdminImportHub() {
     useEffect(() => { loadImportLogs(); }, [loadImportLogs]);
 
     // ── استيراد سيارات المعرض (مستقل) ─────────────────────────────
-    const handleImportCars = async () => {
-        if (typeof window !== 'undefined' && carsUrl) {
-            localStorage.setItem('hm_cars_import_url', carsUrl);
-        }
+    const handleImportCars = async (targetUrl?: string) => {
+        const urlToUse = targetUrl || carsUrl;
+        if (urlToUse) saveLinkForSection('cars', urlToUse, carsLimit);
         setCarsLoading(true); setCarsResult(null);
         try {
-            const res = await api.import.showroom(carsLimit, carsUrl);
+            const res = await api.import.showroom(carsLimit, urlToUse);
             if (res?.success) {
-                showToast(res.message || "✅ تم استيراد السيارات بنجاح", "success");
+                showToast(res.message || (isRTL ? "✅ تم استيراد السيارات بنجاح" : "✅ Cars imported successfully"), "success");
                 setCarsResult({ type: "cars", ...res });
                 loadImportLogs();
-            } else showToast(res?.error || "❌ فشل الاستيراد", "error");
+            } else showToast(res?.error || (isRTL ? "❌ فشل الاستيراد" : "❌ Import failed"), "error");
         } catch (e: any) { showToast(e.message || "❌ خطأ", "error"); }
         finally { setCarsLoading(false); }
     };
 
     // ── استيراد قطع الغيار (مستقل) ─────────────────────────────────
-    const handleImportParts = async () => {
-        if (typeof window !== 'undefined' && partsUrl) {
-            localStorage.setItem('hm_parts_import_url', partsUrl);
-        }
+    const handleImportParts = async (targetUrl?: string) => {
+        const urlToUse = targetUrl || partsUrl;
+        if (urlToUse) saveLinkForSection('parts', urlToUse);
         setPartsLoading(true); setPartsResult(null);
         try {
-            const res = await api.import.parts(partsUrl);
+            const res = await api.import.parts(urlToUse);
             if (res?.success) {
-                showToast(res.message || "✅ تم استيراد قطع الغيار", "success");
+                showToast(res.message || (isRTL ? "✅ تم استيراد قطع الغيار" : "✅ Parts imported"), "success");
                 setPartsResult({ type: "parts", ...res });
                 loadImportLogs();
-            } else showToast(res?.error || "❌ فشل الاستيراد", "error");
+            } else showToast(res?.error || (isRTL ? "❌ فشل الاستيراد" : "❌ Import failed"), "error");
         } catch (e: any) { showToast(e.message || "❌ خطأ", "error"); }
         finally { setPartsLoading(false); }
     };
 
     // ── استيراد المزادات المباشرة (مستقل) ──────────────────────────
-    const handleImportAuctions = async () => {
-        if (typeof window !== 'undefined' && auctionsUrl) {
-            localStorage.setItem('hm_auctions_import_url', auctionsUrl);
-        }
+    const handleImportAuctions = async (targetUrl?: string) => {
+        const urlToUse = targetUrl || auctionsUrl;
+        if (urlToUse) saveLinkForSection('auctions', urlToUse, auctionsLimit);
         setAuctionsLoading(true); setAuctionsResult(null);
         try {
-            const res = await api.import.liveAuctions(auctionsLimit, auctionsUrl);
+            const res = await api.import.liveAuctions(auctionsLimit, urlToUse);
             if (res?.success) {
-                showToast(res.message || "✅ تم استيراد المزادات", "success");
+                showToast(res.message || (isRTL ? "✅ تم استيراد المزادات" : "✅ Auctions imported"), "success");
                 setAuctionsResult({ type: "auctions", ...res });
                 loadImportLogs();
-            } else showToast(res?.error || "❌ فشل الاستيراد", "error");
+            } else showToast(res?.error || (isRTL ? "❌ فشل الاستيراد" : "❌ Import failed"), "error");
         } catch (e: any) { showToast(e.message || "❌ خطأ", "error"); }
         finally { setAuctionsLoading(false); }
     };
@@ -131,7 +212,7 @@ export default function AdminImportHub() {
             <div className="flex items-center gap-3 bg-slate-950 border-2 border-slate-700 focus-within:border-amber-500 rounded-2xl px-4 py-3 transition-colors">
                 <Globe className="w-5 h-5 text-slate-500 flex-shrink-0" />
                 <input
-                    type="url"
+                    type="text"
                     value={value}
                     onChange={e => onChange(e.target.value)}
                     placeholder={placeholder}
@@ -144,7 +225,7 @@ export default function AdminImportHub() {
             </div>
             <p className="text-xs text-slate-500 flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />
-                <span>{isRTL ? "اختياري — اتركه فارغاً للاستيراد من قاعدة البيانات الافتراضية" : "Optional — leave empty to use default database"}</span>
+                <span>{isRTL ? "اختياري — اتركه فارغاً للاستيراد المباشر من Encar الكوري" : "Optional — leave empty to import directly from default catalog"}</span>
             </p>
         </div>
     );
@@ -176,7 +257,7 @@ export default function AdminImportHub() {
     );
 
     const RunButton = ({ onClick, isLoading, label, color }: any) => (
-        <button onClick={onClick} disabled={isLoading}
+        <button onClick={() => onClick()} disabled={isLoading}
             className={cn(
                 "w-full py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-3 transition-all shadow-xl active:scale-[0.99]",
                 isLoading ? "bg-slate-800 text-slate-400 cursor-not-allowed"
@@ -190,7 +271,7 @@ export default function AdminImportHub() {
         </button>
     );
 
-    // ── مكوّن نتيجة الاستيراد المستقل لكل بوابة ────────────────────
+    // ── مكوّن نتيجة الاستيراد ─────────────────────────────────────────
     const ImportResult = ({ result }: { result: any }) => {
         if (!result) return null;
         return (
@@ -220,6 +301,99 @@ export default function AdminImportHub() {
                     <span>{isRTL ? "عرض البيانات المستوردة ←" : "View Imported Data →"}</span>
                 </NextLink>
             </motion.div>
+        );
+    };
+
+    // ── مكوّن بطاقات الروابط والجلسات المحفوظة لكل قسم ─────────────────
+    const SavedSectionLinksList = ({
+        section,
+        links,
+        onReimport,
+        onSelectUrl,
+        isLoading
+    }: {
+        section: ActiveTab;
+        links: SavedLink[];
+        onReimport: (url: string) => void;
+        onSelectUrl: (url: string) => void;
+        isLoading: boolean;
+    }) => {
+        if (!links || links.length === 0) return null;
+
+        const sectionBadgeColor =
+            section === 'cars' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' :
+                section === 'parts' ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' :
+                    'bg-red-500/10 text-red-400 border-red-500/30';
+
+        return (
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <div className={`p-2 rounded-lg border ${sectionBadgeColor}`}>
+                            <Bookmark className="w-4 h-4" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-white text-sm">
+                                {isRTL
+                                    ? `سجلات وروابط الاستيراد المحفوظة (${section === 'cars' ? 'سيارات المعرض' : section === 'parts' ? 'قطع الغيار' : 'المزادات المباشرة'})`
+                                    : `Saved Import Links & History (${section})`}
+                            </h3>
+                            <p className="text-xs text-slate-400">
+                                {isRTL ? "يمكنك استخدام أي رابط محفوط للاستيراد منه مجدداً بنقرة واحدة" : "Click any saved link to re-import"}
+                            </p>
+                        </div>
+                    </div>
+                    <span className="text-xs text-slate-500 font-mono">{links.length} {isRTL ? 'رابط' : 'links'}</span>
+                </div>
+
+                <div className="space-y-3">
+                    {links.map((item) => (
+                        <div key={item.id} className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-slate-700 transition-all flex flex-col md:flex-row md:items-center justify-between gap-3">
+                            <div className="flex items-start gap-3 min-w-0 flex-1">
+                                <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 shrink-0 mt-0.5">
+                                    <Globe className="w-4 h-4 text-slate-400" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-xs font-mono text-slate-300 truncate" dir="ltr">{item.url}</p>
+                                    <div className="flex items-center gap-3 text-[10px] text-slate-500 mt-1">
+                                        {item.lastImportedAt && (
+                                            <span>{isRTL ? "آخر استيراد: " : "Last: "}{new Date(item.lastImportedAt).toLocaleString(isRTL ? 'ar-SA' : 'en-US')}</span>
+                                        )}
+                                        {item.lastCount ? <span>• {item.lastCount} {isRTL ? 'عنصر' : 'items'}</span> : null}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                                <button
+                                    onClick={() => onSelectUrl(item.url)}
+                                    className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold hover:bg-slate-700 transition-colors flex items-center gap-1"
+                                >
+                                    <Copy className="w-3.5 h-3.5" />
+                                    <span>{isRTL ? "اختيار الرابط" : "Use URL"}</span>
+                                </button>
+
+                                <button
+                                    onClick={() => onReimport(item.url)}
+                                    disabled={isLoading}
+                                    className="px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/30 text-xs font-bold transition-colors flex items-center gap-1"
+                                >
+                                    <RefreshCw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />
+                                    <span>{isRTL ? "إعادة الاستيراد" : "Re-Import"}</span>
+                                </button>
+
+                                <button
+                                    onClick={() => deleteSavedLink(section, item.id)}
+                                    className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                                    title={isRTL ? "حذف الرابط" : "Delete link"}
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
         );
     };
 
@@ -265,7 +439,7 @@ export default function AdminImportHub() {
                                 <Car className="w-5 h-5 text-amber-400 flex-shrink-0" />
                                 <div className="flex-1">
                                     <p className="text-sm font-bold text-amber-300">{isRTL ? "استيراد سيارات المعرض" : "Showroom Cars Import"}</p>
-                                    <p className="text-xs text-slate-400">{isRTL ? "السيارات ستظهر في صفحة إدارة السيارات وفي المعرض للعملاء" : "Cars will appear in admin cars page and client showroom"}</p>
+                                    <p className="text-xs text-slate-400">{isRTL ? "السيارات ستظهر في صفحة إدارة السيارات وفي المعرض للعملاء مع العلامة المائية HMCar" : "Cars will appear in admin cars page and client showroom with HMCar watermark"}</p>
                                 </div>
                                 <span className="bg-amber-500/10 text-amber-400 text-xs px-2 py-1 rounded-lg font-mono border border-amber-500/20">/admin/cars</span>
                             </div>
@@ -275,9 +449,9 @@ export default function AdminImportHub() {
                                 <BigUrlInput
                                     value={carsUrl}
                                     onChange={setCarsUrl}
-                                    placeholder="https://car.encar.com/cat/car/search?..."
-                                    label={isRTL ? "رابط الموقع الخارجي للاستيراد" : "External Site URL"}
-                                    hint={isRTL ? "ضع رابط الموقع المراد الاستيراد منه" : "Paste the URL of the source website"}
+                                    placeholder="https://www.encar.com/dc/dc/dcCarDetlView.do?carid=..."
+                                    label={isRTL ? "رابط الموقع الخارجي للاستيراد (Encar أو غيره)" : "External Site URL"}
+                                    hint={isRTL ? "ضع رابط الموقع أو ابحث بالكلمات الكورية — سيتم حفظ الرابط تلقائياً في السجلات" : "Paste source URL to import cars"}
                                 />
                             </div>
 
@@ -294,15 +468,24 @@ export default function AdminImportHub() {
                             {/* Info chips */}
                             <div className="grid grid-cols-3 gap-3">
                                 <InfoChip icon={ShieldCheck} color="bg-amber-500/10 text-amber-400" label={isRTL ? "مانع التكرار" : "Dedup"} value="VIN / ID" />
-                                <InfoChip icon={Zap} color="bg-blue-500/10 text-blue-400" label={isRTL ? "الصور" : "Images"} value="WebP" />
+                                <InfoChip icon={Zap} color="bg-blue-500/10 text-blue-400" label={isRTL ? "العلامة المائية" : "Watermark"} value="HMCar 🏆" />
                                 <InfoChip icon={Car} color="bg-emerald-500/10 text-emerald-400" label={isRTL ? "الوجهة" : "Dest."} value={isRTL ? "إدارة السيارات" : "Cars Mgmt"} />
                             </div>
 
-                            <RunButton onClick={handleImportCars} isLoading={carsLoading}
-                                label={isRTL ? `استيراد ${carsLimit} سيارة الآن →` : `Import ${carsLimit} Cars Now →`} />
+                            <RunButton onClick={() => handleImportCars()} isLoading={carsLoading}
+                                label={isRTL ? `استيراد ${carsLimit} سيارة للمعرض الآن →` : `Import ${carsLimit} Cars Now →`} />
 
                             {/* نتيجة استيراد السيارات المستقلة */}
                             <ImportResult result={carsResult} />
+
+                            {/* ── السجلات والروابط المحفوظة لقسم السيارات ── */}
+                            <SavedSectionLinksList
+                                section="cars"
+                                links={savedCarsLinks}
+                                onReimport={(url) => { setCarsUrl(url); handleImportCars(url); }}
+                                onSelectUrl={(url) => setCarsUrl(url)}
+                                isLoading={carsLoading}
+                            />
 
                             <NextLink href="/admin/cars" className="flex items-center gap-2 text-sm text-amber-400 hover:text-amber-300">
                                 <ExternalLink className="w-4 h-4" /><span>{isRTL ? "عرض صفحة إدارة السيارات" : "Open Cars Management"}</span>
@@ -347,11 +530,20 @@ export default function AdminImportHub() {
                                 <InfoChip icon={Zap} color="bg-emerald-500/10 text-emerald-400" label={isRTL ? "الوجهة" : "Dest."} value={isRTL ? "قطع الغيار" : "Parts Mgmt"} />
                             </div>
 
-                            <RunButton onClick={handleImportParts} isLoading={partsLoading}
+                            <RunButton onClick={() => handleImportParts()} isLoading={partsLoading}
                                 label={isRTL ? "استيراد قطع الغيار الكاملة الآن →" : "Import Full Parts Catalog →"} />
 
                             {/* نتيجة استيراد قطع الغيار المستقلة */}
                             <ImportResult result={partsResult} />
+
+                            {/* ── السجلات والروابط المحفوظة لقسم قطع الغيار ── */}
+                            <SavedSectionLinksList
+                                section="parts"
+                                links={savedPartsLinks}
+                                onReimport={(url) => { setPartsUrl(url); handleImportParts(url); }}
+                                onSelectUrl={(url) => setPartsUrl(url)}
+                                isLoading={partsLoading}
+                            />
 
                             <NextLink href="/admin/parts" className="flex items-center gap-2 text-sm text-amber-400 hover:text-amber-300">
                                 <ExternalLink className="w-4 h-4" /><span>{isRTL ? "عرض صفحة إدارة قطع الغيار" : "Open Parts Management"}</span>
@@ -369,7 +561,7 @@ export default function AdminImportHub() {
                                 <span className="relative flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span></span>
                                 <div className="flex-1">
                                     <p className="text-sm font-bold text-red-300">{isRTL ? "استيراد المزادات المباشرة — Encar الكوري 🇰🇷" : "Live Auctions Import — Encar Korea 🇰🇷"}</p>
-                                    <p className="text-xs text-slate-400">{isRTL ? "يستورد السيارات كاملةً: جميع الصور + تقرير الفحص + المواصفات + تحويل العملة" : "Full import: all images + inspection report + specs + currency conversion"}</p>
+                                    <p className="text-xs text-slate-400">{isRTL ? "يستورد السيارات كاملةً: جميع الصور + العلامة المائية + تقرير الفحص + تحويل العملة" : "Full import: all images + HMCar watermark + inspection report + specs"}</p>
                                 </div>
                                 <span className="bg-red-500/10 text-red-400 text-xs px-2 py-1 rounded-lg font-mono border border-red-500/20">/admin/auctions</span>
                             </div>
@@ -454,15 +646,24 @@ export default function AdminImportHub() {
 
                             <div className="grid grid-cols-3 gap-3">
                                 <InfoChip icon={ShieldCheck} color="bg-amber-500/10 text-amber-400" label={isRTL ? "مانع التكرار" : "Dedup"} value="Encar ID" />
-                                <InfoChip icon={Zap} color="bg-red-500/10 text-red-400" label={isRTL ? "البيانات" : "Data"} value={isRTL ? "صور + فحص + عملة" : "Images+Inspect+FX"} />
+                                <InfoChip icon={Zap} color="bg-red-500/10 text-red-400" label={isRTL ? "العلامة المائية" : "Watermark"} value="HMCar 🏆" />
                                 <InfoChip icon={Gavel} color="bg-emerald-500/10 text-emerald-400" label={isRTL ? "الوجهة" : "Dest."} value={isRTL ? "المزادات" : "Auctions"} />
                             </div>
 
-                            <RunButton onClick={handleImportAuctions} isLoading={auctionsLoading} color="red"
+                            <RunButton onClick={() => handleImportAuctions()} isLoading={auctionsLoading} color="red"
                                 label={isRTL ? `🇰🇷 استيراد ${auctionsLimit} سيارة من Encar الآن →` : `🇰🇷 Import ${auctionsLimit} Cars from Encar →`} />
 
                             {/* نتيجة استيراد المزادات المستقلة */}
                             <ImportResult result={auctionsResult} />
+
+                            {/* ── السجلات والروابط المحفوظة لقسم المزادات ── */}
+                            <SavedSectionLinksList
+                                section="auctions"
+                                links={savedAuctionsLinks}
+                                onReimport={(url) => { setAuctionsUrl(url); handleImportAuctions(url); }}
+                                onSelectUrl={(url) => setAuctionsUrl(url)}
+                                isLoading={auctionsLoading}
+                            />
 
                             <NextLink href="/admin/auctions" className="flex items-center gap-2 text-sm text-amber-400 hover:text-amber-300">
                                 <ExternalLink className="w-4 h-4" /><span>{isRTL ? "عرض صفحة إدارة المزادات والشراء" : "Open Auctions Management"}</span>
@@ -478,7 +679,7 @@ export default function AdminImportHub() {
                     <button onClick={() => setShowLogs(v => !v)}
                         className="flex items-center gap-2 text-sm text-slate-400 hover:text-white px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition-all">
                         <History className="w-4 h-4" />
-                        <span>{isRTL ? (showLogs ? "إخفاء السجل" : "عرض سجل الاستيراد") : (showLogs ? "Hide Logs" : "Show Import Logs")}</span>
+                        <span>{isRTL ? (showLogs ? "إخفاء السجل العام" : "عرض سجّلات النظام العامة") : (showLogs ? "Hide Logs" : "Show System Import Logs")}</span>
                     </button>
                 </div>
 
