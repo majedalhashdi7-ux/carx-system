@@ -77,13 +77,39 @@ function fetchJson(url, options = {}) {
     });
 }
 
+// ─── استخراج كويري أو ID من رابط Encar ──────────────────────────────────────
+function parseEncarTargetUrl(targetUrl) {
+    if (!targetUrl || typeof targetUrl !== 'string') return { type: 'list', query: null, carId: null };
+
+    // 1. فحص إذا كان رابط سيارة واحدة مباشرة
+    const mCarId = targetUrl.match(/carid=(\d+)/i) || targetUrl.match(/car\/(\d+)/i) || targetUrl.match(/detail\/(\d+)/i);
+    if (mCarId && mCarId[1]) {
+        return { type: 'single', carId: mCarId[1] };
+    }
+    if (/^\d{6,10}$/.test(targetUrl.trim())) {
+        return { type: 'single', carId: targetUrl.trim() };
+    }
+
+    // 2. فحص إذا كان رابط يضم استعلام search action (مثل Encar Diagnosis)
+    try {
+        const decoded = decodeURIComponent(targetUrl);
+        const actionMatch = decoded.match(/"action"\s*:\s*"([^"]+)"/) || decoded.match(/action=([^&]+)/);
+        if (actionMatch && actionMatch[1]) {
+            return { type: 'list', query: actionMatch[1], carId: null };
+        }
+    } catch { }
+
+    return { type: 'list', query: null, carId: null };
+}
+
 /**
  * جلب قائمة سيارات Encar المفحوصة والمشخصة المعتمدة (Encar Diagnosis)
  */
-async function fetchEncarCars(limit = 20, page = 0) {
+async function fetchEncarCars(limit = 20, page = 0, customQuery = null) {
     const offset = page * 20;
     // استعلام Encar Diagnosis الخاص بالسيارات المفحوصة بالكامل مع كافة الصور
-    const encarActionQuery = '(And.Hidden.N._.CarType.A._.(Or.ServiceMark.EncarDiagnosisP0._.ServiceMark.EncarDiagnosisP1._.ServiceMark.EncarDiagnosisP2.))';
+    const defaultQuery = '(And.Hidden.N._.CarType.A._.(Or.ServiceMark.EncarDiagnosisP0._.ServiceMark.EncarDiagnosisP1._.ServiceMark.EncarDiagnosisP2.))';
+    const encarActionQuery = customQuery || defaultQuery;
     const apiUrl = `https://api.encar.com/search/car/list/general?count=true&q=${encodeURIComponent(encarActionQuery)}&sr=%7CMobileModifiedDate%7C${offset}%7C${limit}`;
 
     try {
@@ -175,17 +201,26 @@ class ShowroomImportService {
         let importedItems = [];
 
         try {
-            // ─── تحديد مصدر الاستيراد ────────────────────────────────
+            // ─── تحديد مصدر الاستيراد وحفظ الرابط بأمان ────────────────
             const isCustomUrl = targetUrl && typeof targetUrl === 'string' && targetUrl.startsWith('http');
-            // ─── جلب قائمة السيارات الفردية وغير المكررة من Encar ─────────────
-            let rawCars = [];
-            let page = 0;
-            const existingCars = await Car.find({ tenantId: req.tenantId || 'default' }, { externalId: 1 }).lean();
-            const existingIds = new Set(existingCars.map(c => String(c.externalId)));
+            const sourceUrl = isCustomUrl ? targetUrl : 'https://car.encar.com/list/car';
+            const parsedTarget = parseEncarTargetUrl(targetUrl);
 
-            if (!isCustomUrl || targetUrl.includes('encar.com')) {
+            console.log(`🚗 [ShowroomImport] Source: ${sourceUrl} (Type: ${parsedTarget.type})`);
+
+            let rawCars = [];
+
+            if (parsedTarget.type === 'single' && parsedTarget.carId) {
+                // استيراد سيارة واحدة محددة
+                rawCars = [{ Id: parsedTarget.carId }];
+            } else {
+                // استيراد قائمة سيارات غير مكررة
+                let page = 0;
+                const existingCars = await Car.find({ tenantId: req.tenantId || 'default' }, { externalId: 1 }).lean();
+                const existingIds = new Set(existingCars.map(c => String(c.externalId)));
+
                 while (rawCars.length < targetLimit && page < 5) {
-                    const pageResults = await fetchEncarCars(20, page);
+                    const pageResults = await fetchEncarCars(20, page, parsedTarget.query);
                     if (!pageResults || pageResults.length === 0) break;
 
                     for (const item of pageResults) {
