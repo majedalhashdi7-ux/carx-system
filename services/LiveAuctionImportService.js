@@ -584,7 +584,7 @@ class LiveAuctionImportService {
                                 bidsCount:    0,
                                 startsAt:     car.startsAt || now,
                                 endsAt:       auctionEnd,
-                                status:       'pending',
+                                status:       'running',
                                 source:       'encar',
                                 tenantId:     req.tenantId || 'default',
                                 make:         car.make,
