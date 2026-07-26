@@ -14,6 +14,7 @@ import {
     CheckCircle2, ArrowUpRight
 } from "lucide-react";
 import { useState, useEffect, useCallback, Suspense } from "react";
+import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/LanguageContext";
@@ -76,14 +77,35 @@ function MasterAuctionsContent() {
                 api.auctions.list({ limit: 100, status: 'all' }).catch(() => ({ success: false, data: [] }))
             ]);
 
-            const rawSessions = Array.isArray(sessRes?.data) 
+            let rawSessions = Array.isArray(sessRes?.data) 
                 ? sessRes.data 
-                : (Array.isArray(sessRes?.sessions) ? sessRes.sessions : []);
+                : (Array.isArray(sessRes?.sessions) ? sessRes.sessions : (Array.isArray(sessRes) ? sessRes : []));
+
+            // دمج رابط الاستيراد المحفوظ من بوابة الاستيراد إن وجد
+            if (typeof window !== 'undefined') {
+                const savedUrl = localStorage.getItem('hm_auctions_import_url');
+                if (savedUrl && savedUrl.startsWith('http')) {
+                    const hasSavedUrlSession = rawSessions.some((s: any) => s && s.externalUrl === savedUrl);
+                    if (!hasSavedUrlSession) {
+                        rawSessions = [
+                            {
+                                _id: 'saved-import-session',
+                                title: isRTL ? 'مزاد كوري مباشر مستورد (من بوابة الاستيراد)' : 'Imported Korean Live Auction',
+                                externalUrl: savedUrl,
+                                status: 'live',
+                                carsCount: 20
+                            },
+                            ...rawSessions
+                        ];
+                    }
+                }
+            }
+
             setSessions(rawSessions.filter((s: any) => s && typeof s === 'object'));
 
             const rawAuctions = Array.isArray(impRes?.data) 
                 ? impRes.data 
-                : (Array.isArray(impRes?.auctions) ? impRes.auctions : []);
+                : (Array.isArray(impRes?.auctions) ? impRes.auctions : (Array.isArray(impRes) ? impRes : []));
             setImportedAuctions(rawAuctions.filter((a: any) => a && typeof a === 'object'));
         } catch {
             setSessions([]);
@@ -91,7 +113,7 @@ function MasterAuctionsContent() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [isRTL]);
 
     const loadClassicAuctions = useCallback(async () => {
         setLoading(true);

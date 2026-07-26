@@ -43,6 +43,18 @@ export default function AdminImportHub() {
     const [logsLoading, setLogsLoading] = useState(false);
     const [showLogs, setShowLogs] = useState(false);
 
+    // استعادة الروابط المحفوظة من localStorage
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const savedCars = localStorage.getItem('hm_cars_import_url');
+            if (savedCars) setCarsUrl(savedCars);
+            const savedParts = localStorage.getItem('hm_parts_import_url');
+            if (savedParts) setPartsUrl(savedParts);
+            const savedAuctions = localStorage.getItem('hm_auctions_import_url');
+            if (savedAuctions) setAuctionsUrl(savedAuctions);
+        }
+    }, []);
+
     const loadImportLogs = useCallback(async () => {
         setLogsLoading(true);
         try {
@@ -55,6 +67,9 @@ export default function AdminImportHub() {
 
     // ── استيراد سيارات المعرض (مستقل) ─────────────────────────────
     const handleImportCars = async () => {
+        if (typeof window !== 'undefined' && carsUrl) {
+            localStorage.setItem('hm_cars_import_url', carsUrl);
+        }
         setCarsLoading(true); setCarsResult(null);
         try {
             const res = await api.import.showroom(carsLimit, carsUrl);
@@ -69,6 +84,9 @@ export default function AdminImportHub() {
 
     // ── استيراد قطع الغيار (مستقل) ─────────────────────────────────
     const handleImportParts = async () => {
+        if (typeof window !== 'undefined' && partsUrl) {
+            localStorage.setItem('hm_parts_import_url', partsUrl);
+        }
         setPartsLoading(true); setPartsResult(null);
         try {
             const res = await api.import.parts(partsUrl);
@@ -83,6 +101,9 @@ export default function AdminImportHub() {
 
     // ── استيراد المزادات المباشرة (مستقل) ──────────────────────────
     const handleImportAuctions = async () => {
+        if (typeof window !== 'undefined' && auctionsUrl) {
+            localStorage.setItem('hm_auctions_import_url', auctionsUrl);
+        }
         setAuctionsLoading(true); setAuctionsResult(null);
         try {
             const res = await api.import.liveAuctions(auctionsLimit, auctionsUrl);

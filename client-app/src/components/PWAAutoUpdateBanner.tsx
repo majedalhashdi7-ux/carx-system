@@ -14,7 +14,7 @@ export default function PWAAutoUpdateBanner() {
     useEffect(() => {
         if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
 
-        let registration: ServiceWorkerRegistration | null = null;
+        let registration: ServiceWorkerRegistration | null | undefined = null;
 
         const checkSWUpdate = async () => {
             try {

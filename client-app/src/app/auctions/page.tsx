@@ -233,6 +233,7 @@ export default function AuctionsPage() {
         }
 
         const phone = car.whatsappNumber || globalWhatsapp;
+        const carTitle = car.title || (isRTL ? 'سيارة مزاد' : 'Auction Car');
         const text = encodeURIComponent(
             isRTL
                 ? `مرحباً إتش إم كار 👋\nأود تقديم طلب وتأكيد الشراء لسيارة المزاد المباشر:\n🚗 السيارة: ${carTitle}\n💰 التقدير: ${car.priceEstimate || 'حسب الطلب'}\n🆔 الجلسة: ${car.sessionTitle || 'مزاد كوري مباشر'}`

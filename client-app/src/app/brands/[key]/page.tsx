@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useSettings } from '@/lib/SettingsContext';
@@ -10,7 +11,9 @@ import Link from 'next/link';
 import { ArrowRight, Car, Package } from 'lucide-react';
 import { getBrandDisplayName, getClearbitLogoUrl, isLocalPath } from '@/lib/brandTranslations';
 
-export default function BrandDetail({ params }: { params: { key: string } }) {
+export default function BrandDetail() {
+  const params = useParams();
+  const rawKey = typeof params?.key === 'string' ? params.key : (Array.isArray(params?.key) ? params.key[0] : '');
   const { isRTL } = useLanguage();
   const { formatPrice } = useSettings();
   const [brand, setBrand] = useState<any>(null);
@@ -20,7 +23,7 @@ export default function BrandDetail({ params }: { params: { key: string } }) {
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const [logoSrc, setLogoSrc] = useState<string>('');
 
-  const displayName = brand ? getBrandDisplayName(brand.nameAr || brand.name, isRTL) : params.key;
+  const displayName = brand ? getBrandDisplayName(brand.nameAr || brand.name, isRTL) : rawKey;
 
   useEffect(() => {
     if (brand) {
@@ -48,11 +51,11 @@ export default function BrandDetail({ params }: { params: { key: string } }) {
       try {
         const res = await api.brands.list();
         const all = res?.brands || [];
-        const b = all.find((x: Record<string, unknown>) => (String(x.key || '')).toLowerCase() === params.key.toLowerCase()) || all.find((x: Record<string, unknown>) => (String(x.name || '')).toLowerCase() === params.key.toLowerCase());
+        const b = all.find((x: Record<string, unknown>) => (String(x.key || '')).toLowerCase() === rawKey.toLowerCase()) || all.find((x: Record<string, unknown>) => (String(x.name || '')).toLowerCase() === rawKey.toLowerCase());
         setBrand(b || null);
         const carsRes = await api.cars.list({ limit: 50 });
         const partsRes = await api.parts.list({ limit: 50 });
-        const brandName = b?.name || params.key;
+        const brandName = b?.name || rawKey;
         setCars((carsRes?.cars || []).filter((c: Record<string, unknown>) => String(c.make || c.title || '').toLowerCase().includes(String(brandName).toLowerCase())));
         setParts((partsRes?.parts || []).filter((p: Record<string, unknown>) => String(p.brand || '').toLowerCase().includes(String(brandName).toLowerCase())));
       } catch {
@@ -60,7 +63,7 @@ export default function BrandDetail({ params }: { params: { key: string } }) {
         setLoading(false);
       }
     })();
-  }, [params.key]);
+  }, [rawKey]);
 
   return (
     <div className="relative min-h-screen bg-black text-white overflow-hidden">
