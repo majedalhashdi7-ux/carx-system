@@ -118,22 +118,27 @@ export default function AuctionsPage() {
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
-            // Load live showroom sessions and scheduled auctions
-            const [showroomRes, liveRes, upcomingRes] = await Promise.all([
+            // Load live showroom sessions, scheduled auctions, and imported Encar auctions
+            const [showroomRes, liveRes, upcomingRes, allAuctionsRes] = await Promise.all([
                 api.liveAuctions.list().catch(() => ({ success: false, data: [] })),
                 api.auctions.list({ status: 'live' }).catch(() => ({ success: false, data: [] })),
-                api.auctions.list({ status: 'upcoming' }).catch(() => ({ success: false, data: [] }))
+                api.auctions.list({ status: 'upcoming' }).catch(() => ({ success: false, data: [] })),
+                api.auctions.list({ limit: 100 }).catch(() => ({ success: false, data: [] })),
             ]);
 
             const mergedCars: any[] = [];
+            const addedIds = new Set<string>();
 
             if (showroomRes.success) {
                 const activeShowrooms = (showroomRes.data || []).filter((s: any) => s.status !== 'ended');
                 activeShowrooms.forEach((session: any) => {
                     (session.cars || []).forEach((car: any) => {
-                        if (!car.isHidden) {
+                        const carId = car.id || car._id;
+                        if (!car.isHidden && carId && !addedIds.has(carId)) {
+                            addedIds.add(carId);
                             mergedCars.push({
                                 ...car,
+                                id: carId,
                                 type: 'showroom',
                                 sessionTitle: session.title,
                                 sessionId: session._id || session.id,
@@ -144,45 +149,43 @@ export default function AuctionsPage() {
                 });
             }
 
-            if (liveRes.success) {
-                (liveRes.data || []).forEach((item: any) => {
-                    if (item.car) {
-                        mergedCars.push({
-                            id: item.car._id || item.car.id,
-                            title: item.car.title,
-                            images: item.car.images || [],
-                            condition: item.car.condition || 'New',
-                            priceEstimate: item.currentBid ? `${item.currentBid} SAR` : (item.startingPrice ? `${item.startingPrice} SAR` : ''),
-                            lotNumber: item.lotNumber || 'N/A',
-                            type: 'scheduled_live',
-                            sessionTitle: isRTL ? 'مزادات مباشرة' : 'Live Auctions',
-                            sessionId: item._id || item.id,
-                            whatsappNumber: globalWhatsapp,
-                            description: item.car.description || '',
-                        });
-                    }
-                });
-            }
+            // إضافة سيارات Encar المستوردة وجميع المزادات المفعلة
+            const allAuctionList = [
+                ...(liveRes.data || []),
+                ...(upcomingRes.data || []),
+                ...(allAuctionsRes.data || [])
+            ];
 
-            if (upcomingRes.success) {
-                (upcomingRes.data || []).forEach((item: any) => {
-                    if (item.car) {
-                        mergedCars.push({
-                            id: item.car._id || item.car.id,
-                            title: item.car.title,
-                            images: item.car.images || [],
-                            condition: item.car.condition || 'New',
-                            priceEstimate: item.startingPrice ? `${item.startingPrice} SAR` : '',
-                            lotNumber: item.lotNumber || 'N/A',
-                            type: 'scheduled_upcoming',
-                            sessionTitle: isRTL ? 'مزادات قادمة' : 'Upcoming Auctions',
-                            sessionId: item._id || item.id,
-                            whatsappNumber: globalWhatsapp,
-                            description: item.car.description || '',
-                        });
-                    }
+            allAuctionList.forEach((item: any) => {
+                const auctionId = item._id || item.id;
+                if (!auctionId || addedIds.has(auctionId)) return;
+                addedIds.add(auctionId);
+
+                const carObj = item.car || item;
+                const images = item.images || carObj.images || (carObj.image ? [carObj.image] : []);
+                const title = item.titleAr || item.title || carObj.titleAr || carObj.title || 'سيارة مزاد كوري';
+                const priceVal = item.priceSar || item.startingPrice || item.currentPrice || carObj.priceSar || carObj.price;
+                const priceEstimate = priceVal ? `${Number(priceVal).toLocaleString('ar-SA')} ر.س` : '';
+
+                mergedCars.push({
+                    id: auctionId,
+                    title,
+                    images: images.length > 0 ? images : ['https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=1200'],
+                    image: images[0] || '',
+                    condition: item.condition || carObj.condition || (isRTL ? 'وارد كوري 🇰🇷' : 'Korean Import 🇰🇷'),
+                    priceEstimate,
+                    priceSar: item.priceSar || priceVal,
+                    priceKrw: item.priceKrw,
+                    lotNumber: item.externalId || item.lotNumber || 'ENCAR-LIVE',
+                    type: 'scheduled_live',
+                    sessionTitle: isRTL ? 'المزاد المباشر' : 'Live Auctions',
+                    sessionId: auctionId,
+                    whatsappNumber: globalWhatsapp,
+                    description: item.description || carObj.description || '',
+                    specs: item.specs || carObj.specs || null,
+                    inspectionReport: item.inspectionReport || carObj.inspectionReport || null,
                 });
-            }
+            });
 
             setCars(mergedCars);
         } catch (err) {
