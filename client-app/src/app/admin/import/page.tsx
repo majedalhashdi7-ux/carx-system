@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     Download, Globe, RefreshCw, Car, Gavel, Package,
     CheckCircle2, History, ShieldCheck, Zap, ExternalLink,
-    AlertCircle, Link2, Trash2, Play, Bookmark, Copy
+    AlertCircle, Link2, Trash2, Bookmark, Copy, Plus, Minus,
+    Sparkles
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
@@ -40,7 +41,7 @@ export default function AdminImportHub() {
     const [auctionsResult, setAuctionsResult] = useState<any>(null);
 
     const [carsUrl, setCarsUrl] = useState("");
-    const [carsLimit, setCarsLimit] = useState(20);
+    const [carsLimit, setCarsLimit] = useState(10);
 
     const [partsUrl, setPartsUrl] = useState("");
 
@@ -189,7 +190,7 @@ export default function AdminImportHub() {
         try {
             const res = await api.import.liveAuctions(auctionsLimit, urlToUse);
             if (res?.success) {
-                showToast(res.message || (isRTL ? "✅ تم استيراد المزادات" : "✅ Auctions imported"), "success");
+                showToast(res.message || (isRTL ? "✅ تم استيراد سيارات جديدة للمزاد بنجاح" : "✅ New auction cars imported"), "success");
                 setAuctionsResult({ type: "auctions", ...res });
                 loadImportLogs();
             } else showToast(res?.error || (isRTL ? "❌ فشل الاستيراد" : "❌ Import failed"), "error");
@@ -225,26 +226,52 @@ export default function AdminImportHub() {
             </div>
             <p className="text-xs text-slate-500 flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />
-                <span>{isRTL ? "اختياري — اتركه فارغاً للاستيراد المباشر من Encar الكوري" : "Optional — leave empty to import directly from default catalog"}</span>
+                <span>{isRTL ? "اختياري — اتركه فارغاً للاستيراد المباشر من الكتالوج الكوري" : "Optional — leave empty to import directly from Korean catalog"}</span>
             </p>
         </div>
     );
 
-    const QuantitySelector = ({ value, onChange, options, label }: any) => (
-        <div className="space-y-3">
-            <p className="text-sm font-bold text-white">{label}</p>
-            <div className="flex flex-wrap gap-3">
-                {options.map((q: number) => (
-                    <button key={q} onClick={() => onChange(q)}
-                        className={cn(
-                            "w-16 h-12 rounded-xl text-sm font-bold transition-all border-2",
-                            value === q
-                                ? "bg-amber-500 text-slate-950 border-amber-400 shadow-lg shadow-amber-500/30 scale-105"
-                                : "bg-slate-900 text-slate-300 border-slate-700 hover:border-amber-500/50 hover:text-white"
-                        )}>
-                        {q}
-                    </button>
-                ))}
+    // حقل تحديد العدد المخصص الذكي بدلاً من الأزرار المطلوبة إلغاؤها
+    const CustomQuantityInput = ({ value, onChange, label, hint }: any) => (
+        <div className="bg-slate-900 border border-slate-700 rounded-2xl p-5 space-y-3">
+            <div className="flex items-center justify-between">
+                <div>
+                    <p className="text-sm font-bold text-white">{label}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{hint}</p>
+                </div>
+                <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold">
+                    <Sparkles className="w-3 h-3" />
+                    <span>{isRTL ? "يستورد سيارات جديدة غير مكررة فقط" : "Only new unimported cars"}</span>
+                </div>
+            </div>
+
+            <div className="flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-xl p-2 w-fit">
+                <button
+                    type="button"
+                    onClick={() => onChange(Math.max(1, value - 1))}
+                    className="p-2 rounded-lg bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                >
+                    <Minus className="w-4 h-4" />
+                </button>
+
+                <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    value={value}
+                    onChange={e => onChange(Math.min(50, Math.max(1, parseInt(e.target.value) || 1)))}
+                    className="w-16 text-center font-mono font-bold text-amber-400 bg-transparent text-lg focus:outline-none"
+                />
+
+                <button
+                    type="button"
+                    onClick={() => onChange(Math.min(50, value + 1))}
+                    className="p-2 rounded-lg bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                >
+                    <Plus className="w-4 h-4" />
+                </button>
+
+                <span className="text-xs text-slate-500 px-2 font-bold">{isRTL ? "سيارة" : "cars"}</span>
             </div>
         </div>
     );
@@ -266,7 +293,7 @@ export default function AdminImportHub() {
                         : "bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-amber-500/25 hover:shadow-amber-500/40 hover:brightness-110"
             )}>
             {isLoading
-                ? <><RefreshCw className="w-5 h-5 animate-spin" /><span>{isRTL ? "جاري الاستيراد..." : "Importing..."}</span></>
+                ? <><RefreshCw className="w-5 h-5 animate-spin" /><span>{isRTL ? "جاري الاستيراد والتأكد من الجدة..." : "Importing new cars..."}</span></>
                 : <><Download className="w-5 h-5" /><span>{label}</span></>}
         </button>
     );
@@ -285,11 +312,11 @@ export default function AdminImportHub() {
                 {result.stats && (
                     <div className="flex gap-3 text-sm">
                         <div className="px-4 py-2 rounded-xl bg-slate-900/60 border border-slate-800">
-                            <span className="text-slate-400">{isRTL ? "مستورد: " : "Imported: "}</span>
+                            <span className="text-slate-400">{isRTL ? "مستورد جديد: " : "New Imported: "}</span>
                             <span className="font-bold text-emerald-400">+{result.stats.totalImported ?? 0}</span>
                         </div>
                         <div className="px-4 py-2 rounded-xl bg-slate-900/60 border border-slate-800">
-                            <span className="text-slate-400">{isRTL ? "مكرر: " : "Skipped: "}</span>
+                            <span className="text-slate-400">{isRTL ? "موجود مسبقاً (مُتجاوز): " : "Skipped (Existing): "}</span>
                             <span className="font-bold text-amber-400">{result.stats.totalSkipped ?? 0}</span>
                         </div>
                     </div>
@@ -298,7 +325,7 @@ export default function AdminImportHub() {
                     href={result.type === "cars" ? "/admin/cars" : result.type === "parts" ? "/admin/parts" : "/admin/auctions"}
                     className="flex items-center gap-2 text-sm text-amber-400 hover:underline">
                     <ExternalLink className="w-4 h-4" />
-                    <span>{isRTL ? "عرض البيانات المستوردة ←" : "View Imported Data →"}</span>
+                    <span>{isRTL ? "عرض السيارات المستوردة ←" : "View Imported Cars →"}</span>
                 </NextLink>
             </motion.div>
         );
@@ -399,9 +426,9 @@ export default function AdminImportHub() {
 
     return (
         <AdminPageShell
-            title={isRTL ? "بوابة الاستيراد" : "Import Gateway"}
-            subtitle={isRTL ? "3 بوابات استيراد مستقلة — سيارات المعرض | قطع الغيار | المزادات المباشرة" : "3 independent import pipelines — Showroom | Parts | Live Auctions"}
-            badge={isRTL ? "مانع التكرار مفعّل" : "Deduplication On"}
+            title={isRTL ? "بوابة الاستيراد الذكية" : "Smart Import Gateway"}
+            subtitle={isRTL ? "استيراد السيارات الجديدة والمزادات وقطع الغيار مع كشف التكرار التلقائي" : "Import new cars, live auctions & spare parts with smart deduplication"}
+            badge={isRTL ? "جلب الجُدد فقط" : "New Cars Only"}
         >
             <div className="space-y-6">
 
@@ -410,7 +437,7 @@ export default function AdminImportHub() {
                     {[
                         { key: "cars", icon: Car, ar: "🚗 السيارات", en: "🚗 Cars" },
                         { key: "parts", icon: Package, ar: "🔧 قطع الغيار", en: "🔧 Parts" },
-                        { key: "auctions", icon: Gavel, ar: "🔴 المزادات", en: "🔴 Auctions" },
+                        { key: "auctions", icon: Gavel, ar: "🔴 المزادات المباشرة", en: "🔴 Live Auctions" },
                     ].map(t => (
                         <button key={t.key} onClick={() => setActiveTab(t.key as ActiveTab)}
                             className={cn(
@@ -455,25 +482,23 @@ export default function AdminImportHub() {
                                 />
                             </div>
 
-                            {/* Quantity */}
-                            <div className="bg-slate-900 border border-slate-700 rounded-2xl p-5">
-                                <QuantitySelector
-                                    value={carsLimit}
-                                    onChange={setCarsLimit}
-                                    options={[10, 20, 50, 100]}
-                                    label={isRTL ? "عدد السيارات المطلوب استيرادها:" : "Cars to import:"}
-                                />
-                            </div>
+                            {/* Custom quantity input (replaces fixed 10/20/50/100 buttons) */}
+                            <CustomQuantityInput
+                                value={carsLimit}
+                                onChange={setCarsLimit}
+                                label={isRTL ? "عدد السيارات المطلوب استيرادها في هذه الدفعة:" : "Cars to import in this batch:"}
+                                hint={isRTL ? "حدد العدد المطلوب (يستورد السيارات الجديدة فقط ويستبعد الموجودة سابقاً)" : "Set count — imports only unimported cars"}
+                            />
 
                             {/* Info chips */}
                             <div className="grid grid-cols-3 gap-3">
-                                <InfoChip icon={ShieldCheck} color="bg-amber-500/10 text-amber-400" label={isRTL ? "مانع التكرار" : "Dedup"} value="VIN / ID" />
+                                <InfoChip icon={ShieldCheck} color="bg-amber-500/10 text-amber-400" label={isRTL ? "مانع التكرار" : "Dedup"} value="تلقائي 🛡️" />
                                 <InfoChip icon={Zap} color="bg-blue-500/10 text-blue-400" label={isRTL ? "العلامة المائية" : "Watermark"} value="HMCar 🏆" />
                                 <InfoChip icon={Car} color="bg-emerald-500/10 text-emerald-400" label={isRTL ? "الوجهة" : "Dest."} value={isRTL ? "إدارة السيارات" : "Cars Mgmt"} />
                             </div>
 
                             <RunButton onClick={() => handleImportCars()} isLoading={carsLoading}
-                                label={isRTL ? `استيراد ${carsLimit} سيارة للمعرض الآن →` : `Import ${carsLimit} Cars Now →`} />
+                                label={isRTL ? `استيراد ${carsLimit} سيارة جديدة للمعرض الآن →` : `Import ${carsLimit} New Cars Now →`} />
 
                             {/* نتيجة استيراد السيارات المستقلة */}
                             <ImportResult result={carsResult} />
@@ -561,7 +586,7 @@ export default function AdminImportHub() {
                                 <span className="relative flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span></span>
                                 <div className="flex-1">
                                     <p className="text-sm font-bold text-red-300">{isRTL ? "استيراد المزادات المباشرة — Encar الكوري 🇰🇷" : "Live Auctions Import — Encar Korea 🇰🇷"}</p>
-                                    <p className="text-xs text-slate-400">{isRTL ? "يستورد السيارات كاملةً: جميع الصور + العلامة المائية + تقرير الفحص + تحويل العملة" : "Full import: all images + HMCar watermark + inspection report + specs"}</p>
+                                    <p className="text-xs text-slate-400">{isRTL ? "في كل استيراد، يستورد النظام سيارات جديدة بالكامل لم تسبق إضافتها من قبل مع صور كاملة وفحوصات" : "Imports brand new unimported cars each run with full images, inspection report & specs"}</p>
                                 </div>
                                 <span className="bg-red-500/10 text-red-400 text-xs px-2 py-1 rounded-lg font-mono border border-red-500/20">/admin/auctions</span>
                             </div>
@@ -575,8 +600,8 @@ export default function AdminImportHub() {
                                     <p className="text-sm font-black text-blue-300">{isRTL ? "🇰🇷 مصدر الاستيراد: Encar (إنكار)" : "🇰🇷 Import Source: Encar Korea"}</p>
                                     <p className="text-xs text-slate-400 mt-0.5">
                                         {isRTL
-                                            ? "أكبر منصة سيارات مستعملة في كوريا الجنوبية — يستورد الصور الكاملة + تقرير الفحص + جميع المواصفات"
-                                            : "Korea's largest used car marketplace — imports all images + inspection report + full specs"}
+                                            ? "أكبر منصة سيارات مستعملة في كوريا الجنوبية — يستورد السيارات الجديدة غير المكررة تلقائياً"
+                                            : "Korea's largest used car marketplace — imports new unimported cars automatically"}
                                     </p>
                                 </div>
                                 <a href="https://www.encar.com" target="_blank" rel="noopener noreferrer"
@@ -597,8 +622,8 @@ export default function AdminImportHub() {
                                             <p className="text-sm font-bold text-white">{isRTL ? "رابط Encar أو رقم السيارة" : "Encar URL or Car ID"}</p>
                                             <p className="text-xs text-slate-400">
                                                 {isRTL
-                                                    ? "اترك فارغاً للاستيراد العام — أو ضع رابطاً مباشراً لسيارة واحدة من Encar"
-                                                    : "Leave empty for general import — or paste a direct Encar car link"}
+                                                    ? "اترك فارغاً لاستيراد السيارات الجديدة من الكتالوج العام — أو ضع رابطاً مباشراً لسيارة كورية"
+                                                    : "Leave empty to fetch new cars from catalog — or paste direct link"}
                                             </p>
                                         </div>
                                     </div>
@@ -621,7 +646,7 @@ export default function AdminImportHub() {
                                     <div className="flex flex-wrap gap-2">
                                         <span className="text-xs text-slate-500">{isRTL ? "أمثلة سريعة:" : "Quick examples:"}</span>
                                         {[
-                                            { label: isRTL ? "📋 قائمة عامة" : "📋 General List", val: "" },
+                                            { label: isRTL ? "📋 قائمة عامة جديدة" : "📋 General List", val: "" },
                                             { label: "Hyundai Tucson", val: "https://www.encar.com/dc/dc/dcCarDetlView.do?carid=42337181" },
                                             { label: "Genesis GV70", val: "https://www.encar.com/dc/dc/dcCarDetlView.do?carid=42194278" },
                                         ].map(ex => (
@@ -634,24 +659,22 @@ export default function AdminImportHub() {
                                 </div>
                             </div>
 
-                            {/* Quantity */}
-                            <div className="bg-slate-900 border border-slate-700 rounded-2xl p-5">
-                                <QuantitySelector
-                                    value={auctionsLimit}
-                                    onChange={setAuctionsLimit}
-                                    options={[5, 10, 20, 50]}
-                                    label={isRTL ? "عدد السيارات المطلوب استيرادها من Encar:" : "Cars to import from Encar:"}
-                                />
-                            </div>
+                            {/* Custom quantity input (replaces fixed 10/20/50/100 buttons) */}
+                            <CustomQuantityInput
+                                value={auctionsLimit}
+                                onChange={setAuctionsLimit}
+                                label={isRTL ? "عدد السيارات المستوردة المجهزة للمزاد المباشر:" : "Cars to import for live auction:"}
+                                hint={isRTL ? "في كل مرة، يجلب النظام السيارات الكورية الجديدة فقط التي لم يتم استيرادها سابقاً" : "System fetches only new unimported cars every time"}
+                            />
 
                             <div className="grid grid-cols-3 gap-3">
-                                <InfoChip icon={ShieldCheck} color="bg-amber-500/10 text-amber-400" label={isRTL ? "مانع التكرار" : "Dedup"} value="Encar ID" />
+                                <InfoChip icon={ShieldCheck} color="bg-amber-500/10 text-amber-400" label={isRTL ? "تجاوز المكرر" : "Skip Duplicate"} value="تلقائي 🛡️" />
                                 <InfoChip icon={Zap} color="bg-red-500/10 text-red-400" label={isRTL ? "العلامة المائية" : "Watermark"} value="HMCar 🏆" />
-                                <InfoChip icon={Gavel} color="bg-emerald-500/10 text-emerald-400" label={isRTL ? "الوجهة" : "Dest."} value={isRTL ? "المزادات" : "Auctions"} />
+                                <InfoChip icon={Gavel} color="bg-emerald-500/10 text-emerald-400" label={isRTL ? "الوجهة" : "Dest."} value={isRTL ? "إدارة المزادات" : "Auctions"} />
                             </div>
 
                             <RunButton onClick={() => handleImportAuctions()} isLoading={auctionsLoading} color="red"
-                                label={isRTL ? `🇰🇷 استيراد ${auctionsLimit} سيارة من Encar الآن →` : `🇰🇷 Import ${auctionsLimit} Cars from Encar →`} />
+                                label={isRTL ? `🇰🇷 استيراد ${auctionsLimit} سيارة جديدة للمزاد المباشر الآن →` : `🇰🇷 Import ${auctionsLimit} New Auction Cars →`} />
 
                             {/* نتيجة استيراد المزادات المستقلة */}
                             <ImportResult result={auctionsResult} />

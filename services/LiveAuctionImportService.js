@@ -448,12 +448,44 @@ class LiveAuctionImportService {
             } else {
                 // ─── استيراد قائمة سيارات ────────────────────────────────────
                 console.log(`📋 [EncarImport] List import — query: "${searchQuery || 'general'}"`);
-                const listResults = await fetchEncarList(targetLimit * 2, searchQuery);
-                console.log(`📊 [EncarImport] Found ${listResults.length} cars in list`);
+                
+                // جلب قائمة المعرفات الموجودة مسبقاً في قاعدة البيانات لمنع التكرار وجلب الجديد دائماً
+                const existingAuctions = await Auction.find({ tenantId: req.tenantId || 'default' }, { externalId: 1 }).lean();
+                const existingIds = new Set(existingAuctions.map(a => String(a.externalId)));
 
-                // جلب تفاصيل كل سيارة (مع الفحص) بشكل تسلسلي لتجنب الحظر
-                const toProcess = listResults.slice(0, targetLimit);
-                for (const item of toProcess) {
+                let page = 0;
+                let candidates = [];
+
+                // تكرار الصفحات حتى نجمع العدد المطلوب من السيارات الجديدة غير المستوردة مسبقاً
+                while (candidates.length < targetLimit && page < 5) {
+                    const offset = page * 20;
+                    const q = searchQuery
+                        ? `(And.Hidden.N._.${searchQuery}_.CarType.A.)`
+                        : '(And.Hidden.N._.CarType.A.)';
+                    const listUrl = `${ENCAR_API_BASE}/search/car/list/general?count=true&q=${encodeURIComponent(q)}&sr=%7CModifiedDate%7C${offset}%7C20`;
+                    console.log(`🔍 [EncarImport] Fetching page ${page + 1}: ${listUrl}`);
+                    const listData = await fetchJson(listUrl);
+                    const pageResults = (listData && listData.SearchResults) || [];
+
+                    if (pageResults.length === 0) break;
+
+                    for (const item of pageResults) {
+                        const carId = String(item.Id || '');
+                        if (carId && !existingIds.has(`encar-${carId}`)) {
+                            candidates.push(item);
+                            existingIds.add(`encar-${carId}`);
+                            if (candidates.length >= targetLimit) break;
+                        } else {
+                            totalSkipped++;
+                        }
+                    }
+                    page++;
+                }
+
+                console.log(`📊 [EncarImport] Found ${candidates.length} NEW unimported cars after scanning ${page} pages`);
+
+                // جلب تفاصيل كل سيارة جديدة تسلسلياً
+                for (const item of candidates) {
                     try {
                         const carId = String(item.Id || '');
                         if (!carId) continue;
@@ -469,8 +501,8 @@ class LiveAuctionImportService {
                             inspection: inspection.status === 'fulfilled' ? inspection.value : null,
                         });
 
-                        // تأخير 300ms بين الطلبات لتجنب حظر Encar
-                        await new Promise(r => setTimeout(r, 300));
+                        // تأخير 250ms بين الطلبات
+                        await new Promise(r => setTimeout(r, 250));
                     } catch { /* تجاهل خطأ سيارة فردية */ }
                 }
             }
