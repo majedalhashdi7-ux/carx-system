@@ -548,5 +548,125 @@ router.get('/logs', requireAuthAPI, requireAdmin, async (req, res, next) => {
     }
 });
 
+// ─── POST /api/v2/import/korean-cars ────────────────────
+/**
+ * استيراد منفصل وخاص بالسيارات الكورية (جدول KoreanCarImport)
+ * مع تعريب فوري للنص الكوري وتطبيق العلامة المائية
+ */
+router.post('/korean-cars', requireAuthAPI, requireAdmin, async (req, res, next) => {
+    try {
+        const KoreanTranslationService = require('../../../services/KoreanTranslationService');
+        const WatermarkService = require('../../../services/WatermarkService');
+        const { getModel } = require('../../../tenants/tenant-model-helper');
+
+        const payload = req.body;
+        const rawTitle = payload.title || payload.name || 'سيارة كورية مستوردة';
+        const cleanTitle = KoreanTranslationService.cleanAndTranslate(rawTitle);
+        const cleanDesc = KoreanTranslationService.cleanAndTranslate(payload.description || '');
+
+        const images = payload.images || (payload.imageUrl ? [payload.imageUrl] : []);
+        const watermarkedImages = WatermarkService.processImagesList(images);
+
+        const KoreanCarImportModel = getModel(req, 'KoreanCarImport');
+        const importRecord = new KoreanCarImportModel({
+            tenantId: req.tenant?.id || 'hmcar',
+            importId: 'KOR-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+            title: cleanTitle,
+            titleAr: cleanTitle,
+            make: KoreanTranslationService.cleanAndTranslate(payload.make || 'هيونداي'),
+            model: KoreanTranslationService.cleanAndTranslate(payload.model || ''),
+            year: Number(payload.year) || new Date().getFullYear(),
+            priceKrw: Number(payload.priceKrw || payload.price) || 0,
+            priceSar: Number(payload.priceSar) || 0,
+            priceUsd: Number(payload.priceUsd) || 0,
+            fuelType: payload.fuelType || 'Petrol',
+            transmission: payload.transmission || 'Automatic',
+            description: cleanDesc,
+            descriptionAr: cleanDesc,
+            images,
+            mainImage: images[0] || '',
+            watermarkedImages,
+            externalUrl: payload.externalUrl || payload.url || '',
+            importedBy: req.user?.userId || req.user?._id
+        });
+
+        await importRecord.save();
+        invalidateCache('/api/v2/cars*');
+
+        res.json({
+            success: true,
+            message: 'تم حفظ السيارة الكورية في جدولها المنفصل المخصص وتطبيق التعريب والعلامة المائية',
+            data: importRecord
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// ─── POST /api/v2/import/parts ──────────────────────────
+/**
+ * استيراد منفصل وخاص بقطع الغيار (جدول ImportedSparePart)
+ */
+router.post('/parts', requireAuthAPI, requireAdmin, async (req, res, next) => {
+    try {
+        const KoreanTranslationService = require('../../../services/KoreanTranslationService');
+        const WatermarkService = require('../../../services/WatermarkService');
+        const { getModel } = require('../../../tenants/tenant-model-helper');
+
+        const payload = req.body;
+        const cleanName = KoreanTranslationService.cleanAndTranslate(payload.partName || payload.title || 'قطعة غيار مستوردة');
+        const images = payload.images || (payload.imageUrl ? [payload.imageUrl] : []);
+        const watermarkedImages = WatermarkService.processImagesList(images);
+
+        const ImportedSparePartModel = getModel(req, 'ImportedSparePart');
+        const partRecord = new ImportedSparePartModel({
+            tenantId: req.tenant?.id || 'hmcar',
+            importId: 'PART-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+            partName: cleanName,
+            partNameAr: cleanName,
+            partNumber: payload.partNumber || ('OEM-' + Math.random().toString(36).substring(2, 8).toUpperCase()),
+            brand: payload.brand || 'عام',
+            priceSar: Number(payload.priceSar || payload.price) || 0,
+            stockQuantity: Number(payload.stockQuantity || payload.stock) || 1,
+            description: payload.description || '',
+            images,
+            mainImage: images[0] || '',
+            watermarkedImages,
+            importedBy: req.user?.userId || req.user?._id
+        });
+
+        await partRecord.save();
+        invalidateCache('/api/v2/parts*');
+
+        res.json({
+            success: true,
+            message: 'تم حفظ قطعة الغيار في جدولها المنفصل المخصص بنجاح',
+            data: partRecord
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// ─── POST /api/v2/import/retro-sync ─────────────────────
+/**
+ * تشغيل محرك المزامنة التحريرية للبيانات القديمة والجديدة
+ * - ينظف ويعرب الأسماء الكورية القديمة
+ * - يولد حقول الصورة ويختم العلامة المائية HM CAR على كافة الصور القديمة في قاعدة البيانات
+ */
+router.post('/retro-sync', requireAuthAPI, requireAdmin, async (req, res, next) => {
+    try {
+        const RetroactiveSyncService = require('../../../services/RetroactiveSyncService');
+        const syncResult = await RetroactiveSyncService.runFullRetroactiveSync(req);
+        
+        invalidateCache(['/api/v2/cars*', '/api/v2/parts*', '/api/v2/auctions*']);
+
+        res.json(syncResult);
+    } catch (error) {
+        next(error);
+    }
+});
+
 module.exports = router;
+
 
