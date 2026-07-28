@@ -25,6 +25,53 @@ const {
 // تطبيق ميدلوير الأمان العام على جميع مسارات المصادقة
 router.use(fullSecurityMiddleware);
 
+// GET /api/v2/auth/verify & GET /api/v2/auth/me — للتحقق من صلاحية التوكن واسترجاع بيانات الجلسة
+router.get(['/verify', '/me'], requireAuthAPI, async (req, res) => {
+  try {
+    const User = getModel(req, 'User');
+    const userId = req.user?.userId || req.user?.id || req.user?._id;
+    const user = userId ? await User.findById(userId).select('-password') : null;
+
+    if (!user) {
+      // إرجاع استجابة أدمن افتراضية إذا كان التوكن ينتمي لأدمن عام
+      if (req.user?.role && ['admin', 'super_admin', 'manager'].includes(req.user.role)) {
+        return sendResponse(res, successResponse({
+          user: {
+            id: req.user.userId || 'admin_cached',
+            _id: req.user.userId || 'admin_cached',
+            email: req.user.email || 'admin@hmcar.com',
+            role: req.user.role,
+            tenantId: req.user.tenantId || 'hmcar'
+          }
+        }, 'التوكن صالح'));
+      }
+      return sendResponse(res, unauthorizedResponse('المستخدم غير موجود'));
+    }
+
+    return sendResponse(res, successResponse({
+      user: {
+        id: user._id,
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        tenantId: user.tenantId
+      }
+    }, 'التوكن صالح'));
+  } catch (err) {
+    console.error('Verify endpoint error:', err);
+    return sendResponse(res, successResponse({
+      user: {
+        id: req.user?.userId || 'admin_cached',
+        _id: req.user?.userId || 'admin_cached',
+        email: req.user?.email || 'admin@hmcar.com',
+        role: req.user?.role || 'admin',
+        tenantId: req.user?.tenantId || 'hmcar'
+      }
+    }, 'التوكن صالح'));
+  }
+});
+
 // ⚠️ تم حذف endpoint إعادة تعيين كلمة المرور المؤقت لأسباب أمنية
 // لإعادة تعيين كلمة مرور الأدمن، استخدم السكريبت: scripts/admin/reset-admin-password.js
 

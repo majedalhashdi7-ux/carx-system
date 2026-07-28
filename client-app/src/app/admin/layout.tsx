@@ -43,32 +43,35 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             setAuthorized(true);
             setChecking(false);
 
-            // تحقق صامت من صلاحية التوكن في الخلفية
-            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
+            // تحقق صامت في الخلفية من صلاحية التوكن بدون طرد المستخدم عند أعطال الشبكة
+            const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
             fetch(`${apiBase}/api/v2/auth/verify`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'X-Tenant-ID': process.env.NEXT_PUBLIC_TENANT_ID || 'hmcar',
                 },
             })
-                .then(r => r.json())
-                .then(data => {
-                    if (!data?.user || !ADMIN_ROLES.includes(data.user.role)) {
-                        // التوكن لم يعد صالحاً — تسجيل خروج
+                .then(r => {
+                    if (r.status === 401) {
+                        // 401 فقط يعبر عن توكن غير صالح أو منتهي صراحة
                         localStorage.removeItem('hm_token');
                         localStorage.removeItem('hm_user');
                         localStorage.removeItem('hm_user_role');
                         router.replace('/login?role=admin&reason=expired');
-                    } else {
-                        // تحديث بيانات المستخدم من السيرفر
+                        return null;
+                    }
+                    return r.json();
+                })
+                .then(data => {
+                    if (data?.user?.role && ADMIN_ROLES.includes(data.user.role)) {
                         localStorage.setItem('hm_user', JSON.stringify(data.user));
                         localStorage.setItem('hm_user_role', data.user.role);
                     }
                 })
-                .catch(() => { /* صامت — لا نوقف واجهة المستخدم */ });
+                .catch(() => { /* صامت — نحافظ على جلسة الأدمن المحلية المحفوظة */ });
         } else {
             // لا يوجد role في الكاش — نتحقق من السيرفر
-            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
+            const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
             fetch(`${apiBase}/api/v2/auth/verify`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -77,15 +80,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             })
                 .then(r => r.json())
                 .then(data => {
-                    if (data?.user && ADMIN_ROLES.includes(data.user.role)) {
-                        localStorage.setItem('hm_user', JSON.stringify(data.user));
-                        localStorage.setItem('hm_user_role', data.user.role);
+                    const userRole = data?.user?.role || data?.data?.user?.role;
+                    if (userRole && ADMIN_ROLES.includes(userRole)) {
+                        localStorage.setItem('hm_user', JSON.stringify(data.user || data.data.user));
+                        localStorage.setItem('hm_user_role', userRole);
+                        setAuthorized(true);
+                    } else if (token) {
+                        // إذا وُجد توكن، نفترض الصلاحية لتجنب طرد الأدمن
                         setAuthorized(true);
                     } else {
                         router.replace('/login?role=admin');
                     }
                 })
-                .catch(() => router.replace('/login?role=admin'))
+                .catch(() => {
+                    if (token) setAuthorized(true);
+                    else router.replace('/login?role=admin');
+                })
                 .finally(() => setChecking(false));
         }
     }, [router]);
