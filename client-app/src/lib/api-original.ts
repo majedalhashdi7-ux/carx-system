@@ -16,26 +16,42 @@ import { apiCache } from './api-cache';
  * الدالة الأساسية لإرسال طلبات الـ API مع دعم المهلة الزمنية وإعادة المحاولة
  */
 export async function fetchAPI(endpoint: string, options: RequestInit & { useCache?: boolean; timeout?: number } = {}, retries = 2) {
-    // [[ARABIC_COMMENT]] التحقق من الكاش المحلي أولاً للسرعة القصوى
-    if (options.useCache && (options.method === 'GET' || !options.method)) {
+    const isGet = !options.method || options.method.toUpperCase() === 'GET';
+
+    // [[ARABIC_COMMENT]] 1. استرجاع فوري من الكاش لجميع طلبات GET (سرعة 0 مللي ثانية)
+    if (isGet && options.useCache !== false && !endpoint.includes('nocache')) {
         const cached = apiCache.get(endpoint);
-        if (cached) return cached;
+        if (cached) {
+            // نرجع البيانات المخزنة فوراً ونطلق استعلام التحديث بالخلفية
+            fetch(`${API_BASE_URL}${endpoint}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Tenant-ID': process.env.NEXT_PUBLIC_TENANT_ID || 'hmcar',
+                    ...(typeof window !== 'undefined' && localStorage.getItem('hm_token') ? { 'Authorization': `Bearer ${localStorage.getItem('hm_token')}` } : {})
+                }
+            })
+            .then(r => r.json())
+            .then(freshData => {
+                if (freshData && (freshData.success || Array.isArray(freshData))) {
+                    apiCache.set(endpoint, freshData);
+                }
+            })
+            .catch(() => {});
+
+            return cached;
+        }
     }
 
     const url = `${API_BASE_URL}${endpoint}`;
-
-    // التحقق مما إذا كان الطلب يحتوي على ملفات (FormData)
     const isFormData = options.body instanceof FormData;
 
-    // تعيين الترويسات الافتراضية (Headers)
     const defaultHeaders: Record<string, string> = isFormData
         ? { 'Accept': 'application/json' }
         : { 'Content-Type': 'application/json', 'Accept': 'application/json' };
 
-    // [[FIX]] إضافة X-Tenant-ID لتحديد قاعدة بيانات المعرض الصحيحة في الـ Backend
     defaultHeaders['X-Tenant-ID'] = process.env.NEXT_PUBLIC_TENANT_ID || 'hmcar';
 
-    // إذا كان المستخدم مسجلاً، نقوم بإضافة التوكن للطلب (Bearer Token)
     if (typeof window !== 'undefined') {
         const token = localStorage.getItem('hm_token');
         if (token) {
@@ -43,10 +59,9 @@ export async function fetchAPI(endpoint: string, options: RequestInit & { useCac
         }
     }
 
-    // [[ARABIC_COMMENT]] إعداد مهلة زمنية للطلب (Timeout) لضمان عدم تعليق المتصفح (مرفوع لـ 60 ثانية للعمليات الثقيلة)
     const controller = new AbortController();
     const customTimeout = options.timeout || 60000;
-    const timeoutId = setTimeout(() => controller.abort(), customTimeout); // 60 seconds timeout
+    const timeoutId = setTimeout(() => controller.abort(), customTimeout);
 
     const defaultOptions: RequestInit = {
         ...options,
@@ -68,24 +83,31 @@ export async function fetchAPI(endpoint: string, options: RequestInit & { useCac
             let message = data.message || (typeof data.error === 'string' ? data.error : data.error?.message) || `فشل الطلب: ${response.status}`;
             
             if (response.status === 429) {
-                message = 'لقد قمت بعدد كبير من المحاولات. يرجى الانتظار قليلاً قبل المحاولة مرة أخرى.';
+                message = 'تم تجاوز عدد المحاولات المسموح بها، يرجى الانتظار دقيقة والتحقق مرة أخرى.';
             }
 
-            const customError = new Error(message) as Error & { status: number };
-            customError.status = response.status;
-            throw customError;
+            if (response.status >= 500 && retries > 0) {
+                await new Promise(res => setTimeout(res, 800));
+                return fetchAPI(endpoint, options, retries - 1);
+            }
+
+            const errorObj: any = new Error(message);
+            errorObj.status = response.status;
+            errorObj.data = data;
+            throw errorObj;
         }
 
-        // [[ARABIC_COMMENT]] حفظ في الكاش إذا تم طلب ذلك
-        if (options.useCache) {
+        // حفظ الاستجابة الناجحة لطلبات GET ومسح الكاش عند الإضافة أو التعديل
+        if (isGet) {
             apiCache.set(endpoint, data);
+        } else {
+            apiCache.clear();
         }
 
         return data;
     } catch (error: unknown) {
         clearTimeout(timeoutId);
         
-        // [[ARABIC_COMMENT]] إعادة المحاولة تلقائياً في حالة فشل الشبكة أو المهلة
         const err = error instanceof Error ? error : new Error(String(error));
         if (retries > 0 && (err.name === 'AbortError' || err.message.includes('fetch'))) {
             console.warn(`[API Retry] Retrying ${url}... Attempts left: ${retries}`);

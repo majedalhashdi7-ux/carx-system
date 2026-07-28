@@ -1,23 +1,58 @@
 /**
  * نظام ذاكرة التخزين المؤقت للعميل (Client-side API Cache)
- * يساعد في جعل التنقل بين الصفحات "لحظياً" عبر تخزين استجابات الـ API.
+ * يجعل فتح وتصفح جميع الصفحات لحظياً (0ms) بحفظ واسترجاع البيانات الفوري.
  */
 
-const cache = new Map<string, { data: unknown; timestamp: number }>();
-const DEFAULT_TTL = 30000; // 30 ثانية كحد أقصى للتخزين المؤقت للبيانات المسبقة
+const memoryCache = new Map<string, { data: unknown; timestamp: number }>();
+const DEFAULT_TTL = 60000; // 60 ثانية كاش بالذاكرة
 
 export const apiCache = {
     set: (key: string, data: unknown, ttl = DEFAULT_TTL) => {
-        cache.set(key, { data, timestamp: Date.now() + ttl });
-    },
-    get: (key: string) => {
-        const entry = cache.get(key);
-        if (!entry) return null;
-        if (Date.now() > entry.timestamp) {
-            cache.delete(key);
-            return null;
+        const expiresAt = Date.now() + ttl;
+        memoryCache.set(key, { data, timestamp: expiresAt });
+
+        if (typeof window !== 'undefined') {
+            try {
+                sessionStorage.setItem(`api_cache_${key}`, JSON.stringify({ data, timestamp: expiresAt }));
+            } catch {}
         }
-        return entry.data;
     },
-    clear: () => cache.clear()
+
+    get: (key: string) => {
+        // 1. فحص ذاكرة الرام السريعة
+        const memEntry = memoryCache.get(key);
+        if (memEntry) {
+            if (Date.now() <= memEntry.timestamp) return memEntry.data;
+            memoryCache.delete(key);
+        }
+
+        // 2. فحص sessionStorage للاسترجاع الفوري عند تحديث الصفحة
+        if (typeof window !== 'undefined') {
+            try {
+                const stored = sessionStorage.getItem(`api_cache_${key}`);
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (Date.now() <= parsed.timestamp) {
+                        memoryCache.set(key, parsed);
+                        return parsed.data;
+                    } else {
+                        sessionStorage.removeItem(`api_cache_${key}`);
+                    }
+                }
+            } catch {}
+        }
+
+        return null;
+    },
+
+    clear: () => {
+        memoryCache.clear();
+        if (typeof window !== 'undefined') {
+            try {
+                Object.keys(sessionStorage).forEach(k => {
+                    if (k.startsWith('api_cache_')) sessionStorage.removeItem(k);
+                });
+            } catch {}
+        }
+    }
 };
