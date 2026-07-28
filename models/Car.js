@@ -46,6 +46,9 @@ const carSchema = new mongoose.Schema({
   condition: { type: String, enum: ['excellent', 'good', 'fair', 'needs work'], default: 'good' },
   description: String,
   images: [String], // مسارات الصور ضمن /uploads
+  // [[FIX]] imageUrl — الصورة الرئيسية للسيارة، تُحفظ كـ alias لأول صورة في images[]
+  // يُرسَل من الواجهة ويُحفظ في قاعدة البيانات مباشرة لتوافق كامل
+  imageUrl: { type: String, default: '' },
   // حالة البيع
   isSold: { type: Boolean, default: false },
   isActive: { type: Boolean, default: true }, // للتحكم في عرض السيارة
@@ -112,6 +115,13 @@ carSchema.pre('save', function (next) {
 
   // ضمان توافق listingType مع source إذا كانا متعارضين بشكل واضح (اختياري، يفضل تركه للمسؤول)
   // if (this.source === 'korean_import' && this.listingType !== 'showroom') this.listingType = 'showroom';
+
+  // [[FIX]] مزامنة imageUrl تلقائياً من images[0] للضمان التوافق بين الواجهة والموديل
+  if (this.images && this.images.length > 0 && !this.imageUrl) {
+    this.imageUrl = this.images[0];
+  } else if (this.imageUrl && (!this.images || this.images.length === 0)) {
+    this.images = [this.imageUrl];
+  }
 
   this.wasNew = this.isNew;
   next();

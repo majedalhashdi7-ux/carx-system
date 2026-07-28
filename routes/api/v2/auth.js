@@ -4,7 +4,15 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const JWT_SECRET = process.env.JWT_SECRET || 'hmcar_jwt_secret_key_2026_fallback';
+// [[FIX]] أمان JWT: في الإنتاج يجب أن يكون JWT_SECRET مضبوطاً في متغيرات البيئة
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  throw new Error('[SECURITY] JWT_SECRET must be set in production environment!');
+}
+const JWT_SECRET = process.env.JWT_SECRET || (
+  process.env.NODE_ENV !== 'production'
+    ? (console.warn('[WARN] JWT_SECRET not set — using dev fallback, DO NOT use in production'), 'hmcar_dev_jwt_secret_DO_NOT_USE_IN_PRODUCTION')
+    : null
+);
 const { getModel, addTenantFilter, getTenantId } = require('../../../tenants/tenant-model-helper');
 const { requireAuthAPI } = require('../../../middleware/auth');
 const { authRateLimiter, fullSecurityMiddleware } = require('../../../middleware/securityEnhanced');
@@ -928,13 +936,18 @@ router.post('/forgot-password', authLimiter, async (req, res) => {
     ).catch(() => { });
 
     // In a real application, send reset token via email/SMS provider only.
-    // Never log or persist raw reset tokens in production logs, but print it to console here for developer testing.
-    console.log(`\n==================================================`);
-    console.log(`[AUTH] PASSWORD RESET LINK GENERATED:`);
-    console.log(`Email/Phone: ${email || phone}`);
-    console.log(`Token: ${resetToken}`);
-    console.log(`Link: http://localhost:3000/reset-password?token=${resetToken}`);
-    console.log(`==================================================\n`);
+    // [[FIX]] استخدام CLIENT_URL بدلاً من localhost لضمان عمل الرابط في الإنتاج
+    const clientBaseUrl = process.env.CLIENT_URL || process.env.BASE_URL || 'https://hmcar.xyz';
+    const resetLink = `${clientBaseUrl}/reset-password?token=${resetToken}`;
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`\n==================================================`);
+      console.log(`[AUTH] PASSWORD RESET LINK GENERATED:`);
+      console.log(`Email/Phone: ${email || phone}`);
+      console.log(`Token: ${resetToken}`);
+      console.log(`Link: ${resetLink}`);
+      console.log(`==================================================\n`);
+    }
 
     res.json({
       success: true,

@@ -231,13 +231,24 @@ function CarsContent() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm(isRTL ? 'هل أنت متأكد من حذف هذه السيارة؟' : 'Delete this car?')) return;
+        if (!confirm(isRTL ? 'هل أنت متأكد من حذف هذه السيارة نهائياً؟' : 'Delete this car permanently?')) return;
+        
+        // تحديث فوري للشاشة قبل انتظار السيرفر
+        setCars(prev => prev.filter(c => c._id !== id && c.id !== id));
+        setTotalCarsCount(prev => Math.max(0, prev - 1));
+
         try {
-            await api.cars.delete(id);
-            loadData();
-            showToast(isRTL ? '🗑️ تم الحذف' : '🗑️ Deleted', 'success');
-        } catch {
-            showToast(isRTL ? '❌ فشل الحذف' : '❌ Delete failed', 'error');
+            const res = await api.cars.delete(id);
+            if (res && res.success !== false) {
+                showToast(isRTL ? '🗑️ تم حذف السيارة بنجاح من المعرض' : '🗑️ Car deleted successfully', 'success');
+            } else {
+                showToast((res as any)?.message || (isRTL ? '❌ فشل الحذف' : '❌ Delete failed'), 'error');
+            }
+            await loadData();
+        } catch (err: any) {
+            console.error('Delete car error:', err);
+            showToast(err.message || (isRTL ? '❌ فشل الحذف من السيرفر' : '❌ Server delete failed'), 'error');
+            await loadData();
         }
     };
 

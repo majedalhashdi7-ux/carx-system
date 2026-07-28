@@ -32,6 +32,9 @@ export async function fetchAPI(endpoint: string, options: RequestInit & { useCac
         ? { 'Accept': 'application/json' }
         : { 'Content-Type': 'application/json', 'Accept': 'application/json' };
 
+    // [[FIX]] إضافة X-Tenant-ID لتحديد قاعدة بيانات المعرض الصحيحة في الـ Backend
+    defaultHeaders['X-Tenant-ID'] = process.env.NEXT_PUBLIC_TENANT_ID || 'hmcar';
+
     // إذا كان المستخدم مسجلاً، نقوم بإضافة التوكن للطلب (Bearer Token)
     if (typeof window !== 'undefined') {
         const token = localStorage.getItem('hm_token');

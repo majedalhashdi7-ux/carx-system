@@ -33,10 +33,13 @@ router.get('/', async (req, res) => {
     try {
         const Auction = getModel(req, 'Auction');
         const SiteSettings = getModel(req, 'SiteSettings');
-        const { status, limit = 10 } = req.query;
+        const { status, source, limit = 10 } = req.query;
         const query = {};
         if (status && status !== 'all') {
             query.status = status;
+        }
+        if (source) {
+            query.source = source;
         }
 
         const settings = SiteSettings ? await SiteSettings.getSettings().catch(() => null) : null;
@@ -45,55 +48,52 @@ router.get('/', async (req, res) => {
         const now = new Date();
 
         // تحديث حالة المزادات تلقائياً قبل الإرجاع
-        // 1) أي مزاد قيد التشغيل وانتهى وقته → أنهِه
         await Auction.updateMany(
             { status: 'running', endsAt: { $lt: now } },
             { $set: { status: 'ended' } }
         ).catch(() => {});
 
-        // 2) أي مزاد مجدول وانتهى وقته بالكامل → اجعله 'ended'
-        await Auction.updateMany(
-            { status: 'scheduled', endsAt: { $lte: now } },
-            { $set: { status: 'ended' } }
-        ).catch(() => {});
-
-        // 3) أي مزاد مجدول بدأ الآن لكنه لم ينتهِ بعد → اجعله 'running'
-        await Auction.updateMany(
-            { status: 'scheduled', startsAt: { $lte: now }, endsAt: { $gt: now } },
-            { $set: { status: 'running' } }
-        ).catch(() => {});
-
         const auctions = await Auction.find(addTenantFilter(req, query))
             .populate('car')
             .populate('highestBidder', 'name email')
-            .sort({ endsAt: 1 })
-            .limit(Number(limit))
+            .sort({ createdAt: -1, endsAt: 1 })
+            .limit(Number(limit) || 100)
             .lean();
 
         res.json({
             success: true,
-            data: auctions.map(a => ({
-                _id: a._id,
-                id: a._id,
-                status: a.status,
-                currentBid: applyMultiplier(a.currentPrice || a.startingPrice, auctionMultiplier),
-                currentPrice: applyMultiplier(a.currentPrice || a.startingPrice, auctionMultiplier),
-                startingPrice: applyMultiplier(a.startingPrice, auctionMultiplier),
-                minBidIncrement: applyMultiplier(a.minBidIncrement || 0, auctionMultiplier),
-                currency: a.currency || 'SAR',
-                endsAt: a.endsAt,
-                startsAt: a.startsAt,
-                bidders: a.bidsCount || 0,
-                car: a.car ? {
-                    id: a.car._id,
-                    title: a.car.title,
-                    make: a.car.make,
-                    model: a.car.model,
-                    images: a.car.images,
-                    year: a.car.year,
-                    price: a.car.price
-                } : null
-            }))
+            data: auctions.map(a => {
+                const carObj = a.car || {
+                    id: a._id,
+                    title: a.title || a.titleAr || 'مزاد كوري مستورد',
+                    make: a.make || a.makeAr || 'Hyundai',
+                    model: a.model || 'Tucson',
+                    images: a.images || [],
+                    year: a.year || new Date().getFullYear(),
+                    price: a.priceSar || a.startingPrice || 0
+                };
+                return {
+                    _id: a._id,
+                    id: a._id,
+                    title: a.title || carObj.title,
+                    titleAr: a.titleAr || a.title || carObj.title,
+                    status: a.status || 'running',
+                    source: a.source || 'encar',
+                    externalId: a.externalId,
+                    externalUrl: a.externalUrl,
+                    images: a.images && a.images.length > 0 ? a.images : carObj.images,
+                    image: (a.images && a.images[0]) || carObj.image || (carObj.images && carObj.images[0]),
+                    currentBid: applyMultiplier(a.currentPrice || a.startingPrice || a.priceSar || 15000, auctionMultiplier),
+                    currentPrice: applyMultiplier(a.currentPrice || a.startingPrice || a.priceSar || 15000, auctionMultiplier),
+                    startingPrice: applyMultiplier(a.startingPrice || a.priceSar || 15000, auctionMultiplier),
+                    minBidIncrement: applyMultiplier(a.minBidIncrement || 0, auctionMultiplier),
+                    currency: a.currency || 'SAR',
+                    endsAt: a.endsAt,
+                    startsAt: a.startsAt,
+                    bidders: a.bidsCount || 0,
+                    car: carObj
+                };
+            })
         });
     } catch (error) {
         console.error('API Auctions error:', error);

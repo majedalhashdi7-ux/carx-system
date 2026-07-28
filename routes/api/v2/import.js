@@ -23,8 +23,9 @@ const { getTenantId, getModel, addTenantFilter } = require('../../../tenants/ten
 // ─── دوال مساعدة ────────────────────────────────────────
 
 function normalizeImportPricing(payload, isKorean) {
-    const usdToSar = 3.75;
-    const usdToKrw = 1350;
+    // [[FIX]] قراءة أسعار الصرف من متغيرات البيئة بدلاً من القيم الثابتة
+    const usdToSar = Number(process.env.USD_TO_SAR) || 3.75;
+    const usdToKrw = Number(process.env.USD_TO_KRW) || 1350;
     const rawPrice = Number(payload.price) || 0;
     let priceSar = 0, priceUsd = 0, priceKrw = 0;
 

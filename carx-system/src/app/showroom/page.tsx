@@ -43,10 +43,20 @@ export default function ShowroomPage() {
   useEffect(() => {
     const fetchCars = async () => {
       setLoading(true);
-      const res = await api.cars.getAll() as any;
+      // [[FIX]] تصفية السيارات بـ listingType=showroom لعرض المعرض الكوري فقط
+      const res = await api.cars.getAll({ listingType: 'showroom', limit: '200' }) as any;
       if (res.data) {
         const result = res.data;
-        setCars(result.data?.cars || result.cars || []);
+        const fetchedCars = result.data?.cars || result.cars || [];
+        // احتياطي: إذا لم تكن هناك سيارات showroom، جلب كل السيارات
+        if (fetchedCars.length === 0) {
+          const fallback = await api.cars.getAll({ limit: '200' }) as any;
+          if (fallback.data) {
+            setCars(fallback.data?.data?.cars || fallback.data?.cars || []);
+          }
+        } else {
+          setCars(fetchedCars);
+        }
       }
       setLoading(false);
     };

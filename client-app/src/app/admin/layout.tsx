@@ -16,16 +16,78 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
+
         const token = localStorage.getItem('hm_token');
-        const role = localStorage.getItem('hm_user_role') || (() => {
-            try { return JSON.parse(localStorage.getItem('hm_user') || '{}').role; } catch { return null; }
-        })();
-        if (!token || !ADMIN_ROLES.includes(role)) {
+
+        // لا توكن = توجيه فوري لصفحة الدخول
+        if (!token) {
             router.replace('/login?role=admin');
-        } else {
-            setAuthorized(true);
+            setChecking(false);
+            return;
         }
-        setChecking(false);
+
+        // [[FIX]] التحقق من الـ role: أولاً من hm_user، ثم hm_user_role، ثم التحقق عبر API
+        const getUserRole = (): string | null => {
+            try {
+                const userObj = JSON.parse(localStorage.getItem('hm_user') || '{}');
+                return userObj.role || localStorage.getItem('hm_user_role') || null;
+            } catch {
+                return localStorage.getItem('hm_user_role') || null;
+            }
+        };
+
+        const cachedRole = getUserRole();
+
+        if (cachedRole && ADMIN_ROLES.includes(cachedRole)) {
+            // الدور موجود في الكاش ومصرّح — نفعّل مباشرة ونتحقق في الخلفية
+            setAuthorized(true);
+            setChecking(false);
+
+            // تحقق صامت من صلاحية التوكن في الخلفية
+            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
+            fetch(`${apiBase}/api/v2/auth/verify`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'X-Tenant-ID': process.env.NEXT_PUBLIC_TENANT_ID || 'hmcar',
+                },
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (!data?.user || !ADMIN_ROLES.includes(data.user.role)) {
+                        // التوكن لم يعد صالحاً — تسجيل خروج
+                        localStorage.removeItem('hm_token');
+                        localStorage.removeItem('hm_user');
+                        localStorage.removeItem('hm_user_role');
+                        router.replace('/login?role=admin&reason=expired');
+                    } else {
+                        // تحديث بيانات المستخدم من السيرفر
+                        localStorage.setItem('hm_user', JSON.stringify(data.user));
+                        localStorage.setItem('hm_user_role', data.user.role);
+                    }
+                })
+                .catch(() => { /* صامت — لا نوقف واجهة المستخدم */ });
+        } else {
+            // لا يوجد role في الكاش — نتحقق من السيرفر
+            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
+            fetch(`${apiBase}/api/v2/auth/verify`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'X-Tenant-ID': process.env.NEXT_PUBLIC_TENANT_ID || 'hmcar',
+                },
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data?.user && ADMIN_ROLES.includes(data.user.role)) {
+                        localStorage.setItem('hm_user', JSON.stringify(data.user));
+                        localStorage.setItem('hm_user_role', data.user.role);
+                        setAuthorized(true);
+                    } else {
+                        router.replace('/login?role=admin');
+                    }
+                })
+                .catch(() => router.replace('/login?role=admin'))
+                .finally(() => setChecking(false));
+        }
     }, [router]);
 
     // شاشة التحميل أثناء التحقق من الصلاحيات

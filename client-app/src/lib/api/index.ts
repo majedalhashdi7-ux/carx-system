@@ -34,6 +34,9 @@ export async function fetchAPI(
         ? { 'Accept': 'application/json' }
         : { 'Content-Type': 'application/json', 'Accept': 'application/json' };
 
+    // [[FIX]] إضافة X-Tenant-ID لتحديد المعرض الصحيح في الـ Backend
+    defaultHeaders['X-Tenant-ID'] = process.env.NEXT_PUBLIC_TENANT_ID || 'hmcar';
+
     // Add auth token if available
     if (typeof window !== 'undefined') {
         const token = localStorage.getItem('hm_token');

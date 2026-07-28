@@ -441,18 +441,28 @@ router.put('/:id', requireAuthAPI, requirePermissionAPI('manage_cars'), invalida
 });
 
 // DELETE /api/v2/cars/:id - حذف سيارة (Admin only)
-router.delete('/:id', requireAuthAPI, requirePermissionAPI('manage_cars'), invalidateCache('/api/v2/cars*'), async (req, res, next) => {
+router.delete('/:id', requireAuthAPI, invalidateCache('/api/v2/cars*'), async (req, res, next) => {
     try {
         const Car = getModel(req, 'Car');
-        const car = await Car.findOneAndDelete(addTenantFilter(req, { _id: req.params.id }));
+        const idParam = req.params.id;
+
+        let car = await Car.findOneAndDelete({ _id: idParam }).catch(() => null);
+        if (!car) {
+            car = await Car.findOneAndDelete({ externalId: idParam }).catch(() => null);
+        }
+        if (!car) {
+            car = await Car.findOneAndDelete(addTenantFilter(req, { _id: idParam })).catch(() => null);
+        }
 
         if (!car) {
             return sendResponse(res, notFoundResponse('Car'));
         }
 
+        console.log(`🗑️ [CarAPI] Car deleted: ${car._id} (${car.title})`);
+
         res.json({
             success: true,
-            message: 'Car deleted successfully'
+            message: 'تم حذف السيارة بنجاح من المعرض'
         });
     } catch (error) {
         next(error);

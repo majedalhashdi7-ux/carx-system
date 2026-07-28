@@ -275,11 +275,13 @@ router.patch('/:id/status', requireAuthAPI, async (req, res) => {
             // طباعة رابط الواتساب التخيلي لإرسال الإشعار للعميل
             const User = getModel(req, 'User');
             const buyer = await User.findById(order.buyer);
-            if (buyer && buyer.phone) {
+            // [[FIX]] استخدام CLIENT_URL الديناميكي بدلاً من localhost الثابت
+            if (buyer && buyer.phone && process.env.NODE_ENV !== 'production') {
+                const clientBaseUrl = process.env.CLIENT_URL || process.env.BASE_URL || 'https://hmcar.xyz';
                 console.log(`\n==================================================`);
                 console.log(`[NOTIFICATION] WHATSAPP NOTIFICATION MOCK:`);
                 console.log(`To: ${buyer.name} (${buyer.phone})`);
-                console.log(`Message: مرحباً ${buyer.name}، تم تحديث حالة طلبك رقم ${order.orderNumber} إلى ${status}. تفاصيل: http://localhost:3000/orders/${order._id}`);
+                console.log(`Message: مرحباً ${buyer.name}، تم تحديث حالة طلبك رقم ${order.orderNumber} إلى ${status}. تفاصيل: ${clientBaseUrl}/orders/${order._id}`);
                 console.log(`==================================================\n`);
             }
         } catch (notifyErr) {
