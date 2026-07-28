@@ -30,6 +30,44 @@ const koreanCarImportSchema = new mongoose.Schema({
   images: [String],
   mainImage: String,
   watermarkedImages: [String],
+
+  // ── المواصفات التفصيلية ثنائية اللغة (Arabic / English Specs) ──
+  specs: {
+    makeAr: String,
+    makeEn: String,
+    modelAr: String,
+    modelEn: String,
+    year: Number,
+    mileage: Number,
+    fuelTypeAr: String,
+    fuelTypeEn: String,
+    transmissionAr: String,
+    transmissionEn: String,
+    engineCc: String,
+    vin: String,
+    trimAr: String,
+    trimEn: String,
+    seats: Number,
+    driveTypeAr: String,
+    driveTypeEn: String,
+    colorAr: String,
+    colorEn: String,
+  },
+
+  // ── المميزات والخيارات الإضافية (Bilingual Features & Options) ──
+  featuresAr: [String],
+  featuresEn: [String],
+
+  // ── تقرير الفحص والهيكل (Inspection & Body Condition Report) ──
+  inspectionReport: {
+    statusAr: { type: String, default: 'لا توجد أضرار مُسجّلة على هيكل هذه السيارة' },
+    statusEn: { type: String, default: 'No accident damage recorded on vehicle body' },
+    hasAccidents: { type: Boolean, default: false },
+    accidentDetailsAr: String,
+    accidentDetailsEn: String,
+    reportUrl: String,
+  },
+
   externalUrl: String,
   encarId: String,
   vin: String,

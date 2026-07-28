@@ -48,6 +48,29 @@ const DEFAULT_CAR_FEATURES = [
     'فرامل يد إلكترونية (EPB)'
 ];
 
+const DEFAULT_CAR_FEATURES_EN = [
+    'Anti-lock Braking System (ABS)',
+    'CD / MP3 Player',
+    'Front AV Navigation Display',
+    'Advanced Navigation System',
+    'Electric Central Door Lock',
+    'Power Electric Windows',
+    'Power Steering Wheel',
+    'Premium Leather Seats',
+    'Dual Automatic Climate Control',
+    'Alloy Rims & Wheels',
+    'Auto-Dimming ECM Rear Mirror',
+    'Electric Folding Side Mirrors',
+    'Side & Knee Airbags',
+    'Electronic Stability Control (ESC)',
+    'Front & Rear Parking Sensors',
+    'High-Resolution Rear Camera',
+    'Electric Power Seats with Memory',
+    'Full LED Headlamps',
+    'Engine Start Button & Smart Key',
+    'Electronic Parking Brake (EPB)'
+];
+
 export default function DesertStyleCarDetail() {
     const { id } = useParams();
     const router = useRouter();
@@ -236,16 +259,17 @@ export default function DesertStyleCarDetail() {
     const calculatedTotal = baseCarCost + shippingCost + customsDuty + vatAmount + systemCommission;
 
     const specsList = [
-        { label: 'الشركة المصنعة', value: car.makeAr || car.make || 'غير محدد' },
-        { label: 'الموديل', value: car.model || 'غير محدد' },
-        { label: 'تفاصيل الموديل', value: car.specs?.badge || car.category || 'Standard' },
-        { label: 'سنة الصنع', value: String(car.year || '—') },
-        { label: 'المسافة المقطوعة', value: car.mileage ? `${Number(car.mileage).toLocaleString('ar-SA')} كم` : '—' },
-        { label: 'ناقل الحركة', value: car.transmission || 'أوتوماتيك' },
-        { label: 'نوع الوقود', value: car.fuelType || 'بنزين' },
-        { label: 'سعة المحرك', value: car.specs?.displacement || 'Gasoline 3300cc' },
-        { label: 'اللون الخارجي', value: car.color || car.specs?.color || 'رمادي' },
-        { label: 'عدد المقاعد', value: car.specs?.seats || '5' },
+        { label: isRTL ? 'الشركة المصنعة' : 'Manufacturer', value: isRTL ? (car.specs?.makeAr || car.make) : (car.specs?.makeEn || car.make || 'Unspecified') },
+        { label: isRTL ? 'الموديل' : 'Model', value: isRTL ? (car.specs?.modelAr || car.model) : (car.specs?.modelEn || car.model || 'Unspecified') },
+        { label: isRTL ? 'الفئة / الدرجة' : 'Trim Level', value: isRTL ? (car.specs?.trimAr || 'برستيج') : (car.specs?.trimEn || 'Prestige') },
+        { label: isRTL ? 'سنة الصنع' : 'Year', value: String(car.year || '—') },
+        { label: isRTL ? 'المسافة المقطوعة' : 'Mileage', value: car.mileage ? (isRTL ? `${Number(car.mileage).toLocaleString('ar-SA')} كم` : `${Number(car.mileage).toLocaleString('en-US')} km`) : '—' },
+        { label: isRTL ? 'ناقل الحركة' : 'Transmission', value: isRTL ? (car.specs?.transmissionAr || car.transmission || 'أوتوماتيك') : (car.specs?.transmissionEn || car.transmission || 'Automatic') },
+        { label: isRTL ? 'نوع الوقود' : 'Fuel Type', value: isRTL ? (car.specs?.fuelTypeAr || car.fuelType || 'بنزين') : (car.specs?.fuelTypeEn || car.fuelType || 'Gasoline') },
+        { label: isRTL ? 'سعة المحرك' : 'Engine Displ.', value: car.specs?.engineCc || '1000cc' },
+        { label: isRTL ? 'اللون الخارجي' : 'Exterior Color', value: isRTL ? (car.specs?.colorAr || car.color || 'أسود') : (car.specs?.colorEn || car.color || 'Black') },
+        { label: isRTL ? 'رقم الهيكل (VIN)' : 'VIN Number', value: car.specs?.vin || car.vin || '—' },
+        { label: isRTL ? 'نظام الدفع' : 'Drive Type', value: isRTL ? (car.specs?.driveTypeAr || 'دفع أمامي 2WD') : (car.specs?.driveTypeEn || 'Front Wheel Drive 2WD') }
     ];
 
     return (
@@ -504,10 +528,10 @@ export default function DesertStyleCarDetail() {
                                     {/* المميزات العامة (Features Badges) */}
                                     <div>
                                         <h3 className="text-base font-black text-amber-200 border-r-4 border-amber-400 pr-3 mb-4">
-                                            المميزات والخيارات المتاحة
+                                            {isRTL ? 'المميزات والخيارات المتاحة' : 'Features & Available Options'}
                                         </h3>
                                         <div className="flex flex-wrap gap-2">
-                                            {DEFAULT_CAR_FEATURES.map((feat, idx) => (
+                                            {((isRTL ? car.featuresAr : car.featuresEn) || (isRTL ? DEFAULT_CAR_FEATURES : DEFAULT_CAR_FEATURES_EN)).map((feat: string, idx: number) => (
                                                 <span key={idx} className="px-3 py-2 rounded-xl bg-[#3d2c18] border border-[#7c5d33] text-xs font-bold text-amber-100 flex items-center gap-1.5">
                                                     <Check className="w-3.5 h-3.5 text-emerald-400" />
                                                     <span>{feat}</span>
@@ -516,31 +540,21 @@ export default function DesertStyleCarDetail() {
                                         </div>
                                     </div>
 
-                                    {/* الخيارات الإضافية (Additional Options) */}
-                                    <div className="bg-[#3d2c18] border border-[#7c5d33] rounded-2xl p-4 space-y-3">
-                                        <h4 className="text-sm font-bold text-amber-300">الخيارات الإضافية المدرجة</h4>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                                            <div className="flex items-center justify-between p-3 rounded-xl bg-[#543b1f] border border-[#8a683a]">
-                                                <span>فتحة سقف بانورامية</span>
-                                                <span className="font-bold text-amber-300">+3,108 ر.س</span>
-                                            </div>
-                                            <div className="flex items-center justify-between p-3 rounded-xl bg-[#543b1f] border border-[#8a683a]">
-                                                <span>حزمة Genesis Smart Sense</span>
-                                                <span className="font-bold text-amber-300">+6,074 ر.س</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* رسم تقرير الفحص التفاعلي 2D Diagram */}
+                                    {/* تقرير الفحص والهيكل التفاعلي 2D Diagram */}
                                     <div className="bg-[#3d2c18] border border-[#7c5d33] rounded-2xl p-6 space-y-6">
-                                        <div className="flex items-center justify-between">
+                                        <div className="flex items-center justify-between flex-wrap gap-2">
                                             <h3 className="text-base font-black text-white flex items-center gap-2">
                                                 <ShieldCheck className="w-5 h-5 text-emerald-400" />
-                                                <span>تقرير الفحص الهيكلي التفاعلي 2D</span>
+                                                <span>{isRTL ? 'تقرير الفحص الهيكلي وتفاصيل الأضرار' : 'Vehicle Body Inspection & Condition Report'}</span>
                                             </h3>
                                             <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full text-xs font-bold">
-                                                ✓ فحص إنكار معتمد
+                                                {isRTL ? '✓ فحص إنكار معتمد' : '✓ Certified Encar Inspection'}
                                             </span>
+                                        </div>
+
+                                        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center gap-2">
+                                            <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                                            <span>{(isRTL ? car.inspectionReport?.statusAr : car.inspectionReport?.statusEn) || (isRTL ? 'لا توجد أضرار مُسجّلة على هيكل هذه السيارة' : 'No accident damage recorded on vehicle body')}</span>
                                         </div>
 
                                         {/* الرسم التوضيحي للهيكل (Outer Body & Main Chassis) */}

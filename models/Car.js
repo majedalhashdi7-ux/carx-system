@@ -45,10 +45,49 @@ const carSchema = new mongoose.Schema({
   // الحالة العامة
   condition: { type: String, enum: ['excellent', 'good', 'fair', 'needs work'], default: 'good' },
   description: String,
+  descriptionAr: String,
+  descriptionEn: String,
   images: [String], // مسارات الصور ضمن /uploads
   // [[FIX]] imageUrl — الصورة الرئيسية للسيارة، تُحفظ كـ alias لأول صورة في images[]
-  // يُرسَل من الواجهة ويُحفظ في قاعدة البيانات مباشرة لتوافق كامل
   imageUrl: { type: String, default: '' },
+  watermarkedImages: [String],
+
+  // ── المواصفات التفصيلية ثنائية اللغة (Arabic / English Specs) ──
+  specs: {
+    makeAr: String,
+    makeEn: String,
+    modelAr: String,
+    modelEn: String,
+    year: Number,
+    mileage: Number,
+    fuelTypeAr: String,
+    fuelTypeEn: String,
+    transmissionAr: String,
+    transmissionEn: String,
+    engineCc: String,
+    vin: String,
+    trimAr: String,
+    trimEn: String,
+    seats: Number,
+    driveTypeAr: String,
+    driveTypeEn: String,
+    colorAr: String,
+    colorEn: String,
+  },
+
+  // ── المميزات والخيارات الإضافية (Bilingual Features & Options) ──
+  featuresAr: [String],
+  featuresEn: [String],
+
+  // ── تقرير الفحص والهيكل (Inspection & Body Condition Report) ──
+  inspectionReport: {
+    statusAr: { type: String, default: 'لا توجد أضرار مُسجّلة على هيكل هذه السيارة' },
+    statusEn: { type: String, default: 'No accident damage recorded on vehicle body' },
+    hasAccidents: { type: Boolean, default: false },
+    accidentDetailsAr: String,
+    accidentDetailsEn: String,
+    reportUrl: String,
+  },
   // حالة البيع
   isSold: { type: Boolean, default: false },
   isActive: { type: Boolean, default: true }, // للتحكم في عرض السيارة

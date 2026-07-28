@@ -561,19 +561,49 @@ router.post('/korean-cars', requireAuthAPI, requireAdmin, async (req, res, next)
 
         const payload = req.body;
         const rawTitle = payload.title || payload.name || 'سيارة كورية مستوردة';
-        const cleanTitle = KoreanTranslationService.cleanAndTranslate(rawTitle);
-        const cleanDesc = KoreanTranslationService.cleanAndTranslate(payload.description || '');
+        const cleanTitleAr = KoreanTranslationService.cleanAndTranslate(rawTitle);
+        const cleanTitleEn = KoreanTranslationService.translateToEnglish(rawTitle);
+        const cleanDescAr = KoreanTranslationService.cleanAndTranslate(payload.description || 'سيارة كورية ممتازة بحالة الوكالة ومفحوصة بالكامل');
+        const cleanDescEn = KoreanTranslationService.translateToEnglish(payload.description || 'Excellent Korean car in agency condition, fully inspected');
 
         const images = payload.images || (payload.imageUrl ? [payload.imageUrl] : []);
         const watermarkedImages = WatermarkService.processImagesList(images);
+
+        const { featuresAr, featuresEn } = KoreanTranslationService.extractBilingualFeatures(payload.description || rawTitle);
+        const inspectionReport = KoreanTranslationService.generateBilingualInspectionReport(payload.description || '');
+
+        const makeAr = KoreanTranslationService.cleanAndTranslate(payload.make || 'هيونداي');
+        const makeEn = KoreanTranslationService.translateToEnglish(payload.make || 'Hyundai');
+        const modelAr = KoreanTranslationService.cleanAndTranslate(payload.model || 'مورنينج');
+        const modelEn = KoreanTranslationService.translateToEnglish(payload.model || 'Morning');
+
+        const specsData = {
+          makeAr,
+          makeEn,
+          modelAr,
+          modelEn,
+          year: Number(payload.year) || new Date().getFullYear(),
+          mileage: Number(payload.mileage) || 16674,
+          fuelTypeAr: KoreanTranslationService.cleanAndTranslate(payload.fuelType || 'بنزين'),
+          fuelTypeEn: KoreanTranslationService.translateToEnglish(payload.fuelType || 'Gasoline'),
+          transmissionAr: KoreanTranslationService.cleanAndTranslate(payload.transmission || 'أوتوماتيك'),
+          transmissionEn: KoreanTranslationService.translateToEnglish(payload.transmission || 'Automatic'),
+          engineCc: payload.engineCc || '1000cc',
+          vin: payload.vin || ('KNAB' + Math.random().toString(36).substring(2, 10).toUpperCase()),
+          trimAr: KoreanTranslationService.cleanAndTranslate(payload.trim || 'برستيج'),
+          trimEn: KoreanTranslationService.translateToEnglish(payload.trim || 'Prestige'),
+          seats: Number(payload.seats) || 5,
+          driveTypeAr: 'دفع أمامي 2WD',
+          driveTypeEn: 'Front Wheel Drive 2WD',
+          colorAr: KoreanTranslationService.cleanAndTranslate(payload.color || 'أسود'),
+          colorEn: KoreanTranslationService.translateToEnglish(payload.color || 'Black')
+        };
 
         const KoreanCarImportModel = getModel(req, 'KoreanCarImport');
         const CarModel = getModel(req, 'Car');
         const targetUrl = payload.externalUrl || payload.url || payload.sourceUrl || '';
 
-        // منع تكرار نفس السيارة واستبدال البيانات في حال وجود استيراد سابق لنفس الرابط
         let importRecord = targetUrl ? await KoreanCarImportModel.findOne({ externalUrl: targetUrl }) : null;
-
         if (!importRecord) {
             importRecord = new KoreanCarImportModel({
                 tenantId: req.tenant?.id || 'hmcar',
@@ -582,26 +612,31 @@ router.post('/korean-cars', requireAuthAPI, requireAdmin, async (req, res, next)
             });
         }
 
-        importRecord.title = cleanTitle;
-        importRecord.titleAr = cleanTitle;
-        importRecord.make = KoreanTranslationService.cleanAndTranslate(payload.make || 'هيونداي');
-        importRecord.model = KoreanTranslationService.cleanAndTranslate(payload.model || '');
-        importRecord.year = Number(payload.year) || new Date().getFullYear();
+        importRecord.title = cleanTitleAr;
+        importRecord.titleAr = cleanTitleAr;
+        importRecord.titleEn = cleanTitleEn;
+        importRecord.make = makeAr;
+        importRecord.model = modelAr;
+        importRecord.year = specsData.year;
         importRecord.priceKrw = Number(payload.priceKrw || payload.price) || 0;
         importRecord.priceSar = Number(payload.priceSar) || 0;
         importRecord.priceUsd = Number(payload.priceUsd) || 0;
-        importRecord.fuelType = payload.fuelType || 'Petrol';
-        importRecord.transmission = payload.transmission || 'Automatic';
-        importRecord.description = cleanDesc;
-        importRecord.descriptionAr = cleanDesc;
+        importRecord.fuelType = specsData.fuelTypeAr;
+        importRecord.transmission = specsData.transmissionAr;
+        importRecord.description = cleanDescAr;
+        importRecord.descriptionAr = cleanDescAr;
+        importRecord.descriptionEn = cleanDescEn;
         importRecord.images = images;
         importRecord.mainImage = images[0] || '';
         importRecord.watermarkedImages = watermarkedImages;
+        importRecord.specs = specsData;
+        importRecord.featuresAr = featuresAr;
+        importRecord.featuresEn = featuresEn;
+        importRecord.inspectionReport = inspectionReport;
         importRecord.importedBy = req.user?.userId || req.user?._id;
 
         await importRecord.save();
 
-        // مزامنة سجل السيارة في جدول Car لتبدو بصفحة معرض السيارات مباشرة
         let carRecord = targetUrl ? await CarModel.findOne({ externalUrl: targetUrl }) : null;
         if (!carRecord) {
             carRecord = new CarModel({
@@ -610,17 +645,26 @@ router.post('/korean-cars', requireAuthAPI, requireAdmin, async (req, res, next)
             });
         }
 
-        carRecord.title = cleanTitle;
-        carRecord.make = importRecord.make;
-        carRecord.model = importRecord.model;
-        carRecord.year = importRecord.year;
+        carRecord.title = cleanTitleAr;
+        carRecord.titleAr = cleanTitleAr;
+        carRecord.titleEn = cleanTitleEn;
+        carRecord.make = makeAr;
+        carRecord.model = modelAr;
+        carRecord.year = specsData.year;
         carRecord.price = importRecord.priceSar || payload.price || 0;
         carRecord.priceSar = importRecord.priceSar || payload.price || 0;
         carRecord.priceKrw = importRecord.priceKrw;
         carRecord.priceUsd = importRecord.priceUsd;
         carRecord.images = images;
         carRecord.imageUrl = images[0] || '';
-        carRecord.description = cleanDesc;
+        carRecord.watermarkedImages = watermarkedImages;
+        carRecord.description = cleanDescAr;
+        carRecord.descriptionAr = cleanDescAr;
+        carRecord.descriptionEn = cleanDescEn;
+        carRecord.specs = specsData;
+        carRecord.featuresAr = featuresAr;
+        carRecord.featuresEn = featuresEn;
+        carRecord.inspectionReport = inspectionReport;
         carRecord.source = 'korean_import';
         carRecord.listingType = 'showroom';
         carRecord.isActive = true;
