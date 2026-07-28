@@ -21,6 +21,7 @@ import { useLanguage } from "@/lib/LanguageContext";
 import { api } from "@/lib/api-original";
 import { useToast } from "@/lib/ToastContext";
 import AdminPageShell from "@/components/AdminPageShell";
+import InlineImportModal from "@/components/admin/InlineImportModal";
 
 function MasterAuctionsContent() {
     const { isRTL } = useLanguage();
@@ -35,6 +36,7 @@ function MasterAuctionsContent() {
 
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
+    const [showAuctionImportModal, setShowAuctionImportModal] = useState(false);
 
     // ── 1. Live Auctions & Import Sessions State ──
     const [sessions, setSessions] = useState<any[]>([]);
@@ -385,10 +387,10 @@ function MasterAuctionsContent() {
                                     {isRTL ? 'المزادات المستوردة تلقائياً (بانتظار التفعيل)' : 'Imported Auctions Catalog'}
                                 </h2>
                             </div>
-                            <Link href="/admin/import" className="text-xs text-orange-400 hover:underline flex items-center gap-1">
-                                <span>{isRTL ? 'بوابة الاستيراد' : 'Import Hub'}</span>
+                            <button onClick={() => setShowAuctionImportModal(true)} className="text-xs text-orange-400 hover:underline flex items-center gap-1">
+                                <span>{isRTL ? 'استيراد مزاد مباشر من رابط' : 'Import Auction from Link'}</span>
                                 <ArrowUpRight className="w-3.5 h-3.5" />
-                            </Link>
+                            </button>
                         </div>
 
                         {safeImported.length === 0 ? (
@@ -400,13 +402,13 @@ function MasterAuctionsContent() {
                                     {isRTL ? 'لا توجد سيارات مستوردة من Encar بعد' : 'No imported cars yet'}
                                 </p>
                                 <p className="text-white/20 text-xs mb-4">
-                                    {isRTL ? 'اذهب إلى بوابة الاستيراد ← تبويب المزادات ← استورد من Encar' : 'Go to Import Hub → Auctions tab → Import from Encar'}
+                                    {isRTL ? 'استورد سيارات البث والمزادات المباشرة فوراً برابط الموقع المستهدف' : 'Import live auction cars instantly with direct link'}
                                 </p>
-                                <Link href="/admin/import?tab=auctions"
+                                <button onClick={() => setShowAuctionImportModal(true)}
                                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-500/20 border border-orange-500/30 text-orange-400 text-xs font-bold hover:bg-orange-500/30 transition-colors">
                                     <ArrowUpRight className="w-3.5 h-3.5" />
-                                    {isRTL ? 'فتح بوابة الاستيراد' : 'Open Import Hub'}
-                                </Link>
+                                    {isRTL ? 'استيراد مزاد من رابط' : 'Import Auction Link'}
+                                </button>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -802,6 +804,13 @@ function MasterAuctionsContent() {
                     </div>
                 )}
             </AnimatePresence>
+
+            <InlineImportModal
+                isOpen={showAuctionImportModal}
+                onClose={() => setShowAuctionImportModal(false)}
+                type="auction"
+                onSuccess={loadLiveSessions}
+            />
         </AdminPageShell>
     );
 }

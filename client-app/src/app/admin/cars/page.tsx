@@ -13,6 +13,7 @@ import { useToast } from '@/lib/ToastContext';
 import AdminPageShell from '@/components/AdminPageShell';
 import CarCard from './_components/CarCard';
 import CarModal from './_components/CarModal';
+import InlineImportModal from '@/components/admin/InlineImportModal';
 import SearchAutocomplete, { type SearchSuggestion } from '@/components/SearchAutocomplete';
 
 // ── نوع بيانات السيارة ──
@@ -88,6 +89,8 @@ function CarsContent() {
     const [showModal, setShowModal] = useState(false);
     const [editingCar, setEditingCar] = useState<Car | null>(null);
     const [submitting, setSubmitting] = useState(false);
+    const [scraping, setScraping] = useState(false);
+    const [showInlineImport, setShowInlineImport] = useState(false);
     const [brands, setBrands] = useState<Array<{_id: string, name: string}>>([]);
     const [searchQuery, setSearchQuery] = useState('');
     
@@ -125,8 +128,6 @@ function CarsContent() {
             setLoading(false);
         }
     }, [page]);
-
-    const [scraping, setScraping] = useState(false);
 
     const handleScrapeKorea = async () => {
         setScraping(true);
@@ -395,16 +396,22 @@ function CarsContent() {
                             <Download className={cn("w-4 h-4", scraping && "animate-spin")} />
                             {scraping ? (isRTL ? 'جاري الجلب...' : 'SCRAPING...') : (isRTL ? 'جلب سيارات كوريا' : 'IMPORT KOREAN')}
                         </button>
-                        <NextLink
-                            href="/admin/import"
-                            className="h-11 px-5 rounded-2xl border border-white/10 text-white/60 font-black text-xs uppercase tracking-widest hover:bg-white/5 transition-all flex items-center gap-2"
+                        <button
+                            onClick={() => setShowInlineImport(true)}
+                            className="h-11 px-5 rounded-2xl border border-orange-500/30 text-orange-400 font-black text-xs uppercase tracking-widest hover:bg-orange-500/10 transition-all flex items-center gap-2 bg-orange-500/5"
                         >
                             <Download className="w-4 h-4" />
-                            {isRTL ? 'بوابة الاستيراد' : 'IMPORT HUB'}
-                        </NextLink>
+                            {isRTL ? 'استيراد مباشر من رابط' : 'INLINE IMPORT'}
+                        </button>
                     </div>
                 }
             >
+                <InlineImportModal
+                    isOpen={showInlineImport}
+                    onClose={() => setShowInlineImport(false)}
+                    type="car"
+                    onSuccess={loadData}
+                />
 
                 {loading ? (
                     <div className="py-24 flex flex-col items-center justify-center space-y-6">

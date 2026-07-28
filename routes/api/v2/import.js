@@ -568,34 +568,70 @@ router.post('/korean-cars', requireAuthAPI, requireAdmin, async (req, res, next)
         const watermarkedImages = WatermarkService.processImagesList(images);
 
         const KoreanCarImportModel = getModel(req, 'KoreanCarImport');
-        const importRecord = new KoreanCarImportModel({
-            tenantId: req.tenant?.id || 'hmcar',
-            importId: 'KOR-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
-            title: cleanTitle,
-            titleAr: cleanTitle,
-            make: KoreanTranslationService.cleanAndTranslate(payload.make || 'هيونداي'),
-            model: KoreanTranslationService.cleanAndTranslate(payload.model || ''),
-            year: Number(payload.year) || new Date().getFullYear(),
-            priceKrw: Number(payload.priceKrw || payload.price) || 0,
-            priceSar: Number(payload.priceSar) || 0,
-            priceUsd: Number(payload.priceUsd) || 0,
-            fuelType: payload.fuelType || 'Petrol',
-            transmission: payload.transmission || 'Automatic',
-            description: cleanDesc,
-            descriptionAr: cleanDesc,
-            images,
-            mainImage: images[0] || '',
-            watermarkedImages,
-            externalUrl: payload.externalUrl || payload.url || '',
-            importedBy: req.user?.userId || req.user?._id
-        });
+        const CarModel = getModel(req, 'Car');
+        const targetUrl = payload.externalUrl || payload.url || payload.sourceUrl || '';
+
+        // منع تكرار نفس السيارة واستبدال البيانات في حال وجود استيراد سابق لنفس الرابط
+        let importRecord = targetUrl ? await KoreanCarImportModel.findOne({ externalUrl: targetUrl }) : null;
+
+        if (!importRecord) {
+            importRecord = new KoreanCarImportModel({
+                tenantId: req.tenant?.id || 'hmcar',
+                importId: 'KOR-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+                externalUrl: targetUrl
+            });
+        }
+
+        importRecord.title = cleanTitle;
+        importRecord.titleAr = cleanTitle;
+        importRecord.make = KoreanTranslationService.cleanAndTranslate(payload.make || 'هيونداي');
+        importRecord.model = KoreanTranslationService.cleanAndTranslate(payload.model || '');
+        importRecord.year = Number(payload.year) || new Date().getFullYear();
+        importRecord.priceKrw = Number(payload.priceKrw || payload.price) || 0;
+        importRecord.priceSar = Number(payload.priceSar) || 0;
+        importRecord.priceUsd = Number(payload.priceUsd) || 0;
+        importRecord.fuelType = payload.fuelType || 'Petrol';
+        importRecord.transmission = payload.transmission || 'Automatic';
+        importRecord.description = cleanDesc;
+        importRecord.descriptionAr = cleanDesc;
+        importRecord.images = images;
+        importRecord.mainImage = images[0] || '';
+        importRecord.watermarkedImages = watermarkedImages;
+        importRecord.importedBy = req.user?.userId || req.user?._id;
 
         await importRecord.save();
+
+        // مزامنة سجل السيارة في جدول Car لتبدو بصفحة معرض السيارات مباشرة
+        let carRecord = targetUrl ? await CarModel.findOne({ externalUrl: targetUrl }) : null;
+        if (!carRecord) {
+            carRecord = new CarModel({
+                tenantId: req.tenant?.id || 'hmcar',
+                externalUrl: targetUrl
+            });
+        }
+
+        carRecord.title = cleanTitle;
+        carRecord.make = importRecord.make;
+        carRecord.model = importRecord.model;
+        carRecord.year = importRecord.year;
+        carRecord.price = importRecord.priceSar || payload.price || 0;
+        carRecord.priceSar = importRecord.priceSar || payload.price || 0;
+        carRecord.priceKrw = importRecord.priceKrw;
+        carRecord.priceUsd = importRecord.priceUsd;
+        carRecord.images = images;
+        carRecord.imageUrl = images[0] || '';
+        carRecord.description = cleanDesc;
+        carRecord.source = 'korean_import';
+        carRecord.listingType = 'showroom';
+        carRecord.isActive = true;
+
+        await carRecord.save();
+
         invalidateCache('/api/v2/cars*');
 
         res.json({
             success: true,
-            message: 'تم حفظ السيارة الكورية في جدولها المنفصل المخصص وتطبيق التعريب والعلامة المائية',
+            message: 'تم استيراد السيارة وتنسيقها وتظليل صورها وحفظها بدون تكرار بنجاح!',
             data: importRecord
         });
     } catch (error) {
@@ -619,28 +655,56 @@ router.post('/parts', requireAuthAPI, requireAdmin, async (req, res, next) => {
         const watermarkedImages = WatermarkService.processImagesList(images);
 
         const ImportedSparePartModel = getModel(req, 'ImportedSparePart');
-        const partRecord = new ImportedSparePartModel({
-            tenantId: req.tenant?.id || 'hmcar',
-            importId: 'PART-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
-            partName: cleanName,
-            partNameAr: cleanName,
-            partNumber: payload.partNumber || ('OEM-' + Math.random().toString(36).substring(2, 8).toUpperCase()),
-            brand: payload.brand || 'عام',
-            priceSar: Number(payload.priceSar || payload.price) || 0,
-            stockQuantity: Number(payload.stockQuantity || payload.stock) || 1,
-            description: payload.description || '',
-            images,
-            mainImage: images[0] || '',
-            watermarkedImages,
-            importedBy: req.user?.userId || req.user?._id
-        });
+        const SparePartModel = getModel(req, 'SparePart');
+        const partNo = payload.partNumber || ('OEM-' + Math.random().toString(36).substring(2, 8).toUpperCase());
+
+        let partRecord = await ImportedSparePartModel.findOne({ partNumber: partNo });
+        if (!partRecord) {
+            partRecord = new ImportedSparePartModel({
+                tenantId: req.tenant?.id || 'hmcar',
+                importId: 'PART-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+                partNumber: partNo
+            });
+        }
+
+        partRecord.partName = cleanName;
+        partRecord.partNameAr = cleanName;
+        partRecord.brand = payload.brand || 'عام';
+        partRecord.priceSar = Number(payload.priceSar || payload.price) || 0;
+        partRecord.stockQuantity = Number(payload.stockQuantity || payload.stock) || 1;
+        partRecord.description = payload.description || '';
+        partRecord.images = images;
+        partRecord.mainImage = images[0] || '';
+        partRecord.watermarkedImages = watermarkedImages;
+        partRecord.importedBy = req.user?.userId || req.user?._id;
 
         await partRecord.save();
+
+        // مزامنة سجل قطعة الغيار بجدول SparePart لمنع التكرار والظهور الفوري
+        let spareDoc = await SparePartModel.findOne({ partNumber: partNo });
+        if (!spareDoc) {
+            spareDoc = new SparePartModel({
+                tenantId: req.tenant?.id || 'hmcar',
+                partNumber: partNo
+            });
+        }
+
+        spareDoc.name = cleanName;
+        spareDoc.brand = partRecord.brand;
+        spareDoc.price = partRecord.priceSar;
+        spareDoc.stock = partRecord.stockQuantity;
+        spareDoc.description = payload.description || '';
+        spareDoc.images = images;
+        spareDoc.img = images[0] || '';
+        spareDoc.inStock = true;
+
+        await spareDoc.save();
+
         invalidateCache('/api/v2/parts*');
 
         res.json({
             success: true,
-            message: 'تم حفظ قطعة الغيار في جدولها المنفصل المخصص بنجاح',
+            message: 'تم حفظ قطعة الغيار وتوقيع صورها وحفظها بدون تكرار بنجاح!',
             data: partRecord
         });
     } catch (error) {
