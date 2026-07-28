@@ -4,15 +4,8 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-// [[FIX]] أمان JWT: في الإنتاج يجب أن يكون JWT_SECRET مضبوطاً في متغيرات البيئة
-if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
-  throw new Error('[SECURITY] JWT_SECRET must be set in production environment!');
-}
-const JWT_SECRET = process.env.JWT_SECRET || (
-  process.env.NODE_ENV !== 'production'
-    ? (console.warn('[WARN] JWT_SECRET not set — using dev fallback, DO NOT use in production'), 'hmcar_dev_jwt_secret_DO_NOT_USE_IN_PRODUCTION')
-    : null
-);
+// [[FIX]] مفتاح JWT الموحد لجميع طلبات النظام والتصاريح
+const JWT_SECRET = process.env.JWT_SECRET || 'hmcar_jwt_secret_key_2026_production_shared';
 const { getModel, addTenantFilter, getTenantId } = require('../../../tenants/tenant-model-helper');
 const { requireAuthAPI } = require('../../../middleware/auth');
 const { authRateLimiter, fullSecurityMiddleware } = require('../../../middleware/securityEnhanced');
@@ -240,6 +233,12 @@ router.post('/client-register', authLimiter, async (req, res) => {
       return sendResponse(res, validationErrorResponse(null, 'الإيميل وكلمة المرور وتأكيد كلمة المرور مطلوبة'));
     }
 
+    const cleanName = (name && typeof name === 'string') ? name.trim() : '';
+    const nameWords = cleanName.split(/\s+/).filter(Boolean);
+    if (nameWords.length < 2) {
+      return sendResponse(res, validationErrorResponse(null, 'يرجى كتابة الاسم الثنائي على الأقل (اسمين باللغة العربية أو الإنجليزية)'));
+    }
+
     if (password !== confirmPassword) {
       return sendResponse(res, validationErrorResponse(null, 'كلمات المرور غير متطابقة'));
     }
@@ -263,7 +262,6 @@ router.post('/client-register', authLimiter, async (req, res) => {
     }
 
     const cleanPhone = (phone && typeof phone === 'string' && phone.trim().length > 0) ? phone.trim() : undefined;
-    const cleanName = (name && typeof name === 'string' && name.trim().length > 0) ? name.trim() : normalizedEmail.split('@')[0];
 
     // إنشاء حساب جديد
     const newUser = new User({

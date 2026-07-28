@@ -42,6 +42,11 @@ export default function InlineImportModal({ isOpen, onClose, type, onSuccess }: 
 
   const IconComp = icons[type];
 
+  const getToken = () => {
+    if (typeof window === 'undefined') return '';
+    return localStorage.getItem('hm_token') || localStorage.getItem('carx_token') || localStorage.getItem('token') || '';
+  };
+
   const handlePreview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url || !url.startsWith('http')) {
@@ -54,7 +59,13 @@ export default function InlineImportModal({ isOpen, onClose, type, onSuccess }: 
     setIsDuplicate(false);
 
     try {
-      const token = localStorage.getItem('hm_token');
+      const token = getToken();
+      if (!token) {
+        showToast(isRTL ? '⚠️ انتهت الجلسة. يرجى تسجيل الدخول مجدداً' : 'Session expired. Please log in again', 'error');
+        setTimeout(() => { window.location.href = '/login?role=admin'; }, 1000);
+        return;
+      }
+
       const res = await fetch('/api/v2/import/preview', {
         method: 'POST',
         headers: {
@@ -66,12 +77,18 @@ export default function InlineImportModal({ isOpen, onClose, type, onSuccess }: 
       });
 
       const data = await res.json();
+      if (res.status === 401) {
+        showToast(isRTL ? '⚠️ انتهت صلاحية الجلسة (Token Expired). يرجى إعادة تسجيل الدخول' : 'Token expired. Please log in again', 'error');
+        setTimeout(() => { window.location.href = '/login?role=admin'; }, 1500);
+        return;
+      }
+
       if (res.ok && data.success) {
         setPreviewData(data.data);
         setIsDuplicate(!!data.duplicate);
         showToast(isRTL ? '✅ تم معاينة البيانات وتعريبها بنجاح' : 'Data previewed successfully', 'success');
       } else {
-        throw new Error(data.error || 'فشل الاستخراج');
+        throw new Error(data.error || data.message || 'فشل الاستخراج');
       }
     } catch (err: any) {
       showToast(err.message || (isRTL ? '❌ فشل الاستخراج من الرابط' : 'Failed to extract data'), 'error');
@@ -85,7 +102,7 @@ export default function InlineImportModal({ isOpen, onClose, type, onSuccess }: 
     setSaving(true);
 
     try {
-      const token = localStorage.getItem('hm_token');
+      const token = getToken();
       let endpoint = '/api/v2/import/save';
 
       if (type === 'car') endpoint = '/api/v2/import/korean-cars';
@@ -107,6 +124,12 @@ export default function InlineImportModal({ isOpen, onClose, type, onSuccess }: 
       });
 
       const data = await res.json();
+      if (res.status === 401) {
+        showToast(isRTL ? '⚠️ انتهت الجلسة. يرجى إعادة تسجيل الدخول' : 'Session expired. Please log in again', 'error');
+        setTimeout(() => { window.location.href = '/login?role=admin'; }, 1500);
+        return;
+      }
+
       if (res.ok && (data.success !== false)) {
         showToast(isRTL ? '🎉 تم الاستيراد والتوقيع بالعلامة المائية وتحديث القائمة فوراً!' : 'Imported & saved successfully!', 'success');
         onSuccess();

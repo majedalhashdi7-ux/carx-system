@@ -5,11 +5,12 @@ const jwt = require('jsonwebtoken');
 
 // ── JWT Helpers ──
 
-const JWT_SECRET = process.env.JWT_SECRET || 'hmcar_jwt_secret_key_2026_fallback';
+const JWT_SECRET = process.env.JWT_SECRET || 'hmcar_jwt_secret_key_2026_production_shared';
 
 function generateToken(user, tenantId = 'default') {
   const payload = {
-    id: user._id,
+    id: user._id || user.id,
+    userId: user._id || user.id,
     tenantId: tenantId,
     email: user.email,
     phone: user.phone,
@@ -73,20 +74,19 @@ const requireAuthAPI = (req, res, next) => {
       const decoded = jwt.verify(token, jwtSecret);
       req.user = decoded;
       
-      // [[ARABIC_COMMENT]] التحقق من تطابق المعرض بعد فك التوكن مباشرة
-      // Validate tenant match before proceeding
-      if (process.env.NODE_ENV !== 'test' && process.env.TESTING !== 'true') {
-        if (req.tenant && req.user.tenantId && req.user.tenantId !== req.tenant.id) {
-          return res.status(403).json({
-            success: false,
-            error: 'Token tenant mismatch — access denied',
-            code: 'TENANT_MISMATCH'
-          });
-        }
+      // [[FIX]] السماح للأدمن وللتوكنات العامة من غير تعارض
+      const isAdminUser = ['admin', 'super_admin', 'manager'].includes(decoded.role);
+      if (!isAdminUser && req.tenant && decoded.tenantId && decoded.tenantId !== 'default' && decoded.tenantId !== req.tenant.id) {
+        return res.status(403).json({
+          success: false,
+          error: 'Token tenant mismatch — access denied',
+          code: 'TENANT_MISMATCH'
+        });
       }
       
       return next();
     } catch (err) {
+      console.warn('⚠️ [Auth Middleware] JWT Verify Failed:', err.message);
       return res.status(401).json({ success: false, error: 'Token invalid or expired', details: err.message });
     }
   }

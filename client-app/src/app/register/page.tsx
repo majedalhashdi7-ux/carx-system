@@ -67,6 +67,14 @@ export default function Register() {
         setLoading(true);
         setError('');
 
+        const trimmedName = formData.name.trim();
+        const nameWords = trimmedName.split(/\s+/).filter(Boolean);
+        if (nameWords.length < 2) {
+            setError(isRTL ? 'يرجى كتابة الاسم الثنائي على الأقل (اسمين باللغة العربية أو الإنجليزية)' : 'Please enter at least two words for your full name');
+            setLoading(false);
+            return;
+        }
+
         if (formData.password !== formData.confirmPassword) {
             setError(isRTL ? 'كلمتا المرور غير متطابقتين' : 'Passwords do not match');
             setLoading(false);

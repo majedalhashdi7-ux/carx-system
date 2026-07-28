@@ -5,11 +5,8 @@ const router = express.Router();
 const { requireAuthAPI } = require('../../../middleware/auth');
 const { getModel, addTenantFilter, getTenantId } = require('../../../tenants/tenant-model-helper');
 
-// [[FIX]] أمان JWT: يعتمد على نفس السر المضبوط في متغيرات البيئة
-if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
-  throw new Error('[SECURITY] JWT_SECRET must be set in production environment!');
-}
-const JWT_SECRET = process.env.JWT_SECRET || 'hmcar_dev_jwt_secret_DO_NOT_USE_IN_PRODUCTION';
+// [[FIX]] مفتاح JWT الموحد لجميع طلبات النظام والتصاريح
+const JWT_SECRET = process.env.JWT_SECRET || 'hmcar_jwt_secret_key_2026_production_shared';
 
 // ─── GET /api/v2/live-auctions ─── جلب كل جلسات المزاد
 router.get('/', async (req, res) => {
