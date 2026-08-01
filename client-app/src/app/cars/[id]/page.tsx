@@ -249,7 +249,7 @@ export default function DesertStyleCarDetail() {
     const images = processCarImages(car.images?.filter(Boolean) || []);
     const mainImg = images[activeImage] || getProxiedImageUrl(car.image || car.imageUrl) || 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=1200';
     const carPriceSar = Number(car.priceSar || car.price || 0);
-    const formattedPriceSar = carPriceSar > 0 ? `${carPriceSar.toLocaleString('ar-SA')} ر.س` : 'عند الطلب';
+    const formattedPriceSar = carPriceSar > 0 ? `${carPriceSar.toLocaleString('en-US')} ر.س` : 'عند الطلب';
     // ⚠️ لا نعرض رابط Encar للزوار - السيارة محفوظة محلياً في قاعدة بياناتنا
     // externalRef محفوظ للمرجعية الداخلية فقط وليس للعرض
     const isKoreanImport = car.source === 'korean_import' || car.source === 'encar_korea' || car.listingType === 'showroom';
@@ -267,13 +267,13 @@ export default function DesertStyleCarDetail() {
         { label: isRTL ? 'الموديل' : 'Model', value: cleanKoreanText(isRTL ? (car.specs?.modelAr || car.model) : (car.specs?.modelEn || car.model || 'Unspecified'), isRTL) },
         { label: isRTL ? 'الفئة / الدرجة' : 'Trim Level', value: cleanKoreanText(isRTL ? (car.specs?.trimAr || 'برستيج') : (car.specs?.trimEn || 'Prestige'), isRTL) },
         { label: isRTL ? 'سنة الصنع' : 'Year', value: String(car.year || '—') },
-        { label: isRTL ? 'المسافة المقطوعة' : 'Mileage', value: car.mileage ? (isRTL ? `${Number(car.mileage).toLocaleString('ar-SA')} كم` : `${Number(car.mileage).toLocaleString('en-US')} km`) : '—' },
-        { label: isRTL ? 'ناقل الحركة' : 'Transmission', value: isRTL ? (car.specs?.transmissionAr || car.transmission || 'أوتوماتيك') : (car.specs?.transmissionEn || car.transmission || 'Automatic') },
-        { label: isRTL ? 'نوع الوقود' : 'Fuel Type', value: isRTL ? (car.specs?.fuelTypeAr || car.fuelType || 'بنزين') : (car.specs?.fuelTypeEn || car.fuelType || 'Gasoline') },
+        { label: isRTL ? 'المسافة المقطوعة' : 'Mileage', value: car.mileage ? `${Number(car.mileage).toLocaleString('en-US')} كم` : '—' },
+        { label: isRTL ? 'ناقل الحركة' : 'Transmission', value: cleanKoreanText(isRTL ? (car.specs?.transmissionAr || car.transmission || 'أوتوماتيك') : (car.specs?.transmissionEn || car.transmission || 'Automatic'), isRTL) },
+        { label: isRTL ? 'نوع الوقود' : 'Fuel Type', value: cleanKoreanText(isRTL ? (car.specs?.fuelTypeAr || car.fuelType || 'بنزين') : (car.specs?.fuelTypeEn || car.fuelType || 'Gasoline'), isRTL) },
         { label: isRTL ? 'سعة المحرك' : 'Engine Displ.', value: car.specs?.engineCc || '1000cc' },
-        { label: isRTL ? 'اللون الخارجي' : 'Exterior Color', value: isRTL ? (car.specs?.colorAr || car.color || 'أسود') : (car.specs?.colorEn || car.color || 'Black') },
+        { label: isRTL ? 'اللون الخارجي' : 'Exterior Color', value: cleanKoreanText(isRTL ? (car.specs?.colorAr || car.color || 'أسود') : (car.specs?.colorEn || car.color || 'Black'), isRTL) },
         { label: isRTL ? 'رقم الهيكل (VIN)' : 'VIN Number', value: car.specs?.vin || car.vin || '—' },
-        { label: isRTL ? 'نظام الدفع' : 'Drive Type', value: isRTL ? (car.specs?.driveTypeAr || 'دفع أمامي 2WD') : (car.specs?.driveTypeEn || 'Front Wheel Drive 2WD') }
+        { label: isRTL ? 'نظام الدفع' : 'Drive Type', value: cleanKoreanText(isRTL ? (car.specs?.driveTypeAr || 'دفع أمامي 2WD') : (car.specs?.driveTypeEn || 'Front Wheel Drive 2WD'), isRTL) }
     ];
 
     return (
@@ -354,11 +354,11 @@ export default function DesertStyleCarDetail() {
                             <div className="space-y-3 text-xs border-b border-white/10 pb-4">
                                 <div className="flex justify-between py-1.5 border-b border-white/5">
                                     <span className="text-slate-400 font-bold">سنة الصنع:</span>
-                                    <span className="font-bold text-white">{car.year}</span>
+                                    <span className="font-bold text-white font-mono">{car.year}</span>
                                 </div>
                                 <div className="flex justify-between py-1.5 border-b border-white/5">
                                     <span className="text-slate-400 font-bold">المسافة المقطوعة:</span>
-                                    <span className="font-bold text-white">{car.mileage ? `${Number(car.mileage).toLocaleString('ar-SA')} كم` : '—'}</span>
+                                    <span className="font-bold text-white font-mono">{car.mileage ? `${Number(car.mileage).toLocaleString('en-US')} كم` : '—'}</span>
                                 </div>
                                 <div className="flex justify-between py-1.5 border-b border-white/5">
                                     <span className="text-slate-400 font-bold">ناقل الحركة:</span>
@@ -370,26 +370,17 @@ export default function DesertStyleCarDetail() {
                                 </div>
                             </div>
 
-                            {/* 🟢 زر الطلب الرئيسي المباشر عبر الواتساب */}
+                            {/* 🟢 زر الطلب الفاخر والمباشر عبر الواتساب */}
                             <button
                                 onClick={handleWhatsappOrder}
-                                className="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-base flex items-center justify-center gap-3 shadow-xl shadow-emerald-950/40 transition-all active:scale-98"
+                                className="relative w-full group overflow-hidden py-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 text-white font-black text-base flex items-center justify-center gap-3 shadow-2xl shadow-emerald-500/25 border border-emerald-400/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-emerald-500/40 active:scale-98 cursor-pointer"
                             >
-                                <MessageCircle className="w-6 h-6 fill-white" />
-                                <span>اطلب عبر واتساب</span>
+                                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform">
+                                    <MessageCircle className="w-5 h-5 fill-white text-emerald-600" />
+                                </div>
+                                <span className="tracking-wide text-white drop-shadow-md">اطلب الآن عبر الواتساب</span>
+                                <ChevronLeft className="w-5 h-5 opacity-75 group-hover:-translate-x-1 transition-transform" />
                             </button>
-
-                            {/* بطاقة مسؤول المبيعات (بن زايد - مسؤول المبيعات) */}
-                            <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-[#181a26] border border-[#C9A96E]/30">
-                                <div className="w-10 h-10 rounded-full bg-[#C9A96E] text-slate-950 flex items-center justify-center font-black text-sm shadow-md">
-                                    ب
-                                </div>
-                                <div className="flex-1">
-                                    <div className="text-sm font-bold text-white">بن زايد</div>
-                                    <div className="text-[11px] text-amber-200/70 font-medium">مسؤول المبيعات المباشرة</div>
-                                </div>
-                                <UserCheck className="w-5 h-5 text-emerald-400" />
-                            </div>
 
                             {/* أزرار الأدوات التفاعلية (حاسبة الاستيراد ومقارنة الأسعار) */}
                             <div className="space-y-2.5 pt-2">

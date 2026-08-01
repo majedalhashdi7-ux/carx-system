@@ -57,12 +57,12 @@ function resolveImg(car: CarItem): string {
 
 function fmtKm(km: number) {
     if (!km) return '—';
-    return km >= 10000 ? `${(km / 1000).toFixed(0)}k كم` : `${km.toLocaleString()} كم`;
+    return km >= 10000 ? `${(km / 1000).toFixed(0)}k كم` : `${km.toLocaleString('en-US')} كم`;
 }
 
 function fmtPrice(n: number) {
     if (!n || n <= 0) return '—';
-    return `${Math.round(n).toLocaleString('ar-SA')} ر.س`;
+    return `${Math.round(n).toLocaleString('en-US')} ر.س`;
 }
 
 /* ─── Car Card — تصميم فاخر ─── */
