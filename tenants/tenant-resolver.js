@@ -114,16 +114,24 @@ function resolveTenant(req) {
       if (!tenant.enabled) continue;
       if (!Array.isArray(tenant.domains)) continue;
       const matched = tenant.domains.some(domain => {
-        const d = String(domain || '').toLowerCase();
-        // Compare hostnames without ports
-        const dHost = d.split(':')[0].trim();
+        const d = String(domain || '').toLowerCase().trim();
         const reqHost = host.split(':')[0].trim();
+
+        // دعم wildcard مثل *.vercel.app
+        if (d.startsWith('*.')) {
+          const suffix = d.substring(2); // أزل النجمة والنقطة
+          return reqHost.endsWith('.' + suffix) || reqHost === suffix;
+        }
+
+        // مطابقة عادية
+        const dHost = d.split(':')[0].trim();
         return reqHost === dHost || reqHost.endsWith('.' + dHost);
       });
       if (matched) return id;
     }
     return null;
   };
+
 
   const hostTenantId = findTenantByHost();
 

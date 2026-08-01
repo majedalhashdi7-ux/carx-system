@@ -10,11 +10,16 @@
       "domains": [
         "localhost:3000",
         "localhost:4002",
+        "localhost:5000",
         "hmcar.vercel.app",
         "hmcar-system-two.vercel.app",
+        "hmcar-system.vercel.app",
+        "*.vercel.app",
         "hmcar.xyz",
-        "www.hmcar.xyz"
+        "www.hmcar.xyz",
+        "*.hmcar.xyz"
       ],
+
       "mongoUri": "ENV:MONGO_URI",
       "logo": "/uploads/tenants/hmcar/logo.png",
       "favicon": "/uploads/tenants/hmcar/favicon.ico",
