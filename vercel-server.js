@@ -99,6 +99,7 @@ function isOriginAllowed(origin) {
       'car-auction',
       'client-app',
       'hmcar-client-app',
+      'hmcar-system',
       'carx-system',
     ];
     for (const pattern of allowedVercelPatterns) {
