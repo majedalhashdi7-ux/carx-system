@@ -261,7 +261,11 @@ router.get('/', cacheResponse(300), async (req, res, next) => {
                 source: 'hmcar',     // نُخفي المصدر الداخلي عن العميل
                 makeAr: car.makeAr || car.make,
                 badge: car.badge || '',
-                agency: car.agency || null
+                agency: car.agency || null,
+                specs: car.specs || null,
+                inspectionReport: car.inspectionReport || null,
+                featuresAr: car.featuresAr || [],
+                featuresEn: car.featuresEn || []
             })),
             pagination: {
                 current: parseInt(page),

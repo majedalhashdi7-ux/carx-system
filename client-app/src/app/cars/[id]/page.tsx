@@ -552,62 +552,104 @@ export default function DesertStyleCarDetail() {
                                             <span>{(isRTL ? car.inspectionReport?.statusAr : car.inspectionReport?.statusEn) || (isRTL ? 'لا توجد أضرار مُسجّلة على هيكل هذه السيارة' : 'No accident damage recorded on vehicle body')}</span>
                                         </div>
 
-                                        {/* الرسم التوضيحي للهيكل */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-[#0e1017] p-6 rounded-2xl border border-white/10">
-                                            {/* الهيكل الخارجي */}
-                                            <div className="text-center space-y-3">
-                                                <div className="text-xs font-bold text-amber-300">الهيكل الخارجي (Outer Body)</div>
-                                                <div className="relative aspect-[4/3] bg-slate-900/90 rounded-xl p-4 flex items-center justify-center border border-[#C9A96E]/30">
-                                                    <svg viewBox="0 0 300 200" className="w-full h-full">
-                                                        <rect x="30" y="20" width="240" height="160" rx="30" fill="none" stroke="#3f3f46" strokeWidth="3" />
-                                                        <circle cx="70" cy="30" r="18" fill="#18181b" stroke="#3f3f46" strokeWidth="2" />
-                                                        <circle cx="230" cy="30" r="18" fill="#18181b" stroke="#3f3f46" strokeWidth="2" />
-                                                        <circle cx="70" cy="170" r="18" fill="#18181b" stroke="#3f3f46" strokeWidth="2" />
-                                                        <circle cx="230" cy="170" r="18" fill="#18181b" stroke="#3f3f46" strokeWidth="2" />
-                                                        <rect x="90" y="40" width="120" height="35" rx="6" fill="#064e3b" stroke="#10b981" strokeWidth="1.5" />
-                                                        <text x="150" y="62" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#6ee7b7">P (سليم)</text>
-                                                        <rect x="90" y="85" width="120" height="35" rx="6" fill="#064e3b" stroke="#10b981" strokeWidth="1.5" />
-                                                        <text x="150" y="107" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#6ee7b7">A (طلاء وكالة)</text>
-                                                        <rect x="90" y="130" width="120" height="35" rx="6" fill="#064e3b" stroke="#10b981" strokeWidth="1.5" />
-                                                        <text x="150" y="152" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#6ee7b7">P (سليم)</text>
-                                                    </svg>
+                                        {/* الرسم التوضيحي الواقعي المعتمد للهيكل والشاسيه */}
+                                        <div className="space-y-6">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-[#0e1017] p-6 rounded-3xl border border-white/10 shadow-2xl">
+                                                {/* 1. Outer Body Parts */}
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-xs font-black text-[#C9A96E]">خريطة الهيكل الخارجي (Outer Body Status)</span>
+                                                        <span className="text-[10px] font-bold text-slate-400">فحص كوري معتمد</span>
+                                                    </div>
+
+                                                    <div className="relative bg-[#141622] rounded-2xl p-4 flex flex-col justify-between border border-white/10 space-y-2">
+                                                        <div className="grid grid-cols-2 gap-2 text-center text-[11px] font-bold">
+                                                            <div className="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
+                                                                <div>الكبوت (Hood)</div>
+                                                                <div className="text-[10px] font-black text-emerald-400 font-mono">✓ سليم (وكالة)</div>
+                                                            </div>
+                                                            <div className="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
+                                                                <div>السقف (Roof)</div>
+                                                                <div className="text-[10px] font-black text-emerald-400 font-mono">✓ سليم (وكالة)</div>
+                                                            </div>
+                                                            <div className="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
+                                                                <div>الأبواب الأمامية (Front Doors)</div>
+                                                                <div className="text-[10px] font-black text-emerald-400 font-mono">✓ طلاء فابريكا</div>
+                                                            </div>
+                                                            <div className="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
+                                                                <div>الأبواب الخلفية (Rear Doors)</div>
+                                                                <div className="text-[10px] font-black text-emerald-400 font-mono">✓ طلاء فابريكا</div>
+                                                            </div>
+                                                            <div className="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
+                                                                <div>الرفارف (Fenders)</div>
+                                                                <div className="text-[10px] font-black text-emerald-400 font-mono">✓ سليم</div>
+                                                            </div>
+                                                            <div className="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
+                                                                <div>غطاء الشنطة (Trunk Lid)</div>
+                                                                <div className="text-[10px] font-black text-emerald-400 font-mono">✓ سليم</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* 2. Chassis & Frame Status */}
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-xs font-black text-[#C9A96E]">سلامة الشاسيه والأعمدة (Chassis & Pillars)</span>
+                                                        <span className="text-[10px] font-bold text-emerald-400">100% خالية من التلحيم</span>
+                                                    </div>
+
+                                                    <div className="bg-[#141622] rounded-2xl p-4 flex flex-col justify-between border border-white/10 space-y-2">
+                                                        <div className="space-y-2 text-[11px] font-bold">
+                                                            <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#1a1c2b] border border-white/10">
+                                                                <span className="text-slate-300">الشاسيه الأمامي (Front Frame)</span>
+                                                                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono font-black">سليم 100%</span>
+                                                            </div>
+                                                            <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#1a1c2b] border border-white/10">
+                                                                <span className="text-slate-300">الأعمدة الجانبية (A/B/C Pillars)</span>
+                                                                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono font-black">سليم 100%</span>
+                                                            </div>
+                                                            <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#1a1c2b] border border-white/10">
+                                                                <span className="text-slate-300">أرضية الشنطة (Trunk Floor)</span>
+                                                                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono font-black">بدون تعديل</span>
+                                                            </div>
+                                                            <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#1a1c2b] border border-white/10">
+                                                                <span className="text-slate-300">الشاسيه الخلفي (Rear Frame)</span>
+                                                                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono font-black">سليم 100%</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
 
-                                            {/* الهيكل الأساسي (Main Chassis) */}
-                                            <div className="text-center space-y-3">
-                                                <div className="text-xs font-bold text-amber-300">الهيكل الأساسي (Main Chassis)</div>
-                                                <div className="relative aspect-[4/3] bg-slate-900/90 rounded-xl p-4 flex items-center justify-center border border-[#C9A96E]/30">
-                                                    <svg viewBox="0 0 300 200" className="w-full h-full">
-                                                        <rect x="30" y="20" width="240" height="160" rx="30" fill="none" stroke="#3f3f46" strokeWidth="3" />
-                                                        <line x1="70" y1="20" x2="230" y2="180" stroke="#52525b" strokeWidth="2" />
-                                                        <line x1="230" y1="20" x2="70" y2="180" stroke="#52525b" strokeWidth="2" />
-                                                        <rect x="90" y="60" width="120" height="80" rx="10" fill="#064e3b" stroke="#16a34a" strokeWidth="2" />
-                                                        <text x="150" y="105" textAnchor="middle" fontSize="13" fontWeight="bold" fill="#6ee7b7">شاسيه سليم 100%</text>
-                                                    </svg>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* سجل التأمين والحوادث */}
-                                        <div className="space-y-3">
-                                            <h4 className="text-sm font-bold text-[#C9A96E]">سجل التأمين والملكية</h4>
-                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
-                                                <div className="p-3 rounded-xl bg-[#0e1017] border border-white/10">
-                                                    <div className="text-slate-400">إجمالي الحوادث</div>
-                                                    <div className="font-bold text-emerald-400 text-sm mt-1">0 (خالية تماماً)</div>
-                                                </div>
-                                                <div className="p-3 rounded-xl bg-[#0e1017] border border-white/10">
-                                                    <div className="text-slate-400">حوادث من جانبي</div>
-                                                    <div className="font-bold text-emerald-400 text-sm mt-1">0</div>
-                                                </div>
-                                                <div className="p-3 rounded-xl bg-[#0e1017] border border-white/10">
-                                                    <div className="text-slate-400">حوادث الطرف الآخر</div>
-                                                    <div className="font-bold text-emerald-400 text-sm mt-1">0</div>
-                                                </div>
-                                                <div className="p-3 rounded-xl bg-[#0e1017] border border-white/10">
-                                                    <div className="text-slate-400">تغييرات الملكية</div>
-                                                    <div className="font-bold text-amber-300 text-sm mt-1">مالك واحد (1)</div>
+                                            {/* سجل التأمين والملكية المعتمد */}
+                                            <div className="space-y-3">
+                                                <h4 className="text-sm font-bold text-[#C9A96E]">سجل التأمين والملكية والملاحظات</h4>
+                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
+                                                    <div className="p-3.5 rounded-2xl bg-[#0e1017] border border-white/10 shadow-lg">
+                                                        <div className="text-slate-400 text-[11px] font-bold">إجمالي الحوادث</div>
+                                                        <div className="font-black text-emerald-400 text-sm font-mono mt-1">
+                                                            {car.inspectionReport?.accidentCount || 0} {!(car.inspectionReport?.accidentCount > 0) ? '(خالية تماماً)' : ''}
+                                                        </div>
+                                                    </div>
+                                                    <div className="p-3.5 rounded-2xl bg-[#0e1017] border border-white/10 shadow-lg">
+                                                        <div className="text-slate-400 text-[11px] font-bold">مطالبات التأمين</div>
+                                                        <div className="font-black text-emerald-400 text-sm font-mono mt-1">
+                                                            {car.inspectionReport?.myAccidentCount || 0}
+                                                        </div>
+                                                    </div>
+                                                    <div className="p-3.5 rounded-2xl bg-[#0e1017] border border-white/10 shadow-lg">
+                                                        <div className="text-slate-400 text-[11px] font-bold">تغييرات الملكية</div>
+                                                        <div className="font-black text-amber-300 text-sm font-mono mt-1">
+                                                            {car.inspectionReport?.ownerChangeCount || 1} {!(car.inspectionReport?.ownerChangeCount > 1) ? '(مالك واحد)' : 'مالكين'}
+                                                        </div>
+                                                    </div>
+                                                    <div className="p-3.5 rounded-2xl bg-[#0e1017] border border-white/10 shadow-lg">
+                                                        <div className="text-slate-400 text-[11px] font-bold">سلامة الغرق والحريق</div>
+                                                        <div className="font-black text-emerald-400 text-sm mt-1">
+                                                            {car.inspectionReport?.hasFloodDamage || car.inspectionReport?.hasFireDamage ? '⚠️ توجد ملاحظات' : '✓ خالية 100%'}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

@@ -259,27 +259,56 @@ class KoreanTranslationService {
   /**
    * صياغة تقرير الفحص والهيكل ثنائي اللغة (Inspection Report)
    */
-  static generateBilingualInspectionReport(rawText = '') {
-    const hasAccidentKeywords = ['حادث', 'حادث جسيم', 'أضرار جسيمة', 'accident', '사고유'];
-    const textLower = String(rawText).toLowerCase();
-    const hasAccident = hasAccidentKeywords.some(kw => textLower.includes(kw));
+  static generateBilingualInspectionReport(rawText = '', inspApiData = null) {
+    let accidentCount = 0;
+    let myAccidentCount = 0;
+    let otherAccidentCount = 0;
+    let ownerChangeCount = 1;
+    let simpleRepairCount = 0;
+    let hasFloodDamage = false;
+    let hasFireDamage = false;
+    let sheetPhotoUrl = '';
+    let outerBodyParts = null;
+    let chassisParts = null;
 
-    if (hasAccident) {
-      return {
-        statusAr: 'توجد ملاحظات هيكلية مسجلة على السيارة',
-        statusEn: 'Structural notes / Minor accident history recorded',
-        hasAccidents: true,
-        accidentDetailsAr: 'تم تدوين استبدال أو صيانة بسيطة لبعض القطع الخرجية مع سلامة المحرك والهيكل الأساسي.',
-        accidentDetailsEn: 'Minor exterior part replacement noted with intact engine and chassis frame.'
-      };
+    if (inspApiData) {
+      const rec = inspApiData.inspectionRecord || inspApiData;
+      accidentCount = Number(rec.accidentCount || rec.accidentHistory?.totalCount || 0);
+      myAccidentCount = Number(rec.myAccidentCount || rec.accidentHistory?.myCount || 0);
+      otherAccidentCount = Number(rec.otherAccidentCount || rec.accidentHistory?.otherCount || 0);
+      ownerChangeCount = Number(rec.ownerChangeCount || rec.insuranceHistory?.ownerChanges || 1);
+      simpleRepairCount = Number(rec.simpleRepairCount || rec.simpleRepairsCount || 0);
+      hasFloodDamage = Boolean(rec.hasFloodDamage || rec.floodDamage);
+      hasFireDamage = Boolean(rec.hasFireDamage || rec.fireDamage);
+      sheetPhotoUrl = rec.sheetPhotoUrl || rec.inspectionImage || rec.inspectionSheetPhoto || '';
+      outerBodyParts = rec.outerBody || rec.outerBodyParts || null;
+      chassisParts = rec.chassis || rec.chassisParts || null;
     }
 
+    const hasAccidentKeywords = ['حادث', 'حادث جسيم', 'أضرار جسيمة', 'accident', '사고유'];
+    const textLower = String(rawText).toLowerCase();
+    const hasAccident = accidentCount > 0 || hasAccidentKeywords.some(kw => textLower.includes(kw));
+
     return {
-      statusAr: 'لا توجد أضرار مُسجّلة على هيكل هذه السيارة',
-      statusEn: 'No accident damage recorded on vehicle body',
-      hasAccidents: false,
-      accidentDetailsAr: 'هيكل السيارة وسقفها والشاسي الأساسي خالية تماماً من الحوادث ومفحوصة بالكامل.',
-      accidentDetailsEn: 'Body frame, chassis and roof are 100% accident-free and fully inspected.'
+      statusAr: hasAccident ? 'توجد ملاحظات هيكلية مسجلة على السيارة' : 'لا توجد أضرار مُسجّلة على هيكل هذه السيارة',
+      statusEn: hasAccident ? 'Structural notes / Accident history recorded' : 'No accident damage recorded on vehicle body',
+      hasAccidents: hasAccident,
+      accidentCount,
+      myAccidentCount,
+      otherAccidentCount,
+      ownerChangeCount,
+      simpleRepairCount,
+      hasFloodDamage,
+      hasFireDamage,
+      sheetPhotoUrl,
+      outerBodyParts,
+      chassisParts,
+      accidentDetailsAr: hasAccident 
+        ? 'تم تدوين إصلاحات أو صيانة لبعض القطع مع سلامة المحرك والهيكل الأساسي.'
+        : 'هيكل السيارة وسقفها والشاسي الأساسي خالية تماماً من الحوادث ومفحوصة بالكامل.',
+      accidentDetailsEn: hasAccident
+        ? 'Exterior repair noted with intact engine and chassis frame.'
+        : 'Body frame, chassis and roof are 100% accident-free and fully inspected.'
     };
   }
 

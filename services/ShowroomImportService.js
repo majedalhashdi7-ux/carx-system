@@ -374,7 +374,7 @@ class ShowroomImportService {
                         // ─── المميزات ثنائية اللغة ─────────────────────────────────
                         const rawDesc = detail?.Description || rawCar.Description || '';
                         const { featuresAr, featuresEn } = KoreanTranslationService.extractBilingualFeatures(rawDesc);
-                        const inspectionReport = KoreanTranslationService.generateBilingualInspectionReport(rawDesc);
+                        const inspectionReport = KoreanTranslationService.generateBilingualInspectionReport(rawDesc, insp);
 
                         // ─── الوصف العربي والإنجليزي ───────────────────────────────
                         const descriptionAr = KoreanTranslationService.cleanAndTranslate(rawDesc) ||
