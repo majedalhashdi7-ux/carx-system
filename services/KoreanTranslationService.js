@@ -215,8 +215,9 @@ class KoreanTranslationService {
    */
   static extractBilingualFeatures(rawTextOrHtml = '') {
     const textLower = String(rawTextOrHtml).toLowerCase();
-    const featuresAr: string[] = [];
-    const featuresEn: string[] = [];
+    const featuresAr = [];
+    const featuresEn = [];
+
 
     FEATURES_DICTIONARY.forEach(item => {
       const matched = item.keywords.some(kw => textLower.includes(kw));
