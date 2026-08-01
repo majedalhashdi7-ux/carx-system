@@ -91,30 +91,9 @@ export default function UltraModernCarCard({
         }
     };
 
-    // إصلاح صور السيارات الكورية
+    // إصلاح وعرض صور السيارات مع علامة HM CAR المائية
     const resolveCarImage = (imageUrl: string | undefined): string => {
-        if (!imageUrl) {
-            return 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?q=80&w=1000&auto=format&fit=crop';
-        }
-        
-        let url = imageUrl.trim();
-        
-        // إصلاح الروابط المكررة
-        if (url.includes('https://ci.encar.comhttps://ci.encar.com')) {
-            url = url.replace('https://ci.encar.comhttps://ci.encar.com', 'https://ci.encar.com');
-        }
-        
-        // إصلاح الروابط التي تنتهي بـ _
-        if (url.endsWith('_')) {
-            url = `${url}001.jpg`;
-        }
-        
-        // إضافة بروتوكول إذا كان مفقوداً
-        if (!url.startsWith('http')) {
-            url = `https://${url}`;
-        }
-        
-        return url;
+        return getProxiedImageUrl(imageUrl);
     };
 
     const currentImage = car.images?.[currentImageIndex] || car.imageUrl || '';

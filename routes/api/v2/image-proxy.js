@@ -78,9 +78,28 @@ async function applyWatermarkWithSharp(imageBuffer, text = WATERMARK_TEXT) {
  */
 router.get('/', async (req, res) => {
     try {
-        const { url: imageUrl, watermark, text } = req.query;
+        const { url: rawImageUrl, watermark, text } = req.query;
 
-        if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.startsWith('http')) {
+        if (!rawImageUrl || typeof rawImageUrl !== 'string') {
+            return res.redirect('https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=1000');
+        }
+
+        let imageUrl = String(rawImageUrl).trim();
+
+        // تصحيح البادئة المزدوجة للـ URL
+        if (imageUrl.includes('https://ci.encar.comhttps://')) {
+            imageUrl = imageUrl.replace('https://ci.encar.comhttps://', 'https://');
+        }
+
+        // تصحيح المسارات النسبية لـ Encar
+        if (imageUrl.startsWith('/carpicture') || imageUrl.startsWith('carpicture')) {
+            const cleanPath = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
+            imageUrl = `https://ci.encar.com${cleanPath}`;
+        } else if (!imageUrl.startsWith('http') && imageUrl.includes('/001/')) {
+            imageUrl = `https://ci.encar.com/carpicture/${imageUrl.replace(/^\/+/, '')}`;
+        }
+
+        if (!imageUrl.startsWith('http')) {
             return res.redirect('https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=1000');
         }
 
