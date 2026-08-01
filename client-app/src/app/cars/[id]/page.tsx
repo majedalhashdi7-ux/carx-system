@@ -277,16 +277,16 @@ export default function DesertStyleCarDetail() {
     ];
 
     return (
-        <div className="relative min-h-screen bg-[#614828] text-amber-50 font-sans" dir="rtl">
+        <div className="relative min-h-screen bg-[#0a0b10] text-slate-100 font-sans" dir="rtl">
             <Navbar />
 
-            {/* ── Top Header Bar (شريط الترويسة العلوي الداكن المصمم بنفس أسلوب Desert Korea Auto) ── */}
-            <div className="pt-24 pb-6 bg-[#3d2c18] border-b border-[#7c5d33] shadow-xl">
+            {/* ── Top Header Bar (شريط الترويسة العلوي الفاخر) ── */}
+            <div className="pt-24 pb-6 bg-[#12141d]/90 border-b border-[#C9A96E]/20 backdrop-blur-2xl shadow-2xl">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6">
                     {/* زر العودة */}
                     <button
                         onClick={() => router.push('/cars')}
-                        className="flex items-center gap-2 text-xs font-bold text-amber-200/80 hover:text-white transition-colors mb-4"
+                        className="flex items-center gap-2 text-xs font-bold text-[#C9A96E] hover:text-white transition-colors mb-4"
                     >
                         <ChevronRight className="w-4 h-4" />
                         <span>العودة لمعرض السيارات</span>
@@ -299,31 +299,31 @@ export default function DesertStyleCarDetail() {
                                 <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
                                     {formatCarTitle(car.title, car.make, isRTL)}
                                 </h1>
-                                <span className="px-3 py-1 rounded-lg bg-[#543b1f] border border-[#8a683a] text-xs font-bold text-amber-300">
-                                    {car.specs?.badge || car.model || '3.3 GDI AWD'}
+                                <span className="px-3 py-1 rounded-xl bg-[#C9A96E]/10 border border-[#C9A96E]/30 text-xs font-bold text-amber-300">
+                                    {cleanKoreanText(car.specs?.badge || car.model || '', isRTL) || 'معرض HM CAR'}
                                 </span>
                             </div>
 
                             {/* شارات الحالة */}
                             <div className="flex items-center gap-2 mt-2">
-                                <span className="px-2.5 py-1 rounded-full bg-emerald-500 text-slate-950 text-xs font-black flex items-center gap-1">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping" />
-                                    متاح
+                                <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-black flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                                    متاح الآن
                                 </span>
-                                <span className="px-3 py-1 rounded-full bg-amber-900/50 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5">
+                                <span className="px-3 py-1 rounded-full bg-[#C9A96E]/10 text-amber-200 border border-[#C9A96E]/30 text-xs font-bold flex items-center gap-1.5">
                                     <span className="w-2 h-2 rounded-full bg-amber-400" />
-                                    <span>معرض HM CAR</span>
+                                    <span>معرض HM CAR الرسمي</span>
                                 </span>
                             </div>
                         </div>
 
-                        {/* سعر السيارة ورسوم التصدير */}
-                        <div className="bg-[#4d381e] border border-[#8a683a] rounded-2xl p-4 md:text-left flex flex-col md:items-end justify-center">
-                            <div className="text-[11px] text-amber-300/70 font-bold uppercase">السعر الإجمالي الشامل</div>
+                        {/* سعر السيارة */}
+                        <div className="bg-[#181a26] border border-[#C9A96E]/40 rounded-2xl p-4 md:text-left flex flex-col md:items-end justify-center shadow-xl">
+                            <div className="text-[11px] text-[#C9A96E] font-bold uppercase tracking-wider">السعر الإجمالي الشامل</div>
                             <div className="text-3xl font-black text-amber-300 font-mono tracking-tight">{formattedPriceSar}</div>
                             {car.year < 2021 && (
-                                <p className="text-[10px] text-amber-200/80 mt-1 max-w-xs">
-                                    * رسوم جمركية إضافية (+7300 SAR عند التصدير إلى السعودية للموديلات الأقدم من 2021)
+                                <p className="text-[10px] text-slate-400 mt-1 max-w-xs">
+                                    * رسوم جمركية إضافية (+7300 SAR عند التصدير للموديلات الأقدم من 2021)
                                 </p>
                             )}
                         </div>
@@ -331,71 +331,71 @@ export default function DesertStyleCarDetail() {
                 </div>
             </div>
 
-            {/* ── MAIN CONTENT GRID (تخطيط العمودين المائل نحو Desert Korea Auto) ── */}
+            {/* ── MAIN CONTENT GRID ── */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-                    {/* ────── LEFT COLUMN: Sticky Action Card (بطاقة إجراءات الطلب الثابتة على اليسار) ────── */}
+                    {/* ────── LEFT COLUMN: Sticky Action Card ────── */}
                     <div className="lg:col-span-4 space-y-5 lg:order-1">
-                        <div className="bg-[#fcf8f2] text-slate-900 rounded-3xl p-6 border-2 border-[#d6c4a8] shadow-2xl space-y-6 lg:sticky lg:top-28">
+                        <div className="bg-[#141622] text-slate-100 rounded-3xl p-6 border border-[#C9A96E]/30 shadow-2xl space-y-6 lg:sticky lg:top-28">
 
                             {/* شارة التوفر والسعر */}
-                            <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-                                <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
+                            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                                <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold">
                                     متاح الآن
                                 </span>
                                 <div className="text-right">
-                                    <span className="text-xs text-slate-500 block font-bold">السعر الكامل</span>
-                                    <span className="text-2xl font-black text-[#614828] font-mono">{formattedPriceSar}</span>
+                                    <span className="text-xs text-slate-400 block font-bold">السعر الكامل</span>
+                                    <span className="text-2xl font-black text-amber-300 font-mono">{formattedPriceSar}</span>
                                 </div>
                             </div>
 
                             {/* الجدول السريع للمواصفات */}
-                            <div className="space-y-3 text-xs border-b border-slate-200 pb-4">
-                                <div className="flex justify-between py-1 border-b border-slate-100">
-                                    <span className="text-slate-500 font-bold">سنة الصنع:</span>
-                                    <span className="font-bold text-slate-900">{car.year}</span>
+                            <div className="space-y-3 text-xs border-b border-white/10 pb-4">
+                                <div className="flex justify-between py-1.5 border-b border-white/5">
+                                    <span className="text-slate-400 font-bold">سنة الصنع:</span>
+                                    <span className="font-bold text-white">{car.year}</span>
                                 </div>
-                                <div className="flex justify-between py-1 border-b border-slate-100">
-                                    <span className="text-slate-500 font-bold">المسافة المقطوعة:</span>
-                                    <span className="font-bold text-slate-900">{car.mileage ? `${Number(car.mileage).toLocaleString('ar-SA')} كم` : '—'}</span>
+                                <div className="flex justify-between py-1.5 border-b border-white/5">
+                                    <span className="text-slate-400 font-bold">المسافة المقطوعة:</span>
+                                    <span className="font-bold text-white">{car.mileage ? `${Number(car.mileage).toLocaleString('ar-SA')} كم` : '—'}</span>
                                 </div>
-                                <div className="flex justify-between py-1 border-b border-slate-100">
-                                    <span className="text-slate-500 font-bold">ناقل الحركة:</span>
-                                    <span className="font-bold text-slate-900">{car.transmission || 'أوتوماتيك'}</span>
+                                <div className="flex justify-between py-1.5 border-b border-white/5">
+                                    <span className="text-slate-400 font-bold">ناقل الحركة:</span>
+                                    <span className="font-bold text-white">{cleanKoreanText(car.transmission || 'أوتوماتيك', isRTL)}</span>
                                 </div>
-                                <div className="flex justify-between py-1">
-                                    <span className="text-slate-500 font-bold">نوع الوقود:</span>
-                                    <span className="font-bold text-slate-900">{car.fuelType || 'بنزين'}</span>
+                                <div className="flex justify-between py-1.5">
+                                    <span className="text-slate-400 font-bold">نوع الوقود:</span>
+                                    <span className="font-bold text-white">{cleanKoreanText(car.fuelType || 'بنزين', isRTL)}</span>
                                 </div>
                             </div>
 
                             {/* 🟢 زر الطلب الرئيسي المباشر عبر الواتساب */}
                             <button
                                 onClick={handleWhatsappOrder}
-                                className="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-base flex items-center justify-center gap-3 shadow-xl transition-all active:scale-98"
+                                className="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-base flex items-center justify-center gap-3 shadow-xl shadow-emerald-950/40 transition-all active:scale-98"
                             >
                                 <MessageCircle className="w-6 h-6 fill-white" />
                                 <span>اطلب عبر واتساب</span>
                             </button>
 
                             {/* بطاقة مسؤول المبيعات (بن زايد - مسؤول المبيعات) */}
-                            <div className="flex items-center gap-3 p-3 rounded-2xl bg-amber-100/60 border border-amber-200/80">
-                                <div className="w-10 h-10 rounded-full bg-[#614828] text-white flex items-center justify-center font-bold text-sm">
+                            <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-[#181a26] border border-[#C9A96E]/30">
+                                <div className="w-10 h-10 rounded-full bg-[#C9A96E] text-slate-950 flex items-center justify-center font-black text-sm shadow-md">
                                     ب
                                 </div>
                                 <div className="flex-1">
-                                    <div className="text-sm font-bold text-slate-900">بن زايد</div>
-                                    <div className="text-[11px] text-slate-600 font-medium">مسؤول المبيعات المباشرة</div>
+                                    <div className="text-sm font-bold text-white">بن زايد</div>
+                                    <div className="text-[11px] text-amber-200/70 font-medium">مسؤول المبيعات المباشرة</div>
                                 </div>
-                                <UserCheck className="w-5 h-5 text-emerald-600" />
+                                <UserCheck className="w-5 h-5 text-emerald-400" />
                             </div>
 
                             {/* أزرار الأدوات التفاعلية (حاسبة الاستيراد ومقارنة الأسعار) */}
                             <div className="space-y-2.5 pt-2">
                                 <button
                                     onClick={() => setShowCalcModal(true)}
-                                    className="w-full py-3 rounded-xl bg-[#614828] hover:bg-[#4d381e] text-amber-100 font-bold text-xs flex items-center justify-center gap-2 border border-[#8a683a] transition-colors"
+                                    className="w-full py-3 rounded-xl bg-[#C9A96E]/10 hover:bg-[#C9A96E]/20 text-amber-300 font-bold text-xs flex items-center justify-center gap-2 border border-[#C9A96E]/40 transition-colors"
                                 >
                                     <Calculator className="w-4 h-4 text-amber-300" />
                                     <span>حاسبة تكلفة الاستيراد</span>
@@ -403,9 +403,9 @@ export default function DesertStyleCarDetail() {
 
                                 <button
                                     onClick={() => setShowCompareModal(true)}
-                                    className="w-full py-3 rounded-xl bg-white hover:bg-amber-50 text-slate-800 font-bold text-xs flex items-center justify-center gap-2 border border-slate-300 transition-colors"
+                                    className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 font-bold text-xs flex items-center justify-center gap-2 border border-white/10 transition-colors"
                                 >
-                                    <Scale className="w-4 h-4 text-amber-700" />
+                                    <Scale className="w-4 h-4 text-amber-400" />
                                     <span>مقارنة بسعر الجديد</span>
                                 </button>
                             </div>
@@ -449,17 +449,17 @@ export default function DesertStyleCarDetail() {
                             </div>
                         </div>
 
-                        {/* 2. Photo Thumbnails Grid (عرض جميع صور السيارة المصغرة) */}
+                        {/* 2. Photo Thumbnails Grid */}
                         {images.length > 1 && (
-                            <div className="bg-[#4d381e]/80 border border-[#7c5d33] rounded-2xl p-3">
-                                <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2 max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-amber-700">
+                            <div className="bg-[#141622] border border-[#C9A96E]/20 rounded-2xl p-3">
+                                <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2 max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-[#C9A96E]">
                                     {images.map((img: string, idx: number) => (
                                         <button
                                             key={idx}
                                             onClick={() => setActiveImage(idx)}
                                             className={cn(
                                                 "relative aspect-square rounded-xl overflow-hidden border-2 transition-all shrink-0",
-                                                activeImage === idx ? "border-amber-300 scale-105 shadow-lg" : "border-amber-900/50 opacity-60 hover:opacity-100"
+                                                activeImage === idx ? "border-[#C9A96E] scale-105 shadow-xl" : "border-white/10 opacity-60 hover:opacity-100"
                                             )}
                                         >
                                             <Image src={img} alt={`thumb ${idx}`} fill className="object-cover" unoptimized referrerPolicy="no-referrer" />
@@ -469,11 +469,11 @@ export default function DesertStyleCarDetail() {
                             </div>
                         )}
 
-                        {/* 3. INTERACTIVE TABS (المواصفات | الفحص والمميزات | سيارات مشابهة) */}
-                        <div className="bg-[#543b1f] border border-[#8a683a] rounded-3xl p-6 shadow-2xl space-y-6">
+                        {/* 3. INTERACTIVE TABS */}
+                        <div className="bg-[#141622] border border-[#C9A96E]/30 rounded-3xl p-6 shadow-2xl space-y-6">
 
                             {/* Tab Header Buttons */}
-                            <div className="flex items-center gap-2 border-b border-[#7c5d33] pb-4 overflow-x-auto">
+                            <div className="flex items-center gap-2 border-b border-white/10 pb-4 overflow-x-auto">
                                 {[
                                     { key: 'SPECS', label: 'المواصفات', icon: ListFilter },
                                     { key: 'INSPECTION', label: 'الفحص والمميزات', icon: FileCheck2 },
@@ -485,8 +485,8 @@ export default function DesertStyleCarDetail() {
                                         className={cn(
                                             "px-6 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 whitespace-nowrap border",
                                             activeTab === tab.key
-                                                ? "bg-amber-500 text-slate-950 border-amber-400 shadow-lg"
-                                                : "bg-[#3d2c18] text-amber-200/70 border-[#7c5d33] hover:text-white"
+                                                ? "bg-[#C9A96E] text-slate-950 border-[#C9A96E] shadow-xl shadow-[#C9A96E]/20"
+                                                : "bg-white/5 text-amber-200/80 border-white/10 hover:text-white hover:bg-white/10"
                                         )}
                                     >
                                         <tab.icon className="w-4 h-4" />
@@ -495,25 +495,25 @@ export default function DesertStyleCarDetail() {
                                 ))}
                             </div>
 
-                            {/* TAB 1: المواصفات (Specifications Grid) */}
+                            {/* TAB 1: المواصفات */}
                             {activeTab === 'SPECS' && (
                                 <div className="space-y-6">
-                                    <h3 className="text-lg font-black text-amber-200 border-r-4 border-amber-400 pr-3">
+                                    <h3 className="text-lg font-black text-amber-300 border-r-4 border-[#C9A96E] pr-3">
                                         المواصفات التفصيلية للسيارة
                                     </h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         {specsList.map(spec => (
-                                            <div key={spec.label} className="flex justify-between items-center p-3.5 rounded-2xl bg-[#3d2c18] border border-[#7c5d33] text-sm">
-                                                <span className="text-amber-200/70 font-bold">{spec.label}</span>
+                                            <div key={spec.label} className="flex justify-between items-center p-3.5 rounded-2xl bg-[#1a1c2b] border border-white/10 text-sm">
+                                                <span className="text-slate-400 font-bold">{spec.label}</span>
                                                 <span className="font-bold text-white font-mono">{spec.value}</span>
                                             </div>
                                         ))}
                                     </div>
 
                                     {car.description && (
-                                        <div className="p-4 rounded-2xl bg-[#3d2c18] border border-[#7c5d33]">
-                                            <h4 className="text-xs font-bold text-amber-400 uppercase mb-2">الوصف الكامل والملاحظات</h4>
-                                            <p className="text-xs sm:text-sm text-amber-100/90 leading-relaxed">{car.description}</p>
+                                        <div className="p-4 rounded-2xl bg-[#1a1c2b] border border-white/10">
+                                            <h4 className="text-xs font-bold text-[#C9A96E] uppercase mb-2">الوصف الكامل والملاحظات</h4>
+                                            <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">{cleanKoreanText(car.description, isRTL)}</p>
                                         </div>
                                     )}
                                 </div>
@@ -525,12 +525,12 @@ export default function DesertStyleCarDetail() {
 
                                     {/* المميزات العامة (Features Badges) */}
                                     <div>
-                                        <h3 className="text-base font-black text-amber-200 border-r-4 border-amber-400 pr-3 mb-4">
+                                        <h3 className="text-base font-black text-amber-300 border-r-4 border-[#C9A96E] pr-3 mb-4">
                                             {isRTL ? 'المميزات والخيارات المتاحة' : 'Features & Available Options'}
                                         </h3>
                                         <div className="flex flex-wrap gap-2">
                                             {((isRTL ? car.featuresAr : car.featuresEn) || (isRTL ? DEFAULT_CAR_FEATURES : DEFAULT_CAR_FEATURES_EN)).map((feat: string, idx: number) => (
-                                                <span key={idx} className="px-3 py-2 rounded-xl bg-[#3d2c18] border border-[#7c5d33] text-xs font-bold text-amber-100 flex items-center gap-1.5">
+                                                <span key={idx} className="px-3 py-2 rounded-xl bg-[#1a1c2b] border border-white/10 text-xs font-bold text-slate-200 flex items-center gap-1.5">
                                                     <Check className="w-3.5 h-3.5 text-emerald-400" />
                                                     <span>{feat}</span>
                                                 </span>
@@ -538,8 +538,8 @@ export default function DesertStyleCarDetail() {
                                         </div>
                                     </div>
 
-                                    {/* تقرير الفحص والهيكل التفاعلي 2D Diagram */}
-                                    <div className="bg-[#3d2c18] border border-[#7c5d33] rounded-2xl p-6 space-y-6">
+                                    {/* تقرير الفحص والهيكل التفاعلي */}
+                                    <div className="bg-[#1a1c2b] border border-white/10 rounded-2xl p-6 space-y-6">
                                         <div className="flex items-center justify-between flex-wrap gap-2">
                                             <h3 className="text-base font-black text-white flex items-center gap-2">
                                                 <ShieldCheck className="w-5 h-5 text-emerald-400" />
@@ -555,24 +555,24 @@ export default function DesertStyleCarDetail() {
                                             <span>{(isRTL ? car.inspectionReport?.statusAr : car.inspectionReport?.statusEn) || (isRTL ? 'لا توجد أضرار مُسجّلة على هيكل هذه السيارة' : 'No accident damage recorded on vehicle body')}</span>
                                         </div>
 
-                                        {/* الرسم التوضيحي للهيكل (Outer Body & Main Chassis) */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-950 p-6 rounded-2xl border border-slate-800">
+                                        {/* الرسم التوضيحي للهيكل */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-[#0e1017] p-6 rounded-2xl border border-white/10">
                                             {/* الهيكل الخارجي */}
                                             <div className="text-center space-y-3">
                                                 <div className="text-xs font-bold text-amber-300">الهيكل الخارجي (Outer Body)</div>
-                                                <div className="relative aspect-[4/3] bg-white rounded-xl p-4 flex items-center justify-center border-2 border-amber-500/30">
+                                                <div className="relative aspect-[4/3] bg-slate-900/90 rounded-xl p-4 flex items-center justify-center border border-[#C9A96E]/30">
                                                     <svg viewBox="0 0 300 200" className="w-full h-full">
                                                         <rect x="30" y="20" width="240" height="160" rx="30" fill="none" stroke="#3f3f46" strokeWidth="3" />
-                                                        <circle cx="70" cy="30" r="18" fill="#e4e4e7" stroke="#27272a" strokeWidth="2" />
-                                                        <circle cx="230" cy="30" r="18" fill="#e4e4e7" stroke="#27272a" strokeWidth="2" />
-                                                        <circle cx="70" cy="170" r="18" fill="#e4e4e7" stroke="#27272a" strokeWidth="2" />
-                                                        <circle cx="230" cy="170" r="18" fill="#e4e4e7" stroke="#27272a" strokeWidth="2" />
-                                                        <rect x="90" y="40" width="120" height="35" rx="6" fill="#ecfdf5" stroke="#10b981" strokeWidth="1.5" />
-                                                        <text x="150" y="62" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#047857">P (سليم)</text>
-                                                        <rect x="90" y="85" width="120" height="35" rx="6" fill="#ecfdf5" stroke="#10b981" strokeWidth="1.5" />
-                                                        <text x="150" y="107" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#047857">A (طلاء وكالة)</text>
-                                                        <rect x="90" y="130" width="120" height="35" rx="6" fill="#ecfdf5" stroke="#10b981" strokeWidth="1.5" />
-                                                        <text x="150" y="152" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#047857">P (سليم)</text>
+                                                        <circle cx="70" cy="30" r="18" fill="#18181b" stroke="#3f3f46" strokeWidth="2" />
+                                                        <circle cx="230" cy="30" r="18" fill="#18181b" stroke="#3f3f46" strokeWidth="2" />
+                                                        <circle cx="70" cy="170" r="18" fill="#18181b" stroke="#3f3f46" strokeWidth="2" />
+                                                        <circle cx="230" cy="170" r="18" fill="#18181b" stroke="#3f3f46" strokeWidth="2" />
+                                                        <rect x="90" y="40" width="120" height="35" rx="6" fill="#064e3b" stroke="#10b981" strokeWidth="1.5" />
+                                                        <text x="150" y="62" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#6ee7b7">P (سليم)</text>
+                                                        <rect x="90" y="85" width="120" height="35" rx="6" fill="#064e3b" stroke="#10b981" strokeWidth="1.5" />
+                                                        <text x="150" y="107" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#6ee7b7">A (طلاء وكالة)</text>
+                                                        <rect x="90" y="130" width="120" height="35" rx="6" fill="#064e3b" stroke="#10b981" strokeWidth="1.5" />
+                                                        <text x="150" y="152" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#6ee7b7">P (سليم)</text>
                                                     </svg>
                                                 </div>
                                             </div>
@@ -580,13 +580,13 @@ export default function DesertStyleCarDetail() {
                                             {/* الهيكل الأساسي (Main Chassis) */}
                                             <div className="text-center space-y-3">
                                                 <div className="text-xs font-bold text-amber-300">الهيكل الأساسي (Main Chassis)</div>
-                                                <div className="relative aspect-[4/3] bg-white rounded-xl p-4 flex items-center justify-center border-2 border-amber-500/30">
+                                                <div className="relative aspect-[4/3] bg-slate-900/90 rounded-xl p-4 flex items-center justify-center border border-[#C9A96E]/30">
                                                     <svg viewBox="0 0 300 200" className="w-full h-full">
                                                         <rect x="30" y="20" width="240" height="160" rx="30" fill="none" stroke="#3f3f46" strokeWidth="3" />
-                                                        <line x1="70" y1="20" x2="230" y2="180" stroke="#d4d4d8" strokeWidth="2" />
-                                                        <line x1="230" y1="20" x2="70" y2="180" stroke="#d4d4d8" strokeWidth="2" />
-                                                        <rect x="90" y="60" width="120" height="80" rx="10" fill="#f0fdf4" stroke="#16a34a" strokeWidth="2" />
-                                                        <text x="150" y="105" textAnchor="middle" fontSize="13" fontWeight="bold" fill="#15803d">شاسيه سليم 100%</text>
+                                                        <line x1="70" y1="20" x2="230" y2="180" stroke="#52525b" strokeWidth="2" />
+                                                        <line x1="230" y1="20" x2="70" y2="180" stroke="#52525b" strokeWidth="2" />
+                                                        <rect x="90" y="60" width="120" height="80" rx="10" fill="#064e3b" stroke="#16a34a" strokeWidth="2" />
+                                                        <text x="150" y="105" textAnchor="middle" fontSize="13" fontWeight="bold" fill="#6ee7b7">شاسيه سليم 100%</text>
                                                     </svg>
                                                 </div>
                                             </div>
@@ -594,22 +594,22 @@ export default function DesertStyleCarDetail() {
 
                                         {/* سجل التأمين والحوادث */}
                                         <div className="space-y-3">
-                                            <h4 className="text-sm font-bold text-amber-300">سجل التأمين والملكية</h4>
+                                            <h4 className="text-sm font-bold text-[#C9A96E]">سجل التأمين والملكية</h4>
                                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
-                                                <div className="p-3 rounded-xl bg-[#543b1f] border border-[#8a683a]">
-                                                    <div className="text-amber-200/70">إجمالي الحوادث</div>
+                                                <div className="p-3 rounded-xl bg-[#0e1017] border border-white/10">
+                                                    <div className="text-slate-400">إجمالي الحوادث</div>
                                                     <div className="font-bold text-emerald-400 text-sm mt-1">0 (خالية تماماً)</div>
                                                 </div>
-                                                <div className="p-3 rounded-xl bg-[#543b1f] border border-[#8a683a]">
-                                                    <div className="text-amber-200/70">حوادث من جانبي</div>
+                                                <div className="p-3 rounded-xl bg-[#0e1017] border border-white/10">
+                                                    <div className="text-slate-400">حوادث من جانبي</div>
                                                     <div className="font-bold text-emerald-400 text-sm mt-1">0</div>
                                                 </div>
-                                                <div className="p-3 rounded-xl bg-[#543b1f] border border-[#8a683a]">
-                                                    <div className="text-amber-200/70">حوادث الطرف الآخر</div>
+                                                <div className="p-3 rounded-xl bg-[#0e1017] border border-white/10">
+                                                    <div className="text-slate-400">حوادث الطرف الآخر</div>
                                                     <div className="font-bold text-emerald-400 text-sm mt-1">0</div>
                                                 </div>
-                                                <div className="p-3 rounded-xl bg-[#543b1f] border border-[#8a683a]">
-                                                    <div className="text-amber-200/70">تغييرات الملكية</div>
+                                                <div className="p-3 rounded-xl bg-[#0e1017] border border-white/10">
+                                                    <div className="text-slate-400">تغييرات الملكية</div>
                                                     <div className="font-bold text-amber-300 text-sm mt-1">مالك واحد (1)</div>
                                                 </div>
                                             </div>
@@ -621,7 +621,7 @@ export default function DesertStyleCarDetail() {
                             {/* TAB 3: سيارات مشابهة (Similar Cars) */}
                             {activeTab === 'SIMILAR' && (
                                 <div className="space-y-4">
-                                    <h3 className="text-base font-black text-amber-200 border-r-4 border-amber-400 pr-3">
+                                    <h3 className="text-base font-black text-amber-300 border-r-4 border-[#C9A96E] pr-3">
                                         سيارات أخرى قد تهمك
                                     </h3>
                                     {similarCars.length > 0 ? (
@@ -631,7 +631,7 @@ export default function DesertStyleCarDetail() {
                                             ))}
                                         </div>
                                     ) : (
-                                        <p className="text-xs text-amber-200/60 text-center py-8">لا توجد سيارات مشابهة حالياً في المعرض</p>
+                                        <p className="text-xs text-slate-400 text-center py-8">لا توجد سيارات مشابهة حالياً في المعرض</p>
                                     )}
                                 </div>
                             )}
@@ -649,41 +649,41 @@ export default function DesertStyleCarDetail() {
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
-                            className="bg-[#fcf8f2] text-slate-900 max-w-lg w-full rounded-3xl p-6 border-2 border-[#d6c4a8] shadow-2xl space-y-5"
+                            className="bg-[#141622] text-slate-100 max-w-lg w-full rounded-3xl p-6 border border-[#C9A96E]/40 shadow-2xl space-y-5"
                         >
-                            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-                                <h3 className="font-black text-lg text-[#614828] flex items-center gap-2">
-                                    <Calculator className="w-5 h-5 text-amber-700" />
+                            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                                <h3 className="font-black text-lg text-amber-300 flex items-center gap-2">
+                                    <Calculator className="w-5 h-5 text-[#C9A96E]" />
                                     <span>حاسبة تكلفة الاستيراد الشاملة</span>
                                 </h3>
-                                <button onClick={() => setShowCalcModal(false)} className="p-1 rounded-full text-slate-400 hover:text-slate-700">
+                                <button onClick={() => setShowCalcModal(false)} className="p-1 rounded-full text-slate-400 hover:text-white">
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>
 
                             <div className="space-y-3 text-xs">
-                                <div className="flex justify-between py-2 border-b border-slate-200">
-                                    <span className="text-slate-600 font-bold">سعر السيارة الأساسي في كوريا:</span>
-                                    <span className="font-bold font-mono">{baseCarCost.toLocaleString('ar-SA')} ر.س</span>
+                                <div className="flex justify-between py-2 border-b border-white/5">
+                                    <span className="text-slate-400 font-bold">سعر السيارة الأساسي المعروض:</span>
+                                    <span className="font-bold font-mono text-white">{baseCarCost.toLocaleString('ar-SA')} ر.س</span>
                                 </div>
-                                <div className="flex justify-between py-2 border-b border-slate-200">
-                                    <span className="text-slate-600 font-bold">الشحن والتأمين البحري:</span>
-                                    <span className="font-bold font-mono">{shippingCost.toLocaleString('ar-SA')} ر.س</span>
+                                <div className="flex justify-between py-2 border-b border-white/5">
+                                    <span className="text-slate-400 font-bold">الشحن والتأمين البحري:</span>
+                                    <span className="font-bold font-mono text-white">{shippingCost.toLocaleString('ar-SA')} ر.س</span>
                                 </div>
-                                <div className="flex justify-between py-2 border-b border-slate-200">
-                                    <span className="text-slate-600 font-bold">الجمارك ورسوم التصدير (حسب الموديل):</span>
-                                    <span className="font-bold font-mono text-amber-700">{customsDuty.toLocaleString('ar-SA')} ر.س</span>
+                                <div className="flex justify-between py-2 border-b border-white/5">
+                                    <span className="text-slate-400 font-bold">الجمارك ورسوم التصدير (حسب الموديل):</span>
+                                    <span className="font-bold font-mono text-amber-400">{customsDuty.toLocaleString('ar-SA')} ر.س</span>
                                 </div>
-                                <div className="flex justify-between py-2 border-b border-slate-200">
-                                    <span className="text-slate-600 font-bold">ضريبة القيمة المضافة (15%):</span>
-                                    <span className="font-bold font-mono">{vatAmount.toLocaleString('ar-SA')} ر.س</span>
+                                <div className="flex justify-between py-2 border-b border-white/5">
+                                    <span className="text-slate-400 font-bold">ضريبة القيمة المضافة (15%):</span>
+                                    <span className="font-bold font-mono text-white">{vatAmount.toLocaleString('ar-SA')} ر.س</span>
                                 </div>
-                                <div className="flex justify-between py-2 border-b border-slate-200">
-                                    <span className="text-slate-600 font-bold">عمولة ومصاريف التخليص:</span>
-                                    <span className="font-bold font-mono">{systemCommission.toLocaleString('ar-SA')} ر.س</span>
+                                <div className="flex justify-between py-2 border-b border-white/5">
+                                    <span className="text-slate-400 font-bold">عمولة ومصاريف التخليص:</span>
+                                    <span className="font-bold font-mono text-white">{systemCommission.toLocaleString('ar-SA')} ر.س</span>
                                 </div>
 
-                                <div className="flex justify-between py-3 rounded-2xl bg-amber-100/80 px-4 text-sm font-black text-[#614828] border border-amber-300">
+                                <div className="flex justify-between py-3 rounded-2xl bg-[#1a1c2b] px-4 text-sm font-black text-amber-300 border border-[#C9A96E]/40">
                                     <span>التكلفة التقديرية الكلية:</span>
                                     <span className="font-mono text-base">{calculatedTotal.toLocaleString('ar-SA')} ر.س</span>
                                 </div>
@@ -691,7 +691,7 @@ export default function DesertStyleCarDetail() {
 
                             <button
                                 onClick={() => { setShowCalcModal(false); handleWhatsappOrder(); }}
-                                className="w-full py-3.5 rounded-2xl bg-emerald-600 text-white font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-500 transition-colors"
+                                className="w-full py-3.5 rounded-2xl bg-emerald-600 text-white font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-950/40"
                             >
                                 <MessageCircle className="w-4 h-4 fill-white" />
                                 <span>تأكيد الطلب بهذا السعر عبر واتساب</span>
@@ -709,38 +709,38 @@ export default function DesertStyleCarDetail() {
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
-                            className="bg-[#fcf8f2] text-slate-900 max-w-lg w-full rounded-3xl p-6 border-2 border-[#d6c4a8] shadow-2xl space-y-5"
+                            className="bg-[#141622] text-slate-100 max-w-lg w-full rounded-3xl p-6 border border-[#C9A96E]/40 shadow-2xl space-y-5"
                         >
-                            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-                                <h3 className="font-black text-lg text-[#614828] flex items-center gap-2">
-                                    <Scale className="w-5 h-5 text-amber-700" />
+                            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                                <h3 className="font-black text-lg text-amber-300 flex items-center gap-2">
+                                    <Scale className="w-5 h-5 text-[#C9A96E]" />
                                     <span>مقارنة السعر مع الوكالة (الجديد)</span>
                                 </h3>
-                                <button onClick={() => setShowCompareModal(false)} className="p-1 rounded-full text-slate-400 hover:text-slate-700">
+                                <button onClick={() => setShowCompareModal(false)} className="p-1 rounded-full text-slate-400 hover:text-white">
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>
 
                             <div className="space-y-4 text-xs">
-                                <div className="p-4 rounded-2xl bg-slate-100 border border-slate-200 space-y-2">
+                                <div className="p-4 rounded-2xl bg-[#1a1c2b] border border-white/10 space-y-2">
                                     <div className="flex justify-between font-bold">
-                                        <span>سعر السيارة الجديدة في الوكالة:</span>
+                                        <span className="text-slate-400">سعر السيارة الجديدة في الوكالة:</span>
                                         <span className="text-slate-500 line-through font-mono">{(carPriceSar * 1.65).toLocaleString('ar-SA')} ر.س</span>
                                     </div>
-                                    <div className="flex justify-between font-bold text-emerald-700">
+                                    <div className="flex justify-between font-bold text-emerald-400">
                                         <span>سعر هذه السيارة المستوردة بحالة الوكالة:</span>
                                         <span className="font-mono text-sm">{carPriceSar.toLocaleString('ar-SA')} ر.س</span>
                                     </div>
                                 </div>
 
-                                <div className="p-4 rounded-2xl bg-emerald-100/80 border border-emerald-300 text-emerald-900 text-center font-bold">
-                                    🎉 نسبة التوفير الكلية: تكتسب توفيراً قدره <span className="text-emerald-700 font-mono text-sm font-black">+{Math.round(carPriceSar * 0.65).toLocaleString('ar-SA')} ر.س</span> مقارنة بالشراء جديداً!
+                                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-center font-bold">
+                                    🎉 نسبة التوفير الكلية: تكتسب توفيراً قدره <span className="text-emerald-400 font-mono text-sm font-black">+{Math.round(carPriceSar * 0.65).toLocaleString('ar-SA')} ر.س</span> مقارنة بالشراء جديداً!
                                 </div>
                             </div>
 
                             <button
                                 onClick={() => setShowCompareModal(false)}
-                                className="w-full py-3 rounded-xl bg-[#614828] text-amber-100 font-bold text-xs hover:bg-[#4d381e] transition-colors"
+                                className="w-full py-3 rounded-xl bg-[#C9A96E]/10 text-amber-300 border border-[#C9A96E]/30 font-bold text-xs hover:bg-[#C9A96E]/20 transition-colors"
                             >
                                 إغلاق النافذة
                             </button>

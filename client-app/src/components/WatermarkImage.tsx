@@ -14,43 +14,49 @@ interface WatermarkImageProps extends Omit<ImageProps, 'className'> {
 }
 
 const positionClasses = {
-    br: 'bottom-2 right-2',
-    bl: 'bottom-2 left-2',
-    tr: 'top-2 right-2',
-    tl: 'top-2 left-2',
+    br: 'bottom-3 right-3',
+    bl: 'bottom-3 left-3',
+    tr: 'top-3 right-3',
+    tl: 'top-3 left-3',
 };
 
-/** علامة مائية واضحة HM CAR بتصميم احترافي */
-const WatermarkBadge = ({ position }: { position: keyof typeof positionClasses }) => (
-    <div
-        className={cn(
-            'absolute z-20 flex items-center gap-1 px-2 py-1 rounded-lg pointer-events-none select-none',
-            'bg-black/70 backdrop-blur-sm border border-[#C9A96E]/40 shadow-lg',
-            positionClasses[position]
-        )}
-    >
-        {/* نقطة ذهبية */}
-        <span className="w-1.5 h-1.5 rounded-full bg-[#C9A96E] shrink-0" />
-        <span
-            className="text-[9px] sm:text-[10px] font-black tracking-[0.2em] leading-none"
-            style={{
-                background: 'linear-gradient(135deg,#C9A96E 0%,#F5D9A0 55%,#C9A96E 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-            }}
-        >
-            HM CAR
-        </span>
-    </div>
+/** شارة علامة مائية وتغطية شعارات المصدر الفاخرة لـ HM CAR */
+const WatermarkBadgeOverlays = ({ position }: { position: keyof typeof positionClasses }) => (
+    <>
+        {/* 1. تغطية الشعار العلوي الأيمن بخلفية مظلمة وبادج معتمد HM CAR */}
+        <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/85 backdrop-blur-md border border-[#C9A96E]/50 shadow-2xl pointer-events-none select-none">
+            <span className="w-2 h-2 rounded-full bg-[#C9A96E] animate-pulse" />
+            <span
+                className="text-[10px] sm:text-[11px] font-black tracking-wider"
+                style={{
+                    background: 'linear-gradient(135deg,#F5D9A0 0%,#C9A96E 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                }}
+            >
+                معتمد HM CAR
+            </span>
+        </div>
+
+        {/* 2. شارة غلاف السفلية اليمنى لتغطية أي كتابات سفلية ومصادر خارجية */}
+        <div className="absolute bottom-2.5 right-2.5 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/90 backdrop-blur-md border border-[#C9A96E]/40 shadow-2xl pointer-events-none select-none">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#C9A96E] shrink-0" />
+            <span
+                className="text-[9px] sm:text-[10px] font-black tracking-[0.2em] uppercase"
+                style={{
+                    background: 'linear-gradient(135deg,#C9A96E 0%,#F5D9A0 50%,#C9A96E 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                }}
+            >
+                HM SHOWROOM
+            </span>
+        </div>
+    </>
 );
 
 const DEFAULT_FALLBACK = 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=1000';
 
-/**
- * يُحوّل روابط الصور الخارجية (Encar وغيرها) عبر image-proxy الخادم
- * ليضيف علامة HM CAR ويُخفي شعارات المصادر الخارجية
- */
 function toProxiedUrl(url: string): string {
     if (!url || typeof url !== 'string') return DEFAULT_FALLBACK;
     return normalizeImageUrl(url);
@@ -83,7 +89,7 @@ export default function WatermarkImage({
 
     if (props.fill) {
         return (
-            <>
+            <div className={cn('relative overflow-hidden w-full h-full', containerClassName)}>
                 <Image
                     className={cn('object-cover', className)}
                     src={imgSrc}
@@ -93,8 +99,8 @@ export default function WatermarkImage({
                     unoptimized
                     {...props}
                 />
-                {showWatermark && <WatermarkBadge position={watermarkPosition} />}
-            </>
+                {showWatermark && <WatermarkBadgeOverlays position={watermarkPosition} />}
+            </div>
         );
     }
 
@@ -109,7 +115,7 @@ export default function WatermarkImage({
                 unoptimized
                 {...props}
             />
-            {showWatermark && <WatermarkBadge position={watermarkPosition} />}
+            {showWatermark && <WatermarkBadgeOverlays position={watermarkPosition} />}
         </div>
     );
 }

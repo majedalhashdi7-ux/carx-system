@@ -104,8 +104,8 @@ function CarCard({ car, onWhatsApp }: { car: CarItem; onWhatsApp: (car: CarItem)
     const rawMake      = car.makeAr || car.make || '';
     const displayName  = getBrandDisplayName(rawMake, isRTL);
     const displayTitle = formatCarTitle(car.title || `${rawMake} ${car.model} ${car.badge || ''}`, rawMake, isRTL);
-    const fuelLabel    = car.fuelAr || car.fuelType || '';
-    const transLabel   = car.transmissionAr || car.transmission || '';
+    const fuelLabel    = cleanKoreanText(car.fuelAr || car.fuelType || '', isRTL);
+    const transLabel   = cleanKoreanText(car.transmissionAr || car.transmission || '', isRTL);
 
     return (
         <Link href={`/cars/${car.id}`} className="block h-full">
