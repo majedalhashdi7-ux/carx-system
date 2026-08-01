@@ -26,7 +26,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             return;
         }
 
-        // [[FIX]] التحقق من الـ role: أولاً من hm_user، ثم hm_user_role، ثم التحقق عبر API
+        // [[FIX]] التحقق من الـ role المحلي أولاً - السرعة + منع تسجيل الخروج العشوائي
         const getUserRole = (): string | null => {
             try {
                 const userObj = JSON.parse(localStorage.getItem('hm_user') || '{}');
@@ -39,64 +39,79 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         const cachedRole = getUserRole();
 
         if (cachedRole && ADMIN_ROLES.includes(cachedRole)) {
-            // الدور موجود في الكاش ومصرّح — نفعّل مباشرة ونتحقق في الخلفية
+            // الدور موجود في الكاش ومصرّح — نفعّل مباشرة
             setAuthorized(true);
             setChecking(false);
 
-            // تحقق صامت في الخلفية من صلاحية التوكن بدون طرد المستخدم عند أعطال الشبكة
+            // تحقق صامت في الخلفية
             const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
             fetch(`${apiBase}/api/v2/auth/verify`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'X-Tenant-ID': process.env.NEXT_PUBLIC_TENANT_ID || 'hmcar',
                 },
+                signal: AbortSignal.timeout(8000),
             })
                 .then(r => {
+                    // ⚠️ فقط 401 صريح يطرد الأدمن - أي خطأ آخر يُبقيه
                     if (r.status === 401) {
-                        // 401 فقط يعبر عن توكن غير صالح أو منتهي صراحة
                         localStorage.removeItem('hm_token');
                         localStorage.removeItem('hm_user');
                         localStorage.removeItem('hm_user_role');
                         router.replace('/login?role=admin&reason=expired');
                         return null;
                     }
-                    return r.json();
+                    return r.ok ? r.json() : null;
                 })
                 .then(data => {
                     if (data?.user?.role && ADMIN_ROLES.includes(data.user.role)) {
                         localStorage.setItem('hm_user', JSON.stringify(data.user));
                         localStorage.setItem('hm_user_role', data.user.role);
+                        // تحديث الكوكيز
+                        const maxAge = 60 * 60 * 24 * 365;
+                        document.cookie = `hm_token=${token}; path=/; max-age=${maxAge}; SameSite=Lax`;
+                        document.cookie = `hm_user_role=${data.user.role}; path=/; max-age=${maxAge}; SameSite=Lax`;
                     }
                 })
-                .catch(() => { /* صامت — نحافظ على جلسة الأدمن المحلية المحفوظة */ });
-        } else {
-            // لا يوجد role في الكاش — نتحقق من السيرفر
+                .catch(() => { /* صامت — نحافظ على جلسة الأدمن */ });
+
+        } else if (token) {
+            // توكن موجود لكن بدون role محلي → نتحقق من السيرفر
             const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
             fetch(`${apiBase}/api/v2/auth/verify`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'X-Tenant-ID': process.env.NEXT_PUBLIC_TENANT_ID || 'hmcar',
                 },
+                signal: AbortSignal.timeout(10000),
             })
-                .then(r => r.json())
+                .then(r => {
+                    if (r.status === 401) return null;
+                    return r.ok ? r.json() : null;
+                })
                 .then(data => {
                     const userRole = data?.user?.role || data?.data?.user?.role;
                     if (userRole && ADMIN_ROLES.includes(userRole)) {
-                        localStorage.setItem('hm_user', JSON.stringify(data.user || data.data.user));
+                        const userData = data.user || data.data?.user;
+                        localStorage.setItem('hm_user', JSON.stringify(userData));
                         localStorage.setItem('hm_user_role', userRole);
                         setAuthorized(true);
                     } else if (token) {
-                        // إذا وُجد توكن، نفترض الصلاحية لتجنب طرد الأدمن
+                        // التوكن موجود لكن لم نتحقق من السيرفر - نسمح بالدخول مؤقتاً
                         setAuthorized(true);
                     } else {
                         router.replace('/login?role=admin');
                     }
                 })
                 .catch(() => {
+                    // خطأ في الشبكة - التوكن موجود ونسمح بالدخول
                     if (token) setAuthorized(true);
                     else router.replace('/login?role=admin');
                 })
                 .finally(() => setChecking(false));
+        } else {
+            router.replace('/login?role=admin');
+            setChecking(false);
         }
     }, [router]);
 

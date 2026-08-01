@@ -104,26 +104,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         try {
-            const res = await api.auth.verify() as any;
-            if (res && res.success && res.user) {
-                // تحديث بيانات المستخدم بأحدث نسخة من الخادم
-                const freshUser = res.user;
+            // استخدام fetch مباشرة للتحكم الكامل في الاستجابة
+            const apiBase = (typeof window !== 'undefined' && (window as any).__NEXT_PUBLIC_API_URL__) ||
+                process.env.NEXT_PUBLIC_API_URL || '';
+            const tenantId = process.env.NEXT_PUBLIC_TENANT_ID || 'hmcar';
+
+            const response = await fetch(`${apiBase}/api/v2/auth/verify`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'X-Tenant-ID': tenantId,
+                },
+                signal: AbortSignal.timeout(8000), // 8 ثواني timeout
+            });
+
+            // ⚠️ فقط عند 401 صريح نطرد المستخدم - أي شيء آخر نحافظ على الجلسة
+            if (response.status === 401) {
+                console.warn('[Auth] Token expired (401) - clearing session');
+                clearAuth();
+                setIsLoading(false);
+                return;
+            }
+
+            if (!response.ok) {
+                // 500, 503, network error → احتفظ بالجلسة المحلية
+                console.warn(`[Auth] Server returned ${response.status} - keeping local session`);
+                setIsLoading(false);
+                return;
+            }
+
+            const data = await response.json().catch(() => null);
+
+            if (data?.success && data?.user) {
+                const freshUser = data.user;
                 setUser(freshUser);
                 localStorage.setItem('hm_user', JSON.stringify(freshUser));
                 localStorage.setItem('hm_user_role', freshUser.role || 'buyer');
-            } else if (res && res._id) {
-                // بعض الـ APIs ترجع المستخدم مباشرة
-                setUser(res);
-                localStorage.setItem('hm_user', JSON.stringify(res));
-                localStorage.setItem('hm_user_role', res.role || 'buyer');
-            } else {
-                // التوكن غير صالح - امسح كل شيء
-                clearAuth();
+                // تحديث الكوكيز للـ middleware
+                const maxAge = 60 * 60 * 24 * 365;
+                document.cookie = `hm_token=${token}; path=/; max-age=${maxAge}; SameSite=Lax`;
+                document.cookie = `hm_user_role=${freshUser.role || 'buyer'}; path=/; max-age=${maxAge}; SameSite=Lax`;
+            } else if (data?._id) {
+                setUser(data);
+                localStorage.setItem('hm_user', JSON.stringify(data));
+                localStorage.setItem('hm_user_role', data.role || 'buyer');
             }
-        } catch {
-            // في حال فشل الاتصال بالخادم، احتفظ بالبيانات المحلية
-            // ولا تقم بتسجيل الخروج التلقائي (قد يكون الخادم معطلاً مؤقتاً)
-            console.warn('[Auth] Server verification failed - keeping local session');
+            // أي استجابة أخرى → لا نمسح الجلسة، نحافظ عليها
+        } catch (err: any) {
+            // خطأ في الشبكة أو timeout → نحافظ على الجلسة المحلية تماماً
+            console.warn('[Auth] Network error during verify - keeping local session:', err?.message || err);
         } finally {
             setIsLoading(false);
         }
@@ -144,29 +172,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const token = localStorage.getItem('hm_token');
             const userStr = localStorage.getItem('hm_user');
 
-            if (token && userStr) {
-                try {
-                    const userData = JSON.parse(userStr);
-                    if (userData && userData.role) {
-                        // تعيين البيانات المحلية فوراً للسرعة
-                        setUser(userData);
-                        // ثم التحقق من الخادم في الخلفية
-                        verifyTokenWithServer();
-                    } else {
-                        clearAuth();
-                        setIsLoading(false);
-                    }
-                } catch {
-                    clearAuth();
-                    setIsLoading(false);
-                }
-            } else {
+            if (!token) {
+                // لا توكن = لم يسجل دخول مطلقاً
                 clearCookies();
                 setIsLoading(false);
+                return;
             }
+
+            // التوكن موجود - نستعيد بيانات المستخدم من localStorage فوراً
+            if (userStr) {
+                try {
+                    const userData = JSON.parse(userStr);
+                    if (userData && (userData.role || userData._id || userData.id)) {
+                        // بيانات صالحة → نعيّنها فوراً ثم نتحقق في الخلفية
+                        setUser(userData);
+                        // تحديث الكوكيز للـ middleware
+                        const maxAge = 60 * 60 * 24 * 365;
+                        const role = userData.role || 'buyer';
+                        document.cookie = `hm_token=${token}; path=/; max-age=${maxAge}; SameSite=Lax`;
+                        document.cookie = `hm_user_role=${role}; path=/; max-age=${maxAge}; SameSite=Lax`;
+                        localStorage.setItem('hm_user_role', role);
+                        // تحقق في الخلفية (لا يطرد المستخدم عند فشله)
+                        verifyTokenWithServer();
+                        return;
+                    }
+                } catch {
+                    // JSON تالف - نتجاهله ونتحقق من السيرفر
+                }
+            }
+
+            // التوكن موجود لكن بيانات المستخدم غير متوفرة → نتحقق من السيرفر
+            verifyTokenWithServer();
+
         } catch (error) {
             console.error('Auth check failed:', error);
-            clearAuth();
             setIsLoading(false);
         }
     }, [clearAuth, clearCookies, verifyTokenWithServer]);

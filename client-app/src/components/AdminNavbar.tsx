@@ -7,7 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Activity, Car, Gavel, Users, ShoppingCart, Settings, Shield,
     LogOut, Layers, TrendingUp, MessageCircle, Server,
-    Tag, Menu, X, Languages, Database, RefreshCw, Bell, Share2, ChevronDown, Download
+    Tag, Menu, X, Languages, Database, RefreshCw, Bell, Share2, ChevronDown, Download,
+    FileDown
 } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
@@ -295,9 +296,14 @@ function SidebarInner({
 // ── Main Category Configuration ──
 function buildNavCategories(isRTL: boolean, user: any, tenant: any): NavCategory[] {
     const permissions = user?.permissions || [];
-    const isSuper = user?.role === 'super_admin';
+    const role = user?.role || '';
+    const isSuper = role === 'super_admin';
+    const isAdmin = role === 'admin' || role === 'super_admin';
+    const isManager = role === 'manager';
+    const isAdminOrManager = isAdmin || isManager;
 
-    const hasP = (p: string) => isSuper || permissions.includes(p);
+    // Admin/Manager يحصل على كل الصلاحيات تلقائياً بغض النظر عن permissions array
+    const hasP = (p: string) => isAdminOrManager || permissions.includes(p);
 
     const categories: NavCategory[] = [
         // ─── القسم الرئيسي ───
@@ -312,9 +318,17 @@ function buildNavCategories(isRTL: boolean, user: any, tenant: any): NavCategory
         {
             label: isRTL ? '🚗 المخزون والكتالوج' : '🚗 INVENTORY',
             items: [
-                ...(hasP('manage_cars') ? [{ id: 'showroom', icon: Car, label: isRTL ? 'السيارات' : 'CARS', href: '/admin/cars' }] : []),
-                ...(hasP('manage_parts') ? [{ id: 'parts', icon: Layers, label: isRTL ? 'قطع الغيار' : 'PARTS', href: '/admin/parts' }] : []),
-                ...(hasP('manage_brands') ? [{ id: 'brands', icon: Tag, label: isRTL ? 'الماركات والوكالات' : 'BRANDS', href: '/admin/brands' }] : []),
+                { id: 'showroom', icon: Car, label: isRTL ? 'السيارات' : 'CARS', href: '/admin/cars' },
+                { id: 'parts', icon: Layers, label: isRTL ? 'قطع الغيار' : 'PARTS', href: '/admin/parts' },
+                { id: 'brands', icon: Tag, label: isRTL ? 'الماركات والوكالات' : 'BRANDS', href: '/admin/brands' },
+            ]
+        },
+
+        // ─── الاستيراد ───
+        {
+            label: isRTL ? '📥 استيراد السيارات' : '📥 IMPORT',
+            items: [
+                { id: 'import', icon: FileDown, label: isRTL ? 'إدارة الاستيراد' : 'IMPORT HUB', href: '/admin/import' },
             ]
         },
 
@@ -322,9 +336,8 @@ function buildNavCategories(isRTL: boolean, user: any, tenant: any): NavCategory
         {
             label: isRTL ? '⚡ المزادات' : '⚡ AUCTIONS',
             items: [
-                ...(hasP('manage_auctions') ? [
-                    { id: 'auctions-hub', icon: Gavel, label: isRTL ? 'إدارة المزادات والشراء' : 'AUCTIONS HUB', href: '/admin/auctions' },
-                ] : []),
+                { id: 'auctions-hub', icon: Gavel, label: isRTL ? 'إدارة المزادات' : 'AUCTIONS HUB', href: '/admin/auctions' },
+                ...(hasP('manage_auctions') ? [{ id: 'live-auctions', icon: Activity, label: isRTL ? 'المزادات الحية' : 'LIVE AUCTIONS', href: '/admin/live-auctions' }] : []),
             ]
         },
 
@@ -332,8 +345,9 @@ function buildNavCategories(isRTL: boolean, user: any, tenant: any): NavCategory
         {
             label: isRTL ? '📦 العمليات والطلبات' : '📦 OPERATIONS',
             items: [
-                ...(hasP('manage_orders') || hasP('manage_concierge') ? [{ id: 'fulfillment', icon: ShoppingCart, label: isRTL ? 'الطلبات' : 'ORDERS', href: '/admin/orders' }] : []),
-                ...(hasP('manage_orders') ? [{ id: 'invoices', icon: Tag, label: isRTL ? 'الفواتير' : 'INVOICES', href: '/admin/invoices' }] : []),
+                { id: 'fulfillment', icon: ShoppingCart, label: isRTL ? 'الطلبات' : 'ORDERS', href: '/admin/orders' },
+                { id: 'invoices', icon: Tag, label: isRTL ? 'الفواتير' : 'INVOICES', href: '/admin/invoices' },
+                ...(hasP('manage_concierge') || isAdminOrManager ? [{ id: 'concierge', icon: Server, label: isRTL ? 'الكونسيرج' : 'CONCIERGE', href: '/admin/concierge' }] : []),
             ]
         },
 
@@ -341,11 +355,9 @@ function buildNavCategories(isRTL: boolean, user: any, tenant: any): NavCategory
         {
             label: isRTL ? '💬 التواصل والرسائل' : '💬 COMMUNICATIONS',
             items: [
-                ...(hasP('manage_messages') ? [
-                    { id: 'comms', icon: MessageCircle, label: isRTL ? 'محادثات العملاء' : 'LIVE CHATS', href: '/admin/comms' },
-                    { id: 'contact', icon: Bell, label: isRTL ? 'رسائل التواصل' : 'CONTACT MSGS', href: '/admin/contact' },
-                ] : []),
-                ...(hasP('manage_notifications') ? [{ id: 'alerts', icon: Bell, label: isRTL ? 'الإشعارات' : 'ALERTS', href: '/admin/notifications' }] : []),
+                { id: 'comms', icon: MessageCircle, label: isRTL ? 'محادثات العملاء' : 'LIVE CHATS', href: '/admin/comms' },
+                { id: 'contact', icon: Bell, label: isRTL ? 'رسائل التواصل' : 'CONTACT MSGS', href: '/admin/contact' },
+                { id: 'alerts', icon: Bell, label: isRTL ? 'الإشعارات' : 'ALERTS', href: '/admin/notifications' },
             ]
         },
 
@@ -353,15 +365,14 @@ function buildNavCategories(isRTL: boolean, user: any, tenant: any): NavCategory
         {
             label: isRTL ? '⚙️ الإدارة والنظام' : '⚙️ SYSTEM ADMIN',
             items: [
-                ...(hasP('manage_users') ? [
+                ...(hasP('manage_users') || isAdminOrManager ? [
                     { id: 'users', icon: Users, label: isRTL ? 'إدارة المستخدمين' : 'USERS', href: '/admin/users' },
                     { id: 'security', icon: Shield, label: isRTL ? 'الأمان والصلاحيات' : 'SECURITY', href: '/admin/security' },
                     { id: 'health', icon: Activity, label: isRTL ? 'صحة النظام' : 'SYSTEM HEALTH', href: '/admin/health' },
-                    { id: 'notifications', icon: Bell, label: isRTL ? 'الإشعارات' : 'NOTIFICATIONS', href: '/admin/notifications' },
                 ] : []),
-                ...(hasP('manage_footer') || hasP('manage_whatsapp') ? [{ id: 'social', icon: Share2, label: isRTL ? 'القنوات الاجتماعية' : 'CHANNELS', href: '/admin/social' }] : []),
-                ...(isSuper || hasP('view_analytics') ? [{ id: 'reports', icon: TrendingUp, label: isRTL ? 'التقارير والإحصاءات' : 'REPORTS', href: '/admin/reports' }] : []),
-                ...(hasP('manage_settings') || hasP('manage_content') ? [{ id: 'settings', icon: Settings, label: isRTL ? 'الإعدادات العامة' : 'SETTINGS', href: '/admin/settings' }] : []),
+                { id: 'social', icon: Share2, label: isRTL ? 'القنوات الاجتماعية' : 'CHANNELS', href: '/admin/social' },
+                { id: 'reports', icon: TrendingUp, label: isRTL ? 'التقارير والإحصاءات' : 'REPORTS', href: '/admin/reports' },
+                { id: 'settings', icon: Settings, label: isRTL ? 'الإعدادات العامة' : 'SETTINGS', href: '/admin/settings' },
             ]
         }
     ];
