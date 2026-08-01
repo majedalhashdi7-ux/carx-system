@@ -687,98 +687,114 @@ router.post('/korean-cars', requireAuthAPI, requireAdmin, async (req, res, next)
     }
 });
 
-// ─── POST /api/v2/import/parts ──────────────────────────
+// ─── GET /api/v2/import/korean-cars ─────────────────────
 /**
- * استيراد منفصل وخاص بقطع الغيار (جدول ImportedSparePart)
+ * جلب قائمة السيارات الكورية المستوردة (KoreanCarImport collection)
+ * منفصل تماماً عن collection السيارات العادية
  */
-router.post('/parts', requireAuthAPI, requireAdmin, async (req, res, next) => {
+router.get('/korean-cars', requireAuthAPI, requireAdmin, async (req, res, next) => {
     try {
-        const KoreanTranslationService = require('../../../services/KoreanTranslationService');
-        const WatermarkService = require('../../../services/WatermarkService');
         const { getModel } = require('../../../tenants/tenant-model-helper');
+        const KoreanCarImport = getModel(req, 'KoreanCarImport');
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
 
-        const payload = req.body;
-        const cleanName = KoreanTranslationService.cleanAndTranslate(payload.partName || payload.title || 'قطعة غيار مستوردة');
-        const images = payload.images || (payload.imageUrl ? [payload.imageUrl] : []);
-        const watermarkedImages = WatermarkService.processImagesList(images);
+        const [records, total] = await Promise.all([
+            KoreanCarImport.find({ tenantId: req.tenantId || 'default' })
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .lean(),
+            KoreanCarImport.countDocuments({ tenantId: req.tenantId || 'default' })
+        ]);
 
-        const ImportedSparePartModel = getModel(req, 'ImportedSparePart');
-        const SparePartModel = getModel(req, 'SparePart');
-        const partNo = payload.partNumber || ('OEM-' + Math.random().toString(36).substring(2, 8).toUpperCase());
-
-        let partRecord = await ImportedSparePartModel.findOne({ partNumber: partNo });
-        if (!partRecord) {
-            partRecord = new ImportedSparePartModel({
-                tenantId: req.tenant?.id || 'hmcar',
-                importId: 'PART-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
-                partNumber: partNo
-            });
-        }
-
-        partRecord.partName = cleanName;
-        partRecord.partNameAr = cleanName;
-        partRecord.brand = payload.brand || 'عام';
-        partRecord.priceSar = Number(payload.priceSar || payload.price) || 0;
-        partRecord.stockQuantity = Number(payload.stockQuantity || payload.stock) || 1;
-        partRecord.description = payload.description || '';
-        partRecord.images = images;
-        partRecord.mainImage = images[0] || '';
-        partRecord.watermarkedImages = watermarkedImages;
-        partRecord.importedBy = req.user?.userId || req.user?._id;
-
-        await partRecord.save();
-
-        // مزامنة سجل قطعة الغيار بجدول SparePart لمنع التكرار والظهور الفوري
-        let spareDoc = await SparePartModel.findOne({ partNumber: partNo });
-        if (!spareDoc) {
-            spareDoc = new SparePartModel({
-                tenantId: req.tenant?.id || 'hmcar',
-                partNumber: partNo
-            });
-        }
-
-        spareDoc.name = cleanName;
-        spareDoc.brand = partRecord.brand;
-        spareDoc.price = partRecord.priceSar;
-        spareDoc.stock = partRecord.stockQuantity;
-        spareDoc.description = payload.description || '';
-        spareDoc.images = images;
-        spareDoc.img = images[0] || '';
-        spareDoc.inStock = true;
-
-        await spareDoc.save();
-
-        invalidateCache('/api/v2/parts*');
-
-        res.json({
-            success: true,
-            message: 'تم حفظ قطعة الغيار وتوقيع صورها وحفظها بدون تكرار بنجاح!',
-            data: partRecord
-        });
+        res.json({ success: true, data: records, total, page, pages: Math.ceil(total / limit) });
     } catch (error) {
-        next(error);
+        res.json({ success: true, data: [], total: 0 });
+    }
+});
+
+// ─── GET /api/v2/import/imported-parts ──────────────────
+/**
+ * جلب قطع الغيار المستوردة (ImportedSparePart collection)
+ * منفصل تماماً عن collection قطع الغيار العادية
+ */
+router.get('/imported-parts', requireAuthAPI, requireAdmin, async (req, res, next) => {
+    try {
+        const { getModel } = require('../../../tenants/tenant-model-helper');
+        const ImportedSparePart = getModel(req, 'ImportedSparePart');
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
+
+        const [records, total] = await Promise.all([
+            ImportedSparePart.find({ tenantId: req.tenantId || 'default' })
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .lean(),
+            ImportedSparePart.countDocuments({ tenantId: req.tenantId || 'default' })
+        ]);
+
+        res.json({ success: true, data: records, total, page, pages: Math.ceil(total / limit) });
+    } catch (error) {
+        res.json({ success: true, data: [], total: 0 });
     }
 });
 
 // ─── POST /api/v2/import/retro-sync ─────────────────────
-/**
- * تشغيل محرك المزامنة التحريرية للبيانات القديمة والجديدة
- * - ينظف ويعرب الأسماء الكورية القديمة
- * - يولد حقول الصورة ويختم العلامة المائية HM CAR على كافة الصور القديمة في قاعدة البيانات
- */
 router.post('/retro-sync', requireAuthAPI, requireAdmin, async (req, res, next) => {
     try {
         const RetroactiveSyncService = require('../../../services/RetroactiveSyncService');
+        console.log('🔄 [RetroSync] Starting retroactive sync from API...');
         const syncResult = await RetroactiveSyncService.runFullRetroactiveSync(req);
-        
         invalidateCache(['/api/v2/cars*', '/api/v2/parts*', '/api/v2/auctions*']);
-
         res.json(syncResult);
     } catch (error) {
-        next(error);
+        console.error('❌ [RetroSync] Error:', error.message);
+        res.status(500).json({ success: false, error: 'فشل التزامن: ' + error.message });
+    }
+});
+
+// ─── POST /api/v2/import/fix-images ─────────────────────
+router.post('/fix-images', requireAuthAPI, requireAdmin, async (req, res, next) => {
+    try {
+        const RetroactiveSyncService = require('../../../services/RetroactiveSyncService');
+        const result = await RetroactiveSyncService.fixImagesOnly(req);
+        invalidateCache(['/api/v2/cars*']);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ─── POST /api/v2/import/clear-external-urls ────────────
+router.post('/clear-external-urls', requireAuthAPI, requireAdmin, async (req, res, next) => {
+    try {
+        const { getModel } = require('../../../tenants/tenant-model-helper');
+        const Car = getModel(req, 'Car');
+        const result = await Car.updateMany(
+            {
+                tenantId: req.tenantId || 'default',
+                $or: [
+                    { externalUrl: { $regex: 'encar\\.com', $options: 'i' } },
+                    { externalUrl: { $regex: '\\.co\\.kr', $options: 'i' } },
+                    { externalUrl: { $regex: 'autospare', $options: 'i' } },
+                ]
+            },
+            [{ $set: { externalRef: '$externalUrl', externalUrl: '' } }]
+        );
+        invalidateCache(['/api/v2/cars*']);
+        res.json({
+            success: true,
+            message: `✅ تم مسح externalUrl من ${result.modifiedCount} سيارة`,
+            modifiedCount: result.modifiedCount
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
 module.exports = router;
-
 

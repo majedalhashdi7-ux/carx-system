@@ -254,14 +254,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     /**
-     * تسجيل الخروج
+     * تسجيل الخروج - ذكي حسب نوع الحساب
      */
     function logout() {
+        // نحفظ نوع الحساب قبل المسح لنوجّه بشكل صحيح
+        const role = user?.role || (typeof window !== 'undefined' ? localStorage.getItem('hm_user_role') : null);
+        const isAdminRole = role === 'admin' || role === 'super_admin' || role === 'manager';
         clearAuth();
         if (typeof window !== 'undefined') {
-            window.location.href = '/login';
+            window.location.href = isAdminRole ? '/login?role=admin' : '/login';
         }
     }
+
 
     return (
         <AuthContext.Provider value={{
