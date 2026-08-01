@@ -172,7 +172,7 @@ export default function AuctionsPage() {
                     title,
                     images: images.length > 0 ? images : ['https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=1200'],
                     image: images[0] || '',
-                    condition: item.condition || carObj.condition || (isRTL ? 'وارد كوري 🇰🇷' : 'Korean Import 🇰🇷'),
+                    condition: item.condition || carObj.condition || (isRTL ? 'معرض HM CAR' : 'HM CAR Showroom'),
                     priceEstimate,
                     priceSar: item.priceSar || priceVal,
                     priceKrw: item.priceKrw,

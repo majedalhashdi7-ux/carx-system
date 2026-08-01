@@ -15,6 +15,7 @@ import Image from 'next/image';
 import WatermarkImage from '@/components/WatermarkImage';
 import ModernCarCard from '@/components/ModernCarCard';
 import { api } from '@/lib/api-original';
+import { processCarImages, getProxiedImageUrl } from '@/lib/imageUtils';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useSettings } from '@/lib/SettingsContext';
 import { useToast } from '@/lib/ToastContext';
@@ -22,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { formatCarTitle } from '@/lib/brandTranslations';
 
 const DEFAULT_WHATSAPP = '+821080880014';
+const PLATFORM_NAME = 'HM CAR';
 const CURRENCY_SAR = 'ر.س';
 
 // ── قائمة المميزات الافتراضية ──
@@ -199,7 +201,7 @@ export default function DesertStyleCarDetail() {
                 }],
                 pricing: { grandTotalSar: car.priceSar || car.price || 0 },
                 channel: 'whatsapp',
-                notes: `طلب شراء عبر الواتساب من موقع HMCar (طراز كوري مستورد)`
+                notes: `طلب شراء عبر الواتساب من موقع HM CAR`
             });
         } catch (err) {
             console.error('Order log error:', err);
@@ -219,7 +221,7 @@ export default function DesertStyleCarDetail() {
                 <div className="text-center space-y-4">
                     <div className="w-14 h-14 border-3 border-[#c9a96e]/30 border-t-[#c9a96e] rounded-full animate-spin mx-auto" />
                     <p className="text-[#c9a96e] text-xs font-bold uppercase tracking-widest animate-pulse">
-                        {isRTL ? 'جاري تحميل تفاصيل السيارة الكورية...' : 'LOADING CAR DETAILS...'}
+                        {isRTL ? 'جاري تحميل تفاصيل السيارة...' : 'LOADING CAR DETAILS...'}
                     </p>
                 </div>
             </div>
@@ -244,8 +246,8 @@ export default function DesertStyleCarDetail() {
         );
     }
 
-    const images = car.images?.filter(Boolean) || [];
-    const mainImg = images[activeImage] || car.image || car.imageUrl || 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=1200';
+    const images = processCarImages(car.images?.filter(Boolean) || []);
+    const mainImg = images[activeImage] || getProxiedImageUrl(car.image || car.imageUrl) || 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=1200';
     const carPriceSar = Number(car.priceSar || car.price || 0);
     const formattedPriceSar = carPriceSar > 0 ? `${carPriceSar.toLocaleString('ar-SA')} ر.س` : 'عند الطلب';
     // ⚠️ لا نعرض رابط Encar للزوار - السيارة محفوظة محلياً في قاعدة بياناتنا
@@ -302,18 +304,16 @@ export default function DesertStyleCarDetail() {
                                 </span>
                             </div>
 
-                            {/* شارات الحالة وتوفر إنكار */}
+                            {/* شارات الحالة */}
                             <div className="flex items-center gap-2 mt-2">
                                 <span className="px-2.5 py-1 rounded-full bg-emerald-500 text-slate-950 text-xs font-black flex items-center gap-1">
                                     <span className="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping" />
                                     متاح
                                 </span>
-                                {isKoreanImport && (
                                 <span className="px-3 py-1 rounded-full bg-amber-900/50 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5">
                                     <span className="w-2 h-2 rounded-full bg-amber-400" />
-                                    <span>سيارة مستوردة من كوريا</span>
+                                    <span>معرض HM CAR</span>
                                 </span>
-                                )}
                             </div>
                         </div>
 
@@ -342,7 +342,7 @@ export default function DesertStyleCarDetail() {
                             {/* شارة التوفر والسعر */}
                             <div className="flex items-center justify-between border-b border-slate-200 pb-4">
                                 <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
-                                    متاح للاستيراد المباشر
+                                    متاح الآن
                                 </span>
                                 <div className="text-right">
                                     <span className="text-xs text-slate-500 block font-bold">السعر الكامل</span>
@@ -462,7 +462,7 @@ export default function DesertStyleCarDetail() {
                                                 activeImage === idx ? "border-amber-300 scale-105 shadow-lg" : "border-amber-900/50 opacity-60 hover:opacity-100"
                                             )}
                                         >
-                                            <Image src={img} alt={`thumb ${idx}`} fill className="object-cover" unoptimized />
+                                            <Image src={img} alt={`thumb ${idx}`} fill className="object-cover" unoptimized referrerPolicy="no-referrer" />
                                         </button>
                                     ))}
                                 </div>
@@ -546,7 +546,7 @@ export default function DesertStyleCarDetail() {
                                                 <span>{isRTL ? 'تقرير الفحص الهيكلي وتفاصيل الأضرار' : 'Vehicle Body Inspection & Condition Report'}</span>
                                             </h3>
                                             <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full text-xs font-bold">
-                                                {isRTL ? '✓ فحص إنكار معتمد' : '✓ Certified Encar Inspection'}
+                                                {isRTL ? '✓ فحص HM CAR معتمد' : '✓ HM CAR Certified Inspection'}
                                             </span>
                                         </div>
 

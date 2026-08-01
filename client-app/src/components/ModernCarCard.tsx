@@ -10,6 +10,7 @@ import { useLanguage } from "@/lib/LanguageContext";
 import { useSettings } from "@/lib/SettingsContext";
 import Link from "next/link";
 import Image from "next/image";
+import { getProxiedImageUrl } from "@/lib/imageUtils";
 
 interface CarCardProps {
     car: {
@@ -55,8 +56,9 @@ export default function ModernCarCard({ car, index = 0, formatPrice: propFormatP
     const isKoreanImport = car.source === 'korean_import' || car.source === 'encar_korea' || car.listingType === 'showroom';
 
     // ── الصور ────────────────────────────────────────────
-    const images = (car.images?.filter(Boolean) || []);
-    if (car.imageUrl && !images.includes(car.imageUrl)) images.unshift(car.imageUrl);
+    const rawImages = (car.images?.filter(Boolean) || []);
+    if (car.imageUrl && !rawImages.includes(car.imageUrl)) rawImages.unshift(car.imageUrl);
+    const images = rawImages.map(img => getProxiedImageUrl(img));
     const currentImage = images[currentImageIndex] || '/images/placeholder-car.jpg';
 
     // ── السعر بالعملة الصحيحة ────────────────────────────

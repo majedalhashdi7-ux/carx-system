@@ -113,7 +113,6 @@ function CarCard({ car, onWhatsApp }: { car: CarItem; onWhatsApp: (car: CarItem)
     const displayTitle = formatCarTitle(car.title || `${rawMake} ${car.model} ${car.badge || ''}`, rawMake, isRTL);
     const fuelLabel    = car.fuelAr || car.fuelType || '';
     const transLabel   = car.transmissionAr || car.transmission || '';
-    const isKorean     = car.source === 'korean';
 
     return (
         <Link href={`/cars/${car.id}`} className="block h-full">
@@ -165,13 +164,8 @@ function CarCard({ car, onWhatsApp }: { car: CarItem; onWhatsApp: (car: CarItem)
                 <div className="p-4 flex flex-col flex-1 gap-3">
                     {/* Source chip + brand */}
                     <div className="flex items-center justify-between gap-2">
-                        <span className={cn(
-                            'text-[9px] font-black px-2 py-[4px] rounded-lg border leading-none uppercase tracking-wider',
-                            isKorean
-                                ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                                : 'bg-[#C9A96E]/10 text-[#C9A96E] border-[#C9A96E]/20'
-                        )}>
-                            {isKorean ? (isRTL ? '🇰🇷 وارد كوري' : '🇰🇷 KOREAN IMPORT') : (isRTL ? '🏢 معرض HM CAR' : '🏢 HM SHOWROOM')}
+                        <span className="text-[9px] font-black px-2 py-[4px] rounded-lg border leading-none uppercase tracking-wider bg-[#C9A96E]/10 text-[#C9A96E] border-[#C9A96E]/20">
+                            {isRTL ? '🏢 معرض HM CAR' : '🏢 HM SHOWROOM'}
                         </span>
                         <span className="text-[10px] font-black text-white/50">{displayName}</span>
                     </div>

@@ -252,11 +252,15 @@ router.get('/', cacheResponse(300), async (req, res, next) => {
                 createdAt: car.createdAt,
                 color: car.color,
                 fuelType: car.fuelType,
+                fuelAr: car.fuelAr || car.fuelType,
                 transmission: car.transmission,
+                transmissionAr: car.transmissionAr || car.transmission,
                 mileage: car.mileage,
                 description: car.description,
-                listingType: car.listingType,
-                source: car.source || (car.listingType === 'showroom' ? 'korean_import' : 'hm_local'),
+                listingType: 'store', // نُخفي نوع القائمة الداخلية عن العميل
+                source: 'hmcar',     // نُخفي المصدر الداخلي عن العميل
+                makeAr: car.makeAr || car.make,
+                badge: car.badge || '',
                 agency: car.agency || null
             })),
             pagination: {
@@ -336,9 +340,26 @@ router.get('/:id', cacheResponse(600), async (req, res, next) => {
             return sendResponse(res, notFoundResponse('Car'));
         }
 
+        // حذف الحقول الداخلية الحساسة قبل إرسالها للعميل
+        const {
+            externalUrl,
+            externalRef,
+            encarUrl,
+            originalImages,
+            ...publicCarData
+        } = car;
+
         res.json({
             success: true,
-            data: car
+            data: {
+                ...publicCarData,
+                source: 'hmcar',      // توحيد مصدر السيارة للعميل
+                listingType: 'store', // إخفاء التصنيف الداخلي
+                makeAr: car.makeAr || car.make,
+                badge: car.badge || '',
+                fuelAr: car.fuelAr || car.fuelType,
+                transmissionAr: car.transmissionAr || car.transmission,
+            }
         });
     } catch (error) {
         next(error);
