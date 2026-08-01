@@ -370,22 +370,27 @@ export default function DesertStyleCarDetail() {
                                 </div>
                             </div>
 
-                            {/* 🟢 زر الطلب الفاخر والمباشر عبر الواتساب بحواف دائرية كاملاً */}
+                            {/* 🟢 زر الطلب الفاخر والمباشر عبر الواتساب بحواف دائرية كاملة */}
                             <button
                                 onClick={handleWhatsappOrder}
-                                className="relative w-full group overflow-hidden py-4 rounded-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 text-white font-black text-base flex items-center justify-center gap-3 shadow-2xl shadow-emerald-500/25 border border-emerald-400/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-emerald-500/40 active:scale-98 cursor-pointer"
+                                style={{ borderRadius: '9999px' }}
+                                className="relative w-full group overflow-hidden py-4 rounded-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 text-white font-black text-base flex items-center justify-center gap-3 shadow-2xl shadow-emerald-500/30 border border-emerald-400/40 transition-all duration-300 hover:scale-[1.02] hover:shadow-emerald-500/50 active:scale-98 cursor-pointer"
                             >
                                 <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform">
-                                    <MessageCircle className="w-5 h-5 fill-white text-emerald-600" />
+                                    <svg className="w-5 h-5 fill-white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347z"/>
+                                        <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 1.891.524 3.66 1.436 5.168L2 22l4.98-1.39A9.956 9.956 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18c-1.615 0-3.116-.437-4.407-1.198l-.316-.188-2.956.825.84-2.883-.207-.328A7.954 7.954 0 014 12c0-4.418 3.582-8 8-8s8 3.582 8 8-3.582 8-8 8z"/>
+                                    </svg>
                                 </div>
                                 <span className="tracking-wide text-white drop-shadow-md">اطلب الآن عبر الواتساب</span>
                                 <ChevronLeft className="w-5 h-5 opacity-75 group-hover:-translate-x-1 transition-transform" />
                             </button>
 
-                            {/* أزرار الأدوات التفاعلية بحواف دائرية كاملاً */}
+                            {/* أزرار الأدوات التفاعلية بحواف دائرية كاملة */}
                             <div className="space-y-2.5 pt-2">
                                 <button
                                     onClick={() => setShowCalcModal(true)}
+                                    style={{ borderRadius: '9999px' }}
                                     className="w-full py-3.5 rounded-full bg-[#C9A96E]/10 hover:bg-[#C9A96E]/20 text-amber-300 font-bold text-xs flex items-center justify-center gap-2 border border-[#C9A96E]/40 transition-all hover:scale-[1.01]"
                                 >
                                     <Calculator className="w-4 h-4 text-amber-300" />
@@ -394,6 +399,7 @@ export default function DesertStyleCarDetail() {
 
                                 <button
                                     onClick={() => setShowCompareModal(true)}
+                                    style={{ borderRadius: '9999px' }}
                                     className="w-full py-3.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-200 font-bold text-xs flex items-center justify-center gap-2 border border-white/10 transition-all hover:scale-[1.01]"
                                 >
                                     <Scale className="w-4 h-4 text-amber-400" />
