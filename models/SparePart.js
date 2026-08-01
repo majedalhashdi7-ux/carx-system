@@ -37,6 +37,7 @@ const sparePartSchema = new mongoose.Schema({
   description: { type: String },
   images: [String],
   externalUrl: { type: String, trim: true },
+  externalId: { type: String, trim: true, index: true },
   source: { type: String, trim: true, default: 'manual' },
   // المبيعات والمخزون
   stockQty: { type: Number, default: 999 }, // قيمة عالية افتراضية لتجنب انتهاء المخزون التلقائي

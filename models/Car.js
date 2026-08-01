@@ -18,10 +18,12 @@ const carSchema = new mongoose.Schema({
   titleEn: String,
   // نوع العرض: متجر أو سيارة مزاد
   listingType: { type: String, enum: ['store', 'auction', 'showroom'], default: 'store' },
-  // رابط خارجي (يستخدم لسيارات المزاد الخارجية)
+  // رابط خارجي والمعرفات الخاصة بالاستيراد والبحث
   externalUrl: { type: String, default: '' },
+  externalId: { type: String, default: '', index: true },
+  externalRef: { type: String, default: '' },
   // مصدر السيارة لتطبيق الفصل التام بين مخزون HM المحلي والمعرض الكوري
-  source: { type: String, enum: ['hm_local', 'korean_import'], default: 'hm_local', index: true },
+  source: { type: String, enum: ['hm_local', 'korean_import', 'encar_korea', 'hmcar'], default: 'hm_local', index: true },
   // الوكالة/البراند المرتبطة بالسيارة المحلية (اختياري)
   agency: { type: mongoose.Schema.Types.ObjectId, ref: 'Brand', default: null },
   // بيانات المركبة
@@ -50,6 +52,8 @@ const carSchema = new mongoose.Schema({
   images: [String], // مسارات الصور ضمن /uploads
   // [[FIX]] imageUrl — الصورة الرئيسية للسيارة، تُحفظ كـ alias لأول صورة في images[]
   imageUrl: { type: String, default: '' },
+  mainImage: { type: String, default: '' },
+  originalImages: [String],
   watermarkedImages: [String],
 
   // ── المواصفات التفصيلية ثنائية اللغة (Arabic / English Specs) ──

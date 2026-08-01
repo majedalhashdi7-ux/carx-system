@@ -193,11 +193,19 @@ router.post('/save', requireAuthAPI, requireAdmin, invalidateCache(['/api/v2/car
                 agencyId = brandDoc._id;
             }
 
-            // تحقق من التكرار (منع إضافة نفس الرابط مرتين)
-            if (data.sourceUrl) {
-                const existingCar = await Car.findOne({ externalUrl: data.sourceUrl });
+            // تحقق من التكرار (منع إضافة نفس السيارة مرتين)
+            if (data.sourceUrl || data.externalId) {
+                const searchConditions = [];
+                if (data.sourceUrl) {
+                    searchConditions.push({ externalUrl: data.sourceUrl });
+                    searchConditions.push({ externalRef: data.sourceUrl });
+                }
+                if (data.externalId) {
+                    searchConditions.push({ externalId: data.externalId });
+                }
+                const existingCar = await Car.findOne({ $or: searchConditions });
                 if (existingCar) {
-                    // تحديث بدلاً من الإضافة إذا كان موجوداً بالفعل
+                    // تحديث المكونات وحفظ السجل دون حذف البيانات القديمة
                     const updatedCar = await Car.findByIdAndUpdate(
                         existingCar._id,
                         {
@@ -213,6 +221,8 @@ router.post('/save', requireAuthAPI, requireAdmin, invalidateCache(['/api/v2/car
                                 listingType: data.listingType || (isEncar ? 'showroom' : existingCar.listingType || 'store'),
                                 isActive: true,
                                 isSold: false,
+                                externalRef: data.sourceUrl || existingCar.externalRef,
+                                externalId: data.externalId || existingCar.externalId,
                                 ...pricing,
                                 updatedAt: new Date()
                             }
@@ -221,7 +231,7 @@ router.post('/save', requireAuthAPI, requireAdmin, invalidateCache(['/api/v2/car
                     );
                     return res.json({
                         success: true,
-                        message: '✅ تم تحديث السيارة الموجودة بنجاح (تم الكشف عن تكرار)',
+                        message: '✅ تم تحديث السيارة الموجودة بنجاح والتزامن مع بياناتها القديمة',
                         data: updatedCar,
                         isDuplicate: true
                     });
@@ -241,21 +251,21 @@ router.post('/save', requireAuthAPI, requireAdmin, invalidateCache(['/api/v2/car
                 basePriceUsd: pricing.basePriceUsd,
                 description: data.description || '',
                 images: processedImages,
+                mainImage: processedImages[0] || '',
+                imageUrl: processedImages[0] || '',
                 fuelType: data.fuelType || 'Petrol',
                 transmission: data.transmission || 'Automatic',
                 color: data.color || '',
                 mileage: data.mileage || 0,
                 category: data.category || 'sedan',
-                externalUrl: data.sourceUrl || '',
-                source: data.source || (isEncar ? 'encar_korea' : 'hm_local'),
+                source: data.source || (isEncar ? 'korean_import' : 'hm_local'),
                 listingType: data.listingType || (isEncar ? 'showroom' : 'store'),
                 agency: agencyId,
                 isActive: true,
                 isSold: false,
-                // ⚠️ لا نحفظ externalUrl كرابط ظاهر - فقط كمرجعية داخلية
                 externalUrl: '',
                 externalRef: data.sourceUrl || '',
-
+                externalId: data.externalId || (data.sourceUrl ? `imp-${Date.now()}` : ''),
             });
         } else {
             const SparePart = req.tenantModels.SparePart;
