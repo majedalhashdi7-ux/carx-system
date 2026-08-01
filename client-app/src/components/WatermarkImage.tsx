@@ -3,6 +3,7 @@
 import Image, { ImageProps } from 'next/image';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { normalizeImageUrl } from '@/lib/imageUtils';
 
 interface WatermarkImageProps extends Omit<ImageProps, 'className'> {
     className?: string;
@@ -52,25 +53,7 @@ const DEFAULT_FALLBACK = 'https://images.unsplash.com/photo-1552519507-da3b142c6
  */
 function toProxiedUrl(url: string): string {
     if (!url || typeof url !== 'string') return DEFAULT_FALLBACK;
-
-    // الصور المعالجة مسبقاً أو المحلية - لا تحتاج proxy
-    if (
-        url.includes('/api/v2/image-proxy') ||
-        url.startsWith('/uploads/') ||
-        url.startsWith('/public/') ||
-        url.includes('res.cloudinary.com')
-    ) {
-        return url;
-    }
-
-    // أي رابط HTTP خارجي → مرره عبر الـ proxy لإضافة الواترمارك
-    if (url.startsWith('http')) {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v2', '') || '';
-        const encoded = encodeURIComponent(url);
-        return `${apiBase}/api/v2/image-proxy?url=${encoded}&watermark=true&text=HM%20CAR`;
-    }
-
-    return url;
+    return normalizeImageUrl(url);
 }
 
 export default function WatermarkImage({

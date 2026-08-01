@@ -19,6 +19,7 @@ import WatermarkImage from '@/components/WatermarkImage';
 import Link from 'next/link';
 import { WhatsAppService } from '@/lib/WhatsAppService';
 import { getBrandDisplayName, formatCarTitle, cleanKoreanText } from '@/lib/brandTranslations';
+import { getCarMainImage } from '@/lib/imageUtils';
 
 /* ─── Types ─── */
 interface CarItem {
@@ -51,15 +52,7 @@ interface CarItem {
 
 /* ─── Helpers ─── */
 function resolveImg(car: CarItem): string {
-    const fallback = 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?q=80&w=800';
-    let url = car.images?.[0] || car.imageUrl || '';
-    if (!url) return fallback;
-    url = url.trim();
-    if (url.includes('https://ci.encar.comhttps://')) url = url.replace('https://ci.encar.comhttps://', 'https://');
-    if (url.endsWith('_')) url = url.startsWith('http') ? `${url}001.jpg` : `https://ci.encar.com${url}001.jpg`;
-    if (url.startsWith('/carpicture')) return `https://ci.encar.com${url}`;
-    if (url.startsWith('/') && !url.startsWith('http')) return `https://ci.encar.com/carpicture${url}`;
-    return url || fallback;
+    return getCarMainImage(car);
 }
 
 function fmtKm(km: number) {

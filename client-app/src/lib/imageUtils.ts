@@ -56,26 +56,7 @@ export function isEncarImage(url: string): boolean {
  */
 export function getProxiedImageUrl(rawUrl: string | null | undefined, watermarkText = 'HM CAR'): string {
     if (!rawUrl || typeof rawUrl !== 'string') return FALLBACK_IMAGE;
-
-    const url = normalizeImageUrl(rawUrl);
-
-    // Cloudinary URLs جيدة مباشرة
-    if (url.includes('res.cloudinary.com')) return url;
-
-    // إذا كانت الصورة بالفعل تمر عبر proxy
-    if (url.includes('/api/v2/image-proxy')) return url;
-
-    // صورة محلية - لا حاجة لـ proxy
-    if (url.startsWith('/uploads/') || url.startsWith('/public/')) return url;
-
-    // Encar أو صور خارجية → نمررها عبر proxy
-    if (url.startsWith('http')) {
-        const encoded = encodeURIComponent(url);
-        const text = encodeURIComponent(watermarkText);
-        return `/api/v2/image-proxy?url=${encoded}&watermark=true&text=${text}`;
-    }
-
-    return url || FALLBACK_IMAGE;
+    return normalizeImageUrl(rawUrl);
 }
 
 /**
