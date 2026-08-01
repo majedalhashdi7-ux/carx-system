@@ -248,7 +248,9 @@ export default function DesertStyleCarDetail() {
     const mainImg = images[activeImage] || car.image || car.imageUrl || 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=1200';
     const carPriceSar = Number(car.priceSar || car.price || 0);
     const formattedPriceSar = carPriceSar > 0 ? `${carPriceSar.toLocaleString('ar-SA')} ر.س` : 'عند الطلب';
-    const externalEncarUrl = car.externalUrl || (car.externalId ? `https://www.encar.com/dc/dc/dcCarDetlView.do?carid=${car.externalId.replace('encar-', '')}` : 'https://www.encar.com');
+    // ⚠️ لا نعرض رابط Encar للزوار - السيارة محفوظة محلياً في قاعدة بياناتنا
+    // externalRef محفوظ للمرجعية الداخلية فقط وليس للعرض
+    const isKoreanImport = car.source === 'korean_import' || car.source === 'encar_korea' || car.listingType === 'showroom';
 
     // حساب الجمارك والشحن التقريبي (حاسبة الاستيراد)
     const baseCarCost = Math.round(carPriceSar * 0.72);
@@ -306,16 +308,12 @@ export default function DesertStyleCarDetail() {
                                     <span className="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping" />
                                     متاح
                                 </span>
-                                <a
-                                    href={externalEncarUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="px-3 py-1 rounded-full bg-slate-900/80 text-emerald-400 border border-emerald-500/30 text-xs font-bold hover:bg-slate-900 transition-colors flex items-center gap-1.5"
-                                >
-                                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                                    <span>متاح على إنكار (Encar)</span>
-                                    <ExternalLink className="w-3 h-3" />
-                                </a>
+                                {isKoreanImport && (
+                                <span className="px-3 py-1 rounded-full bg-amber-900/50 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-amber-400" />
+                                    <span>سيارة مستوردة من كوريا</span>
+                                </span>
+                                )}
                             </div>
                         </div>
 

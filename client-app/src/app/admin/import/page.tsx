@@ -5,8 +5,9 @@ import {
     Download, Globe, RefreshCw, Car, Gavel, Package,
     CheckCircle2, History, ShieldCheck, Zap, ExternalLink,
     AlertCircle, Link2, Trash2, Bookmark, Copy, Plus, Minus,
-    Sparkles
+    Sparkles, Image as ImageIcon, X
 } from "lucide-react";
+
 import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/LanguageContext";
@@ -35,6 +36,8 @@ export default function AdminImportHub() {
     const [carsLoading, setCarsLoading] = useState(false);
     const [partsLoading, setPartsLoading] = useState(false);
     const [auctionsLoading, setAuctionsLoading] = useState(false);
+    const [syncLoading, setSyncLoading] = useState(false);
+    const [syncResult, setSyncResult] = useState<any>(null);
 
     const [carsResult, setCarsResult] = useState<any>(null);
     const [partsResult, setPartsResult] = useState<any>(null);
@@ -199,6 +202,67 @@ export default function AdminImportHub() {
             } else showToast(res?.error || (isRTL ? "❌ فشل الاستيراد" : "❌ Import failed"), "error");
         } catch (e: any) { showToast(e.message || "❌ خطأ", "error"); }
         finally { setAuctionsLoading(false); }
+    };
+
+    // ── مزامنة جذرية لكل البيانات ─────────────────────────────────
+    const handleRetroSync = async () => {
+        if (!confirm(isRTL
+            ? '⚠️ سيتم معالجة جميع السيارات: إزالة روابط Encar، ترجمة الكوري، علامة مائية. هل تريد المتابعة؟'
+            : 'All cars will be processed: remove Encar links, translate Korean, add watermark. Continue?'
+        )) return;
+        setSyncLoading(true); setSyncResult(null);
+        try {
+            const token = localStorage.getItem('hm_token');
+            const res = await fetch('/api/v2/import/retro-sync', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                }
+            });
+            const data = await res.json();
+            if (data?.success) {
+                showToast(data.message || '✅ تمت المزامنة الجذرية بنجاح', 'success');
+                setSyncResult(data);
+            } else {
+                showToast(data?.error || '❌ فشلت المزامنة', 'error');
+            }
+        } catch (e: any) { showToast(e.message || '❌ خطأ', 'error'); }
+        finally { setSyncLoading(false); }
+    };
+
+
+    const handleFixImages = async () => {
+        setSyncLoading(true);
+        try {
+            const token = localStorage.getItem('hm_token');
+            const res = await fetch('/api/v2/import/fix-images', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+            showToast(data?.message || '✅ تم إصلاح الصور', data?.success ? 'success' : 'error');
+            if (data?.success) setSyncResult(data);
+        } catch (e: any) { showToast(e.message || '❌ خطأ', 'error'); }
+        finally { setSyncLoading(false); }
+    };
+
+    const handleClearExternalUrls = async () => {
+        if (!confirm(isRTL
+            ? 'سيتم مسح جميع روابط Encar من قاعدة البيانات. هل تريد المتابعة؟'
+            : 'All Encar external URLs will be cleared from database. Continue?'
+        )) return;
+        setSyncLoading(true);
+        try {
+            const token = localStorage.getItem('hm_token');
+            const res = await fetch('/api/v2/import/clear-external-urls', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+            showToast(data?.message || '✅ تم مسح الروابط الخارجية', data?.success ? 'success' : 'error');
+        } catch (e: any) { showToast(e.message || '❌ خطأ', 'error'); }
+        finally { setSyncLoading(false); }
     };
 
     // ── Shared sub-components ──────────────────────────────────
@@ -765,6 +829,87 @@ export default function AdminImportHub() {
                     </motion.div>
                 )}
             </div>
+            {/* ── قسم المزامنة الجذرية ─────────────────────────────────── */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="bg-gradient-to-br from-red-950/60 to-slate-900 border border-red-500/30 rounded-3xl p-6 space-y-4"
+            >
+                <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2.5 rounded-xl bg-red-500/20 border border-red-500/30">
+                        <RefreshCw className="w-5 h-5 text-red-400" />
+                    </div>
+                    <div>
+                        <h3 className="text-base font-bold text-white">
+                            {isRTL ? '🔄 مزامنة جذرية وإصلاح البيانات' : '🔄 Retroactive Sync & Data Fix'}
+                        </h3>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                            {isRTL
+                                ? 'تصلح البيانات القديمة والحالية — تزيل روابط Encar، تترجم النصوص الكورية، تضيف علامة HM CAR على الصور'
+                                : 'Fixes existing & old data — removes Encar links, translates Korean text, adds HM CAR watermark to images'}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {/* مزامنة شاملة */}
+                    <button
+                        onClick={handleRetroSync}
+                        disabled={syncLoading}
+                        className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+                    >
+                        <RefreshCw className={`w-6 h-6 text-red-400 group-hover:text-red-300 ${syncLoading ? 'animate-spin' : ''}`} />
+                        <div className="text-center">
+                            <p className="text-sm font-bold text-white">{isRTL ? 'مزامنة جذرية شاملة' : 'Full Retroactive Sync'}</p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">{isRTL ? 'كل السيارات: ترجمة + علامة + إزالة روابط' : 'All cars: translate + watermark + clear links'}</p>
+                        </div>
+                    </button>
+
+                    {/* إصلاح الصور فقط */}
+                    <button
+                        onClick={handleFixImages}
+                        disabled={syncLoading}
+                        className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+                    >
+                        <ImageIcon className="w-6 h-6 text-amber-400 group-hover:text-amber-300" />
+                        <div className="text-center">
+                            <p className="text-sm font-bold text-white">{isRTL ? 'إصلاح الصور فقط' : 'Fix Images Only'}</p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">{isRTL ? 'تحميل صور Encar + علامة HM CAR' : 'Download Encar images + HM CAR watermark'}</p>
+                        </div>
+                    </button>
+
+                    {/* مسح روابط Encar */}
+                    <button
+                        onClick={handleClearExternalUrls}
+                        disabled={syncLoading}
+                        className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-slate-700/30 border border-slate-600/30 hover:bg-slate-700/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+                    >
+                        <X className="w-6 h-6 text-slate-400 group-hover:text-white" />
+                        <div className="text-center">
+                            <p className="text-sm font-bold text-white">{isRTL ? 'مسح روابط Encar' : 'Clear Encar Links'}</p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">{isRTL ? 'يمنع فتح مواقع خارجية' : 'Prevents opening external sites'}</p>
+                        </div>
+                    </button>
+                </div>
+
+                {syncResult && (
+                    <div className="bg-emerald-950/40 border border-emerald-500/20 rounded-xl p-3 text-sm text-emerald-300">
+                        <p className="font-bold">{syncResult.message}</p>
+                        {syncResult.stats && (
+                            <div className="flex gap-4 mt-2 text-xs text-emerald-400/70">
+                                <span>✅ {isRTL ? 'عولجت:' : 'Processed:'} {syncResult.stats.totalProcessed}</span>
+                                <span>🔄 {isRTL ? 'حُدِّثت:' : 'Updated:'} {syncResult.stats.totalUpdated}</span>
+                                {syncResult.stats.totalErrors > 0 && (
+                                    <span>⚠️ {isRTL ? 'أخطاء:' : 'Errors:'} {syncResult.stats.totalErrors}</span>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </motion.div>
+
         </AdminPageShell>
     );
 }
+

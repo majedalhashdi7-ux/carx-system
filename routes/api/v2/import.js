@@ -247,11 +247,15 @@ router.post('/save', requireAuthAPI, requireAdmin, invalidateCache(['/api/v2/car
                 mileage: data.mileage || 0,
                 category: data.category || 'sedan',
                 externalUrl: data.sourceUrl || '',
-                source: data.source || (isEncar ? 'korean_import' : 'hm_local'),
+                source: data.source || (isEncar ? 'encar_korea' : 'hm_local'),
                 listingType: data.listingType || (isEncar ? 'showroom' : 'store'),
                 agency: agencyId,
                 isActive: true,
                 isSold: false,
+                // ⚠️ لا نحفظ externalUrl كرابط ظاهر - فقط كمرجعية داخلية
+                externalUrl: '',
+                externalRef: data.sourceUrl || '',
+
             });
         } else {
             const SparePart = req.tenantModels.SparePart;
