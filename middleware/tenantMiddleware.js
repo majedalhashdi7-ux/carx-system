@@ -37,7 +37,41 @@ function tenantMiddleware(options = {}) {
 
     try {
       // ── تحديد المعرض ──
-      const tenant = resolveTenant(req);
+      let tenant = resolveTenant(req);
+
+      // ── Fallback ذكي: إذا لم يُحدَّد tenant يستخدم الافتراضي ──
+      // هذا يحل مشكلة Vercel Preview URLs التي لم تُضاف للـ domains list
+      if (!tenant) {
+        const host = (req.headers['x-forwarded-host'] || req.headers.host || '').toLowerCase();
+        const headerTenant = req.headers['x-tenant-id'];
+        const isVercelPreview = host.endsWith('.vercel.app');
+        const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
+
+        // استخدام الـ default tenant إذا كان من vercel أو localhost أو يحمل header صريح
+        if (isVercelPreview || isLocalhost || headerTenant) {
+          const { resolveTenant: rt } = require('../tenants/tenant-resolver');
+          // نعيد المحاولة مع tenant صريح
+          const { loadTenants } = require('../tenants/tenant-resolver');
+          console.warn(`⚠️ [TenantMiddleware] Host "${host}" not in domains list. Using default tenant: hmcar`);
+          // نُنشئ tenant مباشرة من ملف tenants.json
+          const fs = require('fs');
+          const path = require('path');
+          try {
+            const tenantsData = JSON.parse(fs.readFileSync(path.join(__dirname, '../tenants/tenants.json'), 'utf8'));
+            const defaultId = tenantsData.defaultTenant || 'hmcar';
+            const tenantData = tenantsData.tenants[headerTenant] || tenantsData.tenants[defaultId];
+            if (tenantData && tenantData.enabled) {
+              let mongoUri = tenantData.mongoUri;
+              if (mongoUri && mongoUri.startsWith('ENV:')) {
+                mongoUri = process.env[mongoUri.substring(4)] || process.env.MONGO_URI || null;
+              }
+              tenant = { ...tenantData, mongoUri };
+            }
+          } catch(e) {
+            console.error('[TenantMiddleware] Failed to load fallback tenant:', e.message);
+          }
+        }
+      }
 
       if (!tenant) {
         if (required) {
@@ -50,6 +84,8 @@ function tenantMiddleware(options = {}) {
         // إذا لم يكن إلزامياً، تابع بدون معرض
         return next();
       }
+
+
 
       // ── تخزين بيانات المعرض في الطلب ──
       req.tenant = {
