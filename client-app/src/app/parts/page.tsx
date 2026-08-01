@@ -154,6 +154,17 @@ export default function PartsPage() {
                         logo: val.logo,
                         models: Array.from(val.models)
                     })));
+                } else {
+                    // Fallback defaults if no DB brands exist yet
+                    setAgencies([
+                        { id: 'toyota', name: 'تويوتا', nameEn: 'Toyota', logo: 'https://logo.clearbit.com/toyota.com', models: ['كامري', 'كورولا', 'لاندكروزر', 'هيلوكس'] },
+                        { id: 'hyundai', name: 'هيونداي', nameEn: 'Hyundai', logo: 'https://logo.clearbit.com/hyundai.com', models: ['سوناتا', 'إلانترا', 'توسان', 'أكسنت'] },
+                        { id: 'kia', name: 'كيا', nameEn: 'Kia', logo: 'https://logo.clearbit.com/kia.com', models: ['أوبتيما', 'سبورتاج', 'سورينتو', 'سيراتو'] },
+                        { id: 'mercedes', name: 'مرسيدس بنز', nameEn: 'Mercedes-Benz', logo: 'https://logo.clearbit.com/mercedes-benz.com', models: ['E-Class', 'S-Class', 'C-Class', 'G-Class'] },
+                        { id: 'bmw', name: 'بي إم دبليو', nameEn: 'BMW', logo: 'https://logo.clearbit.com/bmw.com', models: ['الفئة الخامسة', 'الفئة الثالثة', 'X5', 'X6'] },
+                        { id: 'nissan', name: 'نيسان', nameEn: 'Nissan', logo: 'https://logo.clearbit.com/nissan.com', models: ['باترول', 'ألتيما', 'مكسيما', 'صني'] },
+                        { id: 'lexus', name: 'لكزس', nameEn: 'Lexus', logo: 'https://logo.clearbit.com/lexus.com', models: ['LX570', 'ES350', 'LS500', 'RX350'] },
+                    ]);
                 }
             } catch (err) {
                 console.error("Failed to fetch agencies", err);

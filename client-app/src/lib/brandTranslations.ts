@@ -85,14 +85,16 @@ const KOREAN_TITLE_TOKENS: Array<[RegExp, { ar: string; en: string }]> = [
     [/현대/g, { ar: 'هيونداي', en: 'Hyundai' }],
     [/기아/g, { ar: 'كيا', en: 'Kia' }],
     [/제네시스/g, { ar: 'جينيسيس', en: 'Genesis' }],
-    [/KG모빌리티|\(쌍용\)|쌍용/g, { ar: 'سانغ يونغ', en: 'SsangYong' }],
-    [/르노코리아|\(삼성\)|삼성/g, { ar: 'رينو سامسونج', en: 'Renault Samsung' }],
+    [/KG모빌리티\(쌍용\)|\(쌍용\)|KG모빌리티|쌍용/g, { ar: 'سانغ يونغ', en: 'SsangYong' }],
+    [/르노코리아\(삼성\)|\(삼성\)|르노코리아|삼성/g, { ar: 'رينو سامسونج', en: 'Renault Samsung' }],
+    [/쉐보레\(GM대우\)|GM대우/g, { ar: 'شيفروليه', en: 'Chevrolet' }],
     [/벤츠/g, { ar: 'مرسيدس', en: 'Mercedes-Benz' }],
     [/아우디/g, { ar: 'أودي', en: 'Audi' }],
     [/폭스바겐/g, { ar: 'فولكس واغن', en: 'Volkswagen' }],
     [/볼보/g, { ar: 'فولفو', en: 'Volvo' }],
     [/렉서스/g, { ar: 'لكزس', en: 'Lexus' }],
     [/토요타/g, { ar: 'تويوتا', en: 'Toyota' }],
+    [/시리즈/g, { ar: 'فئة', en: 'Series' }],
 
     // Popular Korean Models
     [/쏘렌토/g, { ar: 'سورينتو', en: 'Sorento' }],
@@ -119,7 +121,9 @@ const KOREAN_TITLE_TOKENS: Array<[RegExp, { ar: string; en: string }]> = [
     [/더\s*뉴/g, { ar: 'ذا نيو', en: 'The New' }],
     [/(\d+)인승/g, { ar: '$1 مقاعد', en: '$1-Seater' }],
     [/디젤/g, { ar: 'ديزل', en: 'Diesel' }],
+    [/가솔린\+전기/g, { ar: 'بنزين + كهرباء', en: 'Gasoline + Electric' }],
     [/가솔린/g, { ar: 'بنزين', en: 'Gasoline' }],
+    [/LPG\(일반인\s*구입\)|LPG/g, { ar: 'غاز (LPG)', en: 'LPG Gas' }],
     [/하이브리드/g, { ar: 'هايبرد', en: 'Hybrid' }],
     [/전기/g, { ar: 'كهربائي', en: 'EV' }],
     [/터보/g, { ar: 'توربو', en: 'Turbo' }],
@@ -129,6 +133,18 @@ const KOREAN_TITLE_TOKENS: Array<[RegExp, { ar: string; en: string }]> = [
     [/무사고/g, { ar: 'خالية من الحوادث', en: 'Accident-Free' }],
     [/풀옵션/g, { ar: 'فل كامل', en: 'Full Option' }],
 ];
+
+/**
+ * تنظيف وترجمة أي نص كوري عام
+ */
+export function cleanKoreanText(text: string, isRTL: boolean = true): string {
+    if (!text || typeof text !== 'string') return '';
+    let result = text;
+    KOREAN_TITLE_TOKENS.forEach(([pattern, trans]) => {
+        result = result.replace(pattern, isRTL ? trans.ar : trans.en);
+    });
+    return result.trim();
+}
 
 /**
  * تنسيق وترجمة عنوان أو مواصفات السيارة المستوردة حسب اللغة (عربي / إنجليزي)

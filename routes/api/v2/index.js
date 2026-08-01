@@ -99,7 +99,7 @@ router.use('/search', searchLimiter, (req, res) => {
     code: 'NOT_IMPLEMENTED'
   });
 });                                                  // البحث - قيد التطوير
-router.use('/settings', autoCacheMiddleware({ ttl: 600 }), require('./settings')); // [[ARABIC_COMMENT]] كاش للإعدادات لمدة 10 دقائق
+router.use('/settings', require('./settings')); // الإعدادات
 router.use('/messages', publicLimiter, require('./messages'));          // الرسائل
 router.use('/reviews', publicLimiter, require('./reviews'));            // التقييمات
 router.use('/comparisons', publicLimiter, require('./comparisons'));    // المقارنات

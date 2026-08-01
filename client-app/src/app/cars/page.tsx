@@ -18,7 +18,7 @@ import Image from 'next/image';
 import WatermarkImage from '@/components/WatermarkImage';
 import Link from 'next/link';
 import { WhatsAppService } from '@/lib/WhatsAppService';
-import { getBrandDisplayName, formatCarTitle } from '@/lib/brandTranslations';
+import { getBrandDisplayName, formatCarTitle, cleanKoreanText } from '@/lib/brandTranslations';
 
 /* ─── Types ─── */
 interface CarItem {
@@ -407,7 +407,7 @@ function CarsContent() {
             {/* Brand */}
             <FilterSection title={isRTL ? "الشركة المصنعة" : "Manufacturer"} expanded={expandedSections.brand} onToggle={() => toggleSection('brand')}>
                 {allBrands.slice(0, 20).map(b => (
-                    <FilterOption key={b} label={b}
+                    <FilterOption key={b} label={cleanKoreanText(getBrandDisplayName(b, isRTL), isRTL)}
                         count={allCars.filter(c => (c.makeAr || c.make) === b).length}
                         checked={brandFilters.includes(b)}
                         onChange={() => { setBrandFilters(p => p.includes(b) ? p.filter(x => x !== b) : [...p, b]); setPage(1); }} />
@@ -433,7 +433,7 @@ function CarsContent() {
             {/* Fuel */}
             <FilterSection title={isRTL ? "الوقود" : "Fuel"} expanded={expandedSections.fuel} onToggle={() => toggleSection('fuel')}>
                 {allFuels.map(f => (
-                    <FilterOption key={f} label={f}
+                    <FilterOption key={f} label={cleanKoreanText(f, isRTL)}
                         count={allCars.filter(c => (c.fuelAr || c.fuelType) === f).length}
                         checked={fuelFilters.includes(f)}
                         onChange={() => { setFuelFilters(p => p.includes(f) ? p.filter(x => x !== f) : [...p, f]); setPage(1); }} />
@@ -443,7 +443,7 @@ function CarsContent() {
             {/* Transmission */}
             <FilterSection title={isRTL ? "ناقل الحركة" : "Transmission"} expanded={expandedSections.trans} onToggle={() => toggleSection('trans')}>
                 {allTrans.map(t => (
-                    <FilterOption key={t} label={t}
+                    <FilterOption key={t} label={cleanKoreanText(t, isRTL)}
                         count={allCars.filter(c => (c.transmissionAr || c.transmission) === t).length}
                         checked={transFilters.includes(t)}
                         onChange={() => { setTransFilters(p => p.includes(t) ? p.filter(x => x !== t) : [...p, t]); setPage(1); }} />
