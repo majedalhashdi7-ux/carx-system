@@ -20,7 +20,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { useSettings } from '@/lib/SettingsContext';
 import { useToast } from '@/lib/ToastContext';
 import { cn } from '@/lib/utils';
-import { formatCarTitle } from '@/lib/brandTranslations';
+import { formatCarTitle, cleanKoreanText } from '@/lib/brandTranslations';
 
 const DEFAULT_WHATSAPP = '+821080880014';
 const PLATFORM_NAME = 'HM CAR';
@@ -263,9 +263,9 @@ export default function DesertStyleCarDetail() {
     const calculatedTotal = baseCarCost + shippingCost + customsDuty + vatAmount + systemCommission;
 
     const specsList = [
-        { label: isRTL ? 'الشركة المصنعة' : 'Manufacturer', value: isRTL ? (car.specs?.makeAr || car.make) : (car.specs?.makeEn || car.make || 'Unspecified') },
-        { label: isRTL ? 'الموديل' : 'Model', value: isRTL ? (car.specs?.modelAr || car.model) : (car.specs?.modelEn || car.model || 'Unspecified') },
-        { label: isRTL ? 'الفئة / الدرجة' : 'Trim Level', value: isRTL ? (car.specs?.trimAr || 'برستيج') : (car.specs?.trimEn || 'Prestige') },
+        { label: isRTL ? 'الشركة المصنعة' : 'Manufacturer', value: cleanKoreanText(isRTL ? (car.specs?.makeAr || car.make) : (car.specs?.makeEn || car.make || 'Unspecified'), isRTL) },
+        { label: isRTL ? 'الموديل' : 'Model', value: cleanKoreanText(isRTL ? (car.specs?.modelAr || car.model) : (car.specs?.modelEn || car.model || 'Unspecified'), isRTL) },
+        { label: isRTL ? 'الفئة / الدرجة' : 'Trim Level', value: cleanKoreanText(isRTL ? (car.specs?.trimAr || 'برستيج') : (car.specs?.trimEn || 'Prestige'), isRTL) },
         { label: isRTL ? 'سنة الصنع' : 'Year', value: String(car.year || '—') },
         { label: isRTL ? 'المسافة المقطوعة' : 'Mileage', value: car.mileage ? (isRTL ? `${Number(car.mileage).toLocaleString('ar-SA')} كم` : `${Number(car.mileage).toLocaleString('en-US')} km`) : '—' },
         { label: isRTL ? 'ناقل الحركة' : 'Transmission', value: isRTL ? (car.specs?.transmissionAr || car.transmission || 'أوتوماتيك') : (car.specs?.transmissionEn || car.transmission || 'Automatic') },
@@ -297,7 +297,7 @@ export default function DesertStyleCarDetail() {
                         <div>
                             <div className="flex items-center gap-3 flex-wrap mb-1">
                                 <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-                                    {car.title}
+                                    {formatCarTitle(car.title, car.make, isRTL)}
                                 </h1>
                                 <span className="px-3 py-1 rounded-lg bg-[#543b1f] border border-[#8a683a] text-xs font-bold text-amber-300">
                                     {car.specs?.badge || car.model || '3.3 GDI AWD'}

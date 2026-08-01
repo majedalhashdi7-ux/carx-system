@@ -134,16 +134,16 @@ const KOREAN_TITLE_TOKENS: Array<[RegExp, { ar: string; en: string }]> = [
     [/풀옵션/g, { ar: 'فل كامل', en: 'Full Option' }],
 ];
 
-/**
- * تنظيف وترجمة أي نص كوري عام
- */
 export function cleanKoreanText(text: string, isRTL: boolean = true): string {
     if (!text || typeof text !== 'string') return '';
     let result = text;
     KOREAN_TITLE_TOKENS.forEach(([pattern, trans]) => {
         result = result.replace(pattern, isRTL ? trans.ar : trans.en);
     });
-    return result.trim();
+    // إزالة أية حروف كورية متبقية غير مترجمة
+    result = result.replace(/[\uAC00-\uD7A3\u1100-\u11FF\u3130-\u318F]+/g, ' ').trim();
+    result = result.replace(/\s+/g, ' ').replace(/\(\s*\)/g, '').trim();
+    return result;
 }
 
 /**
@@ -151,11 +151,7 @@ export function cleanKoreanText(text: string, isRTL: boolean = true): string {
  */
 export function formatCarTitle(rawTitle: string, rawMake: string, isRTL: boolean): string {
     if (!rawTitle) return '';
-    let title = rawTitle;
-
-    KOREAN_TITLE_TOKENS.forEach(([pattern, trans]) => {
-        title = title.replace(pattern, isRTL ? trans.ar : trans.en);
-    });
+    let title = cleanKoreanText(rawTitle, isRTL);
 
     const brandName = getBrandDisplayName(rawMake || '', isRTL);
     if (brandName && !title.toLowerCase().includes(brandName.toLowerCase())) {

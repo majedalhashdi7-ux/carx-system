@@ -9,6 +9,34 @@ import {
 } from 'lucide-react';
 import { api } from '../../../lib/api';
 
+const KOREAN_MAP: Record<string, string> = {
+  '현대': 'هيونداي', '기아': 'كيا', '제네시스': 'جينيسيس', '쌍용': 'سانغ يونغ',
+  'KG모빌리티': 'كي جي موبيليتي', '르노코리아': 'رينو الكورية', '르노삼성': 'سامسونج رينو',
+  '쉐보레': 'شيفروليه', '벤츠': 'مرسيدس بنز', 'BMW': 'بي إم دبليو', '아우디': 'أودي',
+  '포르쉐': 'بورشه', '폭스바겐': 'فولكس فاجن', '재규어': 'جاغوار', '시리즈': 'فئة',
+  '팰리세이드': 'باليساد', '그랜저': 'جرانديور', '아반떼': 'إلانترا', '쏘나타': 'سوناتا',
+  '투싼': 'توسان', '싼타페': 'سانتافي', '코나': 'كونا', '카니발': 'كارنيفال',
+  '쏘렌토': 'سورينتو', '스포티지': 'سبورتاج', '셀토스': 'سيلتوس', '모닝': 'مورنينج',
+  '랭글러': 'رانجلر', '루비콘': 'روبيكون', '4도어': '4 أبواب', '스포츠': 'رياضية',
+  '휘발유': 'بنزين', '가솔린': 'بنزين', '경유': 'ديزل', '디젤': 'ديزل',
+  '하이브리드': 'هايبرد', '전기': 'كهرباء', 'LPG': 'غاز (LPG)', '오토': 'أوتوماتيك'
+};
+
+function cleanKoreanText(text: string, isRTL = true): string {
+  if (!text || typeof text !== 'string') return text || '';
+  let res = text.trim();
+  Object.keys(KOREAN_MAP).forEach(k => {
+    res = res.replace(new RegExp(k, 'gi'), KOREAN_MAP[k]);
+  });
+  res = res.replace(/[\uAC00-\uD7A3\u1100-\u11FF\u3130-\u318F]+/g, ' ').trim();
+  return res.replace(/\s+/g, ' ').replace(/\(\s*\)/g, '').trim() || text;
+}
+
+function formatCarTitle(title: string, make: string, isRTL = true): string {
+  if (!title) return '';
+  return cleanKoreanText(title, isRTL);
+}
+
 export default function AdminCarsPage() {
   const [cars, setCars] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -229,13 +257,13 @@ export default function AdminCarsPage() {
                                 alt=""
                               />
                               <div>
-                                <div className="font-bold text-sm">{car.title}</div>
+                                <div className="font-bold text-sm">{formatCarTitle(car.title, car.make || car.brand || '', true)}</div>
                                 <div className="text-[10px] text-white/30 uppercase">{car.year}</div>
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4 text-sm font-semibold text-white/60">
-                            {car.brand || car.make || 'غير محدد'}
+                            {cleanKoreanText(car.brand || car.make || 'غير محدد', true)}
                           </td>
                           <td className="px-6 py-4 font-mono font-bold text-sm">
                             {car.price?.toLocaleString()} <span className="text-[10px] text-white/20">ريال</span>
