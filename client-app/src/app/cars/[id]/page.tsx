@@ -370,10 +370,10 @@ export default function DesertStyleCarDetail() {
                                 </div>
                             </div>
 
-                            {/* 🟢 زر الطلب الفاخر والمباشر عبر الواتساب */}
+                            {/* 🟢 زر الطلب الفاخر والمباشر عبر الواتساب بحواف دائرية كاملاً */}
                             <button
                                 onClick={handleWhatsappOrder}
-                                className="relative w-full group overflow-hidden py-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 text-white font-black text-base flex items-center justify-center gap-3 shadow-2xl shadow-emerald-500/25 border border-emerald-400/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-emerald-500/40 active:scale-98 cursor-pointer"
+                                className="relative w-full group overflow-hidden py-4 rounded-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 text-white font-black text-base flex items-center justify-center gap-3 shadow-2xl shadow-emerald-500/25 border border-emerald-400/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-emerald-500/40 active:scale-98 cursor-pointer"
                             >
                                 <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform">
                                     <MessageCircle className="w-5 h-5 fill-white text-emerald-600" />
@@ -382,11 +382,11 @@ export default function DesertStyleCarDetail() {
                                 <ChevronLeft className="w-5 h-5 opacity-75 group-hover:-translate-x-1 transition-transform" />
                             </button>
 
-                            {/* أزرار الأدوات التفاعلية (حاسبة الاستيراد ومقارنة الأسعار) */}
+                            {/* أزرار الأدوات التفاعلية بحواف دائرية كاملاً */}
                             <div className="space-y-2.5 pt-2">
                                 <button
                                     onClick={() => setShowCalcModal(true)}
-                                    className="w-full py-3 rounded-xl bg-[#C9A96E]/10 hover:bg-[#C9A96E]/20 text-amber-300 font-bold text-xs flex items-center justify-center gap-2 border border-[#C9A96E]/40 transition-colors"
+                                    className="w-full py-3.5 rounded-full bg-[#C9A96E]/10 hover:bg-[#C9A96E]/20 text-amber-300 font-bold text-xs flex items-center justify-center gap-2 border border-[#C9A96E]/40 transition-all hover:scale-[1.01]"
                                 >
                                     <Calculator className="w-4 h-4 text-amber-300" />
                                     <span>حاسبة تكلفة الاستيراد</span>
@@ -394,7 +394,7 @@ export default function DesertStyleCarDetail() {
 
                                 <button
                                     onClick={() => setShowCompareModal(true)}
-                                    className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 font-bold text-xs flex items-center justify-center gap-2 border border-white/10 transition-colors"
+                                    className="w-full py-3.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-200 font-bold text-xs flex items-center justify-center gap-2 border border-white/10 transition-all hover:scale-[1.01]"
                                 >
                                     <Scale className="w-4 h-4 text-amber-400" />
                                     <span>مقارنة بسعر الجديد</span>
@@ -474,7 +474,7 @@ export default function DesertStyleCarDetail() {
                                         key={tab.key}
                                         onClick={() => setActiveTab(tab.key as any)}
                                         className={cn(
-                                            "px-6 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 whitespace-nowrap border",
+                                            "px-6 py-3 rounded-full text-xs sm:text-sm font-black transition-all flex items-center gap-2 whitespace-nowrap border",
                                             activeTab === tab.key
                                                 ? "bg-[#C9A96E] text-slate-950 border-[#C9A96E] shadow-xl shadow-[#C9A96E]/20"
                                                 : "bg-white/5 text-amber-200/80 border-white/10 hover:text-white hover:bg-white/10"
@@ -682,7 +682,7 @@ export default function DesertStyleCarDetail() {
 
                             <button
                                 onClick={() => { setShowCalcModal(false); handleWhatsappOrder(); }}
-                                className="w-full py-3.5 rounded-2xl bg-emerald-600 text-white font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-950/40"
+                                className="w-full py-3.5 rounded-full bg-emerald-600 text-white font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-500 transition-all hover:scale-[1.01] shadow-lg shadow-emerald-950/40"
                             >
                                 <MessageCircle className="w-4 h-4 fill-white" />
                                 <span>تأكيد الطلب بهذا السعر عبر واتساب</span>
@@ -716,22 +716,22 @@ export default function DesertStyleCarDetail() {
                                 <div className="p-4 rounded-2xl bg-[#1a1c2b] border border-white/10 space-y-2">
                                     <div className="flex justify-between font-bold">
                                         <span className="text-slate-400">سعر السيارة الجديدة في الوكالة:</span>
-                                        <span className="text-slate-500 line-through font-mono">{(carPriceSar * 1.65).toLocaleString('ar-SA')} ر.س</span>
+                                        <span className="text-slate-500 line-through font-mono">{(carPriceSar * 1.65).toLocaleString('en-US')} ر.س</span>
                                     </div>
                                     <div className="flex justify-between font-bold text-emerald-400">
                                         <span>سعر هذه السيارة المستوردة بحالة الوكالة:</span>
-                                        <span className="font-mono text-sm">{carPriceSar.toLocaleString('ar-SA')} ر.س</span>
+                                        <span className="font-mono text-sm">{carPriceSar.toLocaleString('en-US')} ر.س</span>
                                     </div>
                                 </div>
 
                                 <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-center font-bold">
-                                    🎉 نسبة التوفير الكلية: تكتسب توفيراً قدره <span className="text-emerald-400 font-mono text-sm font-black">+{Math.round(carPriceSar * 0.65).toLocaleString('ar-SA')} ر.س</span> مقارنة بالشراء جديداً!
+                                    🎉 نسبة التوفير الكلية: تكتسب توفيراً قدره <span className="text-emerald-400 font-mono text-sm font-black">+{Math.round(carPriceSar * 0.65).toLocaleString('en-US')} ر.س</span> مقارنة بالشراء جديداً!
                                 </div>
                             </div>
 
                             <button
                                 onClick={() => setShowCompareModal(false)}
-                                className="w-full py-3 rounded-xl bg-[#C9A96E]/10 text-amber-300 border border-[#C9A96E]/30 font-bold text-xs hover:bg-[#C9A96E]/20 transition-colors"
+                                className="w-full py-3 rounded-full bg-[#C9A96E]/10 text-amber-300 border border-[#C9A96E]/30 font-bold text-xs hover:bg-[#C9A96E]/20 transition-colors"
                             >
                                 إغلاق النافذة
                             </button>
