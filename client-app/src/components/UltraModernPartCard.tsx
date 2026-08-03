@@ -384,53 +384,39 @@ export default function UltraModernPartCard({
                         )}
                     </div>
 
-                    {/* السعر وزر الشراء والعملة */}
-                    <div className="flex items-end justify-between gap-4 pt-4 border-t border-white/10">
-                        {/* السعر */}
+                    {/* زر الطلب عبر الواتساب مع الفاتورة المرفقة */}
+                    <div className="flex items-center justify-between gap-3 pt-4 border-t border-white/10">
                         <div className="flex-1 overflow-hidden">
-                            <div className="flex items-center gap-2 mb-2">
-                                <Coins className="w-4 h-4 text-amber-400" />
-                                <p className="text-xs text-white/50 font-bold uppercase tracking-widest">
-                                    {isRTL ? 'السعر' : 'PRICE'}
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                                <p className="text-[10px] text-emerald-400 font-black uppercase tracking-widest">
+                                    {isRTL ? 'متاح للطلب المباشر' : 'AVAILABLE UPON REQUEST'}
                                 </p>
                             </div>
-                            <p className="text-2xl font-black text-amber-400 leading-none truncate">
-                                {displayPrice}
+                            <p className="text-xs font-bold text-white/70 line-clamp-1">
+                                {isRTL ? 'اطلب وتواصل فورياً' : 'Order via WhatsApp'}
                             </p>
                         </div>
-                        
-                        {/* مبدل العملة */}
-                        <div onClick={e => e.stopPropagation()}>
-                            <CurrencySwitcher variant="minimal" />
-                        </div>
 
-                        {/* زر الشراء */}
+                        {/* زر الطلب عبر الواتساب */}
                         <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            onClick={addToCart}
-                            disabled={stock === 0}
-                            title={isRTL ? 'شراء' : 'Buy'}
-                            className={cn(
-                                "h-12 px-6 rounded-2xl border flex items-center justify-center gap-3 transition-all duration-500 font-black text-sm uppercase tracking-wider",
-                                inCart
-                                    ? "bg-emerald-500/20 text-emerald-400 border-emerald-400/50 shadow-emerald-500/20"
-                                    : stock === 0
-                                        ? "bg-white/5 text-white/30 border-white/10 cursor-not-allowed"
-                                        : "bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 border-white/10 hover:from-amber-500 hover:to-orange-500 hover:text-black hover:border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.1)] hover:shadow-[0_0_30px_rgba(245,158,11,0.6)]"
-                            )}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const phone = (socialLinks?.whatsapp || '+821080880014').replace(/\D/g, '');
+                                const imgUrl = imageSrc.startsWith('http') ? imageSrc : `${window.location.origin}${imageSrc}`;
+                                const invoiceMsg = isRTL
+                                    ? `📋 *فاتورة طلب قطعة غيار - HM CAR*\n───────────────\n📦 *القطعة:* ${name}\n🏢 *الوكالة:* ${part.brand || part.brandName || 'غير محدد'}\n🏷️ *التصنيف:* ${part.categoryAr || part.category || 'عام'}\n🖼️ *صورة القطعة:* ${imgUrl}\n───────────────\nالسلام عليكم، أرجو تزويدي بالسعر وتأكيد إمكانية شحن هذه القطعة.`
+                                    : `📋 *SPARE PART ORDER INVOICE - HM CAR*\n───────────────\n📦 *Part:* ${name}\n🏢 *Brand:* ${part.brand || part.brandName || 'General'}\n🏷️ *Category:* ${part.category || 'General'}\n🖼️ *Part Image:* ${imgUrl}\n───────────────\nHello, please provide the price and confirm shipping availability for this part.`;
+                                window.open(`https://wa.me/${phone}?text=${encodeURIComponent(invoiceMsg)}`, '_blank');
+                            }}
+                            className="h-11 px-5 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-black text-xs uppercase tracking-wider hover:brightness-110 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] flex items-center gap-2"
                         >
-                            {cartAdded || inCart ? (
-                                <>
-                                    <Check className="w-4 h-4" />
-                                    <span>{isRTL ? 'تم' : 'ADDED'}</span>
-                                </>
-                            ) : (
-                                <>
-                                    <span>{isRTL ? 'شراء' : 'BUY'}</span>
-                                    <ShoppingCart className="w-4 h-4" />
-                                </>
-                            )}
+                            <span>{isRTL ? 'طلب عبر الواتساب' : 'Order via WhatsApp'}</span>
+                            <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                                <path d="M12.012 2c-5.506 0-9.989 4.478-9.989 9.984 0 1.758.459 3.474 1.33 4.988l-1.413 5.164 5.283-1.386c1.455.795 3.1 1.218 4.789 1.218 5.507 0 9.989-4.478 9.989-9.984s-4.482-9.984-9.989-9.984zm5.792 14.126c-.244.686-1.42 1.309-1.968 1.353-.51.041-1.157.184-3.771-.84-3.136-1.226-5.132-4.39-5.288-4.597-.156-.207-1.267-1.688-1.267-3.22 0-1.533.805-2.287 1.09-2.58.286-.293.626-.367.834-.367.208 0 .416.002.598.01.194.008.455-.074.71.539.26.626.885 2.159.963 2.316.078.157.13.34.026.547-.104.207-.156.335-.312.516-.156.182-.328.406-.468.545-.156.156-.319.327-.137.64.182.313.809 1.334 1.734 2.159 1.189 1.06 2.193 1.388 2.506 1.544.313.156.495.13.677-.078.182-.208.781-.911.989-1.224.208-.313.416-.26.703-.156.286.104 1.821.859 2.133 1.015.312.156.52.234.598.365.078.13.078.756-.166 1.442z" />
+                            </svg>
                         </motion.button>
                     </div>
 

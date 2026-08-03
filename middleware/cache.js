@@ -111,6 +111,7 @@ const invalidateCache = (patterns) => {
         // Invalidate after the request is successfully handled
         res.on('finish', () => {
             if (res.statusCode >= 200 && res.statusCode < 300) {
+                clearLocalCache(); // Instant local memory cache wipe
                 const patternsToClear = Array.isArray(patterns) ? patterns : [patterns];
                 // إضافة معرف المعرض للـ pattern لضمان حذف الكاش الخاص بهذا المعرض فقط
                 const tenantId = req.tenant?.id || 'default';

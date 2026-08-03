@@ -67,21 +67,15 @@ export default function Register() {
         setLoading(true);
         setError('');
 
-        const trimmedName = formData.name.trim();
-        const nameWords = trimmedName.split(/\s+/).filter(Boolean);
-        if (nameWords.length < 2) {
-            setError(isRTL ? 'يرجى كتابة الاسم الثنائي على الأقل (اسمين باللغة العربية أو الإنجليزية)' : 'Please enter at least two words for your full name');
+        const trimmedName = formData.name.trim().replace(/\s+/g, ' ');
+        if (trimmedName.length < 2) {
+            setError(isRTL ? 'يرجى إدخال الاسم الكامل (حرفين على الأقل)' : 'Please enter your full name (at least 2 characters)');
             setLoading(false);
             return;
         }
 
-        if (formData.password !== formData.confirmPassword) {
-            setError(isRTL ? 'كلمتا المرور غير متطابقتين' : 'Passwords do not match');
-            setLoading(false);
-            return;
-        }
         if (formData.password.length < 6) {
-            setError(isRTL ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters');
+            setError(isRTL ? 'كلمة المرور يجب أن تكون 6 خانات على الأقل' : 'Password must be at least 6 characters');
             setLoading(false);
             return;
         }

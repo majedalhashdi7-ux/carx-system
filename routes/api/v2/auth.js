@@ -90,9 +90,19 @@ router.post('/register', authLimiter, async (req, res) => {
       return sendResponse(res, validationErrorResponse(null, 'Invalid email format'));
     }
 
-    // Validate Name (at least 2 words)
-    if (name.trim().split(/\s+/).length < 2) {
-      return sendResponse(res, validationErrorResponse(null, 'Full name must contain at least two names'));
+    // Flexible Name Validation: support any language, auto-fix spacing, min 2 characters
+    let cleanedName = (name || '').trim().replace(/\s+/g, ' ');
+    if (cleanedName.length < 2) {
+      return sendResponse(res, validationErrorResponse(null, 'الاسم الكامل يجب أن يتكون من حرفين على الأقل'));
+    }
+    // If name doesn't contain a space, try to add space if possible or accept if valid single block
+    if (!cleanedName.includes(' ') && cleanedName.length >= 4) {
+      // Split camelCase or space out if merged
+      cleanedName = cleanedName.replace(/([a-z])([A-Z])/g, '$1 $2');
+    }
+
+    if (!password || password.length < 6) {
+      return sendResponse(res, validationErrorResponse(null, 'كلمة المرور يجب أن تكون 6 خانات على الأقل'));
     }
 
     // Check if user already exists
