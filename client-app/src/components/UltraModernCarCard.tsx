@@ -292,21 +292,28 @@ export default function UltraModernCarCard({
                         </motion.button>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="absolute top-20 end-4 flex flex-col gap-3 opacity-0 group-hover:opacity-100 transition-all duration-500">
+                    {/* زر المفضلة - ظاهر دائماً فوق الصورة */}
+                    <div className="absolute top-4 end-4 z-30">
                         <motion.button
                             onClick={() => setIsLiked(!isLiked)}
                             aria-label={isLiked ? 'Unlike' : 'Like'}
                             whileHover={{ scale: 1.15 }}
                             whileTap={{ scale: 0.85 }}
-                            className="p-2 border-none bg-transparent hover:scale-110 transition-all duration-300 cursor-pointer outline-none focus:outline-none"
+                            animate={isLiked ? { scale: [1, 1.3, 0.9, 1.1, 1] } : { scale: 1 }}
+                            transition={{ duration: 0.4 }}
+                            className={`w-10 h-10 rounded-2xl flex items-center justify-center shadow-xl border-2 backdrop-blur-md transition-all duration-300 ${
+                                isLiked
+                                    ? 'bg-red-500 border-red-400 shadow-red-500/50'
+                                    : 'bg-black/70 border-white/30 hover:bg-red-500/20 hover:border-red-400/60'
+                            }`}
                         >
-                            <Heart className={`w-6 h-6 transition-all duration-300 ${
-                                isLiked 
-                                    ? 'fill-red-500 text-red-500 drop-shadow-[0_0_12px_rgba(239,68,68,0.95)] scale-110' 
-                                    : 'text-white/90 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] hover:text-red-400'
+                            <Heart className={`w-5 h-5 transition-all duration-300 ${
+                                isLiked
+                                    ? 'fill-white text-white'
+                                    : 'text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]'
                             }`} />
                         </motion.button>
+                    </div>
                         
                         <motion.button
                             aria-label="Share"

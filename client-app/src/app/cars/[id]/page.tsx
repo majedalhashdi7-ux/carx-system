@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactGA from 'react-ga4';
@@ -8,7 +8,7 @@ import {
     ChevronLeft, ChevronRight, MessageCircle, Fuel, Gauge, Settings2,
     Calendar, Car, Tag, CheckCircle, AlertCircle, Image as ImageIcon, Globe,
     FileCheck2, ShieldCheck, ListFilter, Calculator, Scale, ExternalLink,
-    X, Check, DollarSign, Info, UserCheck, Shield
+    X, Check, DollarSign, Info, UserCheck, Shield, Heart, ZoomIn, ZoomOut, Maximize2
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Image from 'next/image';
@@ -87,6 +87,10 @@ export default function DesertStyleCarDetail() {
     const [whatsapp, setWhatsapp] = useState('');
     const [similarCars, setSimilarCars] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState<'SPECS' | 'INSPECTION' | 'SIMILAR'>('SPECS');
+    const [isFav, setIsFav] = useState(false);
+    const [favAnimating, setFavAnimating] = useState(false);
+    const [lightboxOpen, setLightboxOpen] = useState(false);
+    const [lightboxZoomed, setLightboxZoomed] = useState(false);
 
     // Modals
     const [showCalcModal, setShowCalcModal] = useState(false);
@@ -169,6 +173,32 @@ export default function DesertStyleCarDetail() {
             }
         }).catch(() => setWhatsapp(DEFAULT_WHATSAPP));
     }, []);
+
+    // Favorites logic
+    useEffect(() => {
+        if (!id) return;
+        try {
+            const favs: string[] = JSON.parse(localStorage.getItem('hm_favorites') || '[]');
+            setIsFav(favs.includes(String(id)));
+        } catch {}
+    }, [id]);
+
+    const toggleFav = useCallback(() => {
+        if (!id) return;
+        const key = String(id);
+        try {
+            const favs: string[] = JSON.parse(localStorage.getItem('hm_favorites') || '[]');
+            const next = favs.includes(key) ? favs.filter((f: string) => f !== key) : [...favs, key];
+            localStorage.setItem('hm_favorites', JSON.stringify(next));
+            setIsFav(!isFav);
+            setFavAnimating(true);
+            window.dispatchEvent(new CustomEvent('favorites_updated'));
+            setTimeout(() => setFavAnimating(false), 600);
+        } catch {}
+    }, [id, isFav]);
+
+    const goNextImage = useCallback(() => setActiveImage(prev => prev === images.length - 1 ? 0 : prev + 1), []);
+    const goPrevImage = useCallback(() => setActiveImage(prev => prev === 0 ? images.length - 1 : prev - 1), []);
 
     const handleWhatsappOrder = async () => {
         if (!car) return;
@@ -304,25 +334,42 @@ export default function DesertStyleCarDetail() {
                                 </span>
                             </div>
 
-                            {/* شارات الحالة */}
-                            <div className="flex items-center gap-2 mt-2">
+                            {/* شارات الحالة + مواصفات سريعة */}
+                            <div className="flex flex-wrap items-center gap-2 mt-2">
                                 <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-black flex items-center gap-1.5">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
                                     متاح الآن
                                 </span>
-                                <span className="px-3 py-1 rounded-full bg-[#C9A96E]/10 text-amber-200 border border-[#C9A96E]/30 text-xs font-bold flex items-center gap-1.5">
-                                    <span className="w-2 h-2 rounded-full bg-amber-400" />
-                                    <span>معرض HM CAR الرسمي</span>
-                                </span>
+                                {car.year && <span className="px-2 py-1 rounded-full bg-white/5 text-white/60 text-xs font-bold border border-white/10">📅 {car.year}</span>}
+                                {car.mileage && <span className="px-2 py-1 rounded-full bg-white/5 text-white/60 text-xs font-bold border border-white/10">🛣️ {Number(car.mileage).toLocaleString()} كم</span>}
+                                {car.transmission && <span className="px-2 py-1 rounded-full bg-white/5 text-white/60 text-xs font-bold border border-white/10">⚙️ {cleanKoreanText(car.transmission, isRTL)}</span>}
+                                {car.fuelType && <span className="px-2 py-1 rounded-full bg-white/5 text-white/60 text-xs font-bold border border-white/10">⛽ {cleanKoreanText(car.fuelType, isRTL)}</span>}
                             </div>
                         </div>
 
-                        {/* سعر السيارة */}
-                        <div className="bg-[#181a26] border border-[#C9A96E]/40 rounded-2xl p-4 md:text-left flex flex-col md:items-end justify-center shadow-xl">
+                        {/* سعر السيارة + زر المفضلة */}
+                        <div className="bg-[#181a26] border border-[#C9A96E]/40 rounded-2xl p-4 md:text-left flex flex-col md:items-end justify-center shadow-xl gap-3">
                             <div className="text-[11px] text-[#C9A96E] font-bold uppercase tracking-wider">السعر الإجمالي الشامل</div>
-                            <div className="text-3xl font-black text-amber-300 font-mono tracking-tight">{formattedPriceSar}</div>
+                            <div className="flex items-center gap-3">
+                                <div className="text-3xl font-black text-amber-300 font-mono tracking-tight">{formattedPriceSar}</div>
+                                {/* زر المفضلة الثابت الظاهر دائماً */}
+                                <motion.button
+                                    onClick={toggleFav}
+                                    animate={favAnimating ? { scale: [1, 1.4, 0.9, 1.1, 1] } : { scale: 1 }}
+                                    transition={{ duration: 0.5 }}
+                                    className={cn(
+                                        "w-11 h-11 rounded-2xl flex items-center justify-center border-2 shadow-xl transition-all duration-300",
+                                        isFav
+                                            ? "bg-red-500 border-red-400 shadow-red-500/40"
+                                            : "bg-white/10 border-white/20 hover:bg-red-500/20 hover:border-red-400/50"
+                                    )}
+                                    title={isFav ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
+                                >
+                                    <Heart className={cn("w-5 h-5 transition-all", isFav ? "fill-white text-white" : "text-white/70")} />
+                                </motion.button>
+                            </div>
                             {car.year < 2021 && (
-                                <p className="text-[10px] text-slate-400 mt-1 max-w-xs">
+                                <p className="text-[10px] text-slate-400 max-w-xs">
                                     * رسوم جمركية إضافية (+7300 SAR عند التصدير للموديلات الأقدم من 2021)
                                 </p>
                             )}
@@ -412,28 +459,48 @@ export default function DesertStyleCarDetail() {
                     {/* ────── RIGHT COLUMN: Gallery & Interactive Tabs (الجانب الأيمن للصور والتبويبات) ────── */}
                     <div className="lg:col-span-8 space-y-8 lg:order-2">
 
-                        {/* 1. Main Hero Image Viewer with Navigation */}
+                        {/* 1. Main Hero Image Viewer with Navigation + Zoom */}
                         <div className="relative aspect-[16/10] bg-slate-950 rounded-3xl overflow-hidden border-2 border-[#8a683a] shadow-2xl group">
-                            <WatermarkImage
-                                src={mainImg}
-                                alt={car.title}
-                                fill
-                                className="object-cover cursor-pointer"
-                                unoptimized
-                                watermarkPosition="br"
-                            />
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={activeImage}
+                                    initial={{ opacity: 0, scale: 1.04 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.97 }}
+                                    transition={{ duration: 0.35 }}
+                                    className="absolute inset-0"
+                                >
+                                    <WatermarkImage
+                                        src={mainImg}
+                                        alt={car.title}
+                                        fill
+                                        className="object-cover cursor-zoom-in"
+                                        unoptimized
+                                        watermarkPosition="br"
+                                    />
+                                </motion.div>
+                            </AnimatePresence>
+
+                            {/* زر التكبير / Lightbox */}
+                            <button
+                                onClick={() => setLightboxOpen(true)}
+                                className="absolute top-4 right-4 z-20 w-10 h-10 rounded-xl bg-black/70 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-[#C9A96E] hover:border-[#C9A96E] transition-all shadow-xl"
+                                title="تكبير الصورة"
+                            >
+                                <Maximize2 className="w-4 h-4" />
+                            </button>
 
                             {/* أسهم التصفح */}
                             {images.length > 1 && (
                                 <>
                                     <button
-                                        onClick={() => setActiveImage(prev => (prev === 0 ? images.length - 1 : prev - 1))}
+                                        onClick={goPrevImage}
                                         className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 hover:bg-white text-slate-900 flex items-center justify-center shadow-2xl backdrop-blur transition-transform active:scale-90 z-20"
                                     >
                                         <ChevronRight className="w-6 h-6 stroke-[2.5]" />
                                     </button>
                                     <button
-                                        onClick={() => setActiveImage(prev => (prev === images.length - 1 ? 0 : prev + 1))}
+                                        onClick={goNextImage}
                                         className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 hover:bg-white text-slate-900 flex items-center justify-center shadow-2xl backdrop-blur transition-transform active:scale-90 z-20"
                                     >
                                         <ChevronLeft className="w-6 h-6 stroke-[2.5]" />
@@ -445,6 +512,87 @@ export default function DesertStyleCarDetail() {
                                 {activeImage + 1} / {images.length || 1}
                             </div>
                         </div>
+
+                        {/* Lightbox Modal - عارض الصور المكبّر */}
+                        <AnimatePresence>
+                            {lightboxOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="fixed inset-0 z-[999] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center"
+                                    onClick={() => { setLightboxOpen(false); setLightboxZoomed(false); }}
+                                >
+                                    {/* زر الإغلاق */}
+                                    <button
+                                        className="absolute top-4 right-4 w-11 h-11 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-all z-10"
+                                        onClick={() => { setLightboxOpen(false); setLightboxZoomed(false); }}
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
+
+                                    {/* زر التكبير/التصغير */}
+                                    <button
+                                        className="absolute top-4 left-16 w-11 h-11 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white hover:bg-[#C9A96E]/30 transition-all z-10"
+                                        onClick={(e) => { e.stopPropagation(); setLightboxZoomed(!lightboxZoomed); }}
+                                    >
+                                        {lightboxZoomed ? <ZoomOut className="w-5 h-5" /> : <ZoomIn className="w-5 h-5" />}
+                                    </button>
+
+                                    {/* العداد */}
+                                    <div className="absolute top-5 left-4 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-mono">
+                                        {activeImage + 1} / {images.length}
+                                    </div>
+
+                                    {/* الصورة الرئيسية */}
+                                    <motion.div
+                                        className="relative w-full h-full flex items-center justify-center px-16"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <motion.img
+                                            key={activeImage}
+                                            src={mainImg}
+                                            alt={car.title}
+                                            animate={{ scale: lightboxZoomed ? 1.8 : 1 }}
+                                            transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+                                            className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl cursor-pointer select-none"
+                                            onClick={() => setLightboxZoomed(!lightboxZoomed)}
+                                            draggable={false}
+                                        />
+                                    </motion.div>
+
+                                    {/* أسهم التنقل في الـ Lightbox */}
+                                    {images.length > 1 && (
+                                        <>
+                                            <button onClick={(e) => { e.stopPropagation(); goPrevImage(); }} className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 border border-white/20 text-white flex items-center justify-center hover:bg-[#C9A96E] transition-all shadow-xl">
+                                                <ChevronRight className="w-6 h-6" />
+                                            </button>
+                                            <button onClick={(e) => { e.stopPropagation(); goNextImage(); }} className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 border border-white/20 text-white flex items-center justify-center hover:bg-[#C9A96E] transition-all shadow-xl">
+                                                <ChevronLeft className="w-6 h-6" />
+                                            </button>
+                                        </>
+                                    )}
+
+                                    {/* الصور المصغرة في أسفل الـ Lightbox */}
+                                    {images.length > 1 && (
+                                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 overflow-x-auto max-w-[90vw] px-4">
+                                            {images.map((img: string, idx: number) => (
+                                                <button
+                                                    key={idx}
+                                                    onClick={(e) => { e.stopPropagation(); setActiveImage(idx); }}
+                                                    className={cn(
+                                                        "relative w-14 h-14 rounded-xl overflow-hidden border-2 shrink-0 transition-all",
+                                                        activeImage === idx ? "border-[#C9A96E] scale-110" : "border-white/20 opacity-50 hover:opacity-80"
+                                                    )}
+                                                >
+                                                    <img src={img} alt={`${idx}`} className="w-full h-full object-cover" />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
 
                         {/* 2. Photo Thumbnails Grid */}
                         {images.length > 1 && (

@@ -23,21 +23,6 @@ const positionClasses = {
 /** شارة علامة مائية وتغطية شعارات المصدر الفاخرة لـ HM CAR */
 const WatermarkBadgeOverlays = ({ position }: { position: keyof typeof positionClasses }) => (
     <>
-        {/* 1. تغطية الشعار العلوي الأيمن بخلفية مظلمة وبادج معتمد HM CAR */}
-        <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/85 backdrop-blur-md border border-[#C9A96E]/50 shadow-2xl pointer-events-none select-none">
-            <span className="w-2 h-2 rounded-full bg-[#C9A96E] animate-pulse" />
-            <span
-                className="text-[10px] sm:text-[11px] font-black tracking-wider"
-                style={{
-                    background: 'linear-gradient(135deg,#F5D9A0 0%,#C9A96E 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                }}
-            >
-                معتمد HM CAR
-            </span>
-        </div>
-
         {/* 2. شارة غلاف السفلية اليمنى لتغطية أي كتابات سفلية ومصادر خارجية */}
         <div className="absolute bottom-2.5 right-2.5 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/90 backdrop-blur-md border border-[#C9A96E]/40 shadow-2xl pointer-events-none select-none">
             <span className="w-1.5 h-1.5 rounded-full bg-[#C9A96E] shrink-0" />
