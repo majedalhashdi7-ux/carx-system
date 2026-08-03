@@ -70,6 +70,7 @@ function CarCard({ car, onWhatsApp }: { car: CarItem; onWhatsApp: (car: CarItem)
     const [liked, setLiked] = useState(false);
     const [imgErr, setImgErr] = useState(false);
     const { isRTL } = useLanguage();
+    const { formatPrice } = useSettings();
     const img = imgErr ? 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?q=80&w=800' : resolveImg(car);
 
     useEffect(() => {
@@ -148,7 +149,7 @@ function CarCard({ car, onWhatsApp }: { car: CarItem; onWhatsApp: (car: CarItem)
                     {/* Inspected badge */}
                     {car.isInspected && (
                         <div className="absolute bottom-3 left-3 bg-emerald-500/25 border border-emerald-500/40 text-emerald-400 text-[8.5px] font-black px-2 py-[4px] rounded-lg backdrop-blur-md shadow-sm">
-                            ✓ مفحوصة
+                            {isRTL ? '✓ مفحوصة' : '✓ Inspected'}
                         </div>
                     )}
                 </div>
@@ -172,7 +173,7 @@ function CarCard({ car, onWhatsApp }: { car: CarItem; onWhatsApp: (car: CarItem)
                     <div className="flex flex-wrap gap-1.5">
                         {car.mileage > 0 && (
                             <span className="inline-flex items-center gap-1 text-[10px] font-black text-white/50 bg-white/4 border border-white/5 px-2 py-[4px] rounded-lg">
-                                <Gauge className="w-3 h-3 text-[#C9A96E]/60 shrink-0" />{fmtKm(car.mileage)}
+                                <Gauge className="w-3 h-3 text-[#C9A96E]/60 shrink-0" />{car.mileage.toLocaleString('en-US')} {isRTL ? 'كم' : 'km'}
                             </span>
                         )}
                         {fuelLabel && (
@@ -193,7 +194,7 @@ function CarCard({ car, onWhatsApp }: { car: CarItem; onWhatsApp: (car: CarItem)
                             <span className="text-[9px] font-bold text-white/30 uppercase tracking-wider">{isRTL ? 'السعر الشامل' : 'Total Price'}</span>
                             <span className="text-base sm:text-lg font-black tracking-tight" style={{ background: 'linear-gradient(135deg,#C9A96E,#F5D9A0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                                 {displayPrice > 0
-                                    ? fmtPrice(displayPrice)
+                                    ? formatPrice(displayPrice)
                                     : <span className="text-xs text-white/40" style={{ WebkitTextFillColor: 'rgba(255,255,255,0.4)' }}>{isRTL ? 'اتصل للسعر' : 'Call for price'}</span>
                                 }
                             </span>

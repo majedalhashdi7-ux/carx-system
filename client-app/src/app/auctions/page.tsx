@@ -100,12 +100,17 @@ function AuctionSkeleton() {
 export default function AuctionsPage() {
     const router = useRouter();
     const { isRTL } = useLanguage();
-    const { socialLinks } = useSettings();
+    const { socialLinks, formatPrice } = useSettings();
     const { isLoggedIn } = useAuth();
     const [cars, setCars] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedCar, setSelectedCar] = useState<any>(null);
-    const [globalWhatsapp, setGlobalWhatsapp] = useState('+967781007805');
+    const [globalWhatsapp, setGlobalWhatsapp] = useState('+821080880014');
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     useEffect(() => {
         api.settings.getPublic().then((res: any) => {
@@ -163,9 +168,9 @@ export default function AuctionsPage() {
 
                 const carObj = item.car || item;
                 const images = item.images || carObj.images || (carObj.image ? [carObj.image] : []);
-                const title = item.titleAr || item.title || carObj.titleAr || carObj.title || 'سيارة مزاد كوري';
-                const priceVal = item.priceSar || item.startingPrice || item.currentPrice || carObj.priceSar || carObj.price;
-                const priceEstimate = priceVal ? `${Number(priceVal).toLocaleString('ar-SA')} ر.س` : '';
+                const title = formatCarTitle(item.titleAr || item.title || carObj.titleAr || carObj.title || 'Live Korean Auction', item.make || carObj.make || '', isRTL);
+                const priceVal = Number(item.priceSar || item.startingPrice || item.currentPrice || carObj.priceSar || carObj.price || 0);
+                const priceEstimate = priceVal > 0 ? formatPrice(priceVal) : (isRTL ? 'عند الطلب' : 'Call for price');
 
                 mergedCars.push({
                     id: auctionId,
@@ -244,6 +249,15 @@ export default function AuctionsPage() {
         );
         window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${text}`, '_blank');
     };
+
+    if (!mounted) {
+        return (
+            <div className="min-h-screen bg-[#08080f] text-white flex items-center justify-center">
+                <Navbar />
+                <div className="w-10 h-10 border-2 border-[#C9A96E]/30 border-t-[#C9A96E] rounded-full animate-spin" />
+            </div>
+        );
+    }
 
     return (
         <div className={cn("min-h-screen bg-[#08080f] text-white", isRTL && "font-arabic")} dir={isRTL ? 'rtl' : 'ltr'}>

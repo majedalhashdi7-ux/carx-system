@@ -96,9 +96,9 @@ export default function ModernCarCard({ car, index = 0, formatPrice: propFormatP
         if (images.length > 1) setCurrentImageIndex(p => (p - 1 + images.length) % images.length);
     };
 
-    const fuelLabel = isRTL ? (car.fuelAr || car.fuelType || '') : (car.fuelType || '');
-    const transmLabel = isRTL ? (car.transmissionAr || car.transmission || '') : (car.transmission || '');
-    const displayTitle = isRTL ? (car.titleAr || car.title || `${car.makeAr || car.make} ${car.model}`) : (car.title || `${car.make} ${car.model}`);
+    const fuelLabel = cleanKoreanText(car.fuelAr || car.fuelType || '', isRTL);
+    const transmLabel = cleanKoreanText(car.transmissionAr || car.transmission || '', isRTL);
+    const displayTitle = formatCarTitle(car.titleAr || car.title || `${car.makeAr || car.make} ${car.model}`, car.make || '', isRTL);
 
     return (
         <motion.div

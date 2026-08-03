@@ -9,22 +9,38 @@ interface BrandEntry { ar: string; en: string; clearbitKey: string; }
 const BRAND_MAP: Record<string, BrandEntry> = {
     // ── كوريا ──
     'hyundai': { ar: 'هيونداي', en: 'Hyundai', clearbitKey: 'hyundai' },
+    'هيونداي': { ar: 'هيونداي', en: 'Hyundai', clearbitKey: 'hyundai' },
+    '현대': { ar: 'هيونداي', en: 'Hyundai', clearbitKey: 'hyundai' },
     'kia': { ar: 'كيا', en: 'Kia', clearbitKey: 'kia' },
+    'كيا': { ar: 'كيا', en: 'Kia', clearbitKey: 'kia' },
+    '기아': { ar: 'كيا', en: 'Kia', clearbitKey: 'kia' },
     'genesis': { ar: 'جينيسيس', en: 'Genesis', clearbitKey: 'genesis' },
+    'جينيسيس': { ar: 'جينيسيس', en: 'Genesis', clearbitKey: 'genesis' },
+    '제네시스': { ar: 'جينيسيس', en: 'Genesis', clearbitKey: 'genesis' },
     'ssangyong': { ar: 'سانغ يونغ', en: 'SsangYong', clearbitKey: 'ssangyong' },
+    'سانغ يونغ': { ar: 'سانغ يونغ', en: 'SsangYong', clearbitKey: 'ssangyong' },
+    '쌍용': { ar: 'سانغ يونغ', en: 'SsangYong', clearbitKey: 'ssangyong' },
     'kg mobility': { ar: 'كاي جي موبيليتي', en: 'KG Mobility', clearbitKey: 'kg-mobility' },
     'samsung': { ar: 'سامسونج', en: 'Samsung', clearbitKey: 'samsung' },
+    'renault samsung': { ar: 'رينو سامسونج', en: 'Renault Samsung', clearbitKey: 'samsung' },
+    '르노코리아': { ar: 'رينو سامسونج', en: 'Renault Samsung', clearbitKey: 'samsung' },
+
     // ── اليابان ──
     'toyota': { ar: 'تويوتا', en: 'Toyota', clearbitKey: 'toyota' },
+    'تويوتا': { ar: 'تويوتا', en: 'Toyota', clearbitKey: 'toyota' },
     'honda': { ar: 'هوندا', en: 'Honda', clearbitKey: 'honda' },
+    'هوندا': { ar: 'هوندا', en: 'Honda', clearbitKey: 'honda' },
     'nissan': { ar: 'نيسان', en: 'Nissan', clearbitKey: 'nissan' },
+    'نيسان': { ar: 'نيسان', en: 'Nissan', clearbitKey: 'nissan' },
     'infiniti': { ar: 'إنفينيتي', en: 'Infiniti', clearbitKey: 'infiniti' },
     'lexus': { ar: 'لكزس', en: 'Lexus', clearbitKey: 'lexus' },
+    'لكزس': { ar: 'لكزس', en: 'Lexus', clearbitKey: 'lexus' },
     'mazda': { ar: 'مازدا', en: 'Mazda', clearbitKey: 'mazda' },
     'mitsubishi': { ar: 'ميتسوبيشي', en: 'Mitsubishi', clearbitKey: 'mitsubishi' },
     'subaru': { ar: 'سوبارو', en: 'Subaru', clearbitKey: 'subaru' },
     'suzuki': { ar: 'سوزوكي', en: 'Suzuki', clearbitKey: 'suzuki' },
     'isuzu': { ar: 'إيسوزو', en: 'Isuzu', clearbitKey: 'isuzu' },
+
     // ── الصين ──
     'mg': { ar: 'ام جي', en: 'MG', clearbitKey: 'mg' },
     'geely': { ar: 'جيلي', en: 'Geely', clearbitKey: 'geely' },
@@ -33,22 +49,38 @@ const BRAND_MAP: Record<string, BrandEntry> = {
     'byd': { ar: 'بي واي دي', en: 'BYD', clearbitKey: 'byd' },
     'great wall': { ar: 'جريت وول', en: 'Great Wall', clearbitKey: 'great-wall' },
     'changan': { ar: 'شانجان', en: 'Changan', clearbitKey: 'changan' },
+
     // ── أوروبا ──
     'bmw': { ar: 'بي ام دبليو', en: 'BMW', clearbitKey: 'bmw' },
-    'mercedes': { ar: 'مرسيدس', en: 'Mercedes', clearbitKey: 'mercedes' },
+    'بي ام دبليو': { ar: 'بي ام دبليو', en: 'BMW', clearbitKey: 'bmw' },
+    'بي إم دبليو': { ar: 'بي ام دبليو', en: 'BMW', clearbitKey: 'bmw' },
+    'mercedes': { ar: 'مرسيدس', en: 'Mercedes-Benz', clearbitKey: 'mercedes-benz' },
+    'مرسيدس': { ar: 'مرسيدس', en: 'Mercedes-Benz', clearbitKey: 'mercedes-benz' },
     'mercedes-benz': { ar: 'مرسيدس بنز', en: 'Mercedes-Benz', clearbitKey: 'mercedes-benz' },
+    'مرسيدس بنز': { ar: 'مرسيدس بنز', en: 'Mercedes-Benz', clearbitKey: 'mercedes-benz' },
     'audi': { ar: 'أودي', en: 'Audi', clearbitKey: 'audi' },
+    'أودي': { ar: 'أودي', en: 'Audi', clearbitKey: 'audi' },
     'volkswagen': { ar: 'فولكس واجن', en: 'Volkswagen', clearbitKey: 'volkswagen' },
+    'فولكس واجن': { ar: 'فولكس واجن', en: 'Volkswagen', clearbitKey: 'volkswagen' },
     'porsche': { ar: 'بورش', en: 'Porsche', clearbitKey: 'porsche' },
+    'بورش': { ar: 'بورش', en: 'Porsche', clearbitKey: 'porsche' },
     'volvo': { ar: 'فولفو', en: 'Volvo', clearbitKey: 'volvo' },
+    'فولفو': { ar: 'فولفو', en: 'Volvo', clearbitKey: 'volvo' },
     'land rover': { ar: 'لاند روفر', en: 'Land Rover', clearbitKey: 'land-rover' },
+    'لاند روفر': { ar: 'لاند روفر', en: 'Land Rover', clearbitKey: 'land-rover' },
     'jaguar': { ar: 'جاكوار', en: 'Jaguar', clearbitKey: 'jaguar' },
+    'mini': { ar: 'ميني', en: 'MINI', clearbitKey: 'mini' },
+    'ميني': { ar: 'ميني', en: 'MINI', clearbitKey: 'mini' },
+
     // ── أمريكا ──
     'ford': { ar: 'فورد', en: 'Ford', clearbitKey: 'ford' },
+    'فورد': { ar: 'فورد', en: 'Ford', clearbitKey: 'ford' },
     'chevrolet': { ar: 'شيفروليه', en: 'Chevrolet', clearbitKey: 'chevrolet' },
+    'شيفروليه': { ar: 'شيفروليه', en: 'Chevrolet', clearbitKey: 'chevrolet' },
     'gmc': { ar: 'جي ام سي', en: 'GMC', clearbitKey: 'gmc' },
     'cadillac': { ar: 'كاديلاك', en: 'Cadillac', clearbitKey: 'cadillac' },
     'jeep': { ar: 'جيب', en: 'Jeep', clearbitKey: 'jeep' },
+    'جيب': { ar: 'جيب', en: 'Jeep', clearbitKey: 'jeep' },
     'dodge': { ar: 'دودج', en: 'Dodge', clearbitKey: 'dodge' },
     'tesla': { ar: 'تسلا', en: 'Tesla', clearbitKey: 'tesla' },
 };
@@ -57,8 +89,11 @@ export function getBrandInfo(rawName: string): BrandEntry {
     if (!rawName) return { ar: '', en: '', clearbitKey: '' };
     const key = rawName.toLowerCase().trim();
     if (BRAND_MAP[key]) return BRAND_MAP[key];
+
+    // Search by English name, Arabic name, or key match
     for (const [k, v] of Object.entries(BRAND_MAP)) {
-        if (key.includes(k) || k.includes(key)) return v;
+        if (key === k || key === v.ar.toLowerCase() || key === v.en.toLowerCase()) return v;
+        if (key.includes(k) || key.includes(v.ar.toLowerCase()) || key.includes(v.en.toLowerCase())) return v;
     }
     return { ar: rawName, en: rawName, clearbitKey: key.replace(/\s+/g, '-') };
 }

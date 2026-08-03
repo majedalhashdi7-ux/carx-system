@@ -279,9 +279,7 @@ export default function DesertStyleCarDetail() {
     const images = processCarImages(car.images?.filter(Boolean) || []);
     const mainImg = images[activeImage] || getProxiedImageUrl(car.image || car.imageUrl) || 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=1200';
     const carPriceSar = Number(car.priceSar || car.price || 0);
-    const formattedPriceSar = carPriceSar > 0 ? `${carPriceSar.toLocaleString('en-US')} ر.س` : 'عند الطلب';
-    // ⚠️ لا نعرض رابط Encar للزوار - السيارة محفوظة محلياً في قاعدة بياناتنا
-    // externalRef محفوظ للمرجعية الداخلية فقط وليس للعرض
+    const formattedPriceSar = carPriceSar > 0 ? formatPrice(carPriceSar) : (isRTL ? 'عند الطلب' : 'Call for price');
     const isKoreanImport = car.source === 'korean_import' || car.source === 'encar_korea' || car.listingType === 'showroom';
 
     // حساب الجمارك والشحن التقريبي (حاسبة الاستيراد)
@@ -290,14 +288,13 @@ export default function DesertStyleCarDetail() {
     const customsDuty = car.year < 2021 ? 7300 : Math.round(baseCarCost * 0.05);
     const vatAmount = Math.round((baseCarCost + shippingCost + customsDuty) * 0.15);
     const systemCommission = 3500;
-    const calculatedTotal = baseCarCost + shippingCost + customsDuty + vatAmount + systemCommission;
 
     const specsList = [
         { label: isRTL ? 'الشركة المصنعة' : 'Manufacturer', value: cleanKoreanText(isRTL ? (car.specs?.makeAr || car.make) : (car.specs?.makeEn || car.make || 'Unspecified'), isRTL) },
         { label: isRTL ? 'الموديل' : 'Model', value: cleanKoreanText(isRTL ? (car.specs?.modelAr || car.model) : (car.specs?.modelEn || car.model || 'Unspecified'), isRTL) },
         { label: isRTL ? 'الفئة / الدرجة' : 'Trim Level', value: cleanKoreanText(isRTL ? (car.specs?.trimAr || 'برستيج') : (car.specs?.trimEn || 'Prestige'), isRTL) },
         { label: isRTL ? 'سنة الصنع' : 'Year', value: String(car.year || '—') },
-        { label: isRTL ? 'المسافة المقطوعة' : 'Mileage', value: car.mileage ? `${Number(car.mileage).toLocaleString('en-US')} كم` : '—' },
+        { label: isRTL ? 'المسافة المقطوعة' : 'Mileage', value: car.mileage ? `${Number(car.mileage).toLocaleString('en-US')} ${isRTL ? 'كم' : 'km'}` : '—' },
         { label: isRTL ? 'ناقل الحركة' : 'Transmission', value: cleanKoreanText(isRTL ? (car.specs?.transmissionAr || car.transmission || 'أوتوماتيك') : (car.specs?.transmissionEn || car.transmission || 'Automatic'), isRTL) },
         { label: isRTL ? 'نوع الوقود' : 'Fuel Type', value: cleanKoreanText(isRTL ? (car.specs?.fuelTypeAr || car.fuelType || 'بنزين') : (car.specs?.fuelTypeEn || car.fuelType || 'Gasoline'), isRTL) },
         { label: isRTL ? 'سعة المحرك' : 'Engine Displ.', value: car.specs?.engineCc || '1000cc' },
@@ -307,10 +304,10 @@ export default function DesertStyleCarDetail() {
     ];
 
     return (
-        <div className="relative min-h-screen bg-[#0a0b10] text-slate-100 font-sans" dir="rtl">
+        <div className="relative min-h-screen bg-[#0a0b10] text-slate-100 font-sans" dir={isRTL ? 'rtl' : 'ltr'}>
             <Navbar />
 
-            {/* ── Top Header Bar (شريط الترويسة العلوي الفاخر) ── */}
+            {/* ── Top Header Bar ── */}
             <div className="pt-24 pb-6 bg-[#12141d]/90 border-b border-[#C9A96E]/20 backdrop-blur-2xl shadow-2xl">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6">
                     {/* زر العودة */}
@@ -318,8 +315,8 @@ export default function DesertStyleCarDetail() {
                         onClick={() => router.push('/cars')}
                         className="flex items-center gap-2 text-xs font-bold text-[#C9A96E] hover:text-white transition-colors mb-4"
                     >
-                        <ChevronRight className="w-4 h-4" />
-                        <span>العودة لمعرض السيارات</span>
+                        <ChevronRight className={cn("w-4 h-4", !isRTL && "rotate-180")} />
+                        <span>{isRTL ? 'العودة لمعرض السيارات' : 'Back to Showroom'}</span>
                     </button>
 
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -330,7 +327,7 @@ export default function DesertStyleCarDetail() {
                                     {formatCarTitle(car.title, car.make, isRTL)}
                                 </h1>
                                 <span className="px-3 py-1 rounded-xl bg-[#C9A96E]/10 border border-[#C9A96E]/30 text-xs font-bold text-amber-300">
-                                    {cleanKoreanText(car.specs?.badge || car.model || '', isRTL) || 'معرض HM CAR'}
+                                    {cleanKoreanText(car.specs?.badge || car.model || '', isRTL) || (isRTL ? 'معرض HM CAR' : 'HM SHOWROOM')}
                                 </span>
                             </div>
 
@@ -338,39 +335,38 @@ export default function DesertStyleCarDetail() {
                             <div className="flex flex-wrap items-center gap-2 mt-2">
                                 <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-black flex items-center gap-1.5">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                                    متاح الآن
+                                    {isRTL ? 'متاح الآن' : 'Available Now'}
                                 </span>
                                 {car.year && <span className="px-2 py-1 rounded-full bg-white/5 text-white/60 text-xs font-bold border border-white/10">📅 {car.year}</span>}
-                                {car.mileage && <span className="px-2 py-1 rounded-full bg-white/5 text-white/60 text-xs font-bold border border-white/10">🛣️ {Number(car.mileage).toLocaleString()} كم</span>}
+                                {car.mileage && <span className="px-2 py-1 rounded-full bg-white/5 text-white/60 text-xs font-bold border border-white/10">🛣️ {Number(car.mileage).toLocaleString()} {isRTL ? 'كم' : 'km'}</span>}
                                 {car.transmission && <span className="px-2 py-1 rounded-full bg-white/5 text-white/60 text-xs font-bold border border-white/10">⚙️ {cleanKoreanText(car.transmission, isRTL)}</span>}
                                 {car.fuelType && <span className="px-2 py-1 rounded-full bg-white/5 text-white/60 text-xs font-bold border border-white/10">⛽ {cleanKoreanText(car.fuelType, isRTL)}</span>}
                             </div>
                         </div>
 
-                        {/* سعر السيارة + زر المفضلة */}
-                        <div className="bg-[#181a26] border border-[#C9A96E]/40 rounded-2xl p-4 md:text-left flex flex-col md:items-end justify-center shadow-xl gap-3">
-                            <div className="text-[11px] text-[#C9A96E] font-bold uppercase tracking-wider">السعر الإجمالي الشامل</div>
+                        {/* سعر السيارة + زر المفضلة المريح */}
+                        <div className="bg-[#181a26] border border-[#C9A96E]/40 rounded-2xl p-4 md:text-left flex flex-col md:items-end justify-center shadow-xl gap-2">
+                            <div className="text-[11px] text-[#C9A96E] font-bold uppercase tracking-wider">{isRTL ? 'السعر الإجمالي الشامل' : 'Total Included Price'}</div>
                             <div className="flex items-center gap-3">
                                 <div className="text-3xl font-black text-amber-300 font-mono tracking-tight">{formattedPriceSar}</div>
-                                {/* زر المفضلة الثابت الظاهر دائماً */}
                                 <motion.button
                                     onClick={toggleFav}
-                                    animate={favAnimating ? { scale: [1, 1.4, 0.9, 1.1, 1] } : { scale: 1 }}
-                                    transition={{ duration: 0.5 }}
+                                    animate={favAnimating ? { scale: [1, 1.3, 0.9, 1.1, 1] } : { scale: 1 }}
+                                    transition={{ duration: 0.4 }}
                                     className={cn(
-                                        "w-11 h-11 rounded-2xl flex items-center justify-center border-2 shadow-xl transition-all duration-300",
+                                        "w-10 h-10 rounded-xl flex items-center justify-center border-2 shadow-lg transition-all duration-300",
                                         isFav
-                                            ? "bg-red-500 border-red-400 shadow-red-500/40"
-                                            : "bg-white/10 border-white/20 hover:bg-red-500/20 hover:border-red-400/50"
+                                            ? "bg-red-500 border-red-400 text-white shadow-red-500/40"
+                                            : "bg-white/10 border-white/20 text-white/70 hover:bg-red-500/20 hover:border-red-400/50 hover:text-red-400"
                                     )}
-                                    title={isFav ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
+                                    title={isFav ? (isRTL ? 'إزالة من المفضلة' : 'Remove from Favorites') : (isRTL ? 'إضافة للمفضلة' : 'Add to Favorites')}
                                 >
-                                    <Heart className={cn("w-5 h-5 transition-all", isFav ? "fill-white text-white" : "text-white/70")} />
+                                    <Heart className={cn("w-5 h-5 transition-all", isFav && "fill-white text-white")} />
                                 </motion.button>
                             </div>
                             {car.year < 2021 && (
                                 <p className="text-[10px] text-slate-400 max-w-xs">
-                                    * رسوم جمركية إضافية (+7300 SAR عند التصدير للموديلات الأقدم من 2021)
+                                    {isRTL ? '* رسوم جمركية إضافية (+7300 ر.س للموديلات قبل 2021)' : '* Extra customs fee for pre-2021 models'}
                                 </p>
                             )}
                         </div>
