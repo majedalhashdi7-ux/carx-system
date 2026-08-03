@@ -26,9 +26,13 @@ export default function AdminSettingsPage() {
     salesWhatsapp: '',
     auctionWhatsapp: '',
     supportWhatsapp: '',
+    whatsapp: '',
     facebook: '',
     instagram: '',
-    twitter: ''
+    twitter: '',
+    tiktok: '',
+    snapchat: '',
+    youtube: ''
   });
 
   const [brandData, setBrandData] = useState({
@@ -61,9 +65,13 @@ export default function AdminSettingsPage() {
             salesWhatsapp: carx.salesWhatsapp || settings.contactInfo?.whatsapp || '',
             auctionWhatsapp: carx.auctionWhatsapp || settings.contactInfo?.whatsapp || '',
             supportWhatsapp: carx.supportWhatsapp || settings.contactInfo?.whatsapp || '',
+            whatsapp: settings.contactInfo?.whatsapp || settings.socialLinks?.whatsapp || carx.salesWhatsapp || '',
             facebook: settings.socialLinks?.facebook || '',
             instagram: settings.socialLinks?.instagram || '',
-            twitter: settings.socialLinks?.twitter || ''
+            twitter: settings.socialLinks?.twitter || '',
+            tiktok: settings.socialLinks?.tiktok || '',
+            snapchat: settings.socialLinks?.snapchat || '',
+            youtube: settings.socialLinks?.youtube || ''
           });
 
           setBrandData({
@@ -151,14 +159,26 @@ export default function AdminSettingsPage() {
         showToast('تم حفظ الإعدادات العامة بنجاح!');
       } 
       else if (activeTab === 'social') {
-        const res = await api.settings.updateCarX({
+        // Save WhatsApp numbers in CarX settings
+        const resCarX = await api.settings.updateCarX({
           salesWhatsapp: socialData.salesWhatsapp,
           auctionWhatsapp: socialData.auctionWhatsapp,
           supportWhatsapp: socialData.supportWhatsapp,
           heroVideoUrl: brandData.heroVideoUrl
         });
-        if (res.error) throw new Error(res.error);
-        showToast('تم حفظ روابط التواصل والمبيعات بنجاح!');
+        // Save social links
+        const resSocial = await api.settings.updateSocialLinks({
+          whatsapp: socialData.whatsapp || socialData.salesWhatsapp,
+          facebook: socialData.facebook,
+          instagram: socialData.instagram,
+          twitter: socialData.twitter,
+          tiktok: socialData.tiktok,
+          snapchat: socialData.snapchat,
+          youtube: socialData.youtube
+        });
+        if (resCarX.error) throw new Error(resCarX.error);
+        if (resSocial.error) throw new Error(resSocial.error);
+        showToast('تم حفظ جميع روابط التواصل الاجتماعي بنجاح!');
       }
       else if (activeTab === 'brand') {
         const res = await api.settings.updateCarX({
@@ -376,29 +396,101 @@ export default function AdminSettingsPage() {
                       />
                     </div>
 
-                    <div className="border-t border-white/10 md:col-span-2 my-4 pt-6">
+                    <div className="border-t border-white/10 md:col-span-2 my-2 pt-4">
+                      <h3 className="text-sm font-bold text-white/80 mb-1">واتساب موحد للصفحة الرئيسية</h3>
+                      <p className="text-xs text-white/30 mb-4">يظهر في الصفحة الرئيسية كرابط تواصل رئيسي مع العملاء</p>
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-bold text-white/60 mb-2">رقم الواتساب الرئيسي (يظهر في الموقع)</label>
+                      <input 
+                        type="text" 
+                        name="whatsapp"
+                        value={socialData.whatsapp}
+                        onChange={handleSocialChange}
+                        placeholder="+966 50 000 0000"
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
+                        dir="ltr"
+                      />
+                    </div>
+
+                    <div className="border-t border-white/10 md:col-span-2 my-2 pt-4">
                       <h3 className="text-sm font-bold text-white/80 mb-4">روابط الشبكات الاجتماعية</h3>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-white/60 mb-2">رابط فيسبوك</label>
+                      <label className="block text-xs font-bold text-white/60 mb-2">📘 رابط فيسبوك</label>
                       <input 
                         type="text" 
                         name="facebook"
                         value={socialData.facebook}
                         onChange={handleSocialChange}
+                        placeholder="https://facebook.com/yourpage"
                         className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
                         dir="ltr"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-white/60 mb-2">رابط انستجرام</label>
+                      <label className="block text-xs font-bold text-white/60 mb-2">📸 رابط انستجرام</label>
                       <input 
                         type="text" 
                         name="instagram"
                         value={socialData.instagram}
                         onChange={handleSocialChange}
+                        placeholder="https://instagram.com/yourpage"
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
+                        dir="ltr"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-white/60 mb-2">𝕏 رابط تويتر (X)</label>
+                      <input 
+                        type="text" 
+                        name="twitter"
+                        value={socialData.twitter}
+                        onChange={handleSocialChange}
+                        placeholder="https://twitter.com/yourpage"
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
+                        dir="ltr"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-white/60 mb-2">🎵 رابط تيك توك</label>
+                      <input 
+                        type="text" 
+                        name="tiktok"
+                        value={socialData.tiktok}
+                        onChange={handleSocialChange}
+                        placeholder="https://tiktok.com/@yourpage"
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
+                        dir="ltr"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-white/60 mb-2">👻 رابط سناب شات</label>
+                      <input 
+                        type="text" 
+                        name="snapchat"
+                        value={socialData.snapchat}
+                        onChange={handleSocialChange}
+                        placeholder="https://snapchat.com/add/yourname"
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
+                        dir="ltr"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-white/60 mb-2">▶️ رابط يوتيوب</label>
+                      <input 
+                        type="text" 
+                        name="youtube"
+                        value={socialData.youtube}
+                        onChange={handleSocialChange}
+                        placeholder="https://youtube.com/@yourchannel"
                         className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:border-luxury-gold/50 focus:outline-none transition-colors"
                         dir="ltr"
                       />

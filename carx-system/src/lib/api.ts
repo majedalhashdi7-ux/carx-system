@@ -176,6 +176,10 @@ export const api = {
     updateCarX: (carxSettings: any) => fetchAPI('/settings/carx', {
       method: 'PUT',
       body: JSON.stringify({ carxSettings })
+    }),
+    updateSocialLinks: (socialLinks: any) => fetchAPI('/settings/social-links', {
+      method: 'PUT',
+      body: JSON.stringify({ socialLinks })
     })
   },
   liveAuctions: {
