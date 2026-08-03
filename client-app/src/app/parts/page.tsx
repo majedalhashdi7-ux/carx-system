@@ -301,7 +301,7 @@ export default function PartsPage() {
         setModalProduct({
             id: part._id,
             type: 'part',
-            title: part.nameAr || part.name,
+            title: isRTL ? (part.nameAr || part.name) : (part.nameEn || part.name),
             images: (part.images || [part.img]).filter((img): img is string => !!img),
             price: part.price,
             brand: part.brand,
@@ -311,6 +311,7 @@ export default function PartsPage() {
             description: undefined,
         });
     };
+
 
     return (
         <>

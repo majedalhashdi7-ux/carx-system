@@ -55,14 +55,10 @@ function resolveImg(car: CarItem): string {
     return getCarMainImage(car);
 }
 
-function fmtKm(km: number) {
+function fmtKm(km: number, isRTL: boolean) {
     if (!km) return '—';
-    return km >= 10000 ? `${(km / 1000).toFixed(0)}k كم` : `${km.toLocaleString('en-US')} كم`;
-}
-
-function fmtPrice(n: number) {
-    if (!n || n <= 0) return '—';
-    return `${Math.round(n).toLocaleString('en-US')} ر.س`;
+    const unit = isRTL ? 'كم' : 'km';
+    return km >= 10000 ? `${(km / 1000).toFixed(0)}k ${unit}` : `${km.toLocaleString('en-US')} ${unit}`;
 }
 
 /* ─── Car Card — تصميم فاخر ─── */
@@ -390,13 +386,14 @@ function CarsContent() {
 
     const handleWhatsApp = (car: CarItem) => {
         const phone = socialLinks?.whatsapp || '+821080880014';
-        const url = WhatsAppService.generateCarLink(car as any, phone, isRTL, (p) => fmtPrice(p));
+        const price = car.priceSar || car.price || 0;
+        const url = WhatsAppService.generateCarLink(car as any, phone, isRTL, (p) => formatPriceFromUsd(p));
         window.open(url, '_blank');
     };
 
     /* ── Sidebar Component ── */
     const SidebarContent = () => (
-        <div className="space-y-0" dir="rtl">
+        <div className="space-y-0" dir={isRTL ? "rtl" : "ltr"}>
 
             {/* Brand */}
             <FilterSection title={isRTL ? "الشركة المصنعة" : "Manufacturer"} expanded={expandedSections.brand} onToggle={() => toggleSection('brand')}>
@@ -817,7 +814,7 @@ function CarsContent() {
                                 "fixed top-0 h-full w-[300px] bg-[#0e0e1a] z-50 overflow-y-auto p-4 lg:hidden",
                                 isRTL ? 'right-0 border-l border-white/10' : 'left-0 border-r border-white/10'
                             )}
-                            dir="rtl"
+                            dir={isRTL ? 'rtl' : 'ltr'}
                         >
                             {/* Header */}
                             <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/5">

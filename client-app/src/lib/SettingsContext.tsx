@@ -81,6 +81,8 @@ interface SettingsContextType {
     setDisplayCurrency: (c: 'SAR' | 'USD' | 'KRW') => void;
     formatPrice: (priceInSar: number, forcedCurrency?: 'SAR' | 'USD' | 'KRW', type?: 'part' | 'auction' | 'car') => string;
     formatPriceFromUsd: (priceInUsd: number, forcedCurrency?: 'SAR' | 'USD' | 'KRW', type?: 'part' | 'auction' | 'car') => string;
+    isRTLActive: boolean;
+    setRTLActive: (v: boolean) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -120,6 +122,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         if (typeof window === 'undefined') return 'SAR';
         try { const s = localStorage.getItem('displayCurrency'); return (s === 'USD' || s === 'SAR' || s === 'KRW') ? s : 'SAR'; } catch { return 'SAR'; }
     });
+    // Track UI language direction so currency numbers use correct locale
+    const [isRTLActive, setRTLActive] = useState<boolean>(() => {
+        if (typeof window === 'undefined') return true;
+        try { const l = localStorage.getItem('appLang'); return l !== 'EN'; } catch { return true; }
+    });
 
     /**
      * تحديث الإعدادات من الخادم بصمت في الخلفية لدعم التغييرات المباشرة
@@ -158,6 +165,25 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         refreshSettings();
     }, [refreshSettings]);
 
+    // Listen for language changes and update isRTLActive accordingly
+    useEffect(() => {
+        const handleStorageChange = () => {
+            const lang = localStorage.getItem('appLang');
+            setRTLActive(lang !== 'EN');
+        };
+        window.addEventListener('storage', handleStorageChange);
+        // Also check on mount via a custom event dispatched by LanguageContext
+        const handleLangChange = (e: Event) => {
+            const lang = (e as CustomEvent).detail?.lang;
+            if (lang) setRTLActive(lang !== 'EN');
+        };
+        window.addEventListener('hm_lang_changed', handleLangChange);
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('hm_lang_changed', handleLangChange);
+        };
+    }, []);
+
     const handleSetDisplayCurrency = (c: 'SAR' | 'USD' | 'KRW') => {
         setDisplayCurrency(c);
         localStorage.setItem('displayCurrency', c);
@@ -165,27 +191,36 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
     /**
      * دالة داخلية لتنسيق الرقم حسب العملة واللغة (Intl.NumberFormat)
+     * تستخدم الأرقام الإنجليزية دائماً لتجنب خلط الأرقام عند تغيير اللغة
      */
     const formatByCurrency = (amount: number, activeCurr: 'SAR' | 'USD' | 'KRW') => {
-        let locale = 'ar-SA';
-        if (activeCurr === 'USD') locale = 'en-US';
-        if (activeCurr === 'KRW') locale = 'ko-KR';
+        // Always use en-US for SAR/USD to show Western numerals regardless of UI language
+        // Use ko-KR only for KRW as it's specifically Korean currency
+        let locale = 'en-US'; // Default: always Western numerals
+        if (activeCurr === 'KRW') locale = 'en-US'; // KRW also shows Western numerals
 
-        // استخدام واجهة برمجة تطبيقات التنسيق الدولية (Intl) لتنسيق الرقم حسب الدولة
         const formatter = new Intl.NumberFormat(locale, {
             minimumFractionDigits: 0,
-            maximumFractionDigits: activeCurr === 'USD' ? 2 : 0, // الدولار يحتاج لمنزلتين عشريتين
+            maximumFractionDigits: activeCurr === 'USD' ? 2 : 0,
         });
 
         const formattedNumber = formatter.format(amount);
 
+        // Currency symbol — show Arabic symbol only when RTL is active and currency is SAR
+        const sarSymbol = isRTLActive ? 'ر.س' : 'SAR';
         const symbols: Record<string, string> = {
-            'SAR': 'ر.س',
+            'SAR': sarSymbol,
             'USD': '$',
             'KRW': '₩'
         };
 
-        return `${symbols[activeCurr]} ${formattedNumber}`;
+        // For USD: prefix symbol, for SAR/KRW in EN: prefix, in AR: suffix
+        if (activeCurr === 'USD') {
+            return `${symbols[activeCurr]}${formattedNumber}`;
+        }
+        return isRTLActive
+            ? `${formattedNumber} ${symbols[activeCurr]}`
+            : `${symbols[activeCurr]} ${formattedNumber}`;
     };
 
     /**
@@ -252,7 +287,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             displayCurrency,
             setDisplayCurrency: handleSetDisplayCurrency,
             formatPrice,
-            formatPriceFromUsd
+            formatPriceFromUsd,
+            isRTLActive,
+            setRTLActive,
         }}>
             {children}
         </SettingsContext.Provider>

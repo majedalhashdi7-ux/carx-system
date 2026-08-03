@@ -46,10 +46,11 @@ function getGradeStyle(code: string) {
 // ── تنسيق السعر ──────────────────────────────────────────────────────────────
 function formatPrice(amount: number, currency: Currency, isRTL: boolean) {
     if (!amount) return isRTL ? 'تواصل معنا' : 'Contact Us';
+    const num = amount.toLocaleString('en-US');
     switch (currency) {
-        case 'SAR': return `${amount.toLocaleString('ar-SA')} ${isRTL ? 'ر.س' : 'SAR'}`;
+        case 'SAR': return isRTL ? `${num} ر.س` : `SAR ${num}`;
         case 'USD': return `$${amount.toLocaleString('en-US')}`;
-        case 'KRW': return `₩${amount.toLocaleString('ko-KR')}`;
+        case 'KRW': return `₩${amount.toLocaleString('en-US')}`;
     }
 }
 

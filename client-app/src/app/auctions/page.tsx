@@ -205,8 +205,8 @@ export default function AuctionsPage() {
     }, [loadData]);
 
     const handleBuyRequest = async (car: any) => {
-        let buyerName = 'زائر';
-        let buyerPhone = 'غير محدد';
+        let buyerName = isRTL ? 'زائر' : 'Guest';
+        let buyerPhone = isRTL ? 'غير محدد' : 'Not provided';
         let buyerId = null;
 
         if (typeof window !== 'undefined') {
@@ -249,6 +249,7 @@ export default function AuctionsPage() {
         );
         window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${text}`, '_blank');
     };
+
 
     if (!mounted) {
         return (

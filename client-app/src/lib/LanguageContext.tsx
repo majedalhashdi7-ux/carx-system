@@ -10,6 +10,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 type Language = 'AR' | 'EN' | 'KR';
 
+
 interface Translations {
     [key: string]: {
         AR: string;
@@ -204,10 +205,10 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     }, [lang]);
 
     const toggleLanguage = () => {
-        // التنقل التتابعي بين اللغات (عربي -> إنجليزي -> كوري -> عربي)
+        // Toggle between Arabic and English only (KR remains for data but not UI toggle)
         const nextLang: Record<Language, Language> = {
             'AR': 'EN',
-            'EN': 'KR',
+            'EN': 'AR',
             'KR': 'AR'
         };
         setLang(nextLang[lang]);
@@ -219,6 +220,17 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
     const rawText = (text: string): string => text;
     const isRTL = lang === 'AR'; // هل اللغة الحالية تدعم الكتابة من اليمين لليسار؟
+
+    // Sync RTL state to localStorage so SettingsContext can read it for currency formatting
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('appLang', lang);
+            // Also update a flag so SettingsContext knows the current direction
+            localStorage.setItem('hm_isRTL', isRTL ? '1' : '0');
+            // Dispatch custom event so SettingsContext updates currency formatting immediately
+            window.dispatchEvent(new CustomEvent('hm_lang_changed', { detail: { lang, isRTL } }));
+        }
+    }, [lang, isRTL]);
 
     return (
         <LanguageContext.Provider value={{ lang, toggleLanguage, t, rawText, isRTL }}>

@@ -209,7 +209,7 @@ export default function DesertStyleCarDetail() {
             value: Number(car.price || 0)
         });
 
-        const priceText = Number(car.priceSar || car.price || 0).toLocaleString('ar-SA') + ' ر.س';
+        const priceText = formatPrice(Number(car.priceSar || car.price || 0));
 
         try {
             let buyerId = null;
@@ -231,15 +231,18 @@ export default function DesertStyleCarDetail() {
                 }],
                 pricing: { grandTotalSar: car.priceSar || car.price || 0 },
                 channel: 'whatsapp',
-                notes: `طلب شراء عبر الواتساب من موقع HM CAR`
+                notes: isRTL ? `طلب شراء عبر الواتساب من موقع HM CAR` : `Purchase request via WhatsApp from HM CAR website`
             });
         } catch (err) {
             console.error('Order log error:', err);
         }
 
         const phone = (whatsapp || DEFAULT_WHATSAPP).replace(/\D/g, '');
+        const carMileage = car.mileage ? car.mileage.toLocaleString() + (isRTL ? ' كم' : ' km') : '—';
         const msg = encodeURIComponent(
-            `مرحباً إتش إم كار 👋\nأود طلب وتأكيد شراء سيارة المعرض الكورية:\n🚗 *${car.title}*\n💰 السعر: ${priceText}\n📅 سنة الصنع: ${car.year}\n🛣️ المسافة: ${car.mileage ? car.mileage.toLocaleString() + ' كم' : '—'}\n🆔 رمز السيارة: #${car.externalId || car._id || id}`
+            isRTL
+                ? `مرحباً إتش إم كار 👋\nأود طلب وتأكيد شراء سيارة المعرض:\n🚗 *${car.title}*\n💰 السعر: ${priceText}\n📅 سنة الصنع: ${car.year}\n🛣️ المسافة: ${carMileage}\n🆔 رمز السيارة: #${car.externalId || car._id || id}`
+                : `Hello HM CAR 👋\nI'd like to order this showroom car:\n🚗 *${car.title}*\n💰 Price: ${priceText}\n📅 Year: ${car.year}\n🛣️ Mileage: ${carMileage}\n🆔 Car ID: #${car.externalId || car._id || id}`
         );
         window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
     };
@@ -837,7 +840,7 @@ export default function DesertStyleCarDetail() {
                             <div className="flex items-center justify-between border-b border-white/10 pb-3">
                                 <h3 className="font-black text-lg text-amber-300 flex items-center gap-2">
                                     <Calculator className="w-5 h-5 text-[#C9A96E]" />
-                                    <span>حاسبة تكلفة الاستيراد الشاملة</span>
+                                    <span>{isRTL ? 'حاسبة تكلفة الاستيراد الشاملة' : 'Full Import Cost Calculator'}</span>
                                 </h3>
                                 <button onClick={() => setShowCalcModal(false)} className="p-1 rounded-full text-slate-400 hover:text-white">
                                     <X className="w-5 h-5" />
@@ -846,29 +849,29 @@ export default function DesertStyleCarDetail() {
 
                             <div className="space-y-3 text-xs">
                                 <div className="flex justify-between py-2 border-b border-white/5">
-                                    <span className="text-slate-400 font-bold">سعر السيارة الأساسي المعروض:</span>
-                                    <span className="font-bold font-mono text-white">{baseCarCost.toLocaleString('ar-SA')} ر.س</span>
+                                    <span className="text-slate-400 font-bold">{isRTL ? 'سعر السيارة الأساسي:' : 'Base Car Price:'}</span>
+                                    <span className="font-bold font-mono text-white">{formatPrice(baseCarCost)}</span>
                                 </div>
                                 <div className="flex justify-between py-2 border-b border-white/5">
-                                    <span className="text-slate-400 font-bold">الشحن والتأمين البحري:</span>
-                                    <span className="font-bold font-mono text-white">{shippingCost.toLocaleString('ar-SA')} ر.س</span>
+                                    <span className="text-slate-400 font-bold">{isRTL ? 'الشحن والتأمين البحري:' : 'Shipping & Marine Insurance:'}</span>
+                                    <span className="font-bold font-mono text-white">{formatPrice(shippingCost)}</span>
                                 </div>
                                 <div className="flex justify-between py-2 border-b border-white/5">
-                                    <span className="text-slate-400 font-bold">الجمارك ورسوم التصدير (حسب الموديل):</span>
-                                    <span className="font-bold font-mono text-amber-400">{customsDuty.toLocaleString('ar-SA')} ر.س</span>
+                                    <span className="text-slate-400 font-bold">{isRTL ? 'الجمارك ورسوم التصدير:' : 'Customs & Export Fees:'}</span>
+                                    <span className="font-bold font-mono text-amber-400">{formatPrice(customsDuty)}</span>
                                 </div>
                                 <div className="flex justify-between py-2 border-b border-white/5">
-                                    <span className="text-slate-400 font-bold">ضريبة القيمة المضافة (15%):</span>
-                                    <span className="font-bold font-mono text-white">{vatAmount.toLocaleString('ar-SA')} ر.س</span>
+                                    <span className="text-slate-400 font-bold">{isRTL ? 'ضريبة القيمة المضافة (15%):' : 'VAT (15%):'}</span>
+                                    <span className="font-bold font-mono text-white">{formatPrice(vatAmount)}</span>
                                 </div>
                                 <div className="flex justify-between py-2 border-b border-white/5">
-                                    <span className="text-slate-400 font-bold">عمولة ومصاريف التخليص:</span>
-                                    <span className="font-bold font-mono text-white">{systemCommission.toLocaleString('ar-SA')} ر.س</span>
+                                    <span className="text-slate-400 font-bold">{isRTL ? 'عمولة ومصاريف التخليص:' : 'Service & Clearance Fees:'}</span>
+                                    <span className="font-bold font-mono text-white">{formatPrice(systemCommission)}</span>
                                 </div>
 
                                 <div className="flex justify-between py-3 rounded-2xl bg-[#1a1c2b] px-4 text-sm font-black text-amber-300 border border-[#C9A96E]/40">
-                                    <span>التكلفة التقديرية الكلية:</span>
-                                    <span className="font-mono text-base">{calculatedTotal.toLocaleString('ar-SA')} ر.س</span>
+                                    <span>{isRTL ? 'التكلفة التقديرية الكلية:' : 'Total Estimated Cost:'}</span>
+                                    <span className="font-mono text-base">{formatPrice(calculatedTotal)}</span>
                                 </div>
                             </div>
 
@@ -897,7 +900,7 @@ export default function DesertStyleCarDetail() {
                             <div className="flex items-center justify-between border-b border-white/10 pb-3">
                                 <h3 className="font-black text-lg text-amber-300 flex items-center gap-2">
                                     <Scale className="w-5 h-5 text-[#C9A96E]" />
-                                    <span>مقارنة السعر مع الوكالة (الجديد)</span>
+                                    <span>{isRTL ? 'مقارنة السعر مع الوكالة (الجديد)' : 'Price Comparison vs. Dealership (New)'}</span>
                                 </h3>
                                 <button onClick={() => setShowCompareModal(false)} className="p-1 rounded-full text-slate-400 hover:text-white">
                                     <X className="w-5 h-5" />
@@ -907,17 +910,20 @@ export default function DesertStyleCarDetail() {
                             <div className="space-y-4 text-xs">
                                 <div className="p-4 rounded-2xl bg-[#1a1c2b] border border-white/10 space-y-2">
                                     <div className="flex justify-between font-bold">
-                                        <span className="text-slate-400">سعر السيارة الجديدة في الوكالة:</span>
-                                        <span className="text-slate-500 line-through font-mono">{(carPriceSar * 1.65).toLocaleString('en-US')} ر.س</span>
+                                        <span className="text-slate-400">{isRTL ? 'سعر السيارة الجديدة في الوكالة:' : 'New Car Price at Dealership:'}</span>
+                                        <span className="text-slate-500 line-through font-mono">{formatPrice(carPriceSar * 1.65)}</span>
                                     </div>
                                     <div className="flex justify-between font-bold text-emerald-400">
-                                        <span>سعر هذه السيارة المستوردة بحالة الوكالة:</span>
-                                        <span className="font-mono text-sm">{carPriceSar.toLocaleString('en-US')} ر.س</span>
+                                        <span>{isRTL ? 'سعر هذه السيارة المستوردة:' : 'This Imported Car Price:'}</span>
+                                        <span className="font-mono text-sm">{formatPrice(carPriceSar)}</span>
                                     </div>
                                 </div>
 
                                 <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-center font-bold">
-                                    🎉 نسبة التوفير الكلية: تكتسب توفيراً قدره <span className="text-emerald-400 font-mono text-sm font-black">+{Math.round(carPriceSar * 0.65).toLocaleString('en-US')} ر.س</span> مقارنة بالشراء جديداً!
+                                    {isRTL
+                                        ? <>🎉 نسبة التوفير: توفير قدره <span className="text-emerald-400 font-mono text-sm font-black">+{formatPrice(Math.round(carPriceSar * 0.65))}</span> مقارنة بالشراء جديداً!</>
+                                        : <>🎉 Total Savings: You save <span className="text-emerald-400 font-mono text-sm font-black">+{formatPrice(Math.round(carPriceSar * 0.65))}</span> vs. buying new!</>
+                                    }
                                 </div>
                             </div>
 
@@ -925,11 +931,12 @@ export default function DesertStyleCarDetail() {
                                 onClick={() => setShowCompareModal(false)}
                                 className="w-full py-3 rounded-full bg-[#C9A96E]/10 text-amber-300 border border-[#C9A96E]/30 font-bold text-xs hover:bg-[#C9A96E]/20 transition-colors"
                             >
-                                إغلاق النافذة
+                                {isRTL ? 'إغلاق النافذة' : 'Close'}
                             </button>
                         </motion.div>
                     </div>
                 )}
+
             </AnimatePresence>
         </div>
     );
