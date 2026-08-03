@@ -81,22 +81,39 @@ export function isLocalPath(url: string): boolean {
 
 // ── ترجمة عناوين ومواصفات السيارات الكورية ──
 const KOREAN_TITLE_TOKENS: Array<[RegExp, { ar: string; en: string }]> = [
-    // Manufacturers
+    // Manufacturers & Brands
+    [/지프/g, { ar: 'جيب', en: 'Jeep' }],
     [/현대/g, { ar: 'هيونداي', en: 'Hyundai' }],
     [/기아/g, { ar: 'كيا', en: 'Kia' }],
     [/제네시스/g, { ar: 'جينيسيس', en: 'Genesis' }],
     [/KG모빌리티\(쌍용\)|\(쌍용\)|KG모빌리티|쌍용/g, { ar: 'سانغ يونغ', en: 'SsangYong' }],
     [/르노코리아\(삼성\)|\(삼성\)|르노코리아|삼성/g, { ar: 'رينو سامسونج', en: 'Renault Samsung' }],
     [/쉐보레\(GM대우\)|GM대우/g, { ar: 'شيفروليه', en: 'Chevrolet' }],
-    [/벤츠/g, { ar: 'مرسيدس', en: 'Mercedes-Benz' }],
+    [/메르세데스-벤츠|메르세데스|벤츠/g, { ar: 'مرسيدس بنز', en: 'Mercedes-Benz' }],
     [/아우디/g, { ar: 'أودي', en: 'Audi' }],
     [/폭스바겐/g, { ar: 'فولكس واغن', en: 'Volkswagen' }],
     [/볼보/g, { ar: 'فولفو', en: 'Volvo' }],
     [/렉서스/g, { ar: 'لكزس', en: 'Lexus' }],
     [/토요타/g, { ar: 'تويوتا', en: 'Toyota' }],
+    [/포르쉐/g, { ar: 'بورش', en: 'Porsche' }],
+    [/랜드로버/g, { ar: 'لاند روفر', en: 'Land Rover' }],
+    [/레인지로버/g, { ar: 'رينج روفر', en: 'Range Rover' }],
+    [/포드/g, { ar: 'فورد', en: 'Ford' }],
     [/시리즈/g, { ar: 'فئة', en: 'Series' }],
 
-    // Popular Korean Models
+    // Jeep & SUV Trims
+    [/랭글러/g, { ar: 'رانجلر', en: 'Wrangler' }],
+    [/루비콘/g, { ar: 'روبيكون', en: 'Rubicon' }],
+    [/사하라/g, { ar: 'ساهارا', en: 'Sahara' }],
+    [/오버랜드/g, { ar: 'أوفرلاند', en: 'Overland' }],
+    [/체로키/g, { ar: 'شيروكي', en: 'Cherokee' }],
+    [/컴패스/g, { ar: 'كومباس', en: 'Compass' }],
+    [/레니게이드/g, { ar: 'رينيجيد', en: 'Renegade' }],
+    [/4도어/g, { ar: '4 أبواب', en: '4-Door' }],
+    [/2도어/g, { ar: '2 أبواب', en: '2-Door' }],
+    [/얼\s*클리어\s*코트|클리어\s*코트/g, { ar: 'كليير كوت', en: 'Clear Coat' }],
+
+    // Popular Korean & Foreign Models
     [/쏘렌토/g, { ar: 'سورينتو', en: 'Sorento' }],
     [/그랜저/g, { ar: 'جرانديور', en: 'Grandeur' }],
     [/카니발/g, { ar: 'كاردينال (كانيڤال)', en: 'Carnival' }],
@@ -113,6 +130,12 @@ const KOREAN_TITLE_TOKENS: Array<[RegExp, { ar: string; en: string }]> = [
     [/코나/g, { ar: 'كونا', en: 'Kona' }],
     [/베뉴/g, { ar: 'فينيو', en: 'Venue' }],
     [/아이오닉/g, { ar: 'آيونيك', en: 'Ioniq' }],
+    [/익스플로러/g, { ar: 'اكسبلورر', en: 'Explorer' }],
+    [/머스탱/g, { ar: 'موستانج', en: 'Mustang' }],
+    [/파나메라/g, { ar: 'باناميرا', en: 'Panamera' }],
+    [/카이엔/g, { ar: 'كايين', en: 'Cayenne' }],
+    [/마칸/g, { ar: 'ماكان', en: 'Macan' }],
+    [/타이칸/g, { ar: 'تايكان', en: 'Taycan' }],
     [/EV6/g, { ar: 'EV6', en: 'EV6' }],
     [/EV9/g, { ar: 'EV9', en: 'EV9' }],
 

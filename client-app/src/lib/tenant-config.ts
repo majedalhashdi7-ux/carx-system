@@ -43,8 +43,8 @@ export const TENANT_CONFIGS: Record<string, TenantData> = {
       'hmcar.xyz',
       'www.hmcar.xyz',
     ],
-    logo: '/uploads/tenants/hmcar/logo.png',
-    favicon: '/uploads/tenants/hmcar/favicon.ico',
+    logo: '/images/logo/logo-horizontal.png',
+    favicon: '/favicon.ico',
     theme: {
       primaryColor: '#D4AF37',
       secondaryColor: '#1a1a2e',
@@ -74,8 +74,8 @@ export const TENANT_CONFIGS: Record<string, TenantData> = {
       'carx.localhost',
       'carx-system-five.vercel.app',
     ],
-    logo: '/uploads/tenants/carx/logo.png',
-    favicon: '/uploads/tenants/carx/favicon.ico',
+    logo: '/images/logo/logo-horizontal.png',
+    favicon: '/favicon.ico',
     theme: {
       primaryColor: '#000000',
       secondaryColor: '#ff0000',
