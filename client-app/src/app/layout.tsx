@@ -82,7 +82,7 @@ export default async function RootLayout({
   const favicon = tenantConfig?.favicon || "/icons/icon-96x96.png";
 
   return (
-    <html lang={lang} dir={dir}>
+    <html lang={lang} dir={dir} suppressHydrationWarning>
       <head>
         <link rel="icon" type="image/png" sizes="32x32" href={favicon} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -208,7 +208,7 @@ export default async function RootLayout({
           `
         }} />
       </head>
-      <body className={`antialiased selection:bg-white/20 selection:text-white ${tajawal.variable}`}>
+      <body className={`antialiased selection:bg-white/20 selection:text-white ${tajawal.variable}`} suppressHydrationWarning>
         {/* [[ARABIC_COMMENT]] فاحص أداء الواجهة - يظهر فقط في بيئة التطوير للمساعدة في تحسين السرعة */}
         {process.env.NODE_ENV === 'development' && (
           <script dangerouslySetInnerHTML={{
