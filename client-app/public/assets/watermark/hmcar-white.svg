@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 120" width="500" height="120">
+  <!-- Shield Icon -->
+  <g fill="#FFFFFF" transform="translate(10, 10) scale(0.9)">
+    <path d="M 40 5 L 80 20 C 80 60, 60 90, 40 100 C 20 90, 0 60, 0 20 Z" fill="none" stroke="#FFFFFF" stroke-width="6"/>
+    <path d="M 15 35 L 35 35 L 35 75 L 45 75 L 45 35 L 65 35 L 65 25 L 15 25 Z" fill="#FFFFFF"/>
+    <path d="M 20 50 Q 40 70 60 50" fill="none" stroke="#FFFFFF" stroke-width="4"/>
+  </g>
+  <!-- Text: HM CAR -->
+  <text x="100" y="62" font-family="'Inter', 'Tajawal', sans-serif" font-weight="900" font-size="52" fill="#FFFFFF" letter-spacing="4">HM CAR</text>
+  <!-- Subtitle: SOUTH KOREA -->
+  <text x="102" y="94" font-family="'Inter', 'Tajawal', sans-serif" font-weight="800" font-size="20" fill="#FFFFFF" letter-spacing="9" opacity="0.95">SOUTH KOREA</text>
+</svg>

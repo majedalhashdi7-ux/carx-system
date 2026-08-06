@@ -290,6 +290,74 @@ async function syncSessionByUrl(externalUrl, session) {
 }
 
 /**
+ * مزامنة تلقائية خاصة بمزاد Desert Korea Auto (كل 24 ساعة)
+ * تجلب السيارات الجديدة وتمنع التكرار باستعمال VIN والرابط الأصلي
+ */
+async function syncDesertKoreaAuctions(models, tenantId) {
+    const targetUrl = 'https://desert-korea-auto.com/cars/?car_type=auction';
+    console.log(`[LiveSync] Fetching Desert Korea Auto live auctions for ${tenantId}...`);
+    try {
+        const scraped = await scrapeMultipleCars(targetUrl);
+        if (!scraped || !Array.isArray(scraped) || scraped.length === 0) return 0;
+
+        let syncedCount = 0;
+        const Car = models.Car;
+        if (!Car) return 0;
+
+        for (const car of scraped) {
+            if (!car.title || car.title.length < 3) continue;
+
+            const searchConditions = [];
+            if (car.sourceUrl) {
+                searchConditions.push({ externalRef: car.sourceUrl });
+                searchConditions.push({ externalUrl: car.sourceUrl });
+            }
+            if (car.vin) searchConditions.push({ vin: car.vin });
+
+            const isDuplicate = searchConditions.length > 0 ? await Car.findOne({ $or: searchConditions }) : null;
+
+            if (isDuplicate) {
+                await Car.updateOne(
+                    { _id: isDuplicate._id },
+                    {
+                        $set: {
+                            price: car.priceSar || isDuplicate.price,
+                            priceSar: car.priceSar || isDuplicate.priceSar,
+                            updatedAt: new Date()
+                        }
+                    }
+                );
+            } else {
+                await Car.create({
+                    tenantId,
+                    title: car.title,
+                    make: car.make || 'Desert Korea',
+                    model: car.model || 'Auction',
+                    year: car.year || new Date().getFullYear(),
+                    vin: car.vin || `DKA-${Date.now()}`,
+                    price: car.priceSar || 15000,
+                    priceSar: car.priceSar || 15000,
+                    priceUsd: car.priceUsd || 4000,
+                    images: car.images || [],
+                    mainImage: car.images?.[0] || '',
+                    source: 'desert_korea',
+                    listingType: 'showroom',
+                    isActive: true,
+                    isSold: false,
+                    externalRef: car.sourceUrl || targetUrl
+                });
+                syncedCount++;
+            }
+        }
+        console.log(`[LiveSync] ✅ Desert Korea sync complete: ${syncedCount} new cars inserted`);
+        return syncedCount;
+    } catch (err) {
+        console.warn('⚠️ [LiveSync] Desert Korea sync warning:', err.message);
+        return 0;
+    }
+}
+
+/**
  * تحديث كل جلسات المزاد المباشر عبر جميع قواعد بيانات المعارض
  * يُشغَّل كل 24 ساعة تلقائياً (Cron Job)
  */
@@ -306,6 +374,10 @@ async function syncAllSessions() {
         try {
             console.log(`\n[LiveSync] Processing tenant: ${tenant.id}`);
             const { models } = await getConnection(tenant.id, tenant.mongoUri);
+
+            // 1. مزامنة سيارات Desert Korea Auto كقناة مزاد مباشر تلقائية
+            const dkCount = await syncDesertKoreaAuctions(models, tenant.id);
+            totalSynced += dkCount;
 
             if (!models.LiveAuction) {
                 console.log(`[LiveSync] LiveAuction model not found for: ${tenant.id}`);

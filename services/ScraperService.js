@@ -30,6 +30,10 @@ class ScraperService {
       const parsedUrl = new URL(url);
       
       // اختيار الاستراتيجية المناسبة حسب الموقع
+      if (parsedUrl.hostname.includes('desert-korea-auto.com') || parsedUrl.hostname.includes('desert-korea')) {
+        return await this._scrapeDesertKorea(url);
+      }
+
       if (parsedUrl.hostname.includes('encar.com') || parsedUrl.hostname.includes('encar.co.kr')) {
         return await this._scrapeEncar(url);
       }
@@ -99,6 +103,78 @@ class ScraperService {
       };
     } catch (err) {
        throw new Error(`تعذر الوصول للموقع: ${err.message}`);
+    }
+  }
+
+  /**
+   * استخراج متخصص لموقع المزادات الكورية Desert Korea Auto
+   */
+  async _scrapeDesertKorea(url) {
+    try {
+      const { data } = await axios.get(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Accept-Language': 'en-US,en;q=0.9,ar;q=0.8,ko;q=0.7'
+        },
+        timeout: 20000,
+        httpsAgent,
+      });
+
+      const $ = cheerio.load(data);
+
+      const title = $('meta[property="og:title"]').attr('content') || 
+                    $('h1.entry-title, h1.product_title, .car-title, h1').first().text() || 
+                    $('title').text() || 'سيارة مزاد كوري مباشر';
+
+      const description = $('meta[property="og:description"]').attr('content') || 
+                          $('.car-description, .entry-content').text() || '';
+
+      // استخراج VIN (رقم هيكل السيارة)
+      let vin = '';
+      const pageHtml = $.html();
+      const vinMatch = pageHtml.match(/VIN[:\s]*([A-HJ-NPR-Z0-9]{11,17})/i) || pageHtml.match(/\b([A-HJ-NPR-Z0-9]{17})\b/);
+      if (vinMatch) vin = vinMatch[1];
+
+      // استخراج الأسعار من عناصر الصفحة
+      let price = null;
+      $('[class*="price"], [id*="price"], .auction-price, .current-bid').each((i, el) => {
+        const text = $(el).text().trim();
+        const match = text.match(/[\d,]+/);
+        if (match) {
+          const val = parseInt(match[0].replace(/,/g, ''));
+          if (val > 0 && !price) price = val;
+        }
+      });
+
+      const images = this._extractImages($, url);
+      const cleanTitle = title.trim();
+      const words = cleanTitle.split(' ');
+      const make = words[0] || 'غير محدد';
+      const model = words.slice(1, 3).join(' ') || 'غير محدد';
+
+      return {
+        success: true,
+        data: {
+          title: cleanTitle,
+          description: description.trim(),
+          vin: vin || `DKA-${Date.now().toString(36).toUpperCase()}`,
+          make,
+          model,
+          year: new Date().getFullYear(),
+          price: price || 12000,
+          startingPrice: price || 12000,
+          currentBid: price || 12000,
+          fuelType: 'Petrol',
+          transmission: 'Automatic',
+          images,
+          url,
+          source: 'desert_korea',
+          isLiveAuction: true
+        }
+      };
+    } catch (err) {
+      console.warn('[Scraper] Desert Korea specialized scrape failed, falling back to generic...', err.message);
+      return await this._scrapeGeneric(url);
     }
   }
 
