@@ -12,10 +12,12 @@ import {
     Home, ArrowRight, Sparkles, Crown
 } from "lucide-react";
 import { useLanguage } from "@/lib/LanguageContext";
+import WatermarkImage from "@/components/WatermarkImage";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTenant } from "@/lib/TenantContext";
 import { getTenantApiUrl } from "@/lib/tenant-config";
+import { getProxiedImageUrl } from "@/lib/imageUtils";
 
 
 interface UltraModernCarCardProps {
@@ -190,13 +192,15 @@ export default function UltraModernCarCard({
                     {/* Main Image */}
                     <div className="relative w-full h-full">
                         {!imageError ? (
-                            <Image
+                            <WatermarkImage
                                 src={resolvedImage}
                                 alt={car.title}
                                 fill
                                 className="object-cover transition-all duration-1000 group-hover:scale-110 group-hover:rotate-1"
                                 onError={handleImageError}
                                 priority={index < 4}
+                                showWatermark={true}
+                                watermarkPosition="br"
                             />
                         ) : (
                             <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
@@ -421,7 +425,6 @@ export default function UltraModernCarCard({
                 
                 {/* Holographic Border */}
                 <div className="absolute inset-0 rounded-3xl border border-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none [background:linear-gradient(45deg,transparent,rgba(255,0,0,0.3),transparent)] [mask:linear-gradient(#fff_0_0)_content-box,linear-gradient(#fff_0_0)] [mask-composite:xor]" />
-            </div>
 
             {/* Image Gallery Modal */}
             <AnimatePresence>

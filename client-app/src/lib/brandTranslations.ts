@@ -211,8 +211,18 @@ export function formatCarTitle(rawTitle: string, rawMake: string, isRTL: boolean
     if (!rawTitle) return '';
     let title = cleanKoreanText(rawTitle, isRTL);
 
-    const brandName = getBrandDisplayName(rawMake || '', isRTL);
-    if (brandName && !title.toLowerCase().includes(brandName.toLowerCase())) {
+    const brandInfo = getBrandInfo(rawMake || '');
+    const brandName = isRTL ? brandInfo.ar : brandInfo.en;
+
+    // Check all brand representations to avoid duplicates (ar/en/raw)
+    const titleLower = title.toLowerCase();
+    const alreadyHasBrand =
+        (brandName && titleLower.includes(brandName.toLowerCase())) ||
+        (brandInfo.ar && titleLower.includes(brandInfo.ar.toLowerCase())) ||
+        (brandInfo.en && titleLower.includes(brandInfo.en.toLowerCase())) ||
+        (rawMake && titleLower.includes(rawMake.toLowerCase()));
+
+    if (brandName && !alreadyHasBrand) {
         title = `${brandName} ${title}`;
     }
 

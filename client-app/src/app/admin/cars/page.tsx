@@ -28,6 +28,7 @@ type Car = {
     images: string[];
     isActive: boolean;
     isSold: boolean;
+    _id?: string;
     displayCurrency?: string;
     description?: string;
     mileage?: number;

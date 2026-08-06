@@ -9,8 +9,9 @@ import {
 import { useLanguage } from "@/lib/LanguageContext";
 import { useSettings } from "@/lib/SettingsContext";
 import Link from "next/link";
-import Image from "next/image";
+import WatermarkImage from "@/components/WatermarkImage";
 import { getProxiedImageUrl } from "@/lib/imageUtils";
+import { formatCarTitle, cleanKoreanText } from "@/lib/brandTranslations";
 
 interface CarCardProps {
     car: {
@@ -117,7 +118,7 @@ export default function ModernCarCard({ car, index = 0, formatPrice: propFormatP
 
                     {/* الصورة الرئيسية */}
                     {!imageError && currentImage ? (
-                        <Image
+                        <WatermarkImage
                             src={currentImage}
                             alt={displayTitle}
                             fill
@@ -125,6 +126,8 @@ export default function ModernCarCard({ car, index = 0, formatPrice: propFormatP
                             className="object-cover transition-transform duration-700 group-hover:scale-105"
                             onError={() => setImageError(true)}
                             priority={index < 3}
+                            showWatermark={true}
+                            watermarkPosition="br"
                         />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#2a1e10] to-[#1a1108]">

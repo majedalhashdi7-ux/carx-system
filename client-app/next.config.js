@@ -8,7 +8,9 @@ const nextConfig = {
       { protocol: 'http', hostname: '**' },
       { protocol: 'https', hostname: '**' }
     ],
-    unoptimized: true,
+    // unoptimized: true → تمت الإزالة لتفعيل تحسين الصور التلقائي
+    // عند تفعيل Cloudinary استخدم loader مخصص بدلاً من هذا
+    unoptimized: process.env.NEXT_PUBLIC_IMAGES_UNOPTIMIZED === 'true',
   },
 
   async headers() {
@@ -30,16 +32,17 @@ const nextConfig = {
     SYSTEM_VERSION: '2.0.0',
   },
 
-
-
   async rewrites() {
-    // Only rewrite in local development when backend is running on port 4001
-    return [
-      {
-        source: '/api/:path*',
-        destination: 'http://localhost:4001/api/:path*',
-      },
-    ];
+    // ✅ إعادة التوجيه للـ backend فقط في بيئة التطوير المحلي
+    if (process.env.NODE_ENV === 'development') {
+      return [
+        {
+          source: '/api/:path*',
+          destination: 'http://localhost:4001/api/:path*',
+        },
+      ];
+    }
+    return [];
   },
 
   compress: true,
@@ -49,7 +52,8 @@ const nextConfig = {
   trailingSlash: false,
   reactStrictMode: true,
   typescript: {
-    ignoreBuildErrors: true,
+    // ✅ تم تفعيل TypeScript errors — لا تنشر كود فيه أخطاء نوعية
+    ignoreBuildErrors: false,
   },
 };
 

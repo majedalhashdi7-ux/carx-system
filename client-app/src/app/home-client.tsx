@@ -343,7 +343,7 @@ export default function HomeClient({ latestCars: initialLatestCars }: HomeClient
           )}
 
           {/* ── PERSISTENT CURRENCY SWITCHER ── */}
-          <CurrencySwitcher variant="minimal" className="mt-2" />
+          <CurrencySwitcher variant="compact" className="mt-2" />
         </div>
       )}
 

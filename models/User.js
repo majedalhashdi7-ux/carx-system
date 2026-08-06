@@ -108,7 +108,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['manual', 'auto-registration', 'admin-created', 'api'],
     default: 'manual'
-  }
+  },
+
+  // Password Reset Fields — يُستخدمان لميزة نسيت كلمة المرور
+  passwordResetToken: { type: String, default: undefined, select: false },
+  passwordResetExpiry: { type: Date, default: undefined, select: false },
 }, { timestamps: true });
 
 // [[ARABIC_COMMENT]] إضافة فهارس (Indexes) لتحسين سرعة الاستعلامات

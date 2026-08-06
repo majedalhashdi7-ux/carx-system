@@ -247,4 +247,38 @@ router.post('/force-seed', requireAuthAPI, async (req, res) => {
     }
 });
 
+// ─── POST /api/v2/system/sync-watermarks ─────────────────────────────────────
+// تطبيق العلامة المائية HM CAR على جميع صور السيارات وقطع الغيار الموجودة في قاعدة البيانات
+// يُستخدم من لوحة إدارة Admin لتحديث البيانات القديمة
+router.post('/sync-watermarks', requireAuthAPI, async (req, res) => {
+    try {
+        if (!['super_admin', 'admin'].includes(req.user?.role)) {
+            return res.status(403).json({ success: false, message: 'غير مصرح — يتطلب صلاحية مشرف' });
+        }
+
+        const RetroactiveSyncService = require('../../../services/RetroactiveSyncService');
+        const tenantId = req.tenantId || 'default';
+
+        // تشغيل المزامنة الجذرية في الخلفية (non-blocking)
+        setImmediate(async () => {
+            try {
+                logger.info(`[WatermarkSync] Starting retroactive sync for tenant: ${tenantId}`);
+                await RetroactiveSyncService.syncAll(req);
+                logger.info(`[WatermarkSync] Completed for tenant: ${tenantId}`);
+            } catch (err) {
+                logger.error(`[WatermarkSync] Error for tenant ${tenantId}:`, err.message);
+            }
+        });
+
+        res.json({
+            success: true,
+            message: '✅ بدأت عملية تطبيق العلامة المائية على الصور في الخلفية. قد تستغرق عدة دقائق حسب حجم البيانات.',
+            tenantId
+        });
+    } catch (e) {
+        logger.error('[sync-watermarks] Error:', e);
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
 module.exports = router;

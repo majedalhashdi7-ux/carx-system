@@ -13,7 +13,7 @@ const CURRENCIES = [
 ] as const;
 
 interface CurrencySwitcherProps {
-    variant?: 'compact' | 'full';
+    variant?: 'compact' | 'full' | 'minimal';
     className?: string;
 }
 

@@ -871,7 +871,16 @@ export default function DesertStyleCarDetail() {
 
                                 <div className="flex justify-between py-3 rounded-2xl bg-[#1a1c2b] px-4 text-sm font-black text-amber-300 border border-[#C9A96E]/40">
                                     <span>{isRTL ? 'التكلفة التقديرية الكلية:' : 'Total Estimated Cost:'}</span>
-                                    <span className="font-mono text-base">{formatPrice(calculatedTotal)}</span>
+                                    <span className="font-mono text-base">{formatPrice(
+                                        (() => {
+                                            const base = Number(car?.priceUsd || car?.basePriceUsd || 0) * 3.75;
+                                            const ship = Number(car?.shippingCost || 1800);
+                                            const customs = base * 0.05;
+                                            const vat = (base + ship + customs) * 0.15;
+                                            const commission = 1200;
+                                            return Math.round(base + ship + customs + vat + commission);
+                                        })()
+                                    )}</span>
                                 </div>
                             </div>
 

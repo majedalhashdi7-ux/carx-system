@@ -72,8 +72,90 @@ router.get(['/verify', '/me'], requireAuthAPI, async (req, res) => {
   }
 });
 
-// ⚠️ تم حذف endpoint إعادة تعيين كلمة المرور المؤقت لأسباب أمنية
-// لإعادة تعيين كلمة مرور الأدمن، استخدم السكريبت: scripts/admin/reset-admin-password.js
+
+// ─── POST /api/v2/auth/forgot-password ───────────────────────────────────────
+// إرسال رابط استعادة كلمة المرور للبريد الإلكتروني
+router.post('/forgot-password', authLimiter, async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email || typeof email !== 'string') {
+      // إرجاع نجاح وهمي لمنع كشف وجود البريد (Email Enumeration Protection)
+      return sendResponse(res, successResponse(null, 'إذا كان البريد مسجلاً، ستصل رسالة قريباً'));
+    }
+
+    const User = getModel(req, 'User');
+    const user = await User.findOne({ email: email.trim().toLowerCase() });
+
+    // دائماً أرجع نجاح — لا تكشف إن كان البريد مسجلاً أم لا
+    if (!user) {
+      return sendResponse(res, successResponse(null, 'إذا كان البريد مسجلاً، ستصل رسالة قريباً'));
+    }
+
+    // إنشاء رمز استعادة آمن
+    const crypto = require('crypto');
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // ساعة واحدة
+
+    // حفظ الرمز المُشفّر في قاعدة البيانات
+    user.passwordResetToken = resetTokenHash;
+    user.passwordResetExpiry = resetTokenExpiry;
+    await user.save();
+
+    // إرسال البريد إن كان SMTP مكوّناً
+    const baseUrl = process.env.CLIENT_URL || process.env.BASE_URL || 'https://hmcar-system-two.vercel.app';
+    const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
+
+    try {
+      const EmailService = require('../../../services/EmailService');
+      await EmailService.sendPasswordReset(user.email, user.name || 'عزيزي المستخدم', resetUrl);
+      console.log(`[Auth] Password reset email sent to: ${user.email}`);
+    } catch (emailErr) {
+      // لا نفشل العملية إن لم يكن SMTP مكوّناً — فقط سجّل تحذيراً
+      console.warn(`[Auth] Email not sent (SMTP not configured?): ${emailErr.message}`);
+    }
+
+    return sendResponse(res, successResponse(null, 'إذا كان البريد مسجلاً، ستصل رسالة قريباً'));
+  } catch (err) {
+    console.error('[Auth] Forgot password error:', err.message);
+    return sendResponse(res, successResponse(null, 'إذا كان البريد مسجلاً، ستصل رسالة قريباً'));
+  }
+});
+
+// ─── POST /api/v2/auth/reset-password ────────────────────────────────────────
+// إعادة تعيين كلمة المرور برمز الاستعادة
+router.post('/reset-password', authLimiter, async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password || password.length < 8) {
+      return sendResponse(res, validationErrorResponse(null, 'الرمز أو كلمة المرور الجديدة غير صالحة'));
+    }
+
+    const crypto = require('crypto');
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    const User = getModel(req, 'User');
+    const user = await User.findOne({
+      passwordResetToken: tokenHash,
+      passwordResetExpiry: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return sendResponse(res, errorResponse('رابط إعادة التعيين منتهي أو غير صالح', 400));
+    }
+
+    // تحديث كلمة المرور
+    user.password = password; // سيتم تشفيرها تلقائياً في pre-save hook
+    user.passwordResetToken = undefined;
+    user.passwordResetExpiry = undefined;
+    await user.save();
+
+    return sendResponse(res, successResponse(null, 'تم تغيير كلمة المرور بنجاح، يمكنك تسجيل الدخول الآن'));
+  } catch (err) {
+    console.error('[Auth] Reset password error:', err.message);
+    return sendResponse(res, serverErrorResponse('حدث خطأ أثناء إعادة التعيين'));
+  }
+});
 
 // Register endpoint - استخدام authLimiter الجديد
 router.post('/register', authLimiter, async (req, res) => {

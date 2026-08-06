@@ -5,6 +5,7 @@ import { Save, Settings, Globe, Shield, CreditCard, Bell, Share2, Upload, Sparkl
 
 import { api } from '../../../lib/api';
 import { uploadImage } from '../../../lib/cloudinary';
+import SyncWatermarksButton from '../../../components/admin/SyncWatermarksButton';
 
 export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(false);
@@ -591,6 +592,29 @@ export default function AdminSettingsPage() {
                   </div>
                 </div>
               )}
+
+              {/* ─── قسم أدوات النظام ─── */}
+              <div className="border border-white/10 bg-white/[0.01] rounded-2xl overflow-hidden">
+                <div className="p-5 border-b border-white/10">
+                  <h3 className="font-black text-base flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-luxury-gold" />
+                    أدوات النظام
+                  </h3>
+                  <p className="text-xs text-white/30 mt-1">عمليات صيانة البيانات والمزامنة الجذرية</p>
+                </div>
+                <div className="p-5 space-y-4">
+                  {/* زر تطبيق العلامة المائية */}
+                  <div className="flex items-center justify-between p-4 border border-yellow-500/20 bg-yellow-500/5 rounded-xl">
+                    <div className="space-y-1">
+                      <span className="block text-sm font-bold">💧 تطبيق العلامة المائية على جميع الصور</span>
+                      <span className="text-xs text-white/40">
+                        يضيف شعار HM SHOWROOM على كل صور السيارات وقطع الغيار في قاعدة البيانات (بما فيها القديمة). تعمل في الخلفية.
+                      </span>
+                    </div>
+                    <SyncWatermarksButton />
+                  </div>
+                </div>
+              </div>
 
             </form>
           </div>

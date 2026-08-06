@@ -40,7 +40,7 @@
     "lamina": "^1.2.2",
     "lucide-react": "^0.563.0",
     "maath": "^0.10.8",
-    "next": "16.1.6",
+    "next": "16.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-easy-crop": "^5.5.6",
@@ -56,10 +56,13 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.1.6",
+    "eslint-config-next": "16.3",
     "postcss": "^8.4.49",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
-  "description": "HM CAR - Premium Car Auction Platform"
+  "description": "HM CAR - Premium Car Auction Platform",
+  "engines": {
+    "node": ">=22.x"
+  }
 }

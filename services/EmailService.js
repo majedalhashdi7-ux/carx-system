@@ -107,6 +107,38 @@ class EmailService {
             console.warn('⚠️ Failed to send notification email:', error.message);
         }
     }
+    /**
+     * إرسال رابط استعادة كلمة المرور
+     * @param {string} email - البريد المستلم
+     * @param {string} name - اسم المستخدم
+     * @param {string} resetUrl - رابط إعادة التعيين
+     */
+    static async sendPasswordReset(email, name, resetUrl) {
+        return this.sendEmail({
+            to: email,
+            subject: 'إعادة تعيين كلمة المرور — HM CAR',
+            text: `مرحباً ${name}،\n\nاضغط على الرابط التالي لإعادة تعيين كلمة مرورك (صالح ساعة):\n${resetUrl}\n\nإذا لم تطلب هذا، تجاهل الرسالة.\n\nHM CAR Team`,
+            html: `
+                <div style="font-family: Arial, sans-serif; direction: rtl; text-align: right; padding: 30px; background: #0a0a0f; color: #fff; border-radius: 12px; max-width: 500px; margin: auto;">
+                    <div style="text-align: center; margin-bottom: 24px;">
+                        <h1 style="color: #c9a96e; font-size: 24px; margin: 0;">🔐 HM CAR</h1>
+                        <p style="color: #888; font-size: 13px; margin: 4px 0 0;">استعادة كلمة المرور</p>
+                    </div>
+                    <p style="color: #ccc; font-size: 15px;">مرحباً <strong style="color: #fff;">${name}</strong>،</p>
+                    <p style="color: #aaa; font-size: 14px; line-height: 1.7;">تلقّينا طلب إعادة تعيين كلمة المرور لحسابك. اضغط على الزر أدناه لإنشاء كلمة مرور جديدة.</p>
+                    <div style="text-align: center; margin: 28px 0;">
+                        <a href="${resetUrl}" style="background: linear-gradient(135deg, #c9a96e, #d4b87e); color: #000; padding: 14px 32px; text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 15px; display: inline-block;">
+                            إعادة تعيين كلمة المرور →
+                        </a>
+                    </div>
+                    <p style="color: #666; font-size: 12px; text-align: center;">⏱️ هذا الرابط صالح لمدة ساعة واحدة فقط.</p>
+                    <p style="color: #555; font-size: 12px; text-align: center;">إذا لم تطلب هذا، يمكنك تجاهل هذه الرسالة بأمان.</p>
+                    <hr style="border: 1px solid #222; margin: 24px 0;" />
+                    <p style="color: #444; font-size: 11px; text-align: center;">HM CAR — منصة مزادات السيارات الفاخرة</p>
+                </div>
+            `
+        });
+    }
 }
 
 module.exports = EmailService;

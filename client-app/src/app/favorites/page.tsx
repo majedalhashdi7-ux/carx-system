@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, ShoppingCart, Trash2, ArrowLeft, Package } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Link from 'next/link';
-import Image from 'next/image';
+import WatermarkImage from '@/components/WatermarkImage';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useSettings } from '@/lib/SettingsContext';
 import { useRouter } from 'next/navigation';
@@ -147,7 +147,7 @@ export default function FavoritesPage() {
                                 <motion.div key={item.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ delay: i * 0.05 }} className="group">
                                     <div className="bg-white/2 border border-white/10 rounded-3xl overflow-hidden hover:border-red-500/30 transition-all duration-500">
                                         <div className="relative h-56 overflow-hidden">
-                                            <Image src={item.image || '/images/placeholder.jpg'} alt={item.title} fill className="object-cover group-hover:scale-105 transition-transform duration-700" unoptimized />
+                                            <WatermarkImage src={item.image || '/images/placeholder.jpg'} alt={item.title} fill className="object-cover group-hover:scale-105 transition-transform duration-700" showWatermark={true} watermarkPosition="br" />
                                             <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-transparent" />
                                             <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 flex items-center gap-1">
                                                 <span className="text-[8px] font-black uppercase tracking-widest text-white/70">

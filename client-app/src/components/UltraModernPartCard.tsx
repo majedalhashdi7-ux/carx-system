@@ -85,7 +85,7 @@ export default function UltraModernPartCard({
 }: UltraModernPartCardProps) {
     const { isRTL } = useLanguage();
     const { isLoggedIn } = useAuth();
-    const { formatPrice } = useSettings() as any;
+    const { formatPrice, socialLinks } = useSettings() as any;
     const router = useRouter();
 
     const cardKey = String(part.id || part._id || `part-${index}`);
