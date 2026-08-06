@@ -14,6 +14,7 @@ import AdminPageShell from '@/components/AdminPageShell';
 import CarCard from './_components/CarCard';
 import CarModal from './_components/CarModal';
 import InlineImportModal from '@/components/admin/InlineImportModal';
+import QuickImportBar from '@/components/admin/QuickImportBar';
 import SearchAutocomplete, { type SearchSuggestion } from '@/components/SearchAutocomplete';
 
 // ── نوع بيانات السيارة ──
@@ -407,6 +408,12 @@ function CarsContent() {
                     </div>
                 }
             >
+                <QuickImportBar
+                    type="car"
+                    onSuccess={loadData}
+                    className="mb-6"
+                />
+
                 <InlineImportModal
                     isOpen={showInlineImport}
                     onClose={() => setShowInlineImport(false)}

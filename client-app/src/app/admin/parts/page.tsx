@@ -28,6 +28,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import InlineImportModal from "@/components/admin/InlineImportModal";
+import QuickImportBar from "@/components/admin/QuickImportBar";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/LanguageContext";
 import { api } from "@/lib/api-original";
@@ -396,6 +397,12 @@ export default function AdminPartsPage() {
                         )}
                     </AnimatePresence>
                 </div>
+
+                <QuickImportBar
+                    type="part"
+                    onSuccess={loadParts}
+                    className="mb-6"
+                />
 
                 {/* Filters + Search + View Toggle */}
                 <div className="flex flex-col sm:flex-row gap-4 mb-8">

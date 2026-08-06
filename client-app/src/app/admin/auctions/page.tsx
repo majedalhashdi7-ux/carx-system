@@ -22,6 +22,7 @@ import { api } from "@/lib/api-original";
 import { useToast } from "@/lib/ToastContext";
 import AdminPageShell from "@/components/AdminPageShell";
 import InlineImportModal from "@/components/admin/InlineImportModal";
+import QuickImportBar from "@/components/admin/QuickImportBar";
 
 function MasterAuctionsContent() {
     const { isRTL } = useLanguage();
@@ -330,6 +331,12 @@ function MasterAuctionsContent() {
                 { label: isRTL ? 'جلسات البث المباشر' : 'Live Streams', value: liveSessionsCount, color: 'text-orange-400' },
             ]}
         >
+            <QuickImportBar
+                type="auction"
+                onSuccess={() => { loadLiveSessions(); loadClassicAuctions(); }}
+                className="mb-6"
+            />
+
             {/* ── Tabs Header ── */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 bg-[#0b0c16]/80 p-2 rounded-2xl border border-white/10 backdrop-blur-xl">
                 <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto scrollbar-hide">
