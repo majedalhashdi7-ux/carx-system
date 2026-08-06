@@ -169,28 +169,32 @@ router.post('/save', requireAuthAPI, requireAdmin, invalidateCache(['/api/v2/car
 
             // جلب أو إنشاء الوكالة (Brand)
             let agencyId = null;
-            if (Brand && data.make) {
-                const makeName = String(data.make).trim();
-                const makeKey = makeName.toLowerCase();
-                let brandDoc = await Brand.findOne({ key: makeKey });
-                if (!brandDoc) {
-                    const clearbitLogo = `https://logo.clearbit.com/${makeKey.replace(/\s+/g, '')}.com`;
-                    brandDoc = await Brand.create({
-                        tenantId: getTenantId(req),
-                        name: makeName,
-                        key: makeKey,
-                        logoUrl: clearbitLogo,
-                        forCars: true,
-                        forSpareParts: false,
-                        isActive: true
-                    });
-                } else {
-                    if (!brandDoc.forCars) {
-                        brandDoc.forCars = true;
-                        await brandDoc.save();
+            if (Brand && data.make && data.make !== 'غير محدد') {
+                try {
+                    const makeName = String(data.make).trim();
+                    const makeKey = makeName.toLowerCase();
+                    let brandDoc = await Brand.findOne({ key: makeKey });
+                    if (!brandDoc) {
+                        const clearbitLogo = `https://logo.clearbit.com/${makeKey.replace(/\s+/g, '')}.com`;
+                        brandDoc = await Brand.create({
+                            tenantId: getTenantId(req),
+                            name: makeName,
+                            key: makeKey,
+                            logoUrl: clearbitLogo,
+                            forCars: true,
+                            forSpareParts: false,
+                            isActive: true
+                        });
+                    } else {
+                        if (!brandDoc.forCars) {
+                            brandDoc.forCars = true;
+                            await brandDoc.save();
+                        }
                     }
+                    agencyId = brandDoc?._id || null;
+                } catch (brandErr) {
+                    console.warn('⚠️ [Import] Brand processing warning:', brandErr.message);
                 }
-                agencyId = brandDoc._id;
             }
 
             // تحقق من التكرار (منع إضافة نفس السيارة مرتين)

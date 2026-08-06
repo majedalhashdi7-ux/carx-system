@@ -42,6 +42,12 @@ export default function QuickImportBar({ type, onSuccess, placeholder, className
             return;
         }
 
+        // تنبيه ذكي إذا كان الرابط رابط قائمة وليس سيارة منفردة
+        const lowerUrl = trimmedUrl.toLowerCase();
+        if (type === 'car' && (lowerUrl.includes('list/car') || lowerUrl.includes('search=') || lowerUrl.includes('list.do'))) {
+            showToast(isRTL ? '⚠️ تنبيه: هذا رابط (قائمة بحث). لاستيراد سيارة محددة بكامل صورها ومواصفاتها، افتح صفحة السيارة نفسها وانسخ رابطها المباشر (مثل encar.com/cars/detail/1234)' : '⚠️ Warning: This is a search list URL. Please open a specific car and paste its direct detail URL (e.g. encar.com/cars/detail/1234)', 'info');
+        }
+
         setLoading(true);
         setPreviewData(null);
         setIsDuplicate(false);
@@ -52,22 +58,29 @@ export default function QuickImportBar({ type, onSuccess, placeholder, className
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
+                    'Authorization': token ? `Bearer ${token}` : '',
                     'X-Tenant-ID': process.env.NEXT_PUBLIC_TENANT_ID || 'hmcar'
                 },
                 body: JSON.stringify({ url: trimmedUrl, type })
             });
 
-            const json = await res.json();
-            if (res.ok && json.success) {
+            let json: any = null;
+            try { json = await res.json(); } catch {}
+
+            if (res.ok && json?.success) {
                 setPreviewData(json.data);
                 setIsDuplicate(!!json.duplicate);
                 showToast(isRTL ? '✨ تم استخراج ومعاينة البيانات بنجاح! راجعها ثم اضغط حفظ' : 'Data extracted successfully! Review and confirm save', 'success');
             } else {
-                throw new Error(json.error || json.message || (isRTL ? 'فشل استخراج البيانات من الرابط' : 'Failed to extract data'));
+                const errMsg = json?.error || json?.message || (isRTL ? 'فشل استخراج البيانات من الرابط. تأكد من استخدام رابط صفحة تفاصيل عنصر محدد' : 'Failed to extract data. Use a specific item page URL');
+                throw new Error(errMsg);
             }
         } catch (err: any) {
-            showToast(err.message || 'Import error', 'error');
+            const raw = String(err?.message || err || '');
+            const friendly = (raw.includes('TypeError') || raw.includes('fetch'))
+                ? (isRTL ? '❌ متعذر معالجة هذه الصفحة. يرجى تجربة رابط صفحة سيارة تفصيلية بدلاً من رابط قائمة البحث' : 'Unable to process page. Use direct car detail URL')
+                : raw;
+            showToast(friendly, 'error');
         } finally {
             setLoading(false);
         }
@@ -82,7 +95,7 @@ export default function QuickImportBar({ type, onSuccess, placeholder, className
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
+                    'Authorization': token ? `Bearer ${token}` : '',
                     'X-Tenant-ID': process.env.NEXT_PUBLIC_TENANT_ID || 'hmcar'
                 },
                 body: JSON.stringify({
@@ -94,17 +107,24 @@ export default function QuickImportBar({ type, onSuccess, placeholder, className
                 })
             });
 
-            const json = await res.json();
-            if (res.ok && json.success) {
+            let json: any = null;
+            try { json = await res.json(); } catch {}
+
+            if (res.ok && json?.success) {
                 showToast(isRTL ? '🎉 تم الحفظ وإدراج البيانات بنجاح في الصفحة!' : '🎉 Saved & inserted into page!', 'success');
                 setUrl('');
                 setPreviewData(null);
                 onSuccess();
             } else {
-                throw new Error(json.error || json.message || (isRTL ? 'فشل حفظ البيانات' : 'Failed to save'));
+                const errMsg = json?.error || json?.message || (isRTL ? 'فشل حفظ البيانات. تأكد من إدخال اسم ومواصفات صالحة' : 'Failed to save data');
+                throw new Error(errMsg);
             }
         } catch (err: any) {
-            showToast(err.message || 'Save error', 'error');
+            const raw = String(err?.message || err || '');
+            const friendly = (raw.includes('TypeError') || raw.includes('fetch'))
+                ? (isRTL ? '❌ حدث خطأ أثناء الحفظ. جرب استخدام رابط صفحة سيارة منفردة' : 'Save Error')
+                : raw;
+            showToast(friendly, 'error');
         } finally {
             setSaving(false);
         }
