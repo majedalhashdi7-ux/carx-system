@@ -1,11 +1,11 @@
 import { redirect } from 'next/navigation';
 
 interface ShowroomCarDetailProps {
-    params: { id: string };
+    params: Promise<{ id: string }>;
 }
 
-export default function ShowroomCarDetailRedirect({ params }: ShowroomCarDetailProps) {
-    const { id } = params;
+export default async function ShowroomCarDetailRedirect({ params }: ShowroomCarDetailProps) {
+    const { id } = await params;
     if (id) {
         redirect(`/cars/${id}`);
     }

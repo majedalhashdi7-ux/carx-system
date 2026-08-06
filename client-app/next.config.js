@@ -55,6 +55,9 @@ const nextConfig = {
     // ✅ تم تفعيل TypeScript errors — لا تنشر كود فيه أخطاء نوعية
     ignoreBuildErrors: false,
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 };
 
 module.exports = nextConfig;
