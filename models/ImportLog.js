@@ -10,7 +10,7 @@ const importLogSchema = new mongoose.Schema({
     },
     importType: {
         type: String,
-        enum: ['showroom_cars', 'parts', 'live_auctions'],
+        enum: ['showroom_cars', 'parts', 'live_auctions', 'live_auctions_encar', 'korean_cars', 'manual'],
         required: true,
         index: true
     },

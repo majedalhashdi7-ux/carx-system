@@ -12,6 +12,19 @@ const liveAuctionCarSchema = new mongoose.Schema({
     lotNumber: { type: String, default: '' },        // رقم اللوت في المزاد
     auctionName: { type: String, default: '' },     // اسم شركة المزاد مثل Copart
     sourceUrl: { type: String, default: '' },       // رابط السيارة في الموقع الأصلي
+    externalId: { type: String, default: '', index: true }, // معرف خارجي (Encar ID)
+    externalUrl: { type: String, default: '' },     // رابط السيارة في الموقع الخارجي
+    make: { type: String, default: '' },            // الماركة
+    model: { type: String, default: '' },           // الموديل
+    year: { type: Number, default: 0 },             // سنة الصنع
+    mileage: { type: Number, default: 0 },          // عداد الكيلومترات
+    fuelType: { type: String, default: '' },        // نوع الوقود
+    transmission: { type: String, default: '' },    // ناقل الحركة
+    price: { type: Number, default: 0 },            // السعر
+    priceSar: { type: Number, default: 0 },         // السعر بالريال
+    priceUsd: { type: Number, default: 0 },         // السعر بالدولار
+    priceKrw: { type: Number, default: 0 },         // السعر بالوون
+    importSource: { type: String, default: 'encar' }, // مصدر الاستيراد
     // [[ARABIC_COMMENT]] حقل الإخفاء: true = السيارة اختفت من المزاد الخارجي ولا تُعرض للعملاء
     isHidden: { type: Boolean, default: false },
     disappearedAt: { type: Date, default: null },   // وقت اختفاء السيارة من المزاد
@@ -29,6 +42,8 @@ const liveAuctionSchema = new mongoose.Schema({
     },
     title: { type: String, required: true },        // عنوان الجلسة
     externalUrl: { type: String, default: '' },     // رابط المزاد الخارجي للاستيراد منه
+    externalId: { type: String, default: '', index: true }, // معرف خارجي فريد
+    importSource: { type: String, default: 'manual' }, // مصدر الاستيراد: manual, encar
     status: {
         type: String,
         enum: ['upcoming', 'live', 'ended'],
