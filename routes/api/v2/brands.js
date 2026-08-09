@@ -84,8 +84,8 @@ router.post('/fix-spare-brands', requireAuthAPI, requirePermissionAPI('manage_br
   }
 });
 
-// List brands
-router.get('/', cacheResponse(3600), async (req, res) => {
+// List brands (دون تخزين مؤقت طويل لضمان ظهور التعديلات فورياً عند إضافة/تعديل الوكالات)
+router.get('/', async (req, res) => {
   try {
     const { Brand } = req.tenantModels;
     const { category, targetShowroom, includeInactive } = req.query;
@@ -131,7 +131,40 @@ router.get('/', cacheResponse(3600), async (req, res) => {
       }
     }
 
-    const brands = await Brand.find(query).sort({ name: 1 }).lean();
+    let brands = await Brand.find({
+      $or: [
+        { forCars: true },
+        { forCars: { $exists: false } }
+      ]
+    }).sort({ name: 1 }).lean().catch(() => []);
+
+    const defaultCarBrands = [
+      { _id: 'b-hyundai', name: 'Hyundai', nameAr: 'هيونداي', key: 'hyundai', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/44/Hyundai_Motor_Company_logo.svg', forCars: true, forSpareParts: true, targetShowroom: 'both', isActive: true },
+      { _id: 'b-kia', name: 'Kia', nameAr: 'كيا', key: 'kia', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/47/Kia_logo_2021.svg', forCars: true, forSpareParts: true, targetShowroom: 'both', isActive: true },
+      { _id: 'b-genesis', name: 'Genesis', nameAr: 'جينيسيس', key: 'genesis', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/91/Genesis_Logo.svg', forCars: true, forSpareParts: true, targetShowroom: 'both', isActive: true },
+      { _id: 'b-bmw', name: 'BMW', nameAr: 'بي إم دبليو', key: 'bmw', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/44/BMW.svg', forCars: true, forSpareParts: true, targetShowroom: 'both', isActive: true },
+      { _id: 'b-mercedes', name: 'Mercedes-Benz', nameAr: 'مرسيدس بنز', key: 'mercedes-benz', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/90/Mercedes-Logo.svg', forCars: true, forSpareParts: true, targetShowroom: 'both', isActive: true },
+      { _id: 'b-toyota', name: 'Toyota', nameAr: 'تويوتا', key: 'toyota', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/9d/Toyota_carlogo.svg', forCars: true, forSpareParts: true, targetShowroom: 'both', isActive: true },
+      { _id: 'b-porsche', name: 'Porsche', nameAr: 'بورشه', key: 'porsche', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/8/8c/Porsche_logo.svg', forCars: true, forSpareParts: true, targetShowroom: 'both', isActive: true },
+      { _id: 'b-audi', name: 'Audi', nameAr: 'أودي', key: 'audi', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/92/Audi-Logo_2016.svg', forCars: true, forSpareParts: true, targetShowroom: 'both', isActive: true },
+    ];
+
+    if (!brands || brands.length === 0) {
+      brands = defaultCarBrands;
+      // حفظ الجداول في الخلفية
+      setImmediate(async () => {
+        try {
+          for (const item of defaultCarBrands) {
+            await Brand.updateOne(
+              { key: item.key },
+              { $set: { ...item, tenantId: req.tenantId || 'hmcar' } },
+              { upsert: true }
+            );
+          }
+        } catch (e) {}
+      });
+    }
+
     res.json({ success: true, brands });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });

@@ -248,6 +248,15 @@ export default function AdminAgenciesPage() {
                       }}
                     />
                   </div>
+                  <div className="mt-2.5">
+                    <input
+                      type="text"
+                      value={logo}
+                      onChange={(e) => setLogo(e.target.value)}
+                      placeholder={isRTL ? 'أو ألصق رابط الشعار مباشرة (https://...)' : 'Or paste logo URL (https://...)'}
+                      className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-2.5 px-3.5 text-xs font-mono text-white focus:outline-none focus:border-[#c9a96e]/50 transition-all placeholder:text-white/20"
+                    />
+                  </div>
                   {logo && !showCropper && (
                     <button onClick={() => setLogo('')} className="mt-2 text-[9px] text-red-400 hover:text-red-300 uppercase tracking-widest">
                       {isRTL ? '× حذف الصورة' : '× Remove'}

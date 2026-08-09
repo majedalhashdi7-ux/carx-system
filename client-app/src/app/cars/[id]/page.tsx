@@ -197,8 +197,7 @@ export default function DesertStyleCarDetail() {
         } catch {}
     }, [id, isFav]);
 
-    const goNextImage = useCallback(() => setActiveImage(prev => prev === images.length - 1 ? 0 : prev + 1), []);
-    const goPrevImage = useCallback(() => setActiveImage(prev => prev === 0 ? images.length - 1 : prev - 1), []);
+
 
     const handleWhatsappOrder = async () => {
         if (!car) return;
@@ -280,6 +279,30 @@ export default function DesertStyleCarDetail() {
     }
 
     const images = processCarImages(car.images?.filter(Boolean) || []);
+
+    const goNextImage = useCallback(() => {
+        if (!images || images.length === 0) return;
+        setActiveImage(prev => (prev + 1) % images.length);
+    }, [images]);
+
+    const goPrevImage = useCallback(() => {
+        if (!images || images.length === 0) return;
+        setActiveImage(prev => (prev - 1 + images.length) % images.length);
+    }, [images]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'ArrowRight') {
+                isRTL ? goNextImage() : goPrevImage();
+            } else if (e.key === 'ArrowLeft') {
+                isRTL ? goPrevImage() : goNextImage();
+            } else if (e.key === 'Escape' && lightboxOpen) {
+                setLightboxOpen(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [goNextImage, goPrevImage, isRTL, lightboxOpen]);
     const mainImg = images[activeImage] || getProxiedImageUrl(car.image || car.imageUrl) || 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=1200';
     const carPriceSar = Number(car.priceSar || car.price || 0);
     const formattedPriceSar = carPriceSar > 0 ? formatPrice(carPriceSar) : (isRTL ? 'عند الطلب' : 'Call for price');
@@ -489,20 +512,22 @@ export default function DesertStyleCarDetail() {
                                 <Maximize2 className="w-4 h-4" />
                             </button>
 
-                            {/* أسهم التصفح */}
+                             {/* أسهم التصفح الفاخرة */}
                             {images.length > 1 && (
                                 <>
                                     <button
-                                        onClick={goPrevImage}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 hover:bg-white text-slate-900 flex items-center justify-center shadow-2xl backdrop-blur transition-transform active:scale-90 z-20"
+                                        onClick={isRTL ? goNextImage : goPrevImage}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/60 hover:bg-[#C9A96E] hover:text-black border border-white/20 hover:border-[#C9A96E] text-white shadow-[0_4px_25px_rgba(0,0,0,0.5)] backdrop-blur-xl transition-all duration-300 active:scale-90 z-20 flex items-center justify-center group"
+                                        aria-label="Previous Image"
                                     >
-                                        <ChevronRight className="w-6 h-6 stroke-[2.5]" />
+                                        <ChevronRight className="w-6 h-6 group-hover:scale-110 transition-transform" />
                                     </button>
                                     <button
-                                        onClick={goNextImage}
-                                        className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 hover:bg-white text-slate-900 flex items-center justify-center shadow-2xl backdrop-blur transition-transform active:scale-90 z-20"
+                                        onClick={isRTL ? goPrevImage : goNextImage}
+                                        className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/60 hover:bg-[#C9A96E] hover:text-black border border-white/20 hover:border-[#C9A96E] text-white shadow-[0_4px_25px_rgba(0,0,0,0.5)] backdrop-blur-xl transition-all duration-300 active:scale-90 z-20 flex items-center justify-center group"
+                                        aria-label="Next Image"
                                     >
-                                        <ChevronLeft className="w-6 h-6 stroke-[2.5]" />
+                                        <ChevronLeft className="w-6 h-6 group-hover:scale-110 transition-transform" />
                                     </button>
                                 </>
                             )}
@@ -560,14 +585,20 @@ export default function DesertStyleCarDetail() {
                                         />
                                     </motion.div>
 
-                                    {/* أسهم التنقل في الـ Lightbox */}
+                                    {/* أسهم التنقل الفاخرة في الـ Lightbox */}
                                     {images.length > 1 && (
                                         <>
-                                            <button onClick={(e) => { e.stopPropagation(); goPrevImage(); }} className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 border border-white/20 text-white flex items-center justify-center hover:bg-[#C9A96E] transition-all shadow-xl">
-                                                <ChevronRight className="w-6 h-6" />
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); isRTL ? goNextImage() : goPrevImage(); }} 
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center hover:bg-[#C9A96E] hover:text-black hover:border-[#C9A96E] transition-all shadow-2xl backdrop-blur-xl group z-20"
+                                            >
+                                                <ChevronRight className="w-7 h-7 group-hover:scale-110 transition-transform" />
                                             </button>
-                                            <button onClick={(e) => { e.stopPropagation(); goNextImage(); }} className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 border border-white/20 text-white flex items-center justify-center hover:bg-[#C9A96E] transition-all shadow-xl">
-                                                <ChevronLeft className="w-6 h-6" />
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); isRTL ? goPrevImage() : goNextImage(); }} 
+                                                className="absolute left-4 top-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center hover:bg-[#C9A96E] hover:text-black hover:border-[#C9A96E] transition-all shadow-2xl backdrop-blur-xl group z-20"
+                                            >
+                                                <ChevronLeft className="w-7 h-7 group-hover:scale-110 transition-transform" />
                                             </button>
                                         </>
                                     )}

@@ -45,7 +45,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             // تحقق صامت في الخلفية
             const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
-            fetch(`${apiBase}/api/v2/auth/verify`, {
+            fetch(`${apiBase}/v2/auth/verify`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'X-Tenant-ID': process.env.NEXT_PUBLIC_TENANT_ID || 'hmcar',
@@ -78,7 +78,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         } else if (token) {
             // توكن موجود لكن بدون role محلي → نتحقق من السيرفر
             const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
-            fetch(`${apiBase}/api/v2/auth/verify`, {
+            fetch(`${apiBase}/v2/auth/verify`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'X-Tenant-ID': process.env.NEXT_PUBLIC_TENANT_ID || 'hmcar',

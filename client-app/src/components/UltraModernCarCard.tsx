@@ -212,32 +212,6 @@ export default function UltraModernCarCard({
                                 </div>
                             </div>
                         )}
-                        
-                        {/* Watermark Overlay & Badge */}
-                        <div className="absolute bottom-3 right-3 z-20 pointer-events-none flex items-center gap-1 px-2 py-1 rounded-lg bg-black/70 backdrop-blur-md border border-[#C9A96E]/30 shadow-lg">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#C9A96E] animate-pulse" />
-                            <span className="text-[9px] font-black text-[#C9A96E] tracking-widest uppercase">HMCar</span>
-                        </div>
-                        {!imageError && (
-                            tenant?.logo ? (
-                                <div 
-                                    className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center opacity-[0.15] select-none mix-blend-overlay filter drop-shadow-md"
-                                    style={{
-                                        backgroundImage: `url(${tenant.logo.startsWith('http') ? tenant.logo : tenantApiUrl + tenant.logo})`,
-                                        backgroundRepeat: 'no-repeat',
-                                        backgroundPosition: 'center',
-                                        backgroundSize: '45% auto',
-                                    }}
-                                />
-                            ) : (
-                                <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center opacity-[0.08] select-none">
-                                    <span className="text-white text-xl font-bold tracking-widest uppercase rotate-12">
-                                        {tenant?.name || 'HM CAR'}
-                                    </span>
-                                </div>
-                            )
-                        )}
-
                     </div>
 
                     {/* شبكة نيون متحركة */}

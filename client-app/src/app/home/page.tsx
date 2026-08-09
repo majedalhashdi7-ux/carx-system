@@ -16,18 +16,57 @@ import { api } from '@/lib/api-original';
 import Link from 'next/link';
 import { getBrandDisplayName, getClearbitLogoUrl, isLocalPath, formatCarTitle } from '@/lib/brandTranslations';
 
+const BRAND_SVG_LOGOS: Record<string, string> = {
+    'hyundai': 'https://upload.wikimedia.org/wikipedia/commons/4/44/Hyundai_Motor_Company_logo.svg',
+    'هيونداي': 'https://upload.wikimedia.org/wikipedia/commons/4/44/Hyundai_Motor_Company_logo.svg',
+    'kia': 'https://upload.wikimedia.org/wikipedia/commons/4/47/Kia_logo_2021.svg',
+    'كيا': 'https://upload.wikimedia.org/wikipedia/commons/4/47/Kia_logo_2021.svg',
+    'genesis': 'https://upload.wikimedia.org/wikipedia/commons/9/91/Genesis_Logo.svg',
+    'جينيسيس': 'https://upload.wikimedia.org/wikipedia/commons/9/91/Genesis_Logo.svg',
+    'bmw': 'https://upload.wikimedia.org/wikipedia/commons/4/44/BMW.svg',
+    'بي ام دبليو': 'https://upload.wikimedia.org/wikipedia/commons/4/44/BMW.svg',
+    'بي إم دبليو': 'https://upload.wikimedia.org/wikipedia/commons/4/44/BMW.svg',
+    'mercedes': 'https://upload.wikimedia.org/wikipedia/commons/9/90/Mercedes-Logo.svg',
+    'مرسيدس': 'https://upload.wikimedia.org/wikipedia/commons/9/90/Mercedes-Logo.svg',
+    'mercedes-benz': 'https://upload.wikimedia.org/wikipedia/commons/9/90/Mercedes-Logo.svg',
+    'مرسيدس بنز': 'https://upload.wikimedia.org/wikipedia/commons/9/90/Mercedes-Logo.svg',
+    'toyota': 'https://upload.wikimedia.org/wikipedia/commons/9/9d/Toyota_carlogo.svg',
+    'تويوتا': 'https://upload.wikimedia.org/wikipedia/commons/9/9d/Toyota_carlogo.svg',
+    'porsche': 'https://upload.wikimedia.org/wikipedia/commons/8/8c/Porsche_logo.svg',
+    'بورش': 'https://upload.wikimedia.org/wikipedia/commons/8/8c/Porsche_logo.svg',
+    'بورشه': 'https://upload.wikimedia.org/wikipedia/commons/8/8c/Porsche_logo.svg',
+    'audi': 'https://upload.wikimedia.org/wikipedia/commons/9/92/Audi-Logo_2016.svg',
+    'أودي': 'https://upload.wikimedia.org/wikipedia/commons/9/92/Audi-Logo_2016.svg',
+    'lexus': 'https://upload.wikimedia.org/wikipedia/commons/d/d1/Lexus_division_logo.svg',
+    'لكزس': 'https://upload.wikimedia.org/wikipedia/commons/d/d1/Lexus_division_logo.svg',
+    'ford': 'https://upload.wikimedia.org/wikipedia/commons/3/3e/Ford_logo_flat.svg',
+    'فورد': 'https://upload.wikimedia.org/wikipedia/commons/3/3e/Ford_logo_flat.svg',
+    'jeep': 'https://upload.wikimedia.org/wikipedia/commons/1/15/Jeep_logo.svg',
+    'جيب': 'https://upload.wikimedia.org/wikipedia/commons/1/15/Jeep_logo.svg',
+    'nissan': 'https://upload.wikimedia.org/wikipedia/commons/8/82/Nissan_logo.svg',
+    'نيسان': 'https://upload.wikimedia.org/wikipedia/commons/8/82/Nissan_logo.svg',
+};
+
 function HomeBrandLogo({ brand, isRTL }: { brand: any, isRTL: boolean }) {
     const displayName = getBrandDisplayName(brand.nameAr || brand.name, isRTL);
-    const initialSrc = (() => {
+    const keyLower = (brand.name || brand.nameAr || '').toLowerCase().trim();
+
+    const getLogoUrl = () => {
         const l = brand.logoUrl || brand.logo;
-        if (!l || isLocalPath(l)) {
-            return getClearbitLogoUrl(brand.name) || '';
+        if (l && typeof l === 'string' && l.trim().length > 0) {
+            return l.trim();
         }
-        return l;
-    })();
-    const [logoSrc, setLogoSrc] = useState(initialSrc);
+        return BRAND_SVG_LOGOS[keyLower] || getClearbitLogoUrl(brand.name) || '';
+    };
+
+    const [logoSrc, setLogoSrc] = useState(getLogoUrl());
     const [showLetter, setShowLetter] = useState(false);
     const firstLetter = (displayName || brand.name || 'C').trim().charAt(0).toUpperCase();
+
+    useEffect(() => {
+        setLogoSrc(getLogoUrl());
+        setShowLetter(false);
+    }, [brand, keyLower]);
 
     return (
         <Link href={`/cars?make=${encodeURIComponent(brand.name)}`} className="flex flex-col items-center gap-2.5 select-none group">
@@ -41,11 +80,16 @@ function HomeBrandLogo({ brand, isRTL }: { brand: any, isRTL: boolean }) {
                             alt={displayName}
                             className="w-full h-full object-contain pointer-events-none"
                             onError={() => {
-                                const cb = getClearbitLogoUrl(brand.name);
-                                if (cb && logoSrc !== cb) {
-                                    setLogoSrc(cb);
+                                const fallbackSvg = BRAND_SVG_LOGOS[keyLower];
+                                if (fallbackSvg && logoSrc !== fallbackSvg) {
+                                    setLogoSrc(fallbackSvg);
                                 } else {
-                                    setShowLetter(true);
+                                    const cb = getClearbitLogoUrl(brand.name);
+                                    if (cb && logoSrc !== cb) {
+                                        setLogoSrc(cb);
+                                    } else {
+                                        setShowLetter(true);
+                                    }
                                 }
                             }}
                         />
@@ -56,7 +100,7 @@ function HomeBrandLogo({ brand, isRTL }: { brand: any, isRTL: boolean }) {
                     )}
                 </div>
             </div>
-            <span className="text-[11px] font-black text-white/80 group-hover:text-[#C9A96E] transition-colors text-center">
+            <span className="text-[11px] sm:text-xs font-black text-white/90 group-hover:text-[#C9A96E] transition-colors text-center">
                 {displayName}
             </span>
         </Link>
@@ -139,15 +183,12 @@ export default function HomePage() {
 
         Promise.all([
             api.cars.list({ isActive: true, limit: 100 }).catch(() => ({ success: false, data: [] })),
+            api.liveAuctions.list().catch(() => ({ success: false, data: [] })),
             api.auctions.list({ status: 'running', limit: 100 }).catch(() => ({ success: false, data: [] }))
-        ]).then(([carsRes, auctionsRes]) => {
+        ]).then(([carsRes, liveAuctionsRes, auctionsRes]) => {
             const rawCars = Array.isArray(carsRes?.data)
                 ? carsRes.data
                 : (carsRes?.data?.cars || carsRes?.cars || []);
-
-            const rawAuctions = Array.isArray(auctionsRes?.data)
-                ? auctionsRes.data
-                : (auctionsRes?.auctions || auctionsRes?.data?.auctions || []);
 
             if (rawCars.length > 0) {
                 setShowroomCars(rawCars.map((c: any) => ({
@@ -162,29 +203,94 @@ export default function HomePage() {
                 })));
             }
 
-            if (rawAuctions.length > 0) {
-                setLiveAuctions(rawAuctions.map((a: any) => ({
-                    ...a,
-                    _id: a._id || a.id,
-                    title: a.car?.title || a.title || (isRTL ? 'سيارة مزاد حي' : 'Live Auction Car'),
-                    type: 'auctions',
-                    price: a.currentBid || a.currentPrice || a.startingPrice || 0,
-                    year: a.car?.year || a.year || '2024',
-                    transmission: a.car?.transmission || a.transmission || (isRTL ? 'أوتوماتيك' : 'Auto'),
-                    fuel: a.car?.fuelType || a.fuel || (isRTL ? 'ديزل' : 'Diesel'),
-                    images: a.car?.images || a.images || (a.car?.image ? [a.car.image] : [])
-                })));
+            // تجميع سيارات المزادات المباشرة الحقيقية من جلسات المزاد الحي ومن فئة المزادات
+            const realAuctionCars: any[] = [];
+            const addedIds = new Set<string>();
+
+            // 1. جلب السيارات من جلسات المزاد المباشر (LiveAuction sessions)
+            const sessions = Array.isArray(liveAuctionsRes?.data)
+                ? liveAuctionsRes.data
+                : (liveAuctionsRes?.sessions || []);
+
+            sessions.forEach((session: any) => {
+                if (Array.isArray(session.cars)) {
+                    session.cars.forEach((car: any) => {
+                        const carId = car._id || car.id || car.lotNumber;
+                        if (!car.isHidden && carId && !addedIds.has(carId)) {
+                            addedIds.add(carId);
+                            realAuctionCars.push({
+                                ...car,
+                                _id: carId,
+                                title: car.title || (isRTL ? 'سيارة مزاد حي' : 'Live Auction Car'),
+                                type: 'live-auction',
+                                price: car.price || car.priceSar || 0,
+                                priceEstimate: car.priceEstimate || '',
+                                year: car.year || '2024',
+                                transmission: car.transmission || (isRTL ? 'أوتوماتيك' : 'Auto'),
+                                fuel: car.fuelType || car.fuel || (isRTL ? 'ديزل' : 'Diesel'),
+                                images: car.images?.length > 0 ? car.images : (car.img || car.image ? [car.img || car.image] : []),
+                                sessionId: session._id || session.id,
+                                sourceUrl: car.sourceUrl || session.externalUrl
+                            });
+                        }
+                    });
+                }
+            });
+
+            // 2. جلب المزادات التقليدية النشطة
+            const rawAuctions = Array.isArray(auctionsRes?.data)
+                ? auctionsRes.data
+                : (auctionsRes?.auctions || auctionsRes?.data?.auctions || []);
+
+            rawAuctions.forEach((a: any) => {
+                const aucId = a._id || a.id;
+                if (aucId && !addedIds.has(aucId)) {
+                    addedIds.add(aucId);
+                    realAuctionCars.push({
+                        ...a,
+                        _id: aucId,
+                        title: a.car?.title || a.title || (isRTL ? 'سيارة مزاد حي' : 'Live Auction Car'),
+                        type: 'auctions',
+                        price: a.currentBid || a.currentPrice || a.startingPrice || 0,
+                        year: a.car?.year || a.year || '2024',
+                        transmission: a.car?.transmission || a.transmission || (isRTL ? 'أوتوماتيك' : 'Auto'),
+                        fuel: a.car?.fuelType || a.fuel || (isRTL ? 'ديزل' : 'Diesel'),
+                        images: a.car?.images || a.images || (a.car?.image ? [a.car.image] : [])
+                    });
+                }
+            });
+
+            // 3. جلب السيارات من المعرض المصنفة كـ auction
+            rawCars.forEach((c: any) => {
+                const cId = c.id || c._id;
+                if ((c.listingType === 'auction' || c.isLiveAuction) && cId && !addedIds.has(cId)) {
+                    addedIds.add(cId);
+                    realAuctionCars.push({
+                        ...c,
+                        _id: cId,
+                        type: 'auctions',
+                        price: c.price || c.priceSar || 0,
+                        year: c.year || '2024',
+                        transmission: c.transmission || (isRTL ? 'أوتوماتيك' : 'Auto'),
+                        fuel: c.fuelType || (isRTL ? 'ديزل' : 'Diesel'),
+                        images: c.images || (c.image ? [c.image] : [])
+                    });
+                }
+            });
+
+            if (realAuctionCars.length > 0) {
+                setLiveAuctions(realAuctionCars);
             }
         }).catch(err => console.error('Error fetching homepage data:', err))
             .finally(() => setCarsLoading(false));
     }, [isRTL]);
 
     const FALLBACK_BRANDS = [
-        { name: 'Hyundai', logoUrl: '/brands/hyundai.png' },
-        { name: 'Kia', logoUrl: '/brands/kia.png' },
-        { name: 'Genesis', logoUrl: '/brands/genesis.png' },
-        { name: 'BMW', logoUrl: '/brands/bmw.png' },
-        { name: 'Mercedes-Benz', logoUrl: '/brands/mercedes.png' },
+        { name: 'Hyundai', nameAr: 'هيونداي', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/44/Hyundai_Motor_Company_logo.svg' },
+        { name: 'Kia', nameAr: 'كيا', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/47/Kia_logo_2021.svg' },
+        { name: 'Genesis', nameAr: 'جينيسيس', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/91/Genesis_Logo.svg' },
+        { name: 'BMW', nameAr: 'بي إم دبليو', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/44/BMW.svg' },
+        { name: 'Mercedes-Benz', nameAr: 'مرسيدس بنز', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/90/Mercedes-Logo.svg' },
     ];
     // Display exactly 5 circular brand logos (as requested)
     const display5Brands = (brands.length > 0 ? brands : FALLBACK_BRANDS).slice(0, 5);
@@ -480,7 +586,7 @@ export default function HomePage() {
                             const rawMake = typeof car.make === 'object' ? car.make?.name : car.make;
                             const title = formatCarTitle(car.title || `${rawMake || ''} ${car.model || ''} ${car.year || ''}`, rawMake || '', isRTL);
                             const image = formatCarImage(Array.isArray(car.images) && car.images.length > 0 ? car.images[0] : undefined);
-                            const priceStr = formatPriceFromUsd(car.price || 0);
+                            const priceStr = car.priceEstimate || (car.price > 0 ? formatPriceFromUsd(car.price) : (isRTL ? 'مزاد مباشر' : 'Live Auction'));
 
                             return (
                                 <div key={`auction-marquee-${idx}`} className="relative aspect-square w-[220px] sm:w-[260px] rounded-3xl overflow-hidden border border-red-500/20 bg-[#120d18] group flex-shrink-0 cursor-pointer shadow-xl hover:border-red-500 transition-all duration-300">
@@ -515,7 +621,7 @@ export default function HomePage() {
                                         </div>
                                     </div>
 
-                                    <Link href={`/auctions/${car._id}`} className="absolute inset-0 z-10" />
+                                    <Link href={car.type === 'live-auction' ? '/auctions' : `/auctions/${car._id}`} className="absolute inset-0 z-10" />
                                 </div>
                             );
                         })}

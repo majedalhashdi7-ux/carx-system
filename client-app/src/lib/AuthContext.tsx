@@ -109,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 process.env.NEXT_PUBLIC_API_URL || '';
             const tenantId = process.env.NEXT_PUBLIC_TENANT_ID || 'hmcar';
 
-            const response = await fetch(`${apiBase}/api/v2/auth/verify`, {
+            const response = await fetch(`${apiBase}/v2/auth/verify`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'X-Tenant-ID': tenantId,

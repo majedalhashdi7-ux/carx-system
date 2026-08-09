@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">HM CAR</string>
+    <string name="app_description">منصة اتش ام كار لبيع ومزادات السيارات وقطع الغيار الأصلية من كوريا الجنوبية</string>
+    <string name="offline_title">عذراً، لا يوجد اتصال بالإنترنت</string>
+    <string name="offline_message">يرجى التحقق من اتصالك بالشبكة وإعادة المحاولة.</string>
+    <string name="retry">إعادة المحاولة</string>
+</resources>

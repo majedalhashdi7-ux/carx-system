@@ -78,16 +78,34 @@ function getCurrentTenantId(req) {
 }
 
 /**
- * Add tenantId to a query filter for defense-in-depth protection
+ * Add tenantId to a query filter for defense-in-depth protection.
+ * Backward-compatible: for the primary 'hmcar' tenant, also matches
+ * documents with tenantId:'default' (legacy seed data) or missing tenantId.
  * @param {import('express').Request} req - Express request object
  * @param {Object} filter - Query filter object
  * @returns {Object} Filter with tenantId added
  */
 function addTenantFilter(req, filter = {}) {
-  if (req.tenant?.id) {
-    return { ...filter, tenantId: req.tenant.id };
+  if (!req.tenant?.id) return filter;
+
+  const tid = req.tenant.id;
+
+  // Primary tenant (hmcar) must also see legacy data seeded with 'default' or no tenantId
+  const PRIMARY_TENANTS = ['hmcar', 'default'];
+  if (PRIMARY_TENANTS.includes(tid)) {
+    return {
+      ...filter,
+      $or: [
+        { tenantId: tid },
+        { tenantId: 'default' },
+        { tenantId: { $exists: false } },
+        { tenantId: null },
+      ],
+    };
   }
-  return filter;
+
+  // All other tenants: strict isolation
+  return { ...filter, tenantId: tid };
 }
 
 /**

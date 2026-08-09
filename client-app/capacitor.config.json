@@ -1,0 +1,14 @@
+{
+  "appId": "com.hmcar.system",
+  "appName": "HM CAR",
+  "webDir": "out",
+  "server": {
+    "url": "https://hmcar-system-two.vercel.app",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": true
+  }
+}

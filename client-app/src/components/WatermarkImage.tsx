@@ -15,13 +15,13 @@ interface WatermarkImageProps extends Omit<ImageProps, 'className'> {
 }
 
 const positionClasses = {
-    br: 'bottom-3 right-3',
-    bl: 'bottom-3 left-3',
-    tr: 'top-3 right-3',
-    tl: 'top-3 left-3',
+    br: 'bottom-2.5 right-2.5',
+    bl: 'bottom-2.5 left-2.5',
+    tr: 'top-2.5 right-2.5',
+    tl: 'top-2.5 left-2.5',
 };
 
-/** شارة علامة مائية ذكية وشعار HM CAR SOUTH KOREA المتكيف لجميع خلفيات الصور */
+/** شارة علامة مائية شفافة وأنيقة غير حجابة لتفاصيل السيارة */
 const WatermarkBadgeOverlays = ({ 
     position, 
     variant = 'gold' 
@@ -32,23 +32,16 @@ const WatermarkBadgeOverlays = ({
     const isWhite = variant === 'white';
 
     return (
-        <>
-            {/* العلامة المائية الشفافة الفاخرة HM CAR SOUTH KOREA */}
-            <div className={cn(
-                "absolute z-20 flex items-center gap-2 px-3 py-1.5 rounded-xl backdrop-blur-md border shadow-2xl pointer-events-none select-none transition-all duration-300",
-                positionClasses[position],
-                isWhite 
-                    ? "bg-black/80 border-white/40 shadow-white/10 text-white" 
-                    : "bg-black/90 border-[#C9A96E]/40 shadow-black/80 text-[#C9A96E]"
-            )}>
-                {/* SVG Logo Icon */}
-                <img 
-                    src={isWhite ? "/assets/watermark/hmcar-white.svg" : "/assets/watermark/hmcar-gold.svg"} 
-                    alt="HM CAR SOUTH KOREA"
-                    className="h-4 sm:h-5 w-auto object-contain" 
-                />
-            </div>
-        </>
+        <div className={cn(
+            "absolute z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-lg backdrop-blur-md border shadow-md pointer-events-none select-none transition-all duration-300 opacity-80 group-hover:opacity-100",
+            positionClasses[position],
+            isWhite 
+                ? "bg-black/35 border-white/20 text-white shadow-black/40" 
+                : "bg-black/40 border-[#C9A96E]/30 text-[#C9A96E] shadow-black/50"
+        )}>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#C9A96E] shadow-[0_0_8px_#C9A96E]" />
+            <span className="text-[10px] font-black tracking-wider uppercase text-[#C9A96E]">HM CAR</span>
+        </div>
     );
 };
 
@@ -85,25 +78,8 @@ export default function WatermarkImage({
         if (onError) onError(e);
     };
 
-    if (props.fill) {
-        return (
-            <div className={cn('relative overflow-hidden w-full h-full', containerClassName)}>
-                <Image
-                    className={cn('object-cover', className)}
-                    src={imgSrc}
-                    alt={alt || 'HM CAR'}
-                    onError={handleError}
-                    referrerPolicy="no-referrer"
-                    unoptimized
-                    {...props}
-                />
-                {showWatermark && <WatermarkBadgeOverlays position={watermarkPosition} variant={variant} />}
-            </div>
-        );
-    }
-
     return (
-        <div className={cn('relative overflow-hidden', containerClassName)}>
+        <div className={cn('relative overflow-hidden w-full h-full', containerClassName)}>
             <Image
                 className={cn('object-cover', className)}
                 src={imgSrc}
