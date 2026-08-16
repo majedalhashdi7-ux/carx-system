@@ -761,12 +761,12 @@ router.get('/imported-parts', requireAuthAPI, requireAdmin, async (req, res, nex
 router.post('/retro-sync', requireAuthAPI, requireAdmin, async (req, res, next) => {
     try {
         const RetroactiveSyncService = require('../../../services/RetroactiveSyncService');
-        console.log('🔄 [RetroSync] Starting retroactive sync from API...');
+        console.log('[RetroSync] Starting retroactive sync from API...');
         const syncResult = await RetroactiveSyncService.runFullRetroactiveSync(req);
         invalidateCache(['/api/v2/cars*', '/api/v2/parts*', '/api/v2/auctions*']);
         res.json(syncResult);
     } catch (error) {
-        console.error('❌ [RetroSync] Error:', error.message);
+        console.error('[RetroSync] Error:', error.message);
         res.status(500).json({ success: false, error: 'فشل التزامن: ' + error.message });
     }
 });
@@ -776,7 +776,7 @@ router.post('/fix-images', requireAuthAPI, requireAdmin, async (req, res, next) 
     try {
         const RetroactiveSyncService = require('../../../services/RetroactiveSyncService');
         const result = await RetroactiveSyncService.fixImagesOnly(req);
-        invalidateCache(['/api/v2/cars*']);
+        invalidateCache(['/api/v2/cars*', '/api/v2/parts*']);
         res.json(result);
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
@@ -802,7 +802,7 @@ router.post('/clear-external-urls', requireAuthAPI, requireAdmin, async (req, re
         invalidateCache(['/api/v2/cars*']);
         res.json({
             success: true,
-            message: `✅ تم مسح externalUrl من ${result.modifiedCount} سيارة`,
+            message: `تم مسح externalUrl من ${result.modifiedCount} سيارة`,
             modifiedCount: result.modifiedCount
         });
     } catch (error) {
@@ -810,5 +810,59 @@ router.post('/clear-external-urls', requireAuthAPI, requireAdmin, async (req, re
     }
 });
 
-module.exports = router;
+// ─── POST /api/v2/import/full-sync ──────────────────────
+/**
+ * مزامنة شاملة: سيارات + قطع غيار معاً
+ * تصلح: الصور + الحقول الفارغة + تنظف النصوص الكورية
+ * مع مسح الكاش الكامل
+ */
+router.post('/full-sync', requireAuthAPI, requireAdmin, async (req, res, next) => {
+    try {
+        const RetroactiveSyncService = require('../../../services/RetroactiveSyncService');
+        console.log('[FullSync] Starting full sync (Cars + SpareParts)...');
+        const syncResult = await RetroactiveSyncService.runFullRetroactiveSync(req, {
+            batchSize: req.body && req.body.batchSize ? req.body.batchSize : 20
+        });
+        invalidateCache(['/api/v2/cars*', '/api/v2/parts*', '/api/v2/brands*', '/api/v2/auctions*']);
+        res.json(syncResult);
+    } catch (error) {
+        console.error('[FullSync] Error:', error.message);
+        res.status(500).json({ success: false, error: 'فشل المزامنة الشاملة: ' + error.message });
+    }
+});
 
+// ─── GET /api/v2/import/health ───────────────────────────
+/**
+ * فحص صحة البيانات - يعيد احصائيات المشاكل دون تعديل
+ */
+router.get('/health', requireAuthAPI, requireAdmin, async (req, res, next) => {
+    try {
+        const RetroactiveSyncService = require('../../../services/RetroactiveSyncService');
+        const result = await RetroactiveSyncService.checkDataHealth(req);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'فشل فحص الصحة: ' + error.message });
+    }
+});
+
+// ─── POST /api/v2/import/sync-field ─────────────────────
+/**
+ * مزامنة حقل معين للبيانات القديمة عند اضافة ميزة جديدة
+ * body: { model: 'Car'|'SparePart', field: 'fieldName', value: defaultValue }
+ */
+router.post('/sync-field', requireAuthAPI, requireAdmin, async (req, res, next) => {
+    try {
+        const { model, field, value } = req.body;
+        if (!model || !field) {
+            return res.status(400).json({ success: false, error: 'model و field مطلوبان' });
+        }
+        const RetroactiveSyncService = require('../../../services/RetroactiveSyncService');
+        const result = await RetroactiveSyncService.syncNewField(req, model, field, value !== undefined ? value : null);
+        invalidateCache(['/api/v2/cars*', '/api/v2/parts*']);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+module.exports = router;

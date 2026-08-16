@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { 
@@ -8,6 +8,40 @@ import {
   Wrench, CheckCircle2, XCircle, ArrowRight, Package, Globe
 } from 'lucide-react';
 import { api } from '../../../lib/api';
+
+// مكون صورة آمن لقطع الغيار مع proxy وfallback
+function SafePartImage({ src, alt, className }: { src?: string; alt?: string; className?: string }) {
+  const [imgSrc, setImgSrc] = React.useState(src || '');
+  const [errored, setErrored] = React.useState(false);
+
+  React.useEffect(() => {
+    setImgSrc(src || '');
+    setErrored(false);
+  }, [src]);
+
+  if (!imgSrc || errored) {
+    return <Wrench className="w-5 h-5 text-white/20" />;
+  }
+
+  const resolved = imgSrc.startsWith('http') && !imgSrc.includes('cloudinary') && !imgSrc.includes('unsplash')
+    ? `/api/v2/image-proxy?url=${encodeURIComponent(imgSrc)}`
+    : imgSrc;
+
+  return (
+    <img
+      src={resolved}
+      alt={alt || ''}
+      className={className}
+      onError={() => {
+        if (resolved !== imgSrc) {
+          setImgSrc(imgSrc);
+        } else {
+          setErrored(true);
+        }
+      }}
+    />
+  );
+}
 
 export default function AdminPartsPage() {
   const [parts, setParts] = useState<any[]>([]);
@@ -249,11 +283,11 @@ export default function AdminPartsPage() {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-3">
                               <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 overflow-hidden flex items-center justify-center shrink-0">
-                                {part.images && part.images[0] ? (
-                                  <img src={part.images[0]} alt={part.name} className="w-full h-full object-cover" />
-                                ) : (
-                                  <Wrench className="w-5 h-5 text-white/20" />
-                                )}
+                                <SafePartImage
+                                  src={part.img || part.image || part.images?.[0]}
+                                  alt={part.name}
+                                  className="w-full h-full object-cover"
+                                />
                               </div>
                               <div>
                                 <div className="font-bold text-white">{part.name}</div>

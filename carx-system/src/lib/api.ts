@@ -145,8 +145,33 @@ export const api = {
     save: (data: any, type: 'car' | 'part') => fetchAPI<{ success: boolean; data: any; error?: string }>('/import/save', {
       method: 'POST',
       body: JSON.stringify({ data, type })
-    })
+    }),
+    // مزامنة شاملة: سيارات + قطع غيار معاً
+    fullSync: (batchSize = 20) => fetchAPI<{ success: boolean; message: string; stats: any }>('/import/full-sync', {
+      method: 'POST',
+      body: JSON.stringify({ batchSize })
+    }),
+    // مزامنة جذرية (legacy - يستدعي نفس fullSync)
+    retroSync: () => fetchAPI<{ success: boolean; message: string; stats: any }>('/import/retro-sync', {
+      method: 'POST'
+    }),
+    // فحص صحة البيانات
+    health: () => fetchAPI<{ success: boolean; health: string; summary: any; issues: any }>('/import/health'),
+    // إصلاح الصور فقط
+    fixImages: () => fetchAPI<{ success: boolean; message: string; carFixed: number; partFixed: number }>('/import/fix-images', {
+      method: 'POST'
+    }),
+    // مزامنة حقل جديد مع البيانات القديمة
+    syncField: (model: 'Car' | 'SparePart', field: string, value?: any) => fetchAPI<{ success: boolean; message: string; modifiedCount: number }>('/import/sync-field', {
+      method: 'POST',
+      body: JSON.stringify({ model, field, value })
+    }),
+    // مسح الروابط الخارجية من السيارات
+    clearExternalUrls: () => fetchAPI<{ success: boolean; message: string; modifiedCount: number }>('/import/clear-external-urls', {
+      method: 'POST'
+    }),
   },
+
   users: {
     getAll: () => fetchAPI('/users'),
   },

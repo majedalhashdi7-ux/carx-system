@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -35,6 +35,41 @@ function cleanKoreanText(text: string, isRTL = true): string {
 function formatCarTitle(title: string, make: string, isRTL = true): string {
   if (!title) return '';
   return cleanKoreanText(title, isRTL);
+}
+
+// مكون صورة آمن مع proxy للصور الخارجية وfallback
+function SafeCarImage({ src, alt, className }: { src?: string; alt?: string; className?: string }) {
+  const [imgSrc, setImgSrc] = React.useState(src || '');
+  const [errored, setErrored] = React.useState(false);
+
+  const PLACEHOLDER = 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=200&auto=format&fit=crop';
+
+  React.useEffect(() => {
+    setImgSrc(src || '');
+    setErrored(false);
+  }, [src]);
+
+  const resolved = !imgSrc || errored
+    ? PLACEHOLDER
+    : imgSrc.startsWith('http') && !imgSrc.includes('cloudinary') && !imgSrc.includes('unsplash')
+      ? `/api/v2/image-proxy?url=${encodeURIComponent(imgSrc)}`
+      : imgSrc;
+
+  return (
+    <img
+      src={resolved}
+      alt={alt || ''}
+      className={className}
+      onError={() => {
+        if (resolved !== PLACEHOLDER && resolved !== imgSrc) {
+          // جرب الرابط الأصلي أولاً
+          setImgSrc(imgSrc);
+        } else {
+          setErrored(true);
+        }
+      }}
+    />
+  );
 }
 
 export default function AdminCarsPage() {
@@ -251,10 +286,10 @@ export default function AdminCarsPage() {
                         <tr key={car._id} className="hover:bg-white/[0.02] transition-colors group">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <img
-                                src={car.mainImage || car.images?.[0] || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=200&auto=format&fit=crop'}
+                              <SafeCarImage
+                                src={car.mainImage || car.imageUrl || car.images?.[0]}
                                 className="w-12 h-12 rounded-lg object-cover border border-white/10 shrink-0"
-                                alt=""
+                                alt={car.title || ''}
                               />
                               <div>
                                 <div className="font-bold text-sm">{formatCarTitle(car.title, car.make || car.brand || '', true)}</div>
