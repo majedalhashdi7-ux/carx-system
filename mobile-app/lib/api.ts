@@ -85,9 +85,18 @@ export const api = {
             request<any>(`/v2/smart-alerts/${id}`, { method: 'DELETE' }),
     },
 
+    parts: {
+        getAll: (params?: Record<string, string>) => {
+            const query = params ? '?' + new URLSearchParams(params).toString() : '';
+            return request<any>(`/v2/parts${query}`);
+        },
+        getById: (id: string) => request<any>(`/v2/parts/${id}`),
+    },
+
     profile: {
         update: (data: any) =>
             request<any>('/v2/user/profile', { method: 'PUT', body: JSON.stringify(data) }),
         get: () => request<any>('/v2/auth/me'),
     },
 };
+

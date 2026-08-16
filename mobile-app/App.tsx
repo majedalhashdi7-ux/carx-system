@@ -12,6 +12,7 @@ import { AuthProvider, useAuth } from './lib/AuthContext';
 import LoginScreen from './screens/LoginScreen';
 import DashboardScreen from './screens/DashboardScreen';
 import CarsScreen from './screens/CarsScreen';
+import PartsScreen from './screens/PartsScreen';
 import AuctionsScreen from './screens/AuctionsScreen';
 import OrdersScreen from './screens/OrdersScreen';
 import AlertsScreen from './screens/AlertsScreen';
@@ -24,6 +25,7 @@ const Tab = createBottomTabNavigator();
 const TAB_ICONS: Record<string, { active: string; inactive: string }> = {
   Dashboard: { active: '🏠', inactive: '🏠' },
   Cars: { active: '🚗', inactive: '🚗' },
+  Parts: { active: '⚙️', inactive: '⚙️' },
   Auctions: { active: '⚡', inactive: '⚡' },
   Orders: { active: '📦', inactive: '📦' },
   Alerts: { active: '🔔', inactive: '🔔' },
@@ -33,6 +35,7 @@ const TAB_ICONS: Record<string, { active: string; inactive: string }> = {
 const TAB_LABELS: Record<string, string> = {
   Dashboard: 'الرئيسية',
   Cars: 'السيارات',
+  Parts: 'قطع الغيار',
   Auctions: 'المزادات',
   Orders: 'طلباتي',
   Alerts: 'التنبيهات',
@@ -102,6 +105,7 @@ function MainTabs() {
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="Cars" component={CarsScreen} />
+      <Tab.Screen name="Parts" component={PartsScreen} />
       <Tab.Screen name="Auctions" component={AuctionsScreen} />
       <Tab.Screen name="Orders" component={OrdersScreen} />
       <Tab.Screen name="Alerts" component={AlertsScreen} />
@@ -109,6 +113,7 @@ function MainTabs() {
     </Tab.Navigator>
   );
 }
+
 
 // ── Navigator رئيسي ──
 function AppNavigator() {

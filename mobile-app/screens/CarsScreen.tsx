@@ -3,7 +3,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
     View, Text, StyleSheet, FlatList, TouchableOpacity,
     TextInput, RefreshControl, ActivityIndicator, Image,
-    StatusBar, Dimensions,
+    StatusBar, Dimensions, Modal, ScrollView, Linking
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '../lib/api';
@@ -44,6 +44,7 @@ export default function CarsScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [search, setSearch] = useState('');
     const [sortBy, setSortBy] = useState<'price_asc' | 'price_desc' | 'year'>('year');
+    const [selectedCar, setSelectedCar] = useState<Car | null>(null);
 
     useEffect(() => { loadCars(); }, []);
 
@@ -84,7 +85,7 @@ export default function CarsScreen() {
         p ? p.toLocaleString('ar-SA') + ' ر.س' : 'اتصل للسعر';
 
     const renderCar = useCallback(({ item }: { item: Car }) => (
-        <TouchableOpacity style={styles.card} activeOpacity={0.85}>
+        <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={() => setSelectedCar(item)}>
             {/* صورة السيارة */}
             <View style={styles.imageContainer}>
                 {item.images && item.images[0] ? (
@@ -217,6 +218,72 @@ export default function CarsScreen() {
                         />
                     }
                 />
+            )}
+
+            {/* Car Detail Modal */}
+            {selectedCar && (
+                <Modal visible={!!selectedCar} transparent animationType="slide">
+                    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'flex-end' }}>
+                        <View style={{ backgroundColor: '#121215', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '85%', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
+                            <TouchableOpacity style={{ alignSelf: 'flex-start', padding: 8 }} onPress={() => setSelectedCar(null)}>
+                                <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 18 }}>✕</Text>
+                            </TouchableOpacity>
+
+                            <ScrollView showsVerticalScrollIndicator={false}>
+                                <View style={{ width: '100%', height: 200, borderRadius: 16, overflow: 'hidden', marginBottom: 16, backgroundColor: '#000' }}>
+                                    {selectedCar.images && selectedCar.images[0] ? (
+                                        <Image source={{ uri: selectedCar.images[0] }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                                    ) : (
+                                        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                                            <Text style={{ fontSize: 44 }}>🚗</Text>
+                                        </View>
+                                    )}
+                                </View>
+
+                                <Text style={{ color: '#fff', fontSize: 20, fontWeight: '900', textAlign: 'right' }}>
+                                    {selectedCar.make} {selectedCar.model} {selectedCar.year}
+                                </Text>
+
+                                <View style={{ flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', marginVertical: 14, padding: 12, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 12 }}>
+                                    <Text style={{ color: '#c9a96e', fontSize: 18, fontWeight: '900' }}>{formatPrice(selectedCar.price)}</Text>
+                                    <Text style={{ color: '#4ade80', fontSize: 12, fontWeight: '700' }}>
+                                        {selectedCar.status === 'available' ? '✅ متاحة للبيع' : 'معروضة بالمعرض'}
+                                    </Text>
+                                </View>
+
+                                <View style={{ flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+                                    {selectedCar.transmission && (
+                                        <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
+                                            <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>⚙️ {TRANSMISSION_MAP[selectedCar.transmission] || selectedCar.transmission}</Text>
+                                        </View>
+                                    )}
+                                    {selectedCar.fuel && (
+                                        <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
+                                            <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>⛽ {FUEL_MAP[selectedCar.fuel] || selectedCar.fuel}</Text>
+                                        </View>
+                                    )}
+                                    {selectedCar.mileage !== undefined && (
+                                        <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
+                                            <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>🏎️ {selectedCar.mileage?.toLocaleString('ar-SA')} كم</Text>
+                                        </View>
+                                    )}
+                                </View>
+
+                                <TouchableOpacity
+                                    style={{ backgroundColor: '#c9a96e', paddingVertical: 14, borderRadius: 14, alignItems: 'center', marginVertical: 12 }}
+                                    onPress={() => {
+                                        const c = selectedCar;
+                                        setSelectedCar(null);
+                                        const msg = `مرحباً HM CAR، استفسار عن السيارة: ${c.make} ${c.model} ${c.year} - السعر: ${formatPrice(c.price)}`;
+                                        Linking.openURL(`https://wa.me/966500000000?text=${encodeURIComponent(msg)}`).catch(() => {});
+                                    }}
+                                >
+                                    <Text style={{ color: '#000', fontSize: 14, fontWeight: '900' }}>💬 استفسر عن السيارة عبر الواتساب</Text>
+                                </TouchableOpacity>
+                            </ScrollView>
+                        </View>
+                    </View>
+                </Modal>
             )}
         </View>
     );
