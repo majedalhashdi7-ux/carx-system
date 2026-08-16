@@ -142,7 +142,20 @@ function constructFallbackUri(baseUri, dbName) {
  * @returns {Promise<{connection: mongoose.Connection, models: Object}>}
  */
 async function getConnection(tenantId, mongoUri) {
-  // تحقق من الكاش أولاً
+  // 1. إعادة استخدام الاتصال الرئيسي إذا كان متصلاً بنجاح لنفس المعرض (تجنب التأخير في Vercel)
+  if (mongoose.connection && mongoose.connection.readyState === 1) {
+    const mainDbName = mongoose.connection.name;
+    if (tenantId === 'hmcar' || tenantId === 'default' || mainDbName === tenantId) {
+      const schemas = loadAllSchemas();
+      const models = {};
+      for (const [modelName, schema] of Object.entries(schemas)) {
+        models[modelName] = mongoose.models[modelName] || mongoose.model(modelName, schema);
+      }
+      return { connection: mongoose.connection, models, lastUsed: Date.now() };
+    }
+  }
+
+  // 2. تحقق من الكاش الفرعي
   if (connectionPool.has(tenantId)) {
     const cached = connectionPool.get(tenantId);
 
@@ -163,6 +176,7 @@ async function getConnection(tenantId, mongoUri) {
   if (!mongoUri) {
     throw new Error(`لم يتم تحديد MONGO_URI للمعرض: ${tenantId}`);
   }
+
 
   console.log(`🔗 إنشاء اتصال جديد للمعرض: ${tenantId}`);
 
