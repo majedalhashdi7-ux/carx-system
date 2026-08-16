@@ -511,15 +511,20 @@ router.get('/init-db', async (req, res) => {
             report.seed.push('usernotifications: أُضيف إشعار ترحيب');
         } else { report.seed.push('usernotifications: موجود ✅'); }
 
-        // سجل تهيئة النظام
-        if (await db.collection('analytics').countDocuments() === 0) {
-            await db.collection('analytics').insertOne({
-                tenantId, event: 'system_initialized',
-                data: { version: process.env.SYSTEM_VERSION || '2.0.0', initAt: new Date() },
-                createdAt: new Date(), updatedAt: new Date()
-            });
-            report.seed.push('analytics: أُضيف سجل تهيئة النظام');
-        } else { report.seed.push('analytics: موجود ✅'); }
+        // تشغيل SeedService لإضافة السيارات والبيانات الأساسية
+        try {
+            const SeedServiceClass = require('../../../services/SeedService');
+            const seedService = new SeedServiceClass();
+            const models = req.tenantModels || {
+                Car: require('../../../models/Car'),
+                Auction: require('../../../models/Auction'),
+                Brand: require('../../../models/Brand')
+            };
+            await seedService.seedRealData(models, tenantId);
+            report.seed.push('cars: تم إضافة السيارات الافتراضية بنجاح ✅');
+        } catch (sErr) {
+            report.seed.push(`cars seed warning: ${sErr.message}`);
+        }
 
         report.duration = `${Date.now() - startTime}ms`;
         report.message = '✅ تم تنظيم قاعدة البيانات بنجاح! قاعدة البيانات جاهزة للاستخدام الإنتاجي.';
