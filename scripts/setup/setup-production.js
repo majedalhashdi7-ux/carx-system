@@ -44,10 +44,12 @@ async function setupProduction() {
 
     const existingAdmin = await User.findOne({ role: 'admin' });
     if (!existingAdmin) {
-      const adminPassword = await bcrypt.hash('Admin@2026', 12);
+      const adminPass = process.env.ADMIN_PASSWORD || process.env.DEFAULT_ADMIN_PASSWORD;
+      if (!adminPass) throw new Error('❌ ADMIN_PASSWORD env var is required');
+      const adminPassword = await bcrypt.hash(adminPass, 12);
       const admin = new User({
         name: 'مدير الموقع',
-        email: 'admin@hmcar.com',
+        email: process.env.ADMIN_EMAIL || 'admin@hmcar.com',
         phone: '+966500000002',
         password: adminPassword,
         role: 'admin',
@@ -56,7 +58,7 @@ async function setupProduction() {
         isEmailVerified: true
       });
       await admin.save();
-      console.log('✅ Admin created: admin@hmcar.com / Admin@2026');
+      console.log('✅ Admin created:', process.env.ADMIN_EMAIL || 'admin@hmcar.com');
     } else {
       console.log('ℹ️ Admin already exists');
     }

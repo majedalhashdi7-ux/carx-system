@@ -1,25 +1,36 @@
-// [[ARABIC_HEADER]] هذا الملف (client-app/eslint.config.mjs) جزء من مشروع HM CAR ويحتوي تعليقات عربية لضمان الوضوح.
+// eslint.config.mjs - HM CAR Client App ESLint Configuration
+// تم تبسيط الإعداد لتجنب خطأ rushstack patch في بيئة Vercel
 
-import { defineConfig, globalIgnores } from "eslint/config";
+import { dirname } from "path";
+import { fileURLToPath } from "url";
+import { FlatCompat } from "@eslint/eslintrc";
 
-// استخدام الاستيراد الديناميكي لتجنب أخطاء المسار في بيئة Vercel
-const { default: nextConfig } = await import("eslint-config-next");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-const eslintConfig = defineConfig([
-  ...(Array.isArray(nextConfig) ? nextConfig : [nextConfig]),
+const compat = new FlatCompat({
+  baseDirectory: __dirname,
+});
+
+const eslintConfig = [
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-vars": ["warn", { "varsIgnorePattern": "^_", "argsIgnorePattern": "^_" }],
       "react/no-unescaped-entities": "off",
+      "@next/next/no-img-element": "warn",
     }
   },
-  globalIgnores([
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-  ]),
-]);
+  {
+    ignores: [
+      ".next/**",
+      "out/**",
+      "build/**",
+      "next-env.d.ts",
+      "node_modules/**",
+    ]
+  }
+];
 
 export default eslintConfig;

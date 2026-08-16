@@ -97,7 +97,31 @@ export default function DesertStyleCarDetail() {
     const [showCompareModal, setShowCompareModal] = useState(false);
     const [showLightbox, setShowLightbox] = useState(false);
 
+    // ── دوال التنقل بين الصور (يجب تعريفها قبل أي return مشروط)
+    const allImages = car ? processCarImages((car as any).images?.filter(Boolean) || []) : [];
+
+    const goNextImage = useCallback(() => {
+        if (!allImages || allImages.length === 0) return;
+        setActiveImage(prev => (prev + 1) % allImages.length);
+    }, [allImages]);
+
+    const goPrevImage = useCallback(() => {
+        if (!allImages || allImages.length === 0) return;
+        setActiveImage(prev => (prev - 1 + allImages.length) % allImages.length);
+    }, [allImages]);
+
+    useEffect(() => {
+        const handler = (e: KeyboardEvent) => {
+            if (e.key === 'ArrowRight') { if (isRTL) { goNextImage(); } else { goPrevImage(); } }
+            else if (e.key === 'ArrowLeft') { if (isRTL) { goPrevImage(); } else { goNextImage(); } }
+            else if (e.key === 'Escape' && lightboxOpen) { setLightboxOpen(false); }
+        };
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+    }, [goNextImage, goPrevImage, isRTL, lightboxOpen]);
+
     const loadSimilarCars = useCallback(async (currentMake: any, currentId: string) => {
+
         try {
             const makeName = typeof currentMake === 'object' ? currentMake?.name : currentMake;
             const makeStr = String(makeName || '').trim();
@@ -278,35 +302,11 @@ export default function DesertStyleCarDetail() {
         );
     }
 
-    const images = processCarImages(car.images?.filter(Boolean) || []);
-
-    const goNextImage = useCallback(() => {
-        if (!images || images.length === 0) return;
-        setActiveImage(prev => (prev + 1) % images.length);
-    }, [images]);
-
-    const goPrevImage = useCallback(() => {
-        if (!images || images.length === 0) return;
-        setActiveImage(prev => (prev - 1 + images.length) % images.length);
-    }, [images]);
-
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'ArrowRight') {
-                isRTL ? goNextImage() : goPrevImage();
-            } else if (e.key === 'ArrowLeft') {
-                isRTL ? goPrevImage() : goNextImage();
-            } else if (e.key === 'Escape' && lightboxOpen) {
-                setLightboxOpen(false);
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [goNextImage, goPrevImage, isRTL, lightboxOpen]);
-    const mainImg = images[activeImage] || getProxiedImageUrl(car.image || car.imageUrl) || 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=1200';
-    const carPriceSar = Number(car.priceSar || car.price || 0);
+    const images = allImages;
+    const mainImg = images[activeImage] || getProxiedImageUrl((car as any).image || (car as any).imageUrl) || 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=1200';
+    const carPriceSar = Number((car as any).priceSar || (car as any).price || 0);
     const formattedPriceSar = carPriceSar > 0 ? formatPrice(carPriceSar) : (isRTL ? 'عند الطلب' : 'Call for price');
-    const isKoreanImport = car.source === 'korean_import' || car.source === 'encar_korea' || car.listingType === 'showroom';
+    const isKoreanImport = (car as any).source === 'korean_import' || (car as any).source === 'encar_korea' || (car as any).listingType === 'showroom';
 
     // حساب الجمارك والشحن التقريبي (حاسبة الاستيراد)
     const baseCarCost = Math.round(carPriceSar * 0.72);
@@ -589,13 +589,13 @@ export default function DesertStyleCarDetail() {
                                     {images.length > 1 && (
                                         <>
                                             <button 
-                                                onClick={(e) => { e.stopPropagation(); isRTL ? goNextImage() : goPrevImage(); }} 
+                                                onClick={(e) => { e.stopPropagation(); if (isRTL) { goNextImage(); } else { goPrevImage(); } }} 
                                                 className="absolute right-4 top-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center hover:bg-[#C9A96E] hover:text-black hover:border-[#C9A96E] transition-all shadow-2xl backdrop-blur-xl group z-20"
                                             >
                                                 <ChevronRight className="w-7 h-7 group-hover:scale-110 transition-transform" />
                                             </button>
                                             <button 
-                                                onClick={(e) => { e.stopPropagation(); isRTL ? goPrevImage() : goNextImage(); }} 
+                                                onClick={(e) => { e.stopPropagation(); if (isRTL) { goPrevImage(); } else { goNextImage(); } }} 
                                                 className="absolute left-4 top-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center hover:bg-[#C9A96E] hover:text-black hover:border-[#C9A96E] transition-all shadow-2xl backdrop-blur-xl group z-20"
                                             >
                                                 <ChevronLeft className="w-7 h-7 group-hover:scale-110 transition-transform" />

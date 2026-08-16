@@ -23,7 +23,7 @@ function getApiBase() {
   return 'http://localhost:4001';
 }
 
-// Helper function to fetch from API with SSL tolerance
+// Helper function to fetch from API with robust error handling
 async function fetchAPI(endpoint: string): Promise<any> {
   try {
     const apiBase = getApiBase();
@@ -31,16 +31,22 @@ async function fetchAPI(endpoint: string): Promise<any> {
     
     const res = await fetch(url, {
       next: { revalidate: 3600 }, // Cache for 1 hour
-      // تجاهل أخطاء SSL فقط أثناء بناء الـ sitemap
-      ...(process.env.NODE_ENV === 'production' && {
-        headers: { 'x-sitemap-request': '1' }
-      })
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        ...(process.env.NODE_ENV === 'production' && { 'x-sitemap-request': '1' })
+      }
     });
     
     if (!res.ok) return null;
+    
+    // تحقق أن الاستجابة JSON وليست HTML (حدث هذا أثناء بناء Vercel)
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) return null;
+    
     return await res.json();
   } catch (error) {
-    // Silently skip — sitemap works without dynamic URLs too
+    // Skip silently — sitemap works without dynamic URLs too
     console.warn(`Sitemap fetch skipped for ${endpoint}:`, (error as Error).message);
     return null;
   }

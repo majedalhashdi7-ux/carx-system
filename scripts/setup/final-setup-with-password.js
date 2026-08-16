@@ -33,7 +33,7 @@ NEXTAUTH_URL=https://hmcar-system-two.vercel.app
 
 # Admin Configuration
 ADMIN_EMAIL=dawoodalhash@gmail.com
-ADMIN_PASSWORD=daood@112233
+ADMIN_PASSWORD=${process.env.ADMIN_PASSWORD || 'CHANGE_THIS_PASSWORD'}
 WHATSAPP_NUMBER=+967781007805
 
 # Currency Exchange
@@ -66,7 +66,7 @@ NEXTAUTH_URL=https://hmcar-system-two.vercel.app
 
 # Admin
 ADMIN_EMAIL=dawoodalhash@gmail.com
-ADMIN_PASSWORD=daood@112233
+ADMIN_PASSWORD=${process.env.ADMIN_PASSWORD || 'CHANGE_THIS_PASSWORD'}
 
 # Production
 NODE_ENV=production
@@ -93,7 +93,7 @@ NEXTAUTH_URL=https://hmcar-system-two.vercel.app
 
 # Admin
 ADMIN_EMAIL=dawoodalhash@gmail.com
-ADMIN_PASSWORD=daood@112233
+ADMIN_PASSWORD=${process.env.ADMIN_PASSWORD || 'CHANGE_THIS_PASSWORD'}
 
 # Currency
 USD_TO_SAR=3.75
@@ -123,7 +123,7 @@ MONGO_URI=${baseConnectionString}&retryWrites=true&w=majority
 NEXTAUTH_SECRET=hmcar-secure-secret-2024-production-final
 NEXTAUTH_URL=https://hmcar-system-two.vercel.app
 ADMIN_EMAIL=dawoodalhash@gmail.com
-ADMIN_PASSWORD=daood@112233
+ADMIN_PASSWORD=${process.env.ADMIN_PASSWORD || 'CHANGE_THIS_PASSWORD'}
 WHATSAPP_NUMBER=+967781007805
 USD_TO_SAR=3.75
 USD_TO_KRW=1300
@@ -136,7 +136,7 @@ MONGO_URI=${baseConnectionString}&retryWrites=true&w=majority
 NEXTAUTH_SECRET=carx-ultra-secure-secret-2024-production-final
 NEXTAUTH_URL=https://hmcar-system-two.vercel.app
 ADMIN_EMAIL=dawoodalhash@gmail.com
-ADMIN_PASSWORD=daood@112233
+ADMIN_PASSWORD=${process.env.ADMIN_PASSWORD || 'CHANGE_THIS_PASSWORD'}
 WHATSAPP_NUMBER=+967781007805
 USD_TO_SAR=3.75
 USD_TO_KRW=1300

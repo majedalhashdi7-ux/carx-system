@@ -21,11 +21,13 @@ async function createLocalAdmin() {
     }
 
     // Create super admin
-    const hashedPassword = await bcrypt.hash('Admin@123', 12);
+    const superAdminPass = process.env.ADMIN_PASSWORD || process.env.DEFAULT_ADMIN_PASSWORD;
+    if (!superAdminPass) throw new Error('❌ ADMIN_PASSWORD env var is required!');
+    const hashedPassword = await bcrypt.hash(superAdminPass, 12);
     
     const superAdmin = new User({
       name: 'مدير النظام',
-      email: 'admin@hmcar.com',
+      email: process.env.ADMIN_EMAIL || 'admin@hmcar.com',
       phone: '+966500000001',
       password: hashedPassword,
       role: 'super_admin',
@@ -37,18 +39,19 @@ async function createLocalAdmin() {
     await superAdmin.save();
     
     console.log('✅ Super admin created successfully!');
-    console.log('📧 Email: admin@hmcar.com');
-    console.log('🔑 Password: Admin@123');
+    console.log('📧 Email:', process.env.ADMIN_EMAIL || 'admin@hmcar.com');
+    console.log('🔑 Password: [from ADMIN_PASSWORD env var]');
     console.log('📱 Phone: +966500000001');
 
     // Create regular admin
-    const adminPassword = await bcrypt.hash('Admin123', 12);
+    const adminPass = process.env.ADMIN_PASSWORD || process.env.DEFAULT_ADMIN_PASSWORD;
+    const hashedAdminPass = await bcrypt.hash(adminPass, 12);
     
     const admin = new User({
       name: 'مدير الموقع',
       email: 'manager@hmcar.com',
       phone: '+966500000002',
-      password: adminPassword,
+      password: hashedAdminPass,
       role: 'admin',
       permissions: getDefaultPermissions('admin'),
       status: 'active',
@@ -59,7 +62,7 @@ async function createLocalAdmin() {
     
     console.log('✅ Admin created successfully!');
     console.log('📧 Email: manager@hmcar.com');
-    console.log('🔑 Password: Admin123');
+    console.log('🔑 Password: [from ADMIN_PASSWORD env var]');
     console.log('📱 Phone: +966500000002');
 
     console.log('🎉 Admin users created successfully!');

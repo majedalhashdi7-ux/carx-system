@@ -24,7 +24,8 @@ async function createAdmin() {
   console.log('✅ متصل بـ carx_production');
 
   const adminEmail = process.env.ADMIN_EMAIL || 'dawoodalhash@gmail.com';
-   const adminPassword = process.env.ADMIN_PASSWORD || 'HMCarAdmin2026!Secure';
+  const adminPassword = process.env.ADMIN_PASSWORD || process.env.DEFAULT_ADMIN_PASSWORD;
+  if (!adminPassword) throw new Error('❌ ADMIN_PASSWORD env var is required!');
   const adminName = 'Daood Al-Hashemi';
 
   const existing = await User.findOne({ email: adminEmail });

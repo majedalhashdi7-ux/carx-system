@@ -44,7 +44,7 @@ interface Part {
 function _resolvePartImage(part: Part): string {
     const candidate = part.img || part.image || (Array.isArray(part.images) && part.images.length > 0 ? part.images[0] : '') || '';
     if (!candidate || typeof candidate !== 'string') return 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?q=80&w=1000';
-    let url = candidate.trim();
+    const url = candidate.trim();
     if (url.startsWith('//')) return `https:${url}`;
     if (url.startsWith('/')) {
         if (url.startsWith('/uploads') || url.startsWith('/images')) return url;
