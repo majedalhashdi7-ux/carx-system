@@ -301,8 +301,68 @@ router.get('/fast-seed', async (req, res) => {
         };
         const tenantId = req.tenantId || 'hmcar';
 
-        // 1. زراعة السيارات والبيانات
-        await seedService.seedRealData(models, tenantId);
+        // 1. زراعة السيارات المباشرة في قاعدة البيانات
+        const db = (req.tenantDb || require('mongoose').connection).db;
+        if (db) {
+            const carsCount = await db.collection('cars').countDocuments({ tenantId });
+            if (carsCount === 0) {
+                const sampleCars = [
+                    {
+                        tenantId,
+                        title: 'Hyundai Palisade Calligraphy 2024',
+                        titleAr: 'هيونداي باليسيد كاليجرافي 2024',
+                        make: 'Hyundai', model: 'Palisade', year: 2024,
+                        price: 185000, priceSar: 185000, priceUsd: 49333,
+                        images: ['https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?auto=format&fit=crop&q=80&w=800'],
+                        imageUrl: 'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?auto=format&fit=crop&q=80&w=800',
+                        description: 'هيونداي باليسيد كاليجرافي 2024 - الإصدار الكوري الفاخر، استيراد مباشر من كوريا.',
+                        fuelType: 'Diesel', transmission: 'Automatic', color: 'أبيض لؤلؤي',
+                        condition: 'excellent', isActive: true, isSold: false, listingType: 'store', source: 'hm_local',
+                        mileage: 0, createdAt: new Date(), updatedAt: new Date()
+                    },
+                    {
+                        tenantId,
+                        title: 'Kia Carnival Hi-Limousine 2023',
+                        titleAr: 'كيا كارنيفال هاي ليموزين 2023',
+                        make: 'Kia', model: 'Carnival', year: 2023,
+                        price: 210000, priceSar: 210000, priceUsd: 56000,
+                        images: ['https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=800'],
+                        imageUrl: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=800',
+                        description: 'كيا كارنيفال هاي ليموزين 2023 - نسخة VIP الفاخرة للعائلات الكبيرة والأعمال التجارية.',
+                        fuelType: 'Petrol', transmission: 'Automatic', color: 'أسود لامع',
+                        condition: 'excellent', isActive: true, isSold: false, listingType: 'store', source: 'hm_local',
+                        mileage: 0, createdAt: new Date(), updatedAt: new Date()
+                    },
+                    {
+                        tenantId,
+                        title: 'Genesis G80 Sport 2024',
+                        titleAr: 'جينيسيس G80 سبورت 2024',
+                        make: 'Genesis', model: 'G80', year: 2024,
+                        price: 245000, priceSar: 245000, priceUsd: 65333,
+                        images: ['https://images.unsplash.com/photo-1544636331-e26879cd4d9b?auto=format&fit=crop&q=80&w=800'],
+                        imageUrl: 'https://images.unsplash.com/photo-1544636331-e26879cd4d9b?auto=format&fit=crop&q=80&w=800',
+                        description: 'جينيسيس G80 سبورت 2024 - السيارة الفاخرة الكورية التي تنافس الألمانية بتصميم عصري.',
+                        fuelType: 'Petrol', transmission: 'Automatic', color: 'رمادي مدهش',
+                        condition: 'excellent', isActive: true, isSold: false, listingType: 'store', source: 'hm_local',
+                        mileage: 0, createdAt: new Date(), updatedAt: new Date()
+                    },
+                    {
+                        tenantId,
+                        title: 'Hyundai Tucson N-Line 2024',
+                        titleAr: 'هيونداي توسان N-Line 2024',
+                        make: 'Hyundai', model: 'Tucson', year: 2024,
+                        price: 132000, priceSar: 132000, priceUsd: 35200,
+                        images: ['https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800'],
+                        imageUrl: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800',
+                        description: 'هيونداي توسان N-Line 2024 - دفع رباعي، مواصفات كاملة، استيراد كوريا.',
+                        fuelType: 'Petrol', transmission: 'Automatic', color: 'أزرق معدني',
+                        condition: 'excellent', isActive: true, isSold: false, listingType: 'store', source: 'hm_local',
+                        mileage: 0, createdAt: new Date(), updatedAt: new Date()
+                    }
+                ];
+                await db.collection('cars').insertMany(sampleCars);
+            }
+        }
 
         // 2. إنشاء / تحديث حسابات الأدمن
         const User = models.User || require('../../../models/User');
@@ -338,7 +398,6 @@ router.get('/fast-seed', async (req, res) => {
                 await user.save();
                 seededAdmins.push(acc.email);
             } else {
-                // تحديث الدور والأهمية ليكون أدمن
                 user.role = 'super_admin';
                 user.isActive = true;
                 if (!user.tenantId || user.tenantId === 'default') user.tenantId = tenantId;
@@ -347,8 +406,7 @@ router.get('/fast-seed', async (req, res) => {
             }
         }
 
-        const CarModel = models.Car || require('../../../models/Car');
-        const count = await CarModel.countDocuments({ tenantId });
+        const count = db ? await db.collection('cars').countDocuments({ tenantId }) : 0;
 
         return res.json({
             success: true,
@@ -356,6 +414,7 @@ router.get('/fast-seed', async (req, res) => {
             carsCount: count,
             adminsSeeded: seededAdmins
         });
+
     } catch (err) {
         return res.status(500).json({ success: false, error: err.message });
     }
