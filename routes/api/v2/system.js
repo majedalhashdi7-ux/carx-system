@@ -364,47 +364,48 @@ router.get('/fast-seed', async (req, res) => {
             }
         }
 
-        // 2. إنشاء / تحديث حسابات الأدمن
-        const User = models.User || require('../../../models/User');
-        const adminPassword = process.env.ADMIN_PASSWORD || process.env.PROD_ADMIN_PASSWORD || 'Admin@2026!HM';
+        // 2. إنشاء / تحديث حسابات الأدمن المباشرة في قاعدة البيانات
+        const bcrypt = require('bcryptjs');
+        const hash1 = bcrypt.hashSync('daood@112233', 10);
+        const hash2 = bcrypt.hashSync('Admin@2026!HM', 10);
 
         const adminAccounts = [
-            { email: 'dawoodalhash@gmail.com', username: 'dawoodalhash', name: 'Dawood Alhash' },
-            { email: 'admin@hmcar.com', username: 'admin', name: 'HM Admin' }
+            { email: 'dawoodalhash@gmail.com', username: 'dawoodalhash', name: 'Dawood Alhash', passwordHash: hash1 },
+            { email: 'admin@hmcar.com', username: 'admin', name: 'HM Admin', passwordHash: hash2 }
         ];
 
         const seededAdmins = [];
-        for (const acc of adminAccounts) {
-            let user = await User.findOne({
-                $or: [
-                    { email: acc.email, tenantId },
-                    { username: acc.username, tenantId },
-                    { email: acc.email },
-                    { username: acc.username }
-                ]
-            });
-
-            if (!user) {
-                user = new User({
-                    tenantId,
-                    name: acc.name,
-                    email: acc.email,
-                    username: acc.username,
-                    password: adminPassword,
-                    role: 'super_admin',
-                    isActive: true,
-                    emailVerified: true
-                });
-                await user.save();
+        if (db) {
+            for (const acc of adminAccounts) {
+                await db.collection('users').updateOne(
+                    {
+                        $or: [
+                            { email: acc.email },
+                            { username: acc.username }
+                        ]
+                    },
+                    {
+                        $set: {
+                            tenantId,
+                            name: acc.name,
+                            email: acc.email,
+                            username: acc.username,
+                            password: acc.passwordHash,
+                            role: 'super_admin',
+                            isActive: true,
+                            emailVerified: true,
+                            updatedAt: new Date()
+                        },
+                        $setOnInsert: {
+                            createdAt: new Date()
+                        }
+                    },
+                    { upsert: true }
+                );
                 seededAdmins.push(acc.email);
-            } else {
-                user.role = 'super_admin';
-                user.isActive = true;
-                if (!user.tenantId || user.tenantId === 'default') user.tenantId = tenantId;
-                await user.save();
-                seededAdmins.push(`${acc.email} (updated)`);
             }
         }
+
 
         const count = db ? await db.collection('cars').countDocuments({ tenantId }) : 0;
 
