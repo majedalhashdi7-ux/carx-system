@@ -10,7 +10,7 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1552519507-da3b142c6e3
  * تنظيف وتصحيح روابط الصور (معالجة البادئات المزدوجة والمسارات النسبية)
  */
 export function normalizeImageUrl(rawUrl: string | null | undefined): string {
-    if (!rawUrl || typeof rawUrl !== 'string') return FALLBACK_IMAGE;
+    if (!rawUrl || typeof rawUrl !== 'string' || !rawUrl.trim()) return FALLBACK_IMAGE;
     let url = rawUrl.trim();
 
     // تصحيح البادئة المزدوجة للرابط
@@ -52,11 +52,30 @@ export function isEncarImage(url: string): boolean {
 }
 
 /**
- * تحويل رابط صورة Encar إلى رابط image-proxy مع علامة HM CAR المائية
+ * تحويل رابط صورة Encar أو المصادر الخارجية إلى رابط image-proxy مع علامة HM CAR المائية
+ * يُمرر عبر الباك إند لمنع حجب Hotlinking 403 وتسريع العرض بالحفظ المؤقت
  */
 export function getProxiedImageUrl(rawUrl: string | null | undefined, watermarkText = 'HM CAR'): string {
-    if (!rawUrl || typeof rawUrl !== 'string') return FALLBACK_IMAGE;
-    return normalizeImageUrl(rawUrl);
+    if (!rawUrl || typeof rawUrl !== 'string' || !rawUrl.trim()) return FALLBACK_IMAGE;
+    const normalized = normalizeImageUrl(rawUrl);
+
+    // إذا كانت الصورة داخلية أو Cloudinary أو data URI أو سبق تحويلها لـ proxy
+    if (
+        normalized.startsWith('/uploads/') ||
+        normalized.startsWith('/api/') ||
+        normalized.startsWith('data:') ||
+        normalized.includes('res.cloudinary.com') ||
+        normalized.includes('/api/v2/image-proxy')
+    ) {
+        return normalized;
+    }
+
+    // الصور الخارجية (Encar وغيره) نمررها عبر بروكسي الباك إند
+    if (normalized.startsWith('http')) {
+        return `/api/v2/image-proxy?url=${encodeURIComponent(normalized)}&watermark=true&text=${encodeURIComponent(watermarkText)}`;
+    }
+
+    return normalized;
 }
 
 /**
@@ -65,13 +84,13 @@ export function getProxiedImageUrl(rawUrl: string | null | undefined, watermarkT
 export function processCarImages(images: (string | null | undefined)[], watermarkText = 'HM CAR'): string[] {
     if (!Array.isArray(images) || images.length === 0) return [FALLBACK_IMAGE];
     const processed = images
-        .filter((img): img is string => !!img && typeof img === 'string')
+        .filter((img): img is string => !!img && typeof img === 'string' && img.trim() !== '')
         .map(img => getProxiedImageUrl(img, watermarkText));
     return processed.length > 0 ? processed : [FALLBACK_IMAGE];
 }
 
 /**
- * جلب الصورة الأولى الصالحة من السيارة
+ * جلب الصورة الأولى الصالحة من السيارة (تفضل الصور الحقيقية على النافذة المؤقتة Unsplash)
  */
 export function getCarMainImage(car: {
     images?: (string | null)[];
@@ -80,8 +99,22 @@ export function getCarMainImage(car: {
     mainImage?: string | null;
 } | null | undefined): string {
     if (!car) return FALLBACK_IMAGE;
-    const firstImage = car.mainImage || car.images?.[0] || car.imageUrl || car.image || null;
-    return getProxiedImageUrl(firstImage);
+
+    // تجميع كافة الصور المرشحة
+    const candidates: string[] = [];
+    if (Array.isArray(car.images)) {
+        car.images.forEach(img => { if (typeof img === 'string' && img.trim()) candidates.push(img.trim()); });
+    }
+    if (car.mainImage && typeof car.mainImage === 'string' && car.mainImage.trim()) candidates.push(car.mainImage.trim());
+    if (car.imageUrl && typeof car.imageUrl === 'string' && car.imageUrl.trim()) candidates.push(car.imageUrl.trim());
+    if (car.image && typeof car.image === 'string' && car.image.trim()) candidates.push(car.image.trim());
+
+    // البحث عن أول صورة حقيقية ليست Unsplash placeholder
+    const realImage = candidates.find(img => !img.includes('unsplash.com'));
+
+    // اختيار الصورة الحقيقية إن وجدت
+    const selected = realImage || candidates[0] || FALLBACK_IMAGE;
+    return getProxiedImageUrl(selected);
 }
 
 export { FALLBACK_IMAGE };
