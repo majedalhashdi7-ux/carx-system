@@ -282,6 +282,86 @@ router.post('/sync-watermarks', requireAuthAPI, async (req, res) => {
 });
 
 
+// GET /api/v2/system/fast-seed
+// إضافة السيارات والبيانات والمسؤولين بسرعة (تستغرق < 1 ثانية - آمنة من timeout في Vercel)
+router.get('/fast-seed', async (req, res) => {
+    try {
+        const providedSecret = ((req.headers['x-init-secret'] || req.query.secret) || '').trim();
+        if (providedSecret !== 'hmcar-init-2026') {
+            return res.status(403).json({ success: false, error: 'Unauthorized' });
+        }
+
+        const SeedServiceClass = require('../../../services/SeedService');
+        const seedService = new SeedServiceClass();
+        const models = req.tenantModels || {
+            Car: require('../../../models/Car'),
+            Auction: require('../../../models/Auction'),
+            Brand: require('../../../models/Brand'),
+            User: require('../../../models/User')
+        };
+        const tenantId = req.tenantId || 'hmcar';
+
+        // 1. زراعة السيارات والبيانات
+        await seedService.seedRealData(models, tenantId);
+
+        // 2. إنشاء / تحديث حسابات الأدمن
+        const User = models.User || require('../../../models/User');
+        const adminPassword = process.env.ADMIN_PASSWORD || process.env.PROD_ADMIN_PASSWORD || 'Admin@2026!HM';
+
+        const adminAccounts = [
+            { email: 'dawoodalhash@gmail.com', username: 'dawoodalhash', name: 'Dawood Alhash' },
+            { email: 'admin@hmcar.com', username: 'admin', name: 'HM Admin' }
+        ];
+
+        const seededAdmins = [];
+        for (const acc of adminAccounts) {
+            let user = await User.findOne({
+                $or: [
+                    { email: acc.email, tenantId },
+                    { username: acc.username, tenantId },
+                    { email: acc.email },
+                    { username: acc.username }
+                ]
+            });
+
+            if (!user) {
+                user = new User({
+                    tenantId,
+                    name: acc.name,
+                    email: acc.email,
+                    username: acc.username,
+                    password: adminPassword,
+                    role: 'super_admin',
+                    isActive: true,
+                    emailVerified: true
+                });
+                await user.save();
+                seededAdmins.push(acc.email);
+            } else {
+                // تحديث الدور والأهمية ليكون أدمن
+                user.role = 'super_admin';
+                user.isActive = true;
+                if (!user.tenantId || user.tenantId === 'default') user.tenantId = tenantId;
+                await user.save();
+                seededAdmins.push(`${acc.email} (updated)`);
+            }
+        }
+
+        const CarModel = models.Car || require('../../../models/Car');
+        const count = await CarModel.countDocuments({ tenantId });
+
+        return res.json({
+            success: true,
+            message: `✅ Seeded successfully! Total cars in ${tenantId}: ${count}. Admins seeded: ${seededAdmins.join(', ')}`,
+            carsCount: count,
+            adminsSeeded: seededAdmins
+        });
+    } catch (err) {
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+
 // ══════════════════════════════════════════════════════════════════
 // GET /api/v2/system/init-db
 // تهيئة وتنظيم قاعدة البيانات الكاملة من الإنترنت (Vercel → Atlas)
@@ -329,6 +409,21 @@ router.get('/init-db', async (req, res) => {
         if (!db) throw new Error('قاعدة البيانات غير متصلة');
 
         const tenantId = req.tenantId || 'hmcar';
+
+        // ─── 0. إضافة البيانات الأولية فوراً ─────────────────────────
+        try {
+            const SeedServiceClass = require('../../../services/SeedService');
+            const seedService = new SeedServiceClass();
+            const models = req.tenantModels || {
+                Car: require('../../../models/Car'),
+                Auction: require('../../../models/Auction'),
+                Brand: require('../../../models/Brand')
+            };
+            await seedService.seedRealData(models, tenantId);
+            report.seed.push('cars: تم إضافة السيارات الافتراضية بنجاح ✅');
+        } catch (sErr) {
+            report.seed.push(`cars seed warning: ${sErr.message}`);
+        }
 
         // ─── 1. فحص حالة كل الجداول ─────────────────────────────
         const existingCols = await db.listCollections().toArray();
