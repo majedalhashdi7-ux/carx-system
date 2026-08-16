@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { Upload, X, Image as ImageIcon, Loader2, AlertCircle } from 'lucide-react';
-import { compressMultiple, formatBytes, estimateDataUrlSize } from '../../lib/imageUtils';
+import { Upload, X, Image as ImageIcon, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { uploadMultipleToBlob } from '../../lib/imageUtils';
 
 interface MultiImageUploaderProps {
   images: string[];
@@ -10,6 +10,7 @@ interface MultiImageUploaderProps {
   maxImages?: number;
   label?: string;
   hint?: string;
+  folder?: 'cars' | 'parts' | 'brands' | 'logos';
 }
 
 export default function MultiImageUploader({
@@ -18,8 +19,10 @@ export default function MultiImageUploader({
   maxImages = 8,
   label = 'صور المنتج',
   hint = 'اسحب وأفلت أو اضغط لاختيار صور متعددة',
+  folder = 'cars',
 }: MultiImageUploaderProps) {
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState('');
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -33,22 +36,29 @@ export default function MultiImageUploader({
 
     setUploading(true);
     setError('');
+    setUploadProgress('جاري رفع الصور...');
 
     try {
-      const compressed = await compressMultiple(files, {
-        maxWidth: 1200,
-        maxHeight: 900,
-        quality: 0.78,
-        mimeType: 'image/jpeg',
-      }, remaining);
+      const uploaded = await uploadMultipleToBlob(
+        files,
+        folder,
+        remaining,
+        (current, total) => setUploadProgress(`جاري رفع ${current} من ${total}...`)
+      );
 
-      onChange([...images, ...compressed]);
+      if (uploaded.length === 0) {
+        setError('فشل رفع الصور. تأكد من اتصالك بالإنترنت.');
+      } else {
+        onChange([...images, ...uploaded]);
+        setUploadProgress(`✅ تم رفع ${uploaded.length} صورة`);
+        setTimeout(() => setUploadProgress(''), 3000);
+      }
     } catch {
-      setError('فشل ضغط الصور. تأكد من أن الملفات صور صحيحة.');
+      setError('فشل رفع الصور. تأكد من أن الملفات صور صحيحة.');
     } finally {
       setUploading(false);
     }
-  }, [images, maxImages, onChange]);
+  }, [images, maxImages, onChange, folder]);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -86,8 +96,8 @@ export default function MultiImageUploader({
           {uploading ? (
             <>
               <Loader2 className="w-10 h-10 text-luxury-gold animate-spin mb-3" />
-              <span className="text-sm font-bold text-luxury-gold">جاري ضغط ورفع الصور...</span>
-              <span className="text-xs text-white/30 mt-1">يتم ضغطها تلقائياً للحفظ السريع</span>
+              <span className="text-sm font-bold text-luxury-gold">{uploadProgress || 'جاري رفع الصور...'}</span>
+              <span className="text-xs text-white/30 mt-1">يتم حفظها في التخزين السحابي الدائم</span>
             </>
           ) : (
             <>

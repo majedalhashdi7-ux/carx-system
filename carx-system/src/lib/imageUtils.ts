@@ -109,3 +109,79 @@ export function estimateDataUrlSize(dataUrl: string): number {
   // base64 overhead is ~1.33x + ~22 chars for the header
   return Math.round((dataUrl.length - 22) * 0.75);
 }
+
+// ═══════════════════════════════════════════════════════════
+// Vercel Blob Upload — رفع صور دائمة عبر Vercel Blob
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * رفع صورة واحدة إلى Vercel Blob وإرجاع رابط دائم.
+ * يستخدم API route /api/upload داخلياً.
+ */
+export async function uploadToVercelBlob(
+  file: File,
+  folder: 'cars' | 'parts' | 'brands' | 'logos' = 'cars'
+): Promise<string> {
+  const formData = new FormData();
+  formData.append('image', file);
+  formData.append('folder', folder);
+
+  const apiBase = typeof window !== 'undefined'
+    ? window.location.origin
+    : (process.env.NEXT_PUBLIC_APP_URL || '');
+
+  const res = await fetch(`${apiBase}/api/upload`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: 'Upload failed' }));
+    throw new Error(err.message || 'فشل رفع الصورة');
+  }
+
+  const data = await res.json();
+  if (!data.url) throw new Error('لم يُرجع الخادم رابط الصورة');
+  return data.url;
+}
+
+/**
+ * رفع عدة صور إلى Vercel Blob بالتسلسل.
+ * يعود بمصفوفة روابط دائمة.
+ */
+export async function uploadMultipleToBlob(
+  files: FileList | File[],
+  folder: 'cars' | 'parts' | 'brands' | 'logos' = 'cars',
+  maxFiles = 8,
+  onProgress?: (current: number, total: number) => void
+): Promise<string[]> {
+  const arr = Array.from(files).slice(0, maxFiles);
+  const results: string[] = [];
+
+  for (let i = 0; i < arr.length; i++) {
+    try {
+      onProgress?.(i + 1, arr.length);
+      const url = await uploadToVercelBlob(arr[i], folder);
+      results.push(url);
+    } catch (err) {
+      console.warn(`Failed to upload image ${i + 1}:`, err);
+      // تخطّ الصورة الفاشلة بدون وقف العملية
+    }
+  }
+
+  return results;
+}
+
+/**
+ * رفع شعار إلى Vercel Blob.
+ * يضغط الصورة أولاً ثم يرفعها.
+ */
+export async function uploadLogoToBlob(file: File): Promise<string> {
+  // ضغط الصورة أولاً
+  const compressed = await compressLogo(file);
+  // تحويل base64 إلى File
+  const res = await fetch(compressed);
+  const blob = await res.blob();
+  const compressedFile = new File([blob], file.name, { type: 'image/webp' });
+  return uploadToVercelBlob(compressedFile, 'logos');
+}

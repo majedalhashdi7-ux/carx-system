@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { Upload, Loader2, Award } from 'lucide-react';
-import { compressLogo } from '../../lib/imageUtils';
+import { uploadLogoToBlob } from '../../lib/imageUtils';
 
 interface CircleLogoUploaderProps {
   value: string;
@@ -26,16 +26,16 @@ export default function CircleLogoUploader({
     setUploading(true);
     setError('');
     try {
-      const compressed = await compressLogo(file);
-      onChange(compressed);
+      const blobUrl = await uploadLogoToBlob(file);
+      onChange(blobUrl);
     } catch {
-      setError('فشل رفع الشعار');
+      setError('فشل رفع الشعار. تأكد من اتصالك بالإنترنت.');
     } finally {
       setUploading(false);
-      // Reset input so same file can be selected again
       e.target.value = '';
     }
   };
+
 
   return (
     <div className="space-y-4" dir="rtl">

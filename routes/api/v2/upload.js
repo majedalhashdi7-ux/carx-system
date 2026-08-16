@@ -5,28 +5,23 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const { requireAuthAPI } = require('../../../middleware/auth');
 const { uploadLimiter } = require('../../../middleware/rateLimiter');
 const config = require('../../../modules/core/config');
 const cloudinaryLib = require('cloudinary').v2;
 
-const os = require('os');
-
-// Configure storage for Vercel compatibility
-// We use the OS temp directory because Vercel's filesystem is read-only except for /tmp
+// Configure multer with temp storage (Vercel compatible)
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        const tempDir = os.tmpdir();
-        cb(null, tempDir);
+        cb(null, os.tmpdir());
     },
     filename: function (req, file, cb) {
-        // Generate unique filename
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         cb(null, 'upload-' + uniqueSuffix + path.extname(file.originalname));
     }
 });
 
-// File filter
 const fileFilter = (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
         cb(null, true);
@@ -38,12 +33,31 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
     storage: storage,
     fileFilter: fileFilter,
-    limits: {
-        fileSize: 15 * 1024 * 1024 // 15MB limit
-    }
+    limits: { fileSize: 15 * 1024 * 1024 } // 15MB
 });
 
-// Upload endpoint - مع uploadLimiter للحماية من الرفع المفرط
+// ═══════════════════════════════════════════════════════
+// دالة رفع الصورة لـ Vercel Blob (الحل الجديد)
+// ═══════════════════════════════════════════════════════
+async function uploadToVercelBlob(filePath, originalName) {
+    const { put } = require('@vercel/blob');
+    const fileBuffer = fs.readFileSync(filePath);
+    const ext = path.extname(originalName) || '.jpg';
+    const blobName = `cars/${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+
+    const blob = await put(blobName, fileBuffer, {
+        access: 'public',
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+        contentType: `image/${ext.replace('.', '') || 'jpeg'}`,
+        addRandomSuffix: false,
+    });
+
+    return blob.url;
+}
+
+// ═══════════════════════════════════════════════════════
+// نقطة رفع الصور - تجرب Vercel Blob أولاً، ثم Cloudinary، ثم محلي
+// ═══════════════════════════════════════════════════════
 router.post('/', uploadLimiter, requireAuthAPI, upload.single('image'), async (req, res) => {
     try {
         if (!req.file) {
@@ -53,6 +67,25 @@ router.post('/', uploadLimiter, requireAuthAPI, upload.single('image'), async (r
             });
         }
 
+        // 1. محاولة Vercel Blob أولاً (الأولوية القصوى)
+        const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
+        if (blobToken && blobToken.startsWith('vercel_blob_rw_')) {
+            try {
+                const blobUrl = await uploadToVercelBlob(req.file.path, req.file.originalname);
+                try { fs.unlinkSync(req.file.path); } catch { }
+                console.log('✅ Image uploaded to Vercel Blob:', blobUrl);
+                return res.json({
+                    success: true,
+                    url: blobUrl,
+                    provider: 'vercel-blob',
+                    message: 'تم رفع الصورة بنجاح إلى Vercel Blob'
+                });
+            } catch (blobErr) {
+                console.warn('⚠️ Vercel Blob upload failed, trying Cloudinary:', blobErr.message);
+            }
+        }
+
+        // 2. محاولة Cloudinary كـ fallback
         const hasCloud =
             config.cloudinary &&
             config.cloudinary.cloud_name &&
@@ -74,40 +107,41 @@ router.post('/', uploadLimiter, requireAuthAPI, upload.single('image'), async (r
                 unique_filename: true,
                 transformation: [
                     { width: 1000, crop: "limit" },
-                    { quality: "60", fetch_format: "auto" }, // [[ARABIC_COMMENT]] تقليل الجودة قليلاً وتسريع التحميل
-                    { overlay: { font_family: "Arial", font_size: 60, font_weight: "bold", text: "HM CAR" }, opacity: 30, gravity: "south_east", x: 20, y: 20 }
+                    { quality: "60", fetch_format: "auto" }
                 ]
             });
-            // cleanup local file
             try { fs.unlinkSync(req.file.path); } catch { }
             return res.json({
                 success: true,
                 url: result.secure_url,
                 public_id: result.public_id,
-                message: 'Image uploaded to Cloudinary'
+                provider: 'cloudinary',
+                message: 'تم رفع الصورة إلى Cloudinary'
             });
         }
 
-        // Production check: Local upload is not allowed on Vercel
+        // 3. بيئة الإنتاج بدون أي تخزين سحابي = خطأ
         if (process.env.NODE_ENV === 'production') {
             return res.status(500).json({
                 error: 'Configuration Error',
-                message: 'Cloudinary is not configured on production server. Local uploads are disabled.'
+                message: 'لم يتم إعداد Vercel Blob أو Cloudinary. لا يمكن رفع الصور في الإنتاج.'
             });
         }
 
-        // Fallback: local uploads (only for dev)
+        // 4. تطوير محلي فقط
         const imageUrl = `/uploads/${req.file.filename}`;
         res.json({
             success: true,
             url: imageUrl,
-            message: 'Image uploaded successfully (local)'
+            provider: 'local',
+            message: 'تم رفع الصورة محلياً (بيئة تطوير فقط)'
         });
+
     } catch (error) {
         console.error('Upload error:', error);
         res.status(500).json({
             error: 'Upload Failed',
-            message: error.message || 'An error occurred during upload'
+            message: error.message || 'حدث خطأ أثناء رفع الصورة'
         });
     }
 });

@@ -13,7 +13,6 @@
     "cap:ios": "npm run build:mobile && npx cap sync ios && npx cap open ios"
   },
   "dependencies": {
-    "client-only": "^0.0.1",
     "@capacitor/android": "^8.2.0",
     "@capacitor/app": "^8.0.1",
     "@capacitor/cli": "^8.2.0",
@@ -30,8 +29,10 @@
     "@react-three/postprocessing": "^3.0.4",
     "@sentry/nextjs": "^10.43.0",
     "@types/three": "^0.182.0",
+    "@vercel/blob": "^2.8.0",
     "axios": "^1.13.4",
     "browser-image-compression": "^2.0.2",
+    "client-only": "^0.0.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.34.0",
     "gsap": "^3.14.2",
