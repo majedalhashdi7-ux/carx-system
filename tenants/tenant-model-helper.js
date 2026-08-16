@@ -80,7 +80,8 @@ function getCurrentTenantId(req) {
 /**
  * Add tenantId to a query filter for defense-in-depth protection.
  * Backward-compatible: for the primary 'hmcar' tenant, also matches
- * documents with tenantId:'default' (legacy seed data) or missing tenantId.
+ * documents with tenantId:'default' or missing tenantId (legacy seed data).
+ * For all other tenants: STRICT isolation — no cross-tenant leakage.
  * @param {import('express').Request} req - Express request object
  * @param {Object} filter - Query filter object
  * @returns {Object} Filter with tenantId added
@@ -90,8 +91,9 @@ function addTenantFilter(req, filter = {}) {
 
   const tid = req.tenant.id;
 
-  // Primary tenant (hmcar) must also see legacy data seeded with 'default' or no tenantId
-  const PRIMARY_TENANTS = ['hmcar', 'default'];
+  // [[ARABIC_COMMENT]] hmcar يرى بياناته + بيانات 'default' القديمة فقط
+  // أي معرض آخر يرى بياناته الخاصة فقط — عزل تام
+  const PRIMARY_TENANTS = ['hmcar'];
   if (PRIMARY_TENANTS.includes(tid)) {
     return {
       ...filter,
@@ -104,17 +106,18 @@ function addTenantFilter(req, filter = {}) {
     };
   }
 
-  // All other tenants: strict isolation
+  // جميع المعارض الأخرى: عزل صارم
   return { ...filter, tenantId: tid };
 }
 
 /**
  * Get tenantId for creating new documents
+ * Always returns 'hmcar' as fallback — NEVER 'default' to avoid cross-tenant contamination.
  * @param {import('express').Request} req - Express request object
- * @returns {String} tenantId (defaults to 'default' for backward compatibility)
+ * @returns {String} tenantId
  */
 function getTenantId(req) {
-  return req.tenant?.id || 'default';
+  return req.tenant?.id || 'hmcar';
 }
 
 module.exports = {
@@ -125,3 +128,4 @@ module.exports = {
   addTenantFilter,
   getTenantId,
 };
+

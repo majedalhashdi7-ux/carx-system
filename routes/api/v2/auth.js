@@ -679,11 +679,19 @@ router.post('/login', authLimiter, async (req, res) => {
       }
     }
 
-    // استخدام استعلام مفهرس فائق السرعة بدلاً من Regex الكامل (تسريع الدخول من 10s إلى 5ms)
+    // [[ARABIC_COMMENT]] البحث عن المستخدم مع فلتر المعرض الإلزامي لمنع تسرب البيانات بين المعارض
+    const tenantId = req.tenant?.id || null;
     const isEmail = searchKey.includes('@');
-    const queryConditions = isEmail 
-      ? { email: searchKey.toLowerCase() }
+
+    // بناء فلتر المعرض: أدمن يمكنه الدخول من أي معرض إذا كان مرتبطاً به
+    const tenantConditions = tenantId
+      ? { tenantId: { $in: [tenantId, 'default'] } }
+      : {};
+
+    const queryConditions = isEmail
+      ? { ...tenantConditions, email: searchKey.toLowerCase() }
       : {
+          ...tenantConditions,
           $or: [
             { username: searchKey.toLowerCase() },
             { email: searchKey.toLowerCase() },
@@ -692,6 +700,7 @@ router.post('/login', authLimiter, async (req, res) => {
         };
 
     const user = await User.findOne(queryConditions).select('+password').lean(false);
+
 
 
     if (!user) {
@@ -737,16 +746,17 @@ router.post('/login', authLimiter, async (req, res) => {
       return sendResponse(res, forbiddenResponse('Your account has been suspended'));
     }
 
-    // توليد التوكن - 30 يوماً بشكل افتراضي لعدم الحاجة لإعادة تسجيل الدخول
+    // [[ARABIC_COMMENT]] توليد JWT مع tenantId لضمان ربط التوكن بالمعرض الصحيح
+    const userTenantId = user.tenantId || req.tenant?.id || 'default';
     const token = jwt.sign(
       {
         userId: user._id,
-        tenantId: req.tenant?.id || 'default',
+        tenantId: userTenantId,
         email: user.email,
         role: user.role,
         permissions: user.permissions || []
       },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: '30d', issuer: 'hm-car-auction', audience: 'api-users' }
     );
 
@@ -768,16 +778,31 @@ router.post('/login', authLimiter, async (req, res) => {
     return res.json({
       success: true,
       token,
+      data: {
+        user: {
+          id: user._id,
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          tenantId: user.tenantId || req.tenant?.id || 'default',
+          permissions: user.permissions || [],
+          lastLoginAt: user.lastLoginAt
+        }
+      },
       user: {
         id: user._id,
+        _id: user._id,
         name: user.name,
         email: user.email,
         phone: user.phone,
         role: user.role,
+        tenantId: user.tenantId || req.tenant?.id || 'default',
         permissions: user.permissions || [],
         lastLoginAt: user.lastLoginAt
       },
-      expiresIn: '7d'
+      expiresIn: '30d'
     });
 
   } catch (error) {

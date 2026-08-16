@@ -299,7 +299,9 @@ router.get('/fast-seed', async (req, res) => {
             Brand: require('../../../models/Brand'),
             User: require('../../../models/User')
         };
-        const tenantId = req.tenantId || 'hmcar';
+        // [[ARABIC_COMMENT]] معرف المعرض: نستخدم hmcar دائماً كـ default — لا نستخدم 'default' لأنه يسبب تشابكاً
+        const tenantId = req.tenant?.id || req.tenantId || 'hmcar';
+
 
         // 1. زراعة السيارات المباشرة في قاعدة البيانات
         const db = (req.tenantDb || require('mongoose').connection).db;

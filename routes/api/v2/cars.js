@@ -6,12 +6,12 @@ const { getModel, addTenantFilter, getTenantId } = require('../../../tenants/ten
 const { requireAuthAPI, requirePermissionAPI } = require('../../../middleware/auth');
 const SmartAlertService = require('../../../services/SmartAlertService');
 const { cacheResponse, invalidateCache } = require('../../../middleware/cache');
-const { 
-  successResponse, 
-  errorResponse, 
-  notFoundResponse, 
-  serverErrorResponse, 
-  sendResponse 
+const {
+  successResponse,
+  errorResponse,
+  notFoundResponse,
+  serverErrorResponse,
+  sendResponse
 } = require('../../../utils/apiResponse');
 
 function toFiniteNumber(value) {
@@ -37,8 +37,8 @@ function normalizeCarPricing(payload, rates) {
     const normalizedSar = Number((normalizedUsd * usdToSar).toFixed(2));
     const normalizedKrw = candidateKrw > 0 ? candidateKrw : Math.round(normalizedUsd * usdToKrw);
 
-    const isKorean = payload?.source === 'korean_import' || 
-                     payload?.listingType === 'showroom' || 
+    const isKorean = payload?.source === 'korean_import' ||
+                     payload?.listingType === 'showroom' ||
                      (payload?.externalUrl && payload.externalUrl.includes('encar.com')) ||
                      (normalizedKrw > 0 && payload?.displayCurrency === 'KRW' && payload?.listingType !== 'store');
 
@@ -57,7 +57,9 @@ function normalizeCarPricing(payload, rates) {
     };
 }
 
-// GET /api/v2/cars - جلب قائمة السيارات
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/v2/cars — جلب قائمة السيارات (مفلترة حسب المعرض دائماً)
+// ─────────────────────────────────────────────────────────────────────────────
 router.get('/', cacheResponse(300), async (req, res, next) => {
     try {
         const Car = getModel(req, 'Car');
@@ -105,104 +107,47 @@ router.get('/', cacheResponse(300), async (req, res, next) => {
             }
         }
 
-        if (source === 'hm_local') {
-            conditions.push({
-                $and: [
-                    { 
-                        $or: [
-                            { source: 'hm_local' },
-                            { 
-                                $and: [
-                                    { source: { $exists: false } },
-                                    { priceKrw: { $lte: 0 } }
-                                ]
-                            }
-                        ]
-                    },
-                    { listingType: { $ne: 'showroom' } }
-                ]
-            });
-        } else if (source === 'korean_import') {
-            conditions.push({
-                $or: [
-                    { source: 'korean_import' },
-                    { listingType: 'showroom' },
-                    { priceKrw: { $gt: 0 } },
-                    { externalUrl: { $regex: 'encar.com' } }
-                ]
-            });
-        }
+        if (source) conditions.push({ source });
 
         if (minPrice || maxPrice) {
-            const priceCond = { $or: [] };
-            if (minPrice) {
-                priceCond.$or.push({ price: { $gte: Number(minPrice) } });
-                priceCond.$or.push({ priceSar: { $gte: Number(minPrice) } });
-            }
-            if (maxPrice) {
-                // [[ARABIC_COMMENT]] إذا كان هناك minPrice مسبقاً، نحتاج لإضافة $lte لشروط الـ $or الموجودة
-                if (priceCond.$or.length > 0) {
-                    priceCond.$or[0].price = { ...priceCond.$or[0].price, $lte: Number(maxPrice) };
-                    priceCond.$or[1].priceSar = { ...priceCond.$or[1].priceSar, $lte: Number(maxPrice) };
-                } else {
-                    priceCond.$or.push({ price: { $lte: Number(maxPrice) } });
-                    priceCond.$or.push({ priceSar: { $lte: Number(maxPrice) } });
-                }
-            }
-            conditions.push(priceCond);
+            const priceFilter = {};
+            if (minPrice) priceFilter.$gte = Number(minPrice);
+            if (maxPrice) priceFilter.$lte = Number(maxPrice);
+            conditions.push({ $or: [{ priceSar: priceFilter }, { price: priceFilter }] });
         }
 
         if (search) {
-            // [[ARABIC_COMMENT]] بحث ذكي - يدعم الأخطاء الإملائية والمصطلحات العربية والإنجليزية
             const s = search.trim();
-
-            // [[ARABIC_COMMENT]] خريطة تحويل أسماء الماركات عربي → إنجليزي
             const arabicBrandMap = {
-                'تويوتا': 'toyota', 'تيوتا': 'toyota', 'تتويوتا': 'toyota',
-                'نيسان': 'nissan', 'نيزان': 'nissan',
-                'هوندا': 'honda', 'حوندا': 'honda',
-                'مرسيدس': 'mercedes', 'مرسديس': 'mercedes', 'مرسيدز': 'mercedes',
-                'بي ام دبليو': 'bmw', 'بي ام': 'bmw', 'بمو': 'bmw',
-                'لكزس': 'lexus', 'لكسس': 'lexus',
-                'انفينيتي': 'infiniti', 'انفنتي': 'infiniti',
-                'كيا': 'kia', 'هيونداي': 'hyundai', 'هيونداى': 'hyundai',
-                'فورد': 'ford', 'شيفروليه': 'chevrolet', 'شيفروليت': 'chevrolet',
-                'بورش': 'porsche', 'بورشه': 'porsche',
-                'رنج روفر': 'range rover', 'لاند روفر': 'land rover',
-                'جيب': 'jeep', 'دودج': 'dodge', 'رام': 'ram',
-                'اودي': 'audi', 'أودي': 'audi', 'فولكسواجن': 'volkswagen',
-                'سوبارو': 'subaru', 'مازدا': 'mazda', 'ميتسوبيشي': 'mitsubishi',
-                'جيلي': 'geely', 'بي ام جي': 'byd', 'شانجان': 'changan',
-                'فيراري': 'ferrari', 'لامبورغيني': 'lamborghini', 'بنتلي': 'bentley',
-                'رولز رويس': 'rolls royce', 'ماكلارين': 'mclaren',
+                'تويوتا': 'Toyota', 'هيونداي': 'Hyundai', 'كيا': 'Kia',
+                'نيسان': 'Nissan', 'هوندا': 'Honda', 'سوزوكي': 'Suzuki',
+                'مرسيدس': 'Mercedes', 'بي إم دبليو': 'BMW', 'بي ام دبليو': 'BMW',
+                'أودي': 'Audi', 'فولكسواجن': 'Volkswagen', 'فورد': 'Ford',
+                'جينيسيس': 'Genesis', 'لكزس': 'Lexus', 'إنفينيتي': 'Infiniti'
             };
-
-            // [[ARABIC_COMMENT]] تحويل النص العربي إلى إنجليزي إن وُجد في الخريطة
             const lowerS = s.toLowerCase();
             const mappedSearchEn = arabicBrandMap[s] || arabicBrandMap[lowerS] || null;
-
-            // [[ARABIC_COMMENT]] تحقق من تشابه النص (ليفنشتاين بسيط) للسماح بالأخطاء الإملائية
             const fuzzyTokens = s.split(/\s+/).filter(t => t.length > 1);
+            const safeKey = s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
             const searchConditions = [
-                { title: { $regex: s, $options: 'i' } },
-                { make: { $regex: s, $options: 'i' } },
-                { model: { $regex: s, $options: 'i' } },
-                { description: { $regex: s, $options: 'i' } },
+                { title: { $regex: safeKey, $options: 'i' } },
+                { make: { $regex: safeKey, $options: 'i' } },
+                { model: { $regex: safeKey, $options: 'i' } },
+                { description: { $regex: safeKey, $options: 'i' } },
             ];
 
-            // [[ARABIC_COMMENT]] إضافة شروط اللغة الإنجليزية المقابلة للماركة العربية
             if (mappedSearchEn) {
                 searchConditions.push({ make: { $regex: mappedSearchEn, $options: 'i' } });
                 searchConditions.push({ title: { $regex: mappedSearchEn, $options: 'i' } });
             }
 
-            // [[ARABIC_COMMENT]] بحث على كل كلمة منفردة (fuzzy tokens)
             fuzzyTokens.forEach(token => {
                 if (token !== s) {
-                    searchConditions.push({ make: { $regex: token, $options: 'i' } });
-                    searchConditions.push({ title: { $regex: token, $options: 'i' } });
-                    searchConditions.push({ model: { $regex: token, $options: 'i' } });
+                    const safeToken = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    searchConditions.push({ make: { $regex: safeToken, $options: 'i' } });
+                    searchConditions.push({ title: { $regex: safeToken, $options: 'i' } });
+                    searchConditions.push({ model: { $regex: safeToken, $options: 'i' } });
                 }
             });
 
@@ -211,19 +156,21 @@ router.get('/', cacheResponse(300), async (req, res, next) => {
 
         const filter = conditions.length > 0 ? { $and: conditions } : {};
 
-        // Pagination
+        // [[ARABIC_COMMENT]] addTenantFilter يضمن عزل كامل بين المعارض — إلزامي
+        const tenantFilter = addTenantFilter(req, filter);
+
         const skip = (page - 1) * limit;
 
         const [cars, total] = await Promise.all([
-            Car.find(addTenantFilter(req, filter))
+            Car.find(tenantFilter)
                 .sort({ createdAt: -1 })
                 .limit(parseInt(limit))
                 .skip(skip)
                 .lean(),
-            Car.countDocuments(addTenantFilter(req, filter))
+            Car.countDocuments(tenantFilter)
         ]);
 
-        // [[ARABIC_COMMENT]] جلب سعر الصرف من الإعدادات بدلاً من القيمة الثابتة
+        // جلب سعر الصرف
         let usdToSar = 3.75;
         try {
             const settings = await SiteSettings.getSettings();
@@ -236,6 +183,7 @@ router.get('/', cacheResponse(300), async (req, res, next) => {
                 _id: car._id,
                 id: car._id,
                 title: car.title,
+                titleAr: car.titleAr || car.title,
                 make: car.make,
                 model: car.model,
                 year: car.year,
@@ -246,10 +194,12 @@ router.get('/', cacheResponse(300), async (req, res, next) => {
                 priceKrw: car.priceKrw || 0,
                 displayCurrency: car.displayCurrency || 'SAR',
                 images: car.images || [],
+                imageUrl: car.imageUrl || (car.images && car.images[0]) || '',
                 category: car.category,
                 isActive: car.isActive,
                 isSold: car.isSold,
                 createdAt: car.createdAt,
+                updatedAt: car.updatedAt,
                 color: car.color,
                 fuelType: car.fuelType,
                 fuelAr: car.fuelAr || car.fuelType,
@@ -257,15 +207,17 @@ router.get('/', cacheResponse(300), async (req, res, next) => {
                 transmissionAr: car.transmissionAr || car.transmission,
                 mileage: car.mileage,
                 description: car.description,
-                listingType: 'store', // نُخفي نوع القائمة الداخلية عن العميل
-                source: 'hmcar',     // نُخفي المصدر الداخلي عن العميل
+                descriptionAr: car.descriptionAr || car.description,
+                listingType: car.listingType || 'store',
+                source: car.source || 'hm_local',
                 makeAr: car.makeAr || car.make,
                 badge: car.badge || '',
                 agency: car.agency || null,
                 specs: car.specs || null,
                 inspectionReport: car.inspectionReport || null,
                 featuresAr: car.featuresAr || [],
-                featuresEn: car.featuresEn || []
+                featuresEn: car.featuresEn || [],
+                tenantId: car.tenantId
             })),
             pagination: {
                 current: parseInt(page),
@@ -279,7 +231,9 @@ router.get('/', cacheResponse(300), async (req, res, next) => {
     }
 });
 
-// GET /api/v2/cars/makes - جلب قائمة الماركات
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/v2/cars/makes — جلب قائمة الماركات (مفلترة بالمعرض)
+// ─────────────────────────────────────────────────────────────────────────────
 router.get('/makes', cacheResponse(1800), async (req, res, next) => {
     try {
         const Car = getModel(req, 'Car');
@@ -298,7 +252,9 @@ router.get('/makes', cacheResponse(1800), async (req, res, next) => {
     }
 });
 
-// GET /api/v2/cars/fix-tenant-id - إصلاح معرف المعرض للسيارات المستوردة
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/v2/cars/fix-tenant-id — إصلاح tenantId للسيارات بدون معرف (أدمن)
+// ─────────────────────────────────────────────────────────────────────────────
 router.get('/fix-tenant-id', requireAuthAPI, async (req, res, next) => {
     try {
         if (!req.user.role || !['admin', 'super_admin'].includes(req.user.role)) {
@@ -306,7 +262,7 @@ router.get('/fix-tenant-id', requireAuthAPI, async (req, res, next) => {
         }
         const Car = getModel(req, 'Car');
         const tenantId = getTenantId(req);
-        
+
         const result = await Car.updateMany(
             {
                 $or: [
@@ -315,11 +271,9 @@ router.get('/fix-tenant-id', requireAuthAPI, async (req, res, next) => {
                     { tenantId: null }
                 ]
             },
-            {
-                $set: { tenantId }
-            }
+            { $set: { tenantId } }
         );
-        
+
         res.json({
             success: true,
             modifiedCount: result.modifiedCount,
@@ -332,7 +286,9 @@ router.get('/fix-tenant-id', requireAuthAPI, async (req, res, next) => {
     }
 });
 
-// GET /api/v2/cars/:id - جلب تفاصيل سيارة محددة
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/v2/cars/:id — جلب تفاصيل سيارة محددة (مع فلتر المعرض)
+// ─────────────────────────────────────────────────────────────────────────────
 router.get('/:id', cacheResponse(600), async (req, res, next) => {
     try {
         const Car = getModel(req, 'Car');
@@ -357,8 +313,7 @@ router.get('/:id', cacheResponse(600), async (req, res, next) => {
             success: true,
             data: {
                 ...publicCarData,
-                source: 'hmcar',      // توحيد مصدر السيارة للعميل
-                listingType: 'store', // إخفاء التصنيف الداخلي
+                imageUrl: car.imageUrl || (car.images && car.images[0]) || '',
                 makeAr: car.makeAr || car.make,
                 badge: car.badge || '',
                 fuelAr: car.fuelAr || car.fuelType,
@@ -370,20 +325,32 @@ router.get('/:id', cacheResponse(600), async (req, res, next) => {
     }
 });
 
-// POST /api/v2/cars - إضافة سيارة جديدة (Admin only)
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/v2/cars — إضافة سيارة جديدة (أدمن فقط — مرتبطة بالمعرض)
+// ─────────────────────────────────────────────────────────────────────────────
 router.post('/', requireAuthAPI, requirePermissionAPI('manage_cars'), invalidateCache('/api/v2/cars*'), async (req, res, next) => {
     try {
         const Car = getModel(req, 'Car');
         const AuditLog = getModel(req, 'AuditLog');
         const SiteSettings = getModel(req, 'SiteSettings');
-        const settings = await SiteSettings.getSettings();
+
+        const tenantId = getTenantId(req);
+        let settings;
+        try { settings = await SiteSettings.getSettings(); } catch (e) { settings = {}; }
+
         const payload = normalizeCarPricing(req.body, settings?.currencySettings);
-        const car = new Car({ ...payload, tenantId: getTenantId(req) });
+
+        // [[ARABIC_COMMENT]] ربط السيارة الجديدة بمعرف المعرض الحالي دائماً — لا تخلط
+        const car = new Car({
+            ...payload,
+            tenantId,
+            seller: req.user?.userId || req.user?.id || null
+        });
         await car.save();
 
-        // Log car creation
-        await AuditLog.logUserAction(
-            req.user.userId,
+        // تسجيل في سجل الأحداث
+        AuditLog.logUserAction(
+            req.user.userId || req.user.id,
             'CREATE',
             'Car',
             `Created new car: ${car.title}`,
@@ -392,11 +359,12 @@ router.post('/', requireAuthAPI, requirePermissionAPI('manage_cars'), invalidate
                 after: car.toObject(),
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
-                sessionId: req.sessionID || 'api'
+                sessionId: req.sessionID || 'api',
+                tenantId
             }
-        );
+        ).catch(err => console.error('[AuditLog] Error:', err.message));
 
-        // تفعيل التنبيهات الذكية بشكل غير متزامن (لا يؤخر الاستجابة)
+        // تفعيل التنبيهات الذكية بشكل غير متزامن
         SmartAlertService.checkNewCar(car).catch(err =>
             console.error('[SmartAlert] خطأ في checkNewCar:', err.message)
         );
@@ -404,34 +372,44 @@ router.post('/', requireAuthAPI, requirePermissionAPI('manage_cars'), invalidate
         res.status(201).json({
             success: true,
             data: car,
-            message: 'Car created successfully'
+            message: 'تم إضافة السيارة بنجاح'
         });
     } catch (error) {
         next(error);
     }
 });
 
-// PUT /api/v2/cars/:id - تحديث سيارة (Admin only)
+// ─────────────────────────────────────────────────────────────────────────────
+// PUT /api/v2/cars/:id — تحديث سيارة (أدمن فقط — مع فلتر المعرض الإلزامي)
+// ─────────────────────────────────────────────────────────────────────────────
 router.put('/:id', requireAuthAPI, requirePermissionAPI('manage_cars'), invalidateCache('/api/v2/cars*'), async (req, res, next) => {
     try {
         const Car = getModel(req, 'Car');
         const AuditLog = getModel(req, 'AuditLog');
         const SiteSettings = getModel(req, 'SiteSettings');
+        const tenantId = getTenantId(req);
+
+        // [[ARABIC_COMMENT]] addTenantFilter ضروري: يمنع تعديل سيارة من معرض آخر
         const oldCar = await Car.findOne(addTenantFilter(req, { _id: req.params.id }));
         if (!oldCar) {
             return sendResponse(res, notFoundResponse('Car'));
         }
 
-        const settings = await SiteSettings.getSettings();
-        const mergedPayload = {
-            ...oldCar.toObject(),
-            ...req.body,
-        };
+        let settings;
+        try { settings = await SiteSettings.getSettings(); } catch (e) { settings = {}; }
+
+        // دمج البيانات القديمة مع الجديدة
+        const mergedPayload = { ...oldCar.toObject(), ...req.body };
         const normalizedPayload = normalizeCarPricing(mergedPayload, settings?.currencySettings);
+
+        // حقول لا يجوز تعديلها
         delete normalizedPayload._id;
         delete normalizedPayload.__v;
         delete normalizedPayload.createdAt;
         delete normalizedPayload.updatedAt;
+
+        // [[ARABIC_COMMENT]] الـ tenantId لا يتغير عند التحديث — يبقى ثابتاً
+        normalizedPayload.tenantId = tenantId;
 
         const car = await Car.findOneAndUpdate(
             addTenantFilter(req, { _id: req.params.id }),
@@ -439,51 +417,69 @@ router.put('/:id', requireAuthAPI, requirePermissionAPI('manage_cars'), invalida
             { new: true, runValidators: true }
         );
 
-        // Log car update
-        await AuditLog.logUserAction(
-            req.user.userId,
+        if (!car) {
+            return sendResponse(res, notFoundResponse('Car'));
+        }
+
+        AuditLog.logUserAction(
+            req.user.userId || req.user.id,
             'UPDATE',
             'Car',
             `Updated car: ${car.title}`,
             {
                 targetId: car._id,
-                before: oldCar ? oldCar.toObject() : null,
+                before: oldCar.toObject(),
                 after: car.toObject(),
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
-                sessionId: req.sessionID || 'api'
+                sessionId: req.sessionID || 'api',
+                tenantId
             }
-        );
+        ).catch(err => console.error('[AuditLog] Error:', err.message));
 
         res.json({
             success: true,
             data: car,
-            message: 'Car updated successfully'
+            message: 'تم تحديث السيارة بنجاح'
         });
     } catch (error) {
         next(error);
     }
 });
 
-// DELETE /api/v2/cars/:id - حذف سيارة (Admin only)
-router.delete('/:id', requireAuthAPI, invalidateCache('/api/v2/cars*'), async (req, res, next) => {
+// ─────────────────────────────────────────────────────────────────────────────
+// DELETE /api/v2/cars/:id — حذف سيارة (أدمن فقط — فلتر المعرض إلزامي)
+// ─────────────────────────────────────────────────────────────────────────────
+router.delete('/:id', requireAuthAPI, requirePermissionAPI('manage_cars'), invalidateCache('/api/v2/cars*'), async (req, res, next) => {
     try {
         const Car = getModel(req, 'Car');
+        const AuditLog = getModel(req, 'AuditLog');
+        const tenantId = getTenantId(req);
         const idParam = req.params.id;
 
-        let car = await Car.findOneAndDelete({ _id: idParam }).catch(() => null);
-        if (!car) {
-            car = await Car.findOneAndDelete({ externalId: idParam }).catch(() => null);
-        }
-        if (!car) {
-            car = await Car.findOneAndDelete(addTenantFilter(req, { _id: idParam })).catch(() => null);
-        }
+        // [[ARABIC_COMMENT]] addTenantFilter إلزامي هنا: يمنع حذف سيارة من معرض آخر
+        const car = await Car.findOneAndDelete(addTenantFilter(req, { _id: idParam }));
 
         if (!car) {
             return sendResponse(res, notFoundResponse('Car'));
         }
 
-        console.log(`🗑️ [CarAPI] Car deleted: ${car._id} (${car.title})`);
+        console.log(`🗑️ [CarAPI] Car deleted: ${car._id} (${car.title}) from tenant: ${tenantId}`);
+
+        AuditLog.logUserAction(
+            req.user.userId || req.user.id,
+            'DELETE',
+            'Car',
+            `Deleted car: ${car.title}`,
+            {
+                targetId: car._id,
+                before: car.toObject(),
+                ipAddress: req.ip,
+                userAgent: req.get('User-Agent'),
+                sessionId: req.sessionID || 'api',
+                tenantId
+            }
+        ).catch(err => console.error('[AuditLog] Error:', err.message));
 
         res.json({
             success: true,
@@ -494,12 +490,14 @@ router.delete('/:id', requireAuthAPI, invalidateCache('/api/v2/cars*'), async (r
     }
 });
 
-// [[ARABIC_COMMENT]] PATCH /api/v2/cars/:id/sold - تعليم السيارة كـ "تم البيع" (أدمن فقط)
-// [[ARABIC_COMMENT]] بعد التنفيذ: isSold=true + isActive=false → تختفي من المعرض فوراً
+// ─────────────────────────────────────────────────────────────────────────────
+// PATCH /api/v2/cars/:id/sold — تعليم السيارة كـ "مباعة" (أدمن فقط)
+// ─────────────────────────────────────────────────────────────────────────────
 router.patch('/:id/sold', requireAuthAPI, requirePermissionAPI('manage_cars'), invalidateCache('/api/v2/cars*'), async (req, res, next) => {
     try {
         const Car = getModel(req, 'Car');
         const AuditLog = getModel(req, 'AuditLog');
+        const tenantId = getTenantId(req);
         const { soldPrice, buyerNote } = req.body;
 
         const car = await Car.findOneAndUpdate(
@@ -508,8 +506,8 @@ router.patch('/:id/sold', requireAuthAPI, requirePermissionAPI('manage_cars'), i
                 isSold: true,
                 isActive: false,
                 soldAt: new Date(),
-                soldPrice: soldPrice || undefined,
-                buyerNote: buyerNote || undefined,
+                ...(soldPrice && { soldPrice }),
+                ...(buyerNote && { buyerNote }),
             },
             { new: true }
         );
@@ -518,22 +516,20 @@ router.patch('/:id/sold', requireAuthAPI, requirePermissionAPI('manage_cars'), i
             return sendResponse(res, notFoundResponse('Car'));
         }
 
-        // [[ARABIC_COMMENT]] تسجيل في AuditLog للتقارير التلقائية
-        try {
-            await AuditLog.create({
-                action: 'SOLD',
-                targetModel: 'Car',
-                description: `تم بيع السيارة: ${car.title}`,
+        AuditLog.logUserAction(
+            req.user.userId || req.user.id,
+            'SOLD',
+            'Car',
+            `تم بيع السيارة: ${car.title}`,
+            {
                 targetId: car._id,
                 after: { isSold: true, soldAt: car.soldAt, soldPrice: car.soldPrice },
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
                 sessionId: req.sessionID || 'api',
-                tenantId: getTenantId(req)
-            });
-        } catch (logErr) {
-            console.error('AuditLog error:', logErr);
-        }
+                tenantId
+            }
+        ).catch(err => console.error('[AuditLog] Error:', err.message));
 
         res.json({
             success: true,

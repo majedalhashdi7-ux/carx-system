@@ -142,17 +142,20 @@ function constructFallbackUri(baseUri, dbName) {
  * @returns {Promise<{connection: mongoose.Connection, models: Object}>}
  */
 async function getConnection(tenantId, mongoUri) {
-  // 1. إعادة استخدام الاتصال الرئيسي إذا كان متصلاً بنجاح لنفس المعرض (تجنب التأخير في Vercel)
-  if (mongoose.connection && mongoose.connection.readyState === 1) {
-    const mainDbName = mongoose.connection.name;
-    if (tenantId === 'hmcar' || tenantId === 'default' || mainDbName === tenantId) {
-      const schemas = loadAllSchemas();
-      const models = {};
-      for (const [modelName, schema] of Object.entries(schemas)) {
-        models[modelName] = mongoose.models[modelName] || mongoose.model(modelName, schema);
-      }
-      return { connection: mongoose.connection, models, lastUsed: Date.now() };
+  // 1. إعادة استخدام الاتصال الرئيسي لـ hmcar فقط (لتسريع Vercel Serverless)
+  // [[ARABIC_COMMENT]] المعارض الأخرى تحصل دائماً على اتصال مستقل — لضمان العزل التام
+  const PRIMARY_TENANTS = ['hmcar', 'default'];
+  if (
+    PRIMARY_TENANTS.includes(tenantId) &&
+    mongoose.connection &&
+    mongoose.connection.readyState === 1
+  ) {
+    const schemas = loadSchemas();
+    const models = {};
+    for (const [modelName, schema] of Object.entries(schemas)) {
+      models[modelName] = mongoose.models[modelName] || mongoose.model(modelName, schema);
     }
+    return { connection: mongoose.connection, models, lastUsed: Date.now() };
   }
 
   // 2. تحقق من الكاش الفرعي
