@@ -367,13 +367,13 @@ router.get('/fast-seed', async (req, res) => {
         }
 
         // 2. إنشاء / تحديث حسابات الأدمن المباشرة في قاعدة البيانات
-        const bcrypt = require('bcryptjs');
-        const hash1 = bcrypt.hashSync('daood@112233', 10);
-        const hash2 = bcrypt.hashSync('Admin@2026!HM', 10);
+        // [[ARABIC_COMMENT]] الـ hash مولّد مسبقاً محلياً لتجنب bcrypt.hashSync في Vercel (يسبب timeout)
+        // كلمة المرور: Admin@2026!HM
+        const ADMIN_HASH = '$2b$10$S/pz583pZsrJlXny0cjpcOIjTj1HQod8hKlEs2weC1CRUFlfYecBG';
 
         const adminAccounts = [
-            { email: 'dawoodalhash@gmail.com', username: 'dawoodalhash', name: 'Dawood Alhash', passwordHash: hash1 },
-            { email: 'admin@hmcar.com', username: 'admin', name: 'HM Admin', passwordHash: hash2 }
+            { email: 'dawoodalhash@gmail.com', username: 'dawoodalhash', name: 'Dawood Alhash', passwordHash: ADMIN_HASH },
+            { email: 'admin@hmcar.com', username: 'admin', name: 'HM Admin', passwordHash: ADMIN_HASH }
         ];
 
         const seededAdmins = [];
@@ -698,4 +698,111 @@ router.get('/init-db', async (req, res) => {
     }
 });
 
+// ─────────────────────────────────────────────────────────
+// POST /api/v2/system/seed-data
+// سكريبت مؤقت لرفع البيانات الأولية لقاعدة البيانات السحابية
+// محمي بـ SEED_SECRET لمنع الوصول غير المصرح به
+// ─────────────────────────────────────────────────────────
+router.post('/seed-data', async (req, res) => {
+    try {
+        const { secret } = req.body;
+        const SEED_SECRET = process.env.SEED_SECRET || 'hmcar-seed-2026';
+        if (secret !== SEED_SECRET) {
+            return res.status(403).json({ success: false, message: 'غير مصرح' });
+        }
+
+        const db = (req.tenantDb || mongoose.connection).db;
+        if (!db) return res.status(500).json({ success: false, message: 'قاعدة البيانات غير متصلة' });
+
+        const results = {};
+        const now = new Date();
+        const bcrypt = require('bcryptjs');
+        const crypto = require('crypto');
+
+        // 1. Admin user
+        const users = db.collection('users');
+        const adminPass = 'HMCar@' + crypto.randomBytes(6).toString('hex').toUpperCase();
+        const hashedPass = await bcrypt.hash(adminPass, 12);
+        const existingAdmin = await users.findOne({ email: 'dawoodalhash@gmail.com' });
+        if (existingAdmin) {
+            await users.updateOne({ email: 'dawoodalhash@gmail.com' }, { $set: { password: hashedPass, role: 'admin', isActive: true, updatedAt: now } });
+            results.admin = 'updated';
+        } else {
+            await users.insertOne({ name: 'HM CAR Admin', nameAr: 'مشرف HM CAR', email: 'dawoodalhash@gmail.com', password: hashedPass, role: 'admin', isActive: true, phone: '+967781007805', createdAt: now, updatedAt: now });
+            results.admin = 'created';
+        }
+        results.adminPassword = adminPass;
+
+        // 2. Site settings
+        const settings = db.collection('sitesettings');
+        const settingsData = { siteName: 'HM CAR', siteNameAr: 'HM للسيارات', whatsapp: 'https://wa.me/967781007805', whatsappNumber: '+967781007805', email: 'dawoodalhash@gmail.com', currency: 'SAR', usdToSar: 3.75, usdToKrw: 1300, maintenanceMode: false, updatedAt: now };
+        const existSettings = await settings.findOne({});
+        if (existSettings) { await settings.updateOne({}, { $set: settingsData }); results.settings = 'updated'; }
+        else { await settings.insertOne({ ...settingsData, createdAt: now }); results.settings = 'created'; }
+
+        // 3. Brands
+        const brands = db.collection('brands');
+        if (await brands.countDocuments() === 0) {
+            await brands.insertMany([
+                { name: 'Hyundai', nameAr: 'هيونداي', slug: 'hyundai', country: 'Korea', isActive: true, order: 1, createdAt: now, updatedAt: now },
+                { name: 'Kia', nameAr: 'كيا', slug: 'kia', country: 'Korea', isActive: true, order: 2, createdAt: now, updatedAt: now },
+                { name: 'Genesis', nameAr: 'جينيسيس', slug: 'genesis', country: 'Korea', isActive: true, order: 3, createdAt: now, updatedAt: now },
+                { name: 'Ssangyong', nameAr: 'سانغ يونغ', slug: 'ssangyong', country: 'Korea', isActive: true, order: 4, createdAt: now, updatedAt: now },
+            ]);
+            results.brands = 4;
+        } else { results.brands = 'exist:' + await brands.countDocuments(); }
+
+        // 4. Cars
+        const cars = db.collection('cars');
+        let carIds = [];
+        if (await cars.countDocuments() === 0) {
+            const carsData = [
+                { make:'Hyundai',makeAr:'هيونداي',model:'Sonata',modelAr:'سوناتا',year:2022,price:18500,priceSar:69375,mileage:25000,fuelType:'Gasoline',transmission:'Automatic',condition:'used',color:'White',colorAr:'أبيض',description:'هيونداي سوناتا 2022 استيراد كوري بحالة ممتازة',images:['https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=800'],thumbnail:'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=400',isAvailable:true,isActive:true,stockQty:1,source:'Korea',tenantId:'hmcar',createdAt:now,updatedAt:now },
+                { make:'Kia',makeAr:'كيا',model:'K5',modelAr:'K5',year:2023,price:22000,priceSar:82500,mileage:12000,fuelType:'Gasoline',transmission:'Automatic',condition:'used',color:'Black',colorAr:'أسود',description:'كيا K5 2023 شبه جديدة استيراد كوري',images:['https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800'],thumbnail:'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400',isAvailable:true,isActive:true,stockQty:1,source:'Korea',tenantId:'hmcar',createdAt:now,updatedAt:now },
+                { make:'Genesis',makeAr:'جينيسيس',model:'G80',modelAr:'G80',year:2021,price:35000,priceSar:131250,mileage:40000,fuelType:'Gasoline',transmission:'Automatic',condition:'used',color:'Silver',colorAr:'فضي',description:'جينيسيس G80 2021 فئة الرفاهية',images:['https://images.unsplash.com/photo-1546549032-9571cd6b27df?w=800'],thumbnail:'https://images.unsplash.com/photo-1546549032-9571cd6b27df?w=400',isAvailable:true,isActive:true,stockQty:1,source:'Korea',tenantId:'hmcar',createdAt:now,updatedAt:now },
+                { make:'Hyundai',makeAr:'هيونداي',model:'Tucson',modelAr:'توسان',year:2022,price:26000,priceSar:97500,mileage:30000,fuelType:'Gasoline',transmission:'Automatic',condition:'used',color:'Blue',colorAr:'أزرق',description:'هيونداي توسان 2022 SUV ممتازة',images:['https://images.unsplash.com/photo-1520031441872-265e4ff70366?w=800'],thumbnail:'https://images.unsplash.com/photo-1520031441872-265e4ff70366?w=400',isAvailable:true,isActive:true,stockQty:1,source:'Korea',tenantId:'hmcar',createdAt:now,updatedAt:now },
+                { make:'Kia',makeAr:'كيا',model:'Sportage',modelAr:'سبورتاج',year:2023,price:28000,priceSar:105000,mileage:8000,fuelType:'Hybrid',transmission:'Automatic',condition:'used',color:'Red',colorAr:'أحمر',description:'كيا سبورتاج هايبرد 2023',images:['https://images.unsplash.com/photo-1637624590534-5ff7dfedabf4?w=800'],thumbnail:'https://images.unsplash.com/photo-1637624590534-5ff7dfedabf4?w=400',isAvailable:true,isActive:true,stockQty:1,source:'Korea',tenantId:'hmcar',createdAt:now,updatedAt:now },
+                { make:'Hyundai',makeAr:'هيونداي',model:'Elantra',modelAr:'إيلانترا',year:2023,price:16000,priceSar:60000,mileage:15000,fuelType:'Gasoline',transmission:'Automatic',condition:'used',color:'White',colorAr:'أبيض',description:'هيونداي إيلانترا 2023 اقتصادية',images:['https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800'],thumbnail:'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=400',isAvailable:true,isActive:true,stockQty:1,source:'Korea',tenantId:'hmcar',createdAt:now,updatedAt:now },
+                { make:'Kia',makeAr:'كيا',model:'EV6',modelAr:'EV6',year:2022,price:42000,priceSar:157500,mileage:20000,fuelType:'Electric',transmission:'Automatic',condition:'used',color:'Gray',colorAr:'رمادي',description:'كيا EV6 كهربائية 2022',images:['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800'],thumbnail:'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400',isAvailable:true,isActive:true,stockQty:1,source:'Korea',tenantId:'hmcar',createdAt:now,updatedAt:now },
+                { make:'Genesis',makeAr:'جينيسيس',model:'GV80',modelAr:'GV80',year:2023,price:55000,priceSar:206250,mileage:10000,fuelType:'Gasoline',transmission:'Automatic',condition:'used',color:'Black',colorAr:'أسود',description:'جينيسيس GV80 2023 SUV رفاهية',images:['https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800'],thumbnail:'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=400',isAvailable:true,isActive:true,stockQty:1,source:'Korea',tenantId:'hmcar',createdAt:now,updatedAt:now },
+            ];
+            const carsResult = await cars.insertMany(carsData);
+            carIds = Object.values(carsResult.insertedIds);
+            results.cars = carsResult.insertedCount;
+        } else { results.cars = 'exist:' + await cars.countDocuments(); }
+
+        // 5. Auctions
+        const auctions = db.collection('auctions');
+        if (carIds.length > 0 && await auctions.countDocuments() === 0) {
+            await auctions.insertMany([
+                { carId: carIds[0], startingPrice: 15000, currentBid: 16500, bidIncrement: 500, status: 'running', startsAt: new Date(now - 7200000), endsAt: new Date(now.getTime() + 86400000), bids: [], totalBids: 3, isActive: true, createdAt: now, updatedAt: now },
+                { carId: carIds[1], startingPrice: 20000, currentBid: 22000, bidIncrement: 500, status: 'running', startsAt: new Date(now - 7200000), endsAt: new Date(now.getTime() + 172800000), bids: [], totalBids: 5, isActive: true, createdAt: now, updatedAt: now },
+                { carId: carIds[2], startingPrice: 30000, currentBid: 33000, bidIncrement: 1000, status: 'running', startsAt: new Date(now - 7200000), endsAt: new Date(now.getTime() + 259200000), bids: [], totalBids: 4, isActive: true, createdAt: now, updatedAt: now },
+                { carId: carIds[3], startingPrice: 22000, currentBid: 24000, bidIncrement: 500, status: 'running', startsAt: new Date(now - 7200000), endsAt: new Date(now.getTime() + 43200000), bids: [], totalBids: 6, isActive: true, createdAt: now, updatedAt: now },
+            ]);
+            results.auctions = 4;
+        } else { results.auctions = 'exist:' + await auctions.countDocuments(); }
+
+        // 6. Parts
+        const parts = db.collection('parts');
+        if (await parts.countDocuments() === 0) {
+            await parts.insertMany([
+                { name:'Front Bumper Hyundai Sonata',nameAr:'مصد أمامي هيونداي سوناتا',brand:'Hyundai',brandAr:'هيونداي',price:350,priceSar:1312,category:'Body Parts',categoryAr:'هيكل السيارة',stockQty:5,condition:'new',images:['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400'],isActive:true,createdAt:now,updatedAt:now },
+                { name:'Kia K5 Headlight',nameAr:'مصابيح كيا K5',brand:'Kia',brandAr:'كيا',price:280,priceSar:1050,category:'Lights',categoryAr:'الإضاءة',stockQty:3,condition:'new',images:['https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=400'],isActive:true,createdAt:now,updatedAt:now },
+                { name:'Engine Oil Filter',nameAr:'فلتر زيت المحرك',brand:'Hyundai',brandAr:'هيونداي',price:25,priceSar:93,category:'Engine',categoryAr:'المحرك',stockQty:20,condition:'new',images:['https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=400'],isActive:true,createdAt:now,updatedAt:now },
+                { name:'Brake Pads Kia Sportage',nameAr:'تيل فرامل سبورتاج',brand:'Kia',brandAr:'كيا',price:120,priceSar:450,category:'Brakes',categoryAr:'الفرامل',stockQty:8,condition:'new',images:['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400'],isActive:true,createdAt:now,updatedAt:now },
+                { name:'Genesis G80 Side Mirror',nameAr:'مرايا جينيسيس G80',brand:'Genesis',brandAr:'جينيسيس',price:400,priceSar:1500,category:'Body Parts',categoryAr:'هيكل السيارة',stockQty:2,condition:'used',images:['https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=400'],isActive:true,createdAt:now,updatedAt:now },
+                { name:'AC Compressor Tucson',nameAr:'كمبريسور مكيف توسان',brand:'Hyundai',brandAr:'هيونداي',price:650,priceSar:2437,category:'AC',categoryAr:'التكييف',stockQty:2,condition:'new',images:['https://images.unsplash.com/photo-1520031441872-265e4ff70366?w=400'],isActive:true,createdAt:now,updatedAt:now },
+            ]);
+            results.parts = 6;
+        } else { results.parts = 'exist:' + await parts.countDocuments(); }
+
+        return res.json({ success: true, message: 'تم رفع البيانات بنجاح', results });
+    } catch (err) {
+        logger.error('[seed-data]', err.message);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 module.exports = router;
+
