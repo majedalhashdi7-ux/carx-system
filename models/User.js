@@ -124,17 +124,16 @@ userSchema.index({ tenantId: 1, buyerNameKey: 1 }, { unique: true, partialFilter
 userSchema.index({ tenantId: 1, role: 1 });
 userSchema.index({ tenantId: 1, status: 1 });
 
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function () {
   // تشفير كلمة المرور عند الإنشاء/التعديل فقط (إذا كانت password تم تعديلها)
-  if (!this.isModified('password') || !this.password) return next();
+  if (!this.isModified('password') || !this.password) return;
 
   // التحقق مما إذا كانت كلمة المرور مشفرة بالفعل بتشفير bcrypt لمنع التشفير المزدوج (Double-Hashing)
   const isBcryptHash = /^\$2[aby]\$[0-9]{2}\$[./A-Za-z0-9]{53}$/.test(this.password);
-  if (isBcryptHash) return next();
+  if (isBcryptHash) return;
 
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
-  next();
 });
 
 userSchema.methods.comparePassword = function (candidate) {
