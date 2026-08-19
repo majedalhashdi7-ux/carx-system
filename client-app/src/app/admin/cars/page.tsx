@@ -294,16 +294,18 @@ function CarsContent() {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
     const handleToggleSelect = (id: string) => {
+        if (!id) return;
         setSelectedIds(prev =>
             prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
         );
     };
 
     const handleSelectAll = () => {
-        if (selectedIds.length === filteredCars.length) {
+        const allIds = filteredCars.map(c => c.id || c._id || '').filter(Boolean);
+        if (selectedIds.length === allIds.length) {
             setSelectedIds([]);
         } else {
-            setSelectedIds(filteredCars.map(c => c.id));
+            setSelectedIds(allIds);
         }
     };
 
@@ -490,20 +492,23 @@ function CarsContent() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-8">
-                            {filteredCars.map((car, i) => (
-                                <CarCard
-                                    key={car.id}
-                                    car={car}
-                                    index={i}
-                                    usdToSar={usdToSar}
-                                    isSelected={selectedIds.includes(car.id)}
-                                    onToggleSelect={handleToggleSelect}
-                                    onEdit={handleEdit}
-                                    onDelete={handleDelete}
-                                    onMarkSold={handleMarkSold}
-                                    onToggleActive={handleToggleActive}
-                                />
-                            ))}
+                            {filteredCars.map((car, i) => {
+                                const carId = car.id || car._id || '';
+                                return (
+                                    <CarCard
+                                        key={carId || i}
+                                        car={car}
+                                        index={i}
+                                        usdToSar={usdToSar}
+                                        isSelected={selectedIds.includes(carId)}
+                                        onToggleSelect={handleToggleSelect}
+                                        onEdit={handleEdit}
+                                        onDelete={handleDelete}
+                                        onMarkSold={handleMarkSold}
+                                        onToggleActive={handleToggleActive}
+                                    />
+                                );
+                            })}
                         </div>
                         {totalPages > 1 && (
                             <div className="flex justify-center items-center gap-4 py-8 mb-12 bg-black/40 rounded-xl border border-white/5">

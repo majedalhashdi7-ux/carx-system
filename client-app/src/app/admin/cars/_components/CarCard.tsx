@@ -7,7 +7,7 @@
  */
 
 import { motion } from 'framer-motion';
-import { Edit, Eye, Trash2, CheckCircle2 } from 'lucide-react';
+import { Edit, Eye, Trash2, CheckCircle2, Check } from 'lucide-react';
 import Image from 'next/image';
 import { useLanguage } from '@/lib/LanguageContext';
 import { getBrandDisplayName, formatCarTitle } from '@/lib/brandTranslations';
@@ -95,23 +95,34 @@ export default function CarCard({ car, index, usdToSar, isSelected, onToggleSele
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.07 }}
+            onClick={() => onToggleSelect && onToggleSelect(carId)}
             className={cn(
-                "ck-card overflow-hidden group ck-hover-lift relative transition-all",
-                isSelected && "border-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.3)] bg-orange-500/5"
+                "ck-card overflow-hidden group ck-hover-lift relative transition-all cursor-pointer select-none",
+                isSelected
+                    ? "border-2 border-orange-500 ring-2 ring-orange-500/30 shadow-[0_0_30px_rgba(249,115,22,0.35)] bg-orange-500/[0.08]"
+                    : "border-white/10 hover:border-white/20"
             )}
         >
             {/* ── صورة السيارة ── */}
             <div className="relative h-52 overflow-hidden bg-zinc-900">
-                {/* مربع الاختيار للتحديد المباشر */}
+                {/* مربع الاختيار للتحديد المباشر بتصميم واضح وبارز */}
                 {onToggleSelect && (
-                    <div className="absolute top-3 start-3 z-30" onClick={(e) => e.stopPropagation()}>
-                        <input
-                            type="checkbox"
-                            checked={isSelected || false}
-                            onChange={() => onToggleSelect(carId)}
-                            className="w-5 h-5 rounded border-white/30 bg-black/70 text-orange-500 focus:ring-orange-500 cursor-pointer accent-orange-500 shadow-md"
-                        />
-                    </div>
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleSelect(carId);
+                        }}
+                        className={cn(
+                            "absolute top-3 start-3 z-30 w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 shadow-xl border",
+                            isSelected
+                                ? "bg-orange-500 border-orange-400 text-black shadow-[0_0_15px_rgba(249,115,22,0.6)] scale-110"
+                                : "bg-black/70 backdrop-blur-md border-white/50 text-transparent hover:border-orange-400 hover:scale-105 hover:text-white/40"
+                        )}
+                        title={isSelected ? (isRTL ? 'إلغاء التحديد' : 'Deselect') : (isRTL ? 'تحديد السيارة' : 'Select')}
+                    >
+                        <Check className={cn("w-5 h-5 transition-transform stroke-[3]", isSelected ? "scale-100 text-black" : "scale-75")} />
+                    </button>
                 )}
 
                 <Image
