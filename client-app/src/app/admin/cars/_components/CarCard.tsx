@@ -177,7 +177,7 @@ export default function CarCard({ car, index, usdToSar, isSelected, onToggleSele
                     <div className="flex gap-1.5">
                         {/* زر التعديل */}
                         <button
-                            onClick={() => onEdit(car)}
+                            onClick={(e) => { e.stopPropagation(); onEdit(car); }}
                             title={isRTL ? 'تعديل' : 'Edit'}
                             className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white transition-all flex items-center justify-center"
                         >
@@ -186,7 +186,7 @@ export default function CarCard({ car, index, usdToSar, isSelected, onToggleSele
 
                         {/* زر العرض/الإخفاء (Toggle Active) */}
                         <button
-                            onClick={() => onToggleActive && onToggleActive(carId, car.isActive)}
+                            onClick={(e) => { e.stopPropagation(); onToggleActive && onToggleActive(carId, car.isActive); }}
                             title={car.isActive ? (isRTL ? 'إخفاء' : 'Hide') : (isRTL ? 'إظهار' : 'Show')}
                             className={car.isActive
                                 ? "w-8 h-8 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 hover:bg-orange-500 hover:text-white transition-all flex items-center justify-center"
@@ -199,7 +199,7 @@ export default function CarCard({ car, index, usdToSar, isSelected, onToggleSele
                         {/* زر تسجيل البيع - يظهر فقط إذا لم تُباع بعد */}
                         {!car.isSold && (
                             <button
-                                onClick={() => onMarkSold(carId, car.title)}
+                                onClick={(e) => { e.stopPropagation(); onMarkSold(carId, car.title); }}
                                 title={isRTL ? 'تم البيع' : 'Mark Sold'}
                                 className="w-8 h-8 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500 hover:text-white transition-all flex items-center justify-center"
                             >
@@ -209,7 +209,7 @@ export default function CarCard({ car, index, usdToSar, isSelected, onToggleSele
 
                         {/* زر الحذف */}
                         <button
-                            onClick={() => onDelete(carId)}
+                            onClick={(e) => { e.stopPropagation(); onDelete(carId); }}
                             title={isRTL ? 'حذف' : 'Delete'}
                             className="w-8 h-8 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center"
                         >

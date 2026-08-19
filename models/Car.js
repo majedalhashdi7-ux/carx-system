@@ -45,7 +45,7 @@ const carSchema = new mongoose.Schema({
   transmission: { type: String, default: 'Automatic' },
   color: String,
   // الحالة العامة
-  condition: { type: String, enum: ['excellent', 'good', 'fair', 'needs work'], default: 'good' },
+  condition: { type: String, default: 'good' },
   description: String,
   descriptionAr: String,
   descriptionEn: String,
@@ -107,6 +107,13 @@ const carSchema = new mongoose.Schema({
   isActive: { type: Boolean, default: true }, // للتحكم في عرض السيارة
   soldTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   soldAt: { type: Date, default: null },
+  soldPrice: { type: Number, default: null },
+  buyerNote: { type: String, default: '' },
+  // حقول إضافية
+  badge: { type: String, default: '' }, // مثل: "جديد", "خاص", "مميز"
+  makeAr: { type: String, default: '' },
+  fuelAr: { type: String, default: '' },
+  transmissionAr: { type: String, default: '' },
   // بيانات بيع معلّق (pendingSale) يتم إنشاؤها عند ضغط العميل شراء، ويؤكدها الأدمن لاحقاً
   pendingSaleToken: { type: String, default: '' },
   pendingSaleBuyer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },

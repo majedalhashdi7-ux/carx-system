@@ -411,10 +411,16 @@ router.put('/:id', requireAuthAPI, requirePermissionAPI('manage_cars'), invalida
         // [[ARABIC_COMMENT]] الـ tenantId لا يتغير عند التحديث — يبقى ثابتاً
         normalizedPayload.tenantId = tenantId;
 
+        // [[FIX]] تنظيف حقل condition من القيم غير الإنجليزية (السيارات الكورية)
+        const validConditions = ['excellent', 'good', 'fair', 'needs work'];
+        if (normalizedPayload.condition && !validConditions.includes(normalizedPayload.condition)) {
+            normalizedPayload.condition = 'good';
+        }
+
         const car = await Car.findOneAndUpdate(
             addTenantFilter(req, { _id: req.params.id }),
             normalizedPayload,
-            { new: true, runValidators: true }
+            { new: true, runValidators: false }
         );
 
         if (!car) {
