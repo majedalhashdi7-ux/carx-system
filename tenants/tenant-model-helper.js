@@ -94,20 +94,25 @@ function addTenantFilter(req, filter = {}) {
   // [[ARABIC_COMMENT]] hmcar يرى بياناته + بيانات 'default' القديمة فقط
   // أي معرض آخر يرى بياناته الخاصة فقط — عزل تام
   const PRIMARY_TENANTS = ['hmcar'];
-  if (PRIMARY_TENANTS.includes(tid)) {
-    return {
-      ...filter,
-      $or: [
-        { tenantId: tid },
-        { tenantId: 'default' },
-        { tenantId: { $exists: false } },
-        { tenantId: null },
-      ],
-    };
+
+  const tenantCondition = PRIMARY_TENANTS.includes(tid)
+    ? {
+        $or: [
+          { tenantId: tid },
+          { tenantId: 'default' },
+          { tenantId: { $exists: false } },
+          { tenantId: null },
+        ],
+      }
+    : { tenantId: tid };
+
+  // [[ARABIC_COMMENT]] إذا كان الفلتر يحتوي على $or نستخدم $and لتجنب الكتابة فوقه
+  // مثال: { $or: [{email:x},{phone:y}] } مع شرط tenantId → يجب $and وليس overwrite
+  if (filter.$or) {
+    return { $and: [filter, tenantCondition] };
   }
 
-  // جميع المعارض الأخرى: عزل صارم
-  return { ...filter, tenantId: tid };
+  return { ...filter, ...tenantCondition };
 }
 
 /**

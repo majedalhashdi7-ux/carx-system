@@ -721,7 +721,7 @@ router.post('/seed-data', async (req, res) => {
 
         // 1. Admin user
         const users = db.collection('users');
-        const adminPass = 'HMCar@' + crypto.randomBytes(6).toString('hex').toUpperCase();
+        const adminPass = process.env.ADMIN_PASSWORD || 'HMCar@Admin2026!';
         const hashedPass = await bcrypt.hash(adminPass, 12);
         const existingAdmin = await users.findOne({ email: 'dawoodalhash@gmail.com' });
         if (existingAdmin) {
