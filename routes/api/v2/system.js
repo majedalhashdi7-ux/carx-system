@@ -793,21 +793,33 @@ router.post('/seed-data', async (req, res) => {
             results.auctions = 4;
         } else { results.auctions = 'exist:' + await auctions.countDocuments(); }
 
-        // 6. Parts
+        // 6. Parts & SpareParts
         const parts = db.collection('parts');
+        const spareparts = db.collection('spareparts');
         await parts.updateMany({ tenantId: { $exists: false } }, { $set: { tenantId: 'hmcar', inStock: true, updatedAt: now } });
         await parts.updateMany({ inStock: { $exists: false } }, { $set: { inStock: true, updatedAt: now } });
+        await spareparts.updateMany({ tenantId: { $exists: false } }, { $set: { tenantId: 'hmcar', inStock: true, updatedAt: now } });
+        await spareparts.updateMany({ inStock: { $exists: false } }, { $set: { inStock: true, updatedAt: now } });
+
+        const partsData = [
+            { name:'Front Bumper Hyundai Sonata',nameAr:'مصد أمامي هيونداي سوناتا',brand:'Hyundai',brandAr:'هيونداي',carMake:'Hyundai',carModel:'Sonata',price:350,priceSar:1312,category:'Body Parts',categoryAr:'هيكل السيارة',partType:'Body',stockQty:5,inStock:true,condition:'new',images:['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400'],isActive:true,tenantId:'hmcar',createdAt:now,updatedAt:now },
+            { name:'Kia K5 Headlight',nameAr:'مصابيح كيا K5',brand:'Kia',brandAr:'كيا',carMake:'Kia',carModel:'K5',price:280,priceSar:1050,category:'Lights',categoryAr:'الإضاءة',partType:'Lights',stockQty:3,inStock:true,condition:'new',images:['https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=400'],isActive:true,tenantId:'hmcar',createdAt:now,updatedAt:now },
+            { name:'Engine Oil Filter',nameAr:'فلتر زيت المحرك',brand:'Hyundai',brandAr:'هيونداي',carMake:'Hyundai',carModel:'Elantra',price:25,priceSar:93,category:'Engine',categoryAr:'المحرك',partType:'Engine',stockQty:20,inStock:true,condition:'new',images:['https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=400'],isActive:true,tenantId:'hmcar',createdAt:now,updatedAt:now },
+            { name:'Brake Pads Kia Sportage',nameAr:'تيل فرامل سبورتاج',brand:'Kia',brandAr:'كيا',carMake:'Kia',carModel:'Sportage',price:120,priceSar:450,category:'Brakes',categoryAr:'الفرامل',partType:'Brakes',stockQty:8,inStock:true,condition:'new',images:['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400'],isActive:true,tenantId:'hmcar',createdAt:now,updatedAt:now },
+            { name:'Genesis G80 Side Mirror',nameAr:'مرايا جينيسيس G80',brand:'Genesis',brandAr:'جينيسيس',carMake:'Genesis',carModel:'G80',price:400,priceSar:1500,category:'Body Parts',categoryAr:'هيكل السيارة',partType:'Body',stockQty:2,inStock:true,condition:'used',images:['https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=400'],isActive:true,tenantId:'hmcar',createdAt:now,updatedAt:now },
+            { name:'AC Compressor Tucson',nameAr:'كمبريسور مكيف توسان',brand:'Hyundai',brandAr:'هيونداي',carMake:'Hyundai',carModel:'Tucson',price:650,priceSar:2437,category:'AC',categoryAr:'التكييف',partType:'AC',stockQty:2,inStock:true,condition:'new',images:['https://images.unsplash.com/photo-1520031441872-265e4ff70366?w=400'],isActive:true,tenantId:'hmcar',createdAt:now,updatedAt:now },
+        ];
+
         if (await parts.countDocuments() === 0) {
-            await parts.insertMany([
-                { name:'Front Bumper Hyundai Sonata',nameAr:'مصد أمامي هيونداي سوناتا',brand:'Hyundai',brandAr:'هيونداي',carMake:'Hyundai',carModel:'Sonata',price:350,priceSar:1312,category:'Body Parts',categoryAr:'هيكل السيارة',partType:'Body',stockQty:5,inStock:true,condition:'new',images:['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400'],isActive:true,tenantId:'hmcar',createdAt:now,updatedAt:now },
-                { name:'Kia K5 Headlight',nameAr:'مصابيح كيا K5',brand:'Kia',brandAr:'كيا',carMake:'Kia',carModel:'K5',price:280,priceSar:1050,category:'Lights',categoryAr:'الإضاءة',partType:'Lights',stockQty:3,inStock:true,condition:'new',images:['https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=400'],isActive:true,tenantId:'hmcar',createdAt:now,updatedAt:now },
-                { name:'Engine Oil Filter',nameAr:'فلتر زيت المحرك',brand:'Hyundai',brandAr:'هيونداي',carMake:'Hyundai',carModel:'Elantra',price:25,priceSar:93,category:'Engine',categoryAr:'المحرك',partType:'Engine',stockQty:20,inStock:true,condition:'new',images:['https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=400'],isActive:true,tenantId:'hmcar',createdAt:now,updatedAt:now },
-                { name:'Brake Pads Kia Sportage',nameAr:'تيل فرامل سبورتاج',brand:'Kia',brandAr:'كيا',carMake:'Kia',carModel:'Sportage',price:120,priceSar:450,category:'Brakes',categoryAr:'الفرامل',partType:'Brakes',stockQty:8,inStock:true,condition:'new',images:['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400'],isActive:true,tenantId:'hmcar',createdAt:now,updatedAt:now },
-                { name:'Genesis G80 Side Mirror',nameAr:'مرايا جينيسيس G80',brand:'Genesis',brandAr:'جينيسيس',carMake:'Genesis',carModel:'G80',price:400,priceSar:1500,category:'Body Parts',categoryAr:'هيكل السيارة',partType:'Body',stockQty:2,inStock:true,condition:'used',images:['https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=400'],isActive:true,tenantId:'hmcar',createdAt:now,updatedAt:now },
-                { name:'AC Compressor Tucson',nameAr:'كمبريسور مكيف توسان',brand:'Hyundai',brandAr:'هيونداي',carMake:'Hyundai',carModel:'Tucson',price:650,priceSar:2437,category:'AC',categoryAr:'التكييف',partType:'AC',stockQty:2,inStock:true,condition:'new',images:['https://images.unsplash.com/photo-1520031441872-265e4ff70366?w=400'],isActive:true,tenantId:'hmcar',createdAt:now,updatedAt:now },
-            ]);
-            results.parts = 6;
-        } else { results.parts = 'exist:' + await parts.countDocuments(); }
+            await parts.insertMany(partsData);
+        }
+        if (await spareparts.countDocuments() === 0) {
+            await spareparts.insertMany(partsData);
+            results.spareparts = 6;
+        } else {
+            results.spareparts = 'exist:' + await spareparts.countDocuments();
+        }
+        results.parts = await parts.countDocuments();
 
         return res.json({ success: true, message: 'تم رفع البيانات بنجاح', results });
     } catch (err) {
