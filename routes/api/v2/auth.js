@@ -260,8 +260,13 @@ router.post('/register', authLimiter, async (req, res) => {
       message: 'Registration successful'
     });
   } catch (error) {
-    console.error('Registration error:', error);
-    return sendResponse(res, serverErrorResponse('An error occurred during registration', error));
+    console.error('Registration error:', error.name, error.message, error.code);
+    // Handle duplicate key error specifically
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern || {})[0] || 'field';
+      return res.status(409).json({ success: false, message: `هذا ${field} مسجل مسبقاً`, code: 'CONFLICT', debug: error.keyValue });
+    }
+    return res.status(500).json({ success: false, message: 'An error occurred during registration', code: 'SERVER_ERROR', debug: { name: error.name, msg: error.message } });
   }
 });
 
