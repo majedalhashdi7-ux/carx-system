@@ -1353,5 +1353,59 @@ router.get('/temp-reset-admin-password', async (req, res) => {
   }
 });
 
+// ─── تغيير كلمة المرور (أدمن وعميل) ───
+router.post('/change-password', requireAuthAPI, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ success: false, message: 'كلمة المرور الحالية والجديدة مطلوبتان', code: 'VALIDATION_ERROR' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: 'كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل', code: 'VALIDATION_ERROR' });
+    }
+
+    const User = getModel(req, 'User');
+    // استخدام +password لجلب الحقل المخفي
+    const user = await User.findOne(addTenantFilter(req, { _id: req.user.userId })).select('+password');
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'المستخدم غير موجود', code: 'NOT_FOUND' });
+    }
+
+    // التحقق من كلمة المرور الحالية
+    const isMatch = await bcrypt.compare(currentPassword, user.password || '');
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: 'كلمة المرور الحالية غير صحيحة', code: 'UNAUTHORIZED' });
+    }
+
+    // منع تعيين نفس كلمة المرور القديمة
+    const isSame = await bcrypt.compare(newPassword, user.password || '');
+    if (isSame) {
+      return res.status(400).json({ success: false, message: 'كلمة المرور الجديدة يجب أن تختلف عن الحالية', code: 'VALIDATION_ERROR' });
+    }
+
+    // تشفير وحفظ كلمة المرور الجديدة
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    user.updatedAt = new Date();
+    await user.save({ validateModifiedOnly: true });
+
+    // تسجيل العملية في سجل التدقيق
+    try {
+      const AuditLog = getModel(req, 'AuditLog');
+      await AuditLog.logUserAction(user, 'CHANGE_PASSWORD', 'User', 'Password changed successfully', { ipAddress: req.ip, result: 'SUCCESS' });
+    } catch (_) { /* لا نوقف العملية بسبب خطأ في التدقيق */ }
+
+    return res.json({ success: true, message: 'تم تغيير كلمة المرور بنجاح' });
+
+  } catch (error) {
+    console.error('Change password error:', error.name, error.message);
+    return res.status(500).json({ success: false, message: 'حدث خطأ أثناء تغيير كلمة المرور', code: 'SERVER_ERROR', debug: error.message });
+  }
+});
+
 module.exports = router;
+
 

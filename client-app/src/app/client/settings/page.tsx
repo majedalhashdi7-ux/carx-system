@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/LanguageContext";
+import { api } from "@/lib/api-original";
 
 export default function ClientSettingsPage() {
     const { isRTL, lang, toggleLanguage } = useLanguage();
@@ -58,10 +59,14 @@ export default function ClientSettingsPage() {
             return;
         }
         setSaving(true);
+        setPwdMessage('');
         try {
-            await new Promise(r => setTimeout(r, 600));
+            await api.auth.changePassword({ currentPassword: passwords.current, newPassword: passwords.new });
             setPwdMessage(isRTL ? '✓ تم تغيير كلمة المرور بنجاح' : '✓ Password changed successfully');
             setPasswords({ current: '', new: '', confirm: '' });
+        } catch (err: any) {
+            const msg = err?.response?.data?.message || err?.message || (isRTL ? 'حدث خطأ، حاول مرة أخرى' : 'An error occurred, try again');
+            setPwdMessage(`✗ ${msg}`);
         } finally {
             setSaving(false);
         }
