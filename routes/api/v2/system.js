@@ -752,6 +752,13 @@ router.post('/seed-data', async (req, res) => {
             results.brands = 4;
         } else { results.brands = 'exist:' + await brands.countDocuments(); }
 
+        // 3.5 Fix existing cars — add missing fields (isSold, isAvailable, etc.)
+        const carsFixResult = await db.collection('cars').updateMany(
+            { isSold: { $exists: false } },
+            { $set: { isSold: false, isAvailable: true, isActive: true, updatedAt: now } }
+        );
+        results.carsFixed = carsFixResult.modifiedCount;
+
         // 4. Cars
         const cars = db.collection('cars');
         let carIds = [];
