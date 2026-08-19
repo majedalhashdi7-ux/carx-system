@@ -186,7 +186,10 @@ export default function CarCard({ car, index, usdToSar, isSelected, onToggleSele
 
                         {/* زر العرض/الإخفاء (Toggle Active) */}
                         <button
-                            onClick={(e) => { e.stopPropagation(); onToggleActive && onToggleActive(carId, car.isActive); }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (onToggleActive) onToggleActive(carId, car.isActive);
+                            }}
                             title={car.isActive ? (isRTL ? 'إخفاء' : 'Hide') : (isRTL ? 'إظهار' : 'Show')}
                             className={car.isActive
                                 ? "w-8 h-8 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 hover:bg-orange-500 hover:text-white transition-all flex items-center justify-center"
