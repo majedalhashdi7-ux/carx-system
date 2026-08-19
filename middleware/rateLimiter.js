@@ -38,8 +38,9 @@ const generalLimiter = rateLimit({
 const authLimiter = rateLimit({
   skip: skipInTest,
   windowMs: 15 * 60 * 1000, // 15 دقيقة
-  max: 5, // 5 محاولات فقط
+  max: 20, // 20 محاولة (كان 5 — زيادة لتجنب حظر المستخدمين الشرعيين)
   skipSuccessfulRequests: true, // لا تحسب المحاولات الناجحة
+  keyGenerator: (req) => `${req.ip}-${req.path}`, // مفتاح يشمل المسار
   message: {
     success: false,
     message: 'محاولات تسجيل دخول كثيرة، يرجى المحاولة بعد 15 دقيقة',
@@ -55,6 +56,7 @@ const authLimiter = rateLimit({
     });
   }
 });
+
 
 // ─── Rate Limiter للـ API الحساسة (متوسط) ───
 const strictLimiter = rateLimit({

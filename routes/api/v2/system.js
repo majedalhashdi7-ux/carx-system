@@ -725,12 +725,15 @@ router.post('/seed-data', async (req, res) => {
         const hashedPass = await bcrypt.hash(adminPass, 12);
         const existingAdmin = await users.findOne({ email: 'dawoodalhash@gmail.com' });
         if (existingAdmin) {
-            await users.updateOne({ email: 'dawoodalhash@gmail.com' }, { $set: { password: hashedPass, role: 'admin', isActive: true, updatedAt: now } });
+            await users.updateOne({ email: 'dawoodalhash@gmail.com' }, { $set: { password: hashedPass, role: 'admin', isActive: true, tenantId: 'hmcar', updatedAt: now } });
             results.admin = 'updated';
         } else {
-            await users.insertOne({ name: 'HM CAR Admin', nameAr: 'مشرف HM CAR', email: 'dawoodalhash@gmail.com', password: hashedPass, role: 'admin', isActive: true, phone: '+967781007805', createdAt: now, updatedAt: now });
+            await users.insertOne({ name: 'HM CAR Admin', nameAr: 'مشرف HM CAR', email: 'dawoodalhash@gmail.com', password: hashedPass, role: 'admin', isActive: true, tenantId: 'hmcar', phone: '+967781007805', createdAt: now, updatedAt: now });
             results.admin = 'created';
         }
+        // Fix: add tenantId to all users missing it
+        await users.updateMany({ tenantId: { $exists: false } }, { $set: { tenantId: 'hmcar', updatedAt: now } });
+        await users.updateMany({ tenantId: null }, { $set: { tenantId: 'hmcar', updatedAt: now } });
         results.adminPassword = adminPass;
 
         // 2. Site settings
