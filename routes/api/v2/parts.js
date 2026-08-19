@@ -166,11 +166,20 @@ router.get('/', cacheResponse(600), async (req, res) => {
             });
         }
 
-        const parts = await SparePart.find(filter)
-            .populate('brand', 'name logoUrl')
-            .sort({ createdAt: -1 })
-            .limit(Number(limit))
-            .lean();
+        let parts = [];
+        try {
+            parts = await SparePart.find(filter)
+                .populate('brand', 'name logoUrl')
+                .sort({ createdAt: -1 })
+                .limit(Number(limit))
+                .lean();
+        } catch (popErr) {
+            // Fallback if brand contains a string instead of ObjectId
+            parts = await SparePart.find(filter)
+                .sort({ createdAt: -1 })
+                .limit(Number(limit))
+                .lean();
+        }
 
         const mappedParts = parts.map(p => {
             const sarPrice = Number(p.priceSar || p.price || 0);
@@ -230,9 +239,14 @@ router.get('/:id', cacheResponse(600), async (req, res) => {
     try {
         const SparePart = getModel(req, 'SparePart');
         const SiteSettings = getModel(req, 'SiteSettings');
-        const p = await SparePart.findById(req.params.id)
-            .populate('brand', 'name logoUrl')
-            .lean();
+        let p = null;
+        try {
+            p = await SparePart.findById(req.params.id)
+                .populate('brand', 'name logoUrl')
+                .lean();
+        } catch (_) {
+            p = await SparePart.findById(req.params.id).lean();
+        }
 
         if (!p) {
             return res.status(404).json({ success: false, error: 'Part not found' });
