@@ -42,7 +42,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     clearTimeout(timeout);
     if (carsRes.ok) {
       const carsData = await carsRes.json();
-      const carsList: any[] = carsData?.data?.cars || carsData?.cars || [];
+      const carsList: any[] = Array.isArray(carsData?.data)
+        ? carsData.data
+        : Array.isArray(carsData)
+          ? carsData
+          : (carsData?.data?.cars || carsData?.cars || []);
       carsList.forEach((car: any) => {
         carPaths.push({
           url: `${baseUrl}/showroom/${car.id || car._id}`,
@@ -68,7 +72,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     clearTimeout(timeout);
     if (partsRes.ok) {
       const partsData = await partsRes.json();
-      const partsList: any[] = partsData?.parts || partsData?.data?.parts || [];
+      const partsList: any[] = Array.isArray(partsData?.data)
+        ? partsData.data
+        : Array.isArray(partsData)
+          ? partsData
+          : (partsData?.parts || partsData?.data?.parts || []);
       partsList.forEach((part: any) => {
         partPaths.push({
           url: `${baseUrl}/parts/${part.id || part._id}`,

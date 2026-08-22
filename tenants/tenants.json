@@ -53,7 +53,7 @@
         "carx.localhost",
         "carx-system-five.vercel.app"
       ],
-      "mongoUri": "ENV:MONGO_URI_CARX",
+      "mongoUri": "ENV:MONGO_URI",
       "logo": "/uploads/tenants/carx/logo.png",
       "favicon": "/uploads/tenants/carx/favicon.ico",
       "theme": {

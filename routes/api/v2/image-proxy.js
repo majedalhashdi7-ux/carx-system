@@ -86,17 +86,38 @@ router.get('/', async (req, res) => {
 
         let imageUrl = String(rawImageUrl).trim();
 
-        // تصحيح البادئة المزدوجة للـ URL
+        // 1. فك التغليف المتكرر إذا كان الرابط ممرراً عبر البروكسي عدة مرات
+        while (imageUrl.includes('/api/v2/image-proxy?url=') || imageUrl.includes('/api/v2/image-proxy%3Furl%3D')) {
+            try {
+                const match = imageUrl.match(/url=([^&]+)/i) || imageUrl.match(/url%3D([^&]+)/i);
+                if (match && match[1]) {
+                    imageUrl = decodeURIComponent(match[1]).trim();
+                } else {
+                    break;
+                }
+            } catch {
+                break;
+            }
+        }
+
+        // 2. تصحيح البادئة المزدوجة للـ URL
         if (imageUrl.includes('https://ci.encar.comhttps://')) {
             imageUrl = imageUrl.replace('https://ci.encar.comhttps://', 'https://');
         }
+        if (imageUrl.includes('ci.encar.comhttps://')) {
+            imageUrl = imageUrl.replace(/.*https:\/\//, 'https://');
+        }
 
-        // تصحيح المسارات النسبية لـ Encar
+        // 3. تصحيح المسارات النسبية لـ Encar
         if (imageUrl.startsWith('/carpicture') || imageUrl.startsWith('carpicture')) {
             const cleanPath = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
             imageUrl = `https://ci.encar.com${cleanPath}`;
-        } else if (!imageUrl.startsWith('http') && imageUrl.includes('/001/')) {
+        } else if (!imageUrl.startsWith('http') && (imageUrl.includes('/001/') || imageUrl.includes('.jpg') || imageUrl.includes('.png'))) {
             imageUrl = `https://ci.encar.com/carpicture/${imageUrl.replace(/^\/+/, '')}`;
+        }
+
+        if (imageUrl.endsWith('_')) {
+            imageUrl = `${imageUrl}001.jpg`;
         }
 
         if (!imageUrl.startsWith('http')) {
@@ -107,13 +128,16 @@ router.get('/', async (req, res) => {
             imageUrl.includes('ci.encar') || imageUrl.includes('carpicture');
 
         const headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
         };
 
         if (isEncar) {
             headers['Referer'] = 'https://www.encar.com/';
             headers['Origin'] = 'https://www.encar.com';
+            headers['Sec-Fetch-Dest'] = 'image';
+            headers['Sec-Fetch-Mode'] = 'no-cors';
+            headers['Sec-Fetch-Site'] = 'cross-site';
         }
 
         const response = await axios.get(imageUrl, {
@@ -125,12 +149,16 @@ router.get('/', async (req, res) => {
         let imageData = Buffer.from(response.data);
         const contentType = response.headers['content-type'] || 'image/jpeg';
 
-        // تطبيق العلامة المائية إذا طُلب أو دائماً للصور الخارجية
-        const shouldWatermark = watermark === 'true' || isEncar;
-        if (shouldWatermark && sharp) {
-            const wmText = (text ? decodeURIComponent(text) : WATERMARK_TEXT);
-            imageData = await applyWatermarkWithSharp(imageData, wmText);
-            res.setHeader('Content-Type', 'image/jpeg');
+        // تطبيق العلامة المائية إذا طُلب أو دائماً للصور الخارجية عند توفر Sharp
+        const shouldWatermark = (watermark === 'true' || isEncar) && !!sharp;
+        if (shouldWatermark) {
+            try {
+                const wmText = (text ? decodeURIComponent(text) : WATERMARK_TEXT);
+                imageData = await applyWatermarkWithSharp(imageData, wmText);
+                res.setHeader('Content-Type', 'image/jpeg');
+            } catch {
+                res.setHeader('Content-Type', contentType);
+            }
         } else {
             res.setHeader('Content-Type', contentType);
         }
@@ -140,8 +168,8 @@ router.get('/', async (req, res) => {
         return res.send(imageData);
 
     } catch (err) {
-        console.warn('[ImageProxy] Failed:', req.query.url, '-', err.message);
-        return res.redirect('https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=800');
+        console.warn('[ImageProxy] Failed for:', req.query.url, '-', err.message);
+        return res.redirect('https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=1000');
     }
 });
 

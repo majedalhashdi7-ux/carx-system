@@ -19,33 +19,32 @@ class WatermarkService {
      * @returns {string} رابط الصورة مع العلامة المائية
      */
     static applyWatermark(imageUrl, options = {}) {
-        if (!imageUrl || typeof imageUrl !== 'string') return imageUrl;
+        if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.trim()) return imageUrl;
+
+        const clean = imageUrl.trim();
+
+        // ─── منع التكرار: إذا كانت الصورة تحمل علامة أو تمر عبر البروكسي مسبقاً ───
+        if (clean.includes('image-proxy') || clean.includes('watermark=true') || clean.includes('l_text:')) {
+            return clean;
+        }
 
         const watermarkText = options.watermarkText || WATERMARK_TEXT;
 
         // ─── Cloudinary: تطبيق العلامة المائية عبر Transformation API ─────────
-        if (imageUrl.includes('res.cloudinary.com')) {
-            // نص أبيض شفاف بالزاوية السفلية اليمنى
+        if (clean.includes('res.cloudinary.com')) {
             const text = encodeURIComponent(watermarkText);
             const overlayTag = `l_text:Arial_28_bold:${text},co_white,o_60,g_south_east,x_20,y_20`;
-            return imageUrl.replace('/upload/', `/upload/${overlayTag}/`);
-        }
-
-        // ─── مسارات محلية (مضغوطة): تمرير عبر الـ proxy ──────────────────────
-        if (imageUrl.startsWith('/uploads/') || imageUrl.startsWith('/api/')) {
-            const encodedUrl = encodeURIComponent(imageUrl);
-            const text = encodeURIComponent(watermarkText);
-            return `/api/v2/image-proxy?url=${encodedUrl}&watermark=true&text=${text}`;
+            return clean.replace('/upload/', `/upload/${overlayTag}/`);
         }
 
         // ─── روابط خارجية (Encar وغيره): تمرير عبر الـ proxy ─────────────────
-        if (imageUrl.startsWith('http')) {
-            const encodedUrl = encodeURIComponent(imageUrl);
+        if (clean.startsWith('http')) {
+            const encodedUrl = encodeURIComponent(clean);
             const text = encodeURIComponent(watermarkText);
             return `/api/v2/image-proxy?url=${encodedUrl}&watermark=true&text=${text}`;
         }
 
-        return imageUrl;
+        return clean;
     }
 
     /**

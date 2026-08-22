@@ -17,12 +17,17 @@ export default function CarsGallery() {
   useEffect(() => {
     const fetchCars = async () => {
       setLoading(true);
-      const res = await api.cars.getAll() as any;
+      const res = await api.cars.getAll({ limit: '100' }) as any;
       if (res.error) {
         setError(res.error);
       } else if (res.data) {
         const result = res.data;
-        setCars(result.data?.cars || result.cars || []);
+        const fetchedCars = Array.isArray(result.data)
+          ? result.data
+          : Array.isArray(result)
+            ? result
+            : (result.data?.cars || result.cars || []);
+        setCars(fetchedCars);
       }
       setLoading(false);
     };

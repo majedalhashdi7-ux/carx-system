@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: hmcar-backend
+    env: node
+    plan: standard
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: NEXTAUTH_SECRET
+        generateValue: true

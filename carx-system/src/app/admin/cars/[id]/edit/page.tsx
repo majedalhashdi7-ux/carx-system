@@ -34,8 +34,8 @@ export default function EditCarPage() {
       try {
         const res = await api.cars.getById(carId);
         if (res.data) {
-          const car = (res.data as any).data?.car || (res.data as any).car;
-          if (car) {
+          const car = (res.data as any).data?.car || (res.data as any).data || (res.data as any).car || res.data;
+          if (car && (car.title || car._id || car.make)) {
             setFormData({
               title: car.title || '',
               make: car.make || car.brand || '',

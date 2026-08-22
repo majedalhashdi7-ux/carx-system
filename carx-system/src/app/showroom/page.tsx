@@ -43,22 +43,22 @@ export default function ShowroomPage() {
   useEffect(() => {
     const fetchCars = async () => {
       setLoading(true);
-      // [[FIX]] تصفية السيارات بـ listingType=showroom لعرض المعرض الكوري فقط
-      const res = await api.cars.getAll({ listingType: 'showroom', limit: '200' }) as any;
-      if (res.data) {
-        const result = res.data;
-        const fetchedCars = result.data?.cars || result.cars || [];
-        // احتياطي: إذا لم تكن هناك سيارات showroom، جلب كل السيارات
-        if (fetchedCars.length === 0) {
-          const fallback = await api.cars.getAll({ limit: '200' }) as any;
-          if (fallback.data) {
-            setCars(fallback.data?.data?.cars || fallback.data?.cars || []);
-          }
-        } else {
+      try {
+        const res = await api.cars.getAll({ limit: '200' }) as any;
+        if (res.data) {
+          const result = res.data;
+          const fetchedCars = Array.isArray(result.data)
+            ? result.data
+            : Array.isArray(result)
+              ? result
+              : (result.data?.cars || result.cars || []);
           setCars(fetchedCars);
         }
+      } catch (err) {
+        console.error('Failed to load showroom cars:', err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     fetchCars();
 

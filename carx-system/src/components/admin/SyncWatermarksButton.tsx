@@ -24,10 +24,10 @@ export default function SyncWatermarksButton() {
         setMessage('');
 
         try {
-            const res = await api.post('/system/sync-watermarks', {});
-            if (res.success) {
+            const res = await api.import.fixImages();
+            if (res.data?.success) {
                 setStatus('success');
-                setMessage(res.message || '✅ بدأت عملية المزامنة في الخلفية');
+                setMessage(res.data.message || '✅ بدأت عملية المزامنة في الخلفية');
                 setTimeout(() => setStatus('idle'), 8000);
             } else {
                 throw new Error(res.error || 'فشل بدء العملية');

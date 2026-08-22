@@ -142,13 +142,14 @@ function constructFallbackUri(baseUri, dbName) {
  * @returns {Promise<{connection: mongoose.Connection, models: Object}>}
  */
 async function getConnection(tenantId, mongoUri) {
-  // 1. إعادة استخدام الاتصال الرئيسي لـ hmcar فقط (لتسريع Vercel Serverless)
-  // [[ARABIC_COMMENT]] المعارض الأخرى تحصل دائماً على اتصال مستقل — لضمان العزل التام
-  const PRIMARY_TENANTS = ['hmcar', 'default'];
+  // 1. إعادة استخدام الاتصال الرئيسي لـ hmcar و carx و default (لتسريع الاستجابة والـ Serverless)
+  const PRIMARY_TENANTS = ['hmcar', 'carx', 'default'];
+  const mainUri = process.env.MONGO_URI || process.env.MONGODB_URI || '';
   if (
     PRIMARY_TENANTS.includes(tenantId) &&
     mongoose.connection &&
-    mongoose.connection.readyState === 1
+    mongoose.connection.readyState === 1 &&
+    (!mongoUri || mongoUri === mainUri || !process.env.MONGO_URI_CARX || process.env.MONGO_URI_CARX === mainUri)
   ) {
     const schemas = loadSchemas();
     const models = {};

@@ -4,6 +4,19 @@ import { useState, useRef, useCallback } from 'react';
 import { Upload, X, Image as ImageIcon, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { uploadMultipleToBlob } from '../../lib/imageUtils';
 
+function estimateDataUrlSize(dataUrl: string): number {
+  if (!dataUrl || !dataUrl.startsWith('data:')) return 0;
+  const base64 = dataUrl.split(',')[1] || '';
+  return Math.round((base64.length * 3) / 4);
+}
+
+function formatBytes(bytes: number): string {
+  if (!bytes || bytes === 0) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 interface MultiImageUploaderProps {
   images: string[];
   onChange: (images: string[]) => void;

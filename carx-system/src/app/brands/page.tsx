@@ -30,7 +30,12 @@ export default function BrandsPage() {
       try {
         const res = await api.brands.getAll();
         if (res.data) {
-          const fetched = (res.data as any).data?.brands || (res.data as any).brands || [];
+          const d = res.data as any;
+          const fetched = Array.isArray(d?.data)
+            ? d.data
+            : Array.isArray(d)
+              ? d
+              : (d?.data?.brands || d?.brands || []);
           setBrands(fetched);
         }
       } catch {

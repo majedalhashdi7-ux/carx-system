@@ -13,6 +13,20 @@ export function normalizeImageUrl(rawUrl: string | null | undefined): string {
     if (!rawUrl || typeof rawUrl !== 'string' || !rawUrl.trim()) return FALLBACK_IMAGE;
     let url = rawUrl.trim();
 
+    // فك التغليف إذا كان الرابط داخل /api/v2/image-proxy?url=
+    while (url.includes('/api/v2/image-proxy?url=') || url.includes('/api/v2/image-proxy%3Furl%3D')) {
+        try {
+            const match = url.match(/url=([^&]+)/i) || url.match(/url%3D([^&]+)/i);
+            if (match && match[1]) {
+                url = decodeURIComponent(match[1]).trim();
+            } else {
+                break;
+            }
+        } catch {
+            break;
+        }
+    }
+
     // تصحيح البادئة المزدوجة للرابط
     if (url.includes('https://ci.encar.comhttps://')) {
         url = url.replace('https://ci.encar.comhttps://', 'https://');
@@ -59,14 +73,16 @@ export function getProxiedImageUrl(rawUrl: string | null | undefined, watermarkT
     if (!rawUrl || typeof rawUrl !== 'string' || !rawUrl.trim()) return FALLBACK_IMAGE;
     const normalized = normalizeImageUrl(rawUrl);
 
-    // إذا كانت الصورة داخلية أو Cloudinary أو data URI أو سبق تحويلها لـ proxy
+    // إذا كانت الصورة Cloudinary أو data URI
     if (
-        normalized.startsWith('/uploads/') ||
-        normalized.startsWith('/api/') ||
         normalized.startsWith('data:') ||
-        normalized.includes('res.cloudinary.com') ||
-        normalized.includes('/api/v2/image-proxy')
+        normalized.includes('res.cloudinary.com')
     ) {
+        return normalized;
+    }
+
+    // إذا كانت الصورة تحمل علامة image-proxy مسبقاً بعد فك التغليف
+    if (normalized.includes('/api/v2/image-proxy')) {
         return normalized;
     }
 

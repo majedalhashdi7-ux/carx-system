@@ -20,7 +20,13 @@ export default function AdminOrdersPage() {
     try {
       const res = await api.orders.getAll();
       if (res.data) {
-        setOrders((res.data as any).data?.orders || (res.data as any).orders || []);
+        const d = res.data as any;
+        const ordersList = Array.isArray(d?.data)
+          ? d.data
+          : Array.isArray(d)
+            ? d
+            : (d?.data?.orders || d?.orders || []);
+        setOrders(ordersList);
       }
     } catch (err) {
       console.error('Failed to fetch orders', err);

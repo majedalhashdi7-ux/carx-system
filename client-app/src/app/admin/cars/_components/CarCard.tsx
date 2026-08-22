@@ -11,6 +11,7 @@ import { Edit, Eye, Trash2, CheckCircle2, Check } from 'lucide-react';
 import Image from 'next/image';
 import { useLanguage } from '@/lib/LanguageContext';
 import { getBrandDisplayName, formatCarTitle } from '@/lib/brandTranslations';
+import { getCarMainImage } from '@/lib/imageUtils';
 import { cn } from '@/lib/utils';
 
 // ── نوع بيانات السيارة ──
@@ -55,40 +56,7 @@ export default function CarCard({ car, index, usdToSar, isSelected, onToggleSele
         ? `${((car.price || 0) / usdToSar).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} USD`
         : `${Number(car.price || 0).toLocaleString()} SAR`;
 
-    // معالجة رابط الصورة لإصلاح الروابط الكورية وتمريرها عبر Proxy لمنع 403
-    const getImageUrl = (url: string | undefined): string => {
-        if (!url) return 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?q=80&w=1000&auto=format&fit=crop';
-        
-        // إزالة التكرار في الرابط
-        if (url.includes('https://ci.encar.comhttps://ci.encar.com')) {
-            url = url.replace('https://ci.encar.comhttps://ci.encar.com', 'https://ci.encar.com');
-        }
-        
-        // إصلاح الروابط التي تنتهي بـ _
-        if (url.endsWith('_')) {
-            if (url.startsWith('http')) {
-                url = `${url}001.jpg`;
-            } else {
-                url = `https://ci.encar.com${url}001.jpg`;
-            }
-        }
-        
-        // إضافة النطاق إذا كان الرابط نسبي
-        if (url.startsWith('/carpicture')) {
-            url = `https://ci.encar.com${url}`;
-        } else if (url.startsWith('/') && !url.startsWith('http')) {
-            url = `https://ci.encar.com/carpicture${url}`;
-        }
-        
-        // تمرير الصور الكورية عبر proxy لمنع حظر Vercel (403 Forbidden)
-        if (url.includes('encar.com') || url.includes('encar.co.kr')) {
-            return `/api/v2/image-proxy?url=${encodeURIComponent(url)}`;
-        }
-
-        return url;
-    };
-
-    const imageUrl = getImageUrl(car.images?.[0]);
+    const imageUrl = getCarMainImage(car);
 
     return (
         <motion.div

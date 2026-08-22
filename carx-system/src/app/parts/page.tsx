@@ -19,8 +19,13 @@ export default function PartsPage() {
       try {
         const res = await api.parts.getAll();
         if (res.data) {
-          // Adjust based on your API response structure
-          setParts((res.data as any).data?.parts || (res.data as any).parts || []);
+          const d = res.data as any;
+          const partsList = Array.isArray(d?.data)
+            ? d.data
+            : Array.isArray(d)
+              ? d
+              : (d?.data?.parts || d?.parts || []);
+          setParts(partsList);
         }
       } catch (error) {
         console.error('Failed to fetch parts', error);

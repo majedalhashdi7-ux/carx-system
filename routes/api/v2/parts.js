@@ -3,7 +3,7 @@
 // [[ARABIC_HEADER]] هذا الملف (routes/api/v2/parts.js) مسؤول عن إدارة قطع الغيار، وهو يحتوي على نظام جلب القطع (Scraping) من المواقع الخارجية.
 const express = require('express');
 const router = express.Router();
-const { getModel } = require('../../../tenants/tenant-model-helper');
+const { getModel, addTenantFilter } = require('../../../tenants/tenant-model-helper');
 const { requireAuthAPI, requireAdmin } = require('../../../middleware/auth');
 const { cacheResponse, invalidateCache } = require('../../../middleware/cache');
 
@@ -166,16 +166,17 @@ router.get('/', cacheResponse(600), async (req, res) => {
             });
         }
 
+        const finalFilter = addTenantFilter(req, filter);
         let parts = [];
         try {
-            parts = await SparePart.find(filter)
+            parts = await SparePart.find(finalFilter)
                 .populate('brand', 'name logoUrl')
                 .sort({ createdAt: -1 })
                 .limit(Number(limit))
                 .lean();
         } catch (popErr) {
             // Fallback if brand contains a string instead of ObjectId
-            parts = await SparePart.find(filter)
+            parts = await SparePart.find(finalFilter)
                 .sort({ createdAt: -1 })
                 .limit(Number(limit))
                 .lean();
@@ -726,7 +727,9 @@ router.post('/scrape/brands', requireAuthAPI, requireAdmin, invalidateCache('/ap
                             priceKrw: krwPrice,
                             stockQty: 5,
                             inStock: true,
-                            images: localPartImg ? [localPartImg] : [],
+                            images: processedImages.length > 0 ? processedImages : (mainPartImage ? [mainPartImage] : []),
+                            img: mainPartImage,
+                            image: mainPartImage,
                             externalUrl: card.sourceUrl,
                             source: 'autospare'
                         });

@@ -112,22 +112,23 @@ export default function ImportSystem({ type, onImportComplete }: ImportSystemPro
     try {
       const res = await api.import.preview(url, type);
 
-      if (res.data?.success) {
-        setPreviewData(res.data.data);
+      const d = res.data as any;
+      if (d?.success) {
+        setPreviewData(d.data);
         setShowPreview(true);
         setResult({
           success: true,
-          message: res.data.duplicate
+          message: d.duplicate
             ? 'تنبيه: هذا العنصر موجود مسبقاً في النظام (رابط مكرر) - سيتم تحديثه'
             : 'تم استخراج البيانات بنجاح',
-          data: res.data.data,
-          images: res.data.images,
-          duplicate: res.data.duplicate
+          data: d.data,
+          images: d.images,
+          duplicate: d.duplicate
         });
       } else {
         setResult({
           success: false,
-          message: res.error || res.data?.error || 'فشل الاستيراد'
+          message: res.error || d?.error || 'فشل الاستيراد'
         });
       }
     } catch (error: any) {
@@ -148,9 +149,9 @@ export default function ImportSystem({ type, onImportComplete }: ImportSystemPro
       if (res.data?.success) {
         setResult({
           success: true,
-          message: res.data.message || `✅ تم النشر في المعرض! ${type === 'car' ? 'السيارة' : 'القطعة'} ظاهرة الآن للعملاء.`
+          message: (res.data as any)?.message || `✅ تم النشر في المعرض! ${type === 'car' ? 'السيارة' : 'القطعة'} ظاهرة الآن للعملاء.`
         });
-        onImportComplete?.(res.data.data);
+        onImportComplete?.((res.data as any)?.data || res.data);
 
         setTimeout(() => {
           setUrl('');

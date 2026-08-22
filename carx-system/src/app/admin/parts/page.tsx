@@ -58,7 +58,12 @@ export default function AdminPartsPage() {
         setError(res.error);
       } else {
         const result = res.data;
-        setParts(result?.data?.parts || result?.parts || []);
+        const partsList = Array.isArray(result?.data)
+          ? result.data
+          : Array.isArray(result)
+            ? result
+            : (result?.data?.parts || result?.parts || []);
+        setParts(partsList);
       }
     } catch (err) {
       setError('فشل جلب قطع الغيار من الخادم');

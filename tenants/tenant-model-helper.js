@@ -91,14 +91,16 @@ function addTenantFilter(req, filter = {}) {
 
   const tid = req.tenant.id;
 
-  // [[ARABIC_COMMENT]] hmcar يرى بياناته + بيانات 'default' القديمة فقط
-  // أي معرض آخر يرى بياناته الخاصة فقط — عزل تام
-  const PRIMARY_TENANTS = ['hmcar'];
+  // [[ARABIC_COMMENT]] المعارض الرئيسية (hmcar, carx, default) ترى بياناتها + البيانات المشتركة والقديمة
+  // أي معرض فرعي مخصص إضافي يرى بياناته الخاصة فقط
+  const PRIMARY_TENANTS = ['hmcar', 'carx', 'default'];
 
   const tenantCondition = PRIMARY_TENANTS.includes(tid)
     ? {
         $or: [
           { tenantId: tid },
+          { tenantId: 'hmcar' },
+          { tenantId: 'carx' },
           { tenantId: 'default' },
           { tenantId: { $exists: false } },
           { tenantId: null },

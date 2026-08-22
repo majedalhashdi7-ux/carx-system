@@ -140,22 +140,33 @@ async function fixOneCar(car) {
         needsUpdate = true;
     }
 
-    // ─── معالجة الصور الخارجية ───────────────────────────────────
-    const allImages = [...(car.images || []), car.image, car.mainImage, car.imageUrl]
+    // ─── معالجة الصور والتأكد من وجود صور صالحة لكل سيارة ─────────────
+    let allImages = [...(car.images || []), car.image, car.mainImage, car.imageUrl]
         .filter(Boolean)
         .filter((v, i, a) => a.indexOf(v) === i);
 
-    const hasExternalImages = allImages.some(isExternalImageUrl);
-    const hasUnwatermarked = allImages.some(img => !alreadyHasWatermark(img) && isInternalOrCloudUrl(img));
+    // إذا كانت السيارة بدون صور، زوّدها بصور موديلها الحقيقي
+    if (allImages.length === 0) {
+        const { getCuratedModelImages } = require('./ShowroomImportService');
+        const fallbackImages = getCuratedModelImages(updates.make || car.make, updates.model || car.model);
+        updates.images = fallbackImages;
+        updates.image = fallbackImages[0];
+        updates.mainImage = fallbackImages[0];
+        updates.imageUrl = fallbackImages[0];
+        needsUpdate = true;
+    } else {
+        const hasExternalImages = allImages.some(isExternalImageUrl);
+        const hasUnwatermarked = allImages.some(img => !alreadyHasWatermark(img) && isInternalOrCloudUrl(img));
 
-    if (hasExternalImages || hasUnwatermarked) {
-        const processed = await processImages(allImages, 'showroom');
-        if (processed.length > 0) {
-            updates.images = processed;
-            updates.image = processed[0];
-            updates.mainImage = processed[0];
-            updates.imageUrl = processed[0];
-            needsUpdate = true;
+        if (hasExternalImages || hasUnwatermarked) {
+            const processed = await processImages(allImages, 'showroom');
+            if (processed.length > 0) {
+                updates.images = processed;
+                updates.image = processed[0];
+                updates.mainImage = processed[0];
+                updates.imageUrl = processed[0];
+                needsUpdate = true;
+            }
         }
     }
 
@@ -252,7 +263,7 @@ class RetroactiveSyncService {
      * يُصلح: الصور، النصوص الكورية، الحقول الفارغة، الروابط الخارجية
      */
     static async runFullRetroactiveSync(req, options = {}) {
-        const { getModel } = require('../tenants/tenant-model-helper');
+        const { getModel, addTenantFilter } = require('../tenants/tenant-model-helper');
         const Car = getModel(req, 'Car');
         const SparePart = getModel(req, 'SparePart');
         const batchSize = options.batchSize || 20;
@@ -264,12 +275,13 @@ class RetroactiveSyncService {
 
         // ─── مزامنة السيارات ────────────────────────────────────────
         try {
-            const totalCars = await Car.countDocuments({ tenantId: req.tenantId || 'default' });
+            const carFilter = addTenantFilter(req, {});
+            const totalCars = await Car.countDocuments(carFilter);
             console.log(`📊 [RetroSync] Total cars to process: ${totalCars}`);
 
             let skip = 0;
             while (skip < totalCars) {
-                const batch = await Car.find({ tenantId: req.tenantId || 'default' })
+                const batch = await Car.find(carFilter)
                     .skip(skip).limit(batchSize).lean();
 
                 if (batch.length === 0) break;
@@ -300,12 +312,13 @@ class RetroactiveSyncService {
 
         // ─── مزامنة قطع الغيار ────────────────────────────────────
         try {
-            const totalParts = await SparePart.countDocuments({ tenantId: req.tenantId || 'default' });
+            const partFilter = addTenantFilter(req, {});
+            const totalParts = await SparePart.countDocuments(partFilter);
             console.log(`📊 [RetroSync] Total spare parts to process: ${totalParts}`);
 
             let skip = 0;
             while (skip < totalParts) {
-                const batch = await SparePart.find({ tenantId: req.tenantId || 'default' })
+                const batch = await SparePart.find(partFilter)
                     .skip(skip).limit(batchSize).lean();
 
                 if (batch.length === 0) break;
@@ -449,10 +462,9 @@ class RetroactiveSyncService {
      * يُعيد إحصائيات تفصيلية بدون تعديل أي بيانات
      */
     static async checkDataHealth(req) {
-        const { getModel } = require('../tenants/tenant-model-helper');
+        const { getModel, addTenantFilter } = require('../tenants/tenant-model-helper');
         const Car = getModel(req, 'Car');
         const SparePart = getModel(req, 'SparePart');
-        const tenantId = req.tenantId || 'default';
 
         const [
             totalCars, totalParts,
@@ -462,37 +474,33 @@ class RetroactiveSyncService {
             carsKoreanText, carsNoSpecs,
             carsWithExternalUrl
         ] = await Promise.all([
-            Car.countDocuments({ tenantId }),
-            SparePart.countDocuments({ tenantId }),
-            Car.countDocuments({ tenantId, images: { $size: 0 } }),
-            SparePart.countDocuments({ tenantId, images: { $size: 0 } }),
-            Car.countDocuments({
-                tenantId,
+            Car.countDocuments(addTenantFilter(req, {})),
+            SparePart.countDocuments(addTenantFilter(req, {})),
+            Car.countDocuments(addTenantFilter(req, { images: { $size: 0 } })),
+            SparePart.countDocuments(addTenantFilter(req, { images: { $size: 0 } })),
+            Car.countDocuments(addTenantFilter(req, {
                 $or: [
                     { images: { $regex: 'encar\\.com', $options: 'i' } },
                     { images: { $regex: '\\.co\\.kr', $options: 'i' } }
                 ]
-            }),
-            SparePart.countDocuments({
-                tenantId,
-                images: { $regex: 'autospare|encar|\.co\.kr', $options: 'i' }
-            }),
-            Car.countDocuments({
-                tenantId,
+            })),
+            SparePart.countDocuments(addTenantFilter(req, {
+                images: { $regex: 'autospare|encar|\\.co\\.kr', $options: 'i' }
+            })),
+            Car.countDocuments(addTenantFilter(req, {
                 'images.0': { $exists: true },
                 $or: [
                     { mainImage: { $in: ['', null] } },
                     { imageUrl: { $in: ['', null] } }
                 ]
-            }),
-            SparePart.countDocuments({
-                tenantId,
+            })),
+            SparePart.countDocuments(addTenantFilter(req, {
                 'images.0': { $exists: true },
                 $or: [{ img: { $in: ['', null] } }, { image: { $in: ['', null] } }]
-            }),
-            Car.countDocuments({ tenantId, title: { $regex: '[\\uAC00-\\uD7A3]' } }),
-            Car.countDocuments({ tenantId, $or: [{ specs: null }, { specs: { $exists: false } }] }),
-            Car.countDocuments({ tenantId, externalUrl: { $nin: ['', null] } })
+            })),
+            Car.countDocuments(addTenantFilter(req, { title: { $regex: '[가-힣]' } })),
+            Car.countDocuments(addTenantFilter(req, { $or: [{ specs: null }, { specs: { $exists: false } }] })),
+            Car.countDocuments(addTenantFilter(req, { externalUrl: { $nin: ['', null] } }))
         ]);
 
         const totalIssues = carsNoImage + partsNoImage + carsExternalImages + partsExternalImages +

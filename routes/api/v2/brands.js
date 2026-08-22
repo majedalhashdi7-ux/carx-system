@@ -165,7 +165,7 @@ router.get('/', async (req, res) => {
       });
     }
 
-    res.json({ success: true, brands });
+    res.json({ success: true, brands, data: brands });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
   }

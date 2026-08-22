@@ -23,9 +23,13 @@ export default function AdminBrandsPage() {
       if (res.error) {
         setError(res.error);
       } else {
-        // The API returns { success: true, brands: [...] }
         const result = res.data;
-        setBrands(result?.data?.brands || result?.brands || []);
+        const brandList = Array.isArray(result?.data)
+          ? result.data
+          : Array.isArray(result)
+            ? result
+            : (result?.data?.brands || result?.brands || []);
+        setBrands(brandList);
       }
     } catch (err) {
       setError('فشل جلب الوكالات من الخادم');

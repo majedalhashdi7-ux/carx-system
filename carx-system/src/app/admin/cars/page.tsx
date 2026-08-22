@@ -83,12 +83,17 @@ export default function AdminCarsPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await api.cars.getAll() as any;
+      const res = await api.cars.getAll({ status: 'all', limit: '300' }) as any;
       if (res.error) {
         setError(res.error);
       } else {
         const result = res.data;
-        setCars(result?.data?.cars || result?.cars || []);
+        const fetchedCars = Array.isArray(result?.data)
+          ? result.data
+          : Array.isArray(result)
+            ? result
+            : (result?.data?.cars || result?.cars || []);
+        setCars(fetchedCars);
       }
     } catch (err) {
       setError('فشل جلب السيارات من الخادم');

@@ -138,10 +138,41 @@ router.post('/', requireAuthAPI, async (req, res) => {
             tenantId: getTenantId(req)
         });
 
+        // تمديد المزاد التلقائي (Anti-Sniping) إذا تمت المزايدة في آخر دقيقتين
+        const now = new Date();
+        const timeLeftMs = new Date(auction.endTime) - now;
+        let extended = false;
+        if (timeLeftMs > 0 && timeLeftMs < 120000) {
+            auction.endTime = new Date(new Date(auction.endTime).getTime() + 120000);
+            extended = true;
+        }
+
         // تحديث سعر المزاد الحالي
         auction.currentPrice = baseAmount;
         auction.highestBidder = userId;
+        auction.bidsCount = (auction.bidsCount || 0) + 1;
         await auction.save();
+
+        // بث الحدث الفوري عبر Socket.IO لجميع المتابعين
+        try {
+            const socketModule = require('../../../modules/socket');
+            const tenantId = getTenantId(req) || 'carx';
+            const bidPayload = {
+                auctionId: String(auctionId),
+                bidId: bid._id,
+                amount: applyMultiplier(bid.amount, auctionMultiplier),
+                newCurrentPrice: applyMultiplier(auction.currentPrice, auctionMultiplier),
+                bidderName: req.user.name ? req.user.name.charAt(0) + '***' : 'مزايد',
+                endTime: auction.endTime,
+                extended,
+                timestamp: new Date()
+            };
+
+            socketModule.emitToTenantRoom(tenantId, `auction_${auctionId}`, 'bid:placed', bidPayload);
+            socketModule.emitToTenantRoom(tenantId, 'general', 'auction:price_update', bidPayload);
+        } catch (socketErr) {
+            console.warn('[Socket Broadcast Warning]', socketErr.message);
+        }
 
         res.status(201).json({
             success: true,
@@ -149,7 +180,9 @@ router.post('/', requireAuthAPI, async (req, res) => {
             data: {
                 id: bid._id,
                 amount: applyMultiplier(bid.amount, auctionMultiplier),
-                newCurrentPrice: applyMultiplier(auction.currentPrice, auctionMultiplier)
+                newCurrentPrice: applyMultiplier(auction.currentPrice, auctionMultiplier),
+                endTime: auction.endTime,
+                extended
             }
         });
     } catch (error) {

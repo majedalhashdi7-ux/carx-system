@@ -41,7 +41,7 @@ const brandSchema = new mongoose.Schema({
 brandSchema.index({ tenantId: 1, key: 1 });
 brandSchema.index({ tenantId: 1, isActive: 1 });
 
-brandSchema.pre('validate', function (next) {
+brandSchema.pre('validate', function () {
   // تجهيز key تلقائياً من name إن لم يُرسل
   if (!this.key && this.name) {
     this.key = String(this.name).trim().toLowerCase();
@@ -49,7 +49,6 @@ brandSchema.pre('validate', function (next) {
   // ضمان التطبيع (lowercase/trim)
   if (this.key) this.key = String(this.key).trim().toLowerCase();
   if (this.name) this.name = String(this.name).trim();
-  next();
 });
 
 module.exports = mongoose.model('Brand', brandSchema);
