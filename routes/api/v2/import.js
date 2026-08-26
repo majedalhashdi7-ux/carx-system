@@ -159,13 +159,110 @@ router.post('/save', requireAuthAPI, requireAdmin, invalidateCache(['/api/v2/car
         }
 
         let saved;
-        if (type === 'car') {
+        
+        // ═══════════════════════════════════════════════════════
+        // 1. قسم المزادات المباشرة والحية (Live Auctions)
+        // ═══════════════════════════════════════════════════════
+        if (type === 'auction' || type === 'live_auction') {
+            const Car = req.tenantModels.Car;
+            const Auction = req.tenantModels.Auction;
+            const Brand = req.tenantModels.Brand;
+            if (!Car || !Auction) return res.status(500).json({ success: false, error: 'نماذج المزادات غير متاحة' });
+
+            const isEncar = data.sourceUrl && (data.sourceUrl.includes('encar.com') || data.sourceUrl.includes('encar.co.kr'));
+            const pricing = normalizeImportPricing(data, isEncar);
+
+            // جلب أو إنشاء الوكالة (Brand)
+            let agencyId = null;
+            if (Brand && data.make && data.make !== 'غير محدد') {
+                try {
+                    const makeName = String(data.make).trim();
+                    const makeKey = makeName.toLowerCase();
+                    let brandDoc = await Brand.findOne({ key: makeKey });
+                    if (!brandDoc) {
+                        brandDoc = await Brand.create({
+                            tenantId: getTenantId(req),
+                            name: makeName,
+                            key: makeKey,
+                            logoUrl: `https://logo.clearbit.com/${makeKey.replace(/\s+/g, '')}.com`,
+                            forCars: true,
+                            forSpareParts: false,
+                            isActive: true
+                        });
+                    }
+                    agencyId = brandDoc?._id || null;
+                } catch (e) { }
+            }
+
+            // حفظ سيارة المزاد
+            const carDoc = await Car.create({
+                tenantId: getTenantId(req),
+                title: data.title || 'سيارة مزاد كوري مستوردة',
+                titleAr: data.title || 'سيارة مزاد كوري مستوردة',
+                titleEn: data.titleEn || data.title || 'Imported Korean Auction Car',
+                make: data.make || 'غير محدد',
+                model: data.model || 'غير محدد',
+                year: data.year || new Date().getFullYear(),
+                price: pricing.price,
+                priceSar: pricing.priceSar,
+                priceUsd: pricing.priceUsd,
+                priceKrw: pricing.priceKrw,
+                basePriceUsd: pricing.basePriceUsd,
+                description: data.description || '',
+                images: processedImages,
+                mainImage: processedImages[0] || '',
+                imageUrl: processedImages[0] || '',
+                fuelType: data.fuelType || 'Petrol',
+                transmission: data.transmission || 'Automatic',
+                color: data.color || '',
+                mileage: data.mileage || 0,
+                category: data.category || 'sedan',
+                source: 'korean_import',
+                listingType: 'auction',
+                agency: agencyId,
+                isActive: true,
+                isSold: false,
+                externalUrl: '',
+                externalRef: data.sourceUrl || '',
+                externalId: data.externalId || (data.sourceUrl ? `auction-${Date.now()}` : ''),
+            });
+
+            // إنشاء جلسة المزاد المرتبطة بالسيارة
+            const now = new Date();
+            const endsAt = new Date(now.getTime() + (data.durationHours || 48) * 3600 * 1000);
+            const startPrice = Number(data.startingPrice || pricing.priceSar || 10000);
+
+            saved = await Auction.create({
+                tenantId: getTenantId(req),
+                car: carDoc._id,
+                title: carDoc.title,
+                startingPrice: startPrice,
+                currentPrice: startPrice,
+                currentBid: startPrice,
+                minBidIncrement: Number(data.minBidIncrement || 500),
+                currency: 'SAR',
+                status: 'running',
+                startsAt: now,
+                endsAt: endsAt,
+                bidsCount: 0,
+                externalId: carDoc.externalId,
+                externalUrl: carDoc.externalRef,
+            });
+
+            // حفظ مرجع السيارة في نتيجة الاستجابة
+            saved = { ...saved.toObject(), car: carDoc.toObject() };
+
+        // ═══════════════════════════════════════════════════════
+        // 2. قسم السيارات (المعرض الكوري أو المتجر المحلي)
+        // ═══════════════════════════════════════════════════════
+        } else if (type === 'car' || type === 'showroom' || type === 'local_cars') {
             const Car = req.tenantModels.Car;
             const Brand = req.tenantModels.Brand;
             if (!Car) return res.status(500).json({ success: false, error: 'نموذج السيارات غير متاح' });
 
             const isEncar = data.sourceUrl && (data.sourceUrl.includes('encar.com') || data.sourceUrl.includes('encar.co.kr'));
             const pricing = normalizeImportPricing(data, isEncar);
+            const isShowroom = type === 'showroom' || isEncar || data.listingType === 'showroom';
 
             // جلب أو إنشاء الوكالة (Brand)
             let agencyId = null;
@@ -197,7 +294,7 @@ router.post('/save', requireAuthAPI, requireAdmin, invalidateCache(['/api/v2/car
                 }
             }
 
-            // تحقق من التكرار (منع إضافة نفس السيارة مرتين)
+            // تحقق من التكرار
             if (data.sourceUrl || data.externalId) {
                 const searchConditions = [];
                 if (data.sourceUrl) {
@@ -209,7 +306,6 @@ router.post('/save', requireAuthAPI, requireAdmin, invalidateCache(['/api/v2/car
                 }
                 const existingCar = await Car.findOne({ $or: searchConditions });
                 if (existingCar) {
-                    // تحديث المكونات وحفظ السجل دون حذف البيانات القديمة
                     const updatedCar = await Car.findByIdAndUpdate(
                         existingCar._id,
                         {
@@ -221,8 +317,8 @@ router.post('/save', requireAuthAPI, requireAdmin, invalidateCache(['/api/v2/car
                                 model: data.model || existingCar.model,
                                 year: data.year || existingCar.year,
                                 agency: agencyId || existingCar.agency,
-                                source: data.source || (isEncar ? 'korean_import' : existingCar.source || 'hm_local'),
-                                listingType: data.listingType || (isEncar ? 'showroom' : existingCar.listingType || 'store'),
+                                source: isShowroom ? 'encar_korea' : (data.source || existingCar.source || 'hm_local'),
+                                listingType: isShowroom ? 'showroom' : (data.listingType || existingCar.listingType || 'store'),
                                 isActive: true,
                                 isSold: false,
                                 externalRef: data.sourceUrl || existingCar.externalRef,
@@ -235,7 +331,7 @@ router.post('/save', requireAuthAPI, requireAdmin, invalidateCache(['/api/v2/car
                     );
                     return res.json({
                         success: true,
-                        message: '✅ تم تحديث السيارة الموجودة بنجاح والتزامن مع بياناتها القديمة',
+                        message: '✅ تم تحديث بيانات السيارة بنجاح (كشف عن وجودها مسبقاً)',
                         data: updatedCar,
                         isDuplicate: true
                     });
@@ -245,6 +341,8 @@ router.post('/save', requireAuthAPI, requireAdmin, invalidateCache(['/api/v2/car
             saved = await Car.create({
                 tenantId: getTenantId(req),
                 title: data.title,
+                titleAr: data.titleAr || data.title,
+                titleEn: data.titleEn || data.title,
                 make: data.make || 'غير محدد',
                 model: data.model || 'غير محدد',
                 year: data.year || new Date().getFullYear(),
@@ -262,8 +360,8 @@ router.post('/save', requireAuthAPI, requireAdmin, invalidateCache(['/api/v2/car
                 color: data.color || '',
                 mileage: data.mileage || 0,
                 category: data.category || 'sedan',
-                source: data.source || (isEncar ? 'korean_import' : 'hm_local'),
-                listingType: data.listingType || (isEncar ? 'showroom' : 'store'),
+                source: isShowroom ? 'encar_korea' : (data.source || 'hm_local'),
+                listingType: isShowroom ? 'showroom' : (data.listingType || 'store'),
                 agency: agencyId,
                 isActive: true,
                 isSold: false,
@@ -271,6 +369,10 @@ router.post('/save', requireAuthAPI, requireAdmin, invalidateCache(['/api/v2/car
                 externalRef: data.sourceUrl || '',
                 externalId: data.externalId || (data.sourceUrl ? `imp-${Date.now()}` : ''),
             });
+
+        // ═══════════════════════════════════════════════════════
+        // 3. قسم قطع الغيار (Spare Parts)
+        // ═══════════════════════════════════════════════════════
         } else {
             const SparePart = req.tenantModels.SparePart;
             const Brand = req.tenantModels.Brand;
@@ -292,7 +394,6 @@ router.post('/save', requireAuthAPI, requireAdmin, invalidateCache(['/api/v2/car
                     ]
                 });
                 
-                // جلب الشعار المناسب للماركة (Clearbit CDN أو الشعار الممرر)
                 const logo = data.brandLogoUrl || data.carMakeLogoUrl || data.logoUrl || (brandDoc ? brandDoc.logoUrl : '') || `https://logo.clearbit.com/${brandKey.replace(/\s+/g, '')}.com`;
 
                 if (!brandDoc) {
