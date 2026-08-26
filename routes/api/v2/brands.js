@@ -131,12 +131,7 @@ router.get('/', cacheResponse(300), async (req, res) => {
       }
     }
 
-    let brands = await Brand.find({
-      $or: [
-        { forCars: true },
-        { forCars: { $exists: false } }
-      ]
-    }).sort({ name: 1 }).lean().catch(() => []);
+    let brands = await Brand.find(query).sort({ name: 1 }).lean().catch(() => []);
 
     const defaultCarBrands = [
       { _id: 'b-hyundai', name: 'Hyundai', nameAr: 'هيونداي', key: 'hyundai', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/44/Hyundai_Motor_Company_logo.svg', forCars: true, forSpareParts: true, targetShowroom: 'both', isActive: true },
@@ -164,6 +159,26 @@ router.get('/', cacheResponse(300), async (req, res) => {
         } catch (e) {}
       });
     }
+
+    // [[ARABIC_COMMENT]] إزالة التكرار: نحتفظ بوكالة واحدة لكل شركة (مثال: mercedes + mercedes-benz → واحدة فقط)
+    const seenCompanyKeys = new Map();
+    brands.sort((a, b) => (b.key || '').length - (a.key || '').length); // الأطول key أولاً
+    brands = brands.filter(b => {
+      const normalized = (b.nameEn || b.name || '')
+        .toLowerCase()
+        .replace(/[^a-z]/g, '')
+        .replace(/benz$/, '')
+        .replace(/motors?$/, '');
+      if (!normalized) return true;
+      if (seenCompanyKeys.has(normalized)) return false;
+      seenCompanyKeys.set(normalized, true);
+      return true;
+    });
+
+    // [[ARABIC_COMMENT]] تصحيح nameEn الفارغة تلقائياً + إعادة الترتيب الأبجدي
+    brands = brands
+      .map(b => ({ ...b, nameEn: b.nameEn || b.name || '' }))
+      .sort((a, b) => (a.nameEn || a.name || '').localeCompare(b.nameEn || b.name || ''));
 
     res.json({ success: true, brands, data: brands });
   } catch (e) {

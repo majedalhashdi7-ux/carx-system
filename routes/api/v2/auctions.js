@@ -4,6 +4,7 @@ const express = require('express');
 const router = express.Router();
 const { requireAuthAPI } = require('../../../middleware/auth');
 const { getModel, addTenantFilter, getTenantId } = require('../../../tenants/tenant-model-helper');
+const { cacheResponse, invalidateCache } = require('../../../middleware/cache');
 const { 
   successResponse, 
   errorResponse, 
@@ -28,15 +29,19 @@ function toBaseAmount(amount, multiplier) {
     return Number((safeAmount / multiplier).toFixed(2));
 }
 
-// GET /api/v2/auctions - قائمة المزادات
-router.get('/', async (req, res) => {
+// GET /api/v2/auctions - قائمة المزادات (الافتراضي: إخفاء المنتهية)
+router.get('/', cacheResponse(120), async (req, res) => {
     try {
         const Auction = getModel(req, 'Auction');
         const SiteSettings = getModel(req, 'SiteSettings');
         const { status, source, limit = 10 } = req.query;
         const query = {};
         if (status && status !== 'all') {
+            // [[ARABIC_COMMENT]] فلتر محدد من المستخدم
             query.status = status;
+        } else if (!status) {
+            // [[ARABIC_COMMENT]] الافتراضي: إظهار المزادات الجارية والقادمة فقط (إخفاء المنتهية)
+            query.status = { $in: ['running', 'upcoming', 'pending'] };
         }
         if (source) {
             query.source = source;
