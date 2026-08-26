@@ -5,6 +5,7 @@ const router = express.Router();
 const https = require('https');
 const { getModel, getTenantId, addTenantFilter } = require('../../../tenants/tenant-model-helper');
 const { requireAuthAPI, requireAdmin } = require('../../../middleware/auth');
+const { cacheResponse } = require('../../../middleware/cache');
 
 // ─────────────────────────────────────────────────────────
 // قاموس الترجمة: كوري → عربي
@@ -247,9 +248,9 @@ function translateCar(car) {
 /**
  * GET /api/v2/showroom/cars
  * جلب سيارات المعرض الكوري (عام - للعملاء)
- * يستخدم الرابط المحفوظ في الإعدادات
+ * يستخدم الرابط المحفوظ في الإعدادات مع كاش 5 دقائق
  */
-router.get('/cars', async (req, res) => {
+router.get('/cars', cacheResponse(300), async (req, res) => {
     try {
         const SiteSettings = getModel(req, 'SiteSettings');
         const Car = getModel(req, 'Car');

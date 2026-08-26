@@ -84,8 +84,8 @@ router.post('/fix-spare-brands', requireAuthAPI, requirePermissionAPI('manage_br
   }
 });
 
-// List brands (دون تخزين مؤقت طويل لضمان ظهور التعديلات فورياً عند إضافة/تعديل الوكالات)
-router.get('/', async (req, res) => {
+// List brands مع كاشينج سريع 5 دقائق يتم تفريغه فوراً عند أي تعديل
+router.get('/', cacheResponse(300), async (req, res) => {
   try {
     const { Brand } = req.tenantModels;
     const { category, targetShowroom, includeInactive } = req.query;
