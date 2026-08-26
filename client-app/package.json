@@ -41,7 +41,7 @@
     "lamina": "^1.2.2",
     "lucide-react": "^0.563.0",
     "maath": "^0.10.8",
-    "next": "15.1.7",
+    "next": "^15.2.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-easy-crop": "^5.5.6",
@@ -57,7 +57,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "15.1.7",
+    "eslint-config-next": "^15.2.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^4",
     "typescript": "^5"

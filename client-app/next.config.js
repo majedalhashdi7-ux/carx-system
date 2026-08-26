@@ -33,7 +33,7 @@ const nextConfig = {
   },
 
   async rewrites() {
-    // ✅ إعادة التوجيه للـ backend فقط في بيئة التطوير المحلي
+    // ✅ في بيئة التطوير: إعادة توجيه للـ backend المحلي
     if (process.env.NODE_ENV === 'development') {
       return [
         {
@@ -42,6 +42,7 @@ const nextConfig = {
         },
       ];
     }
+    // في الـ production: يتولى vercel.json التوجيه للـ vercel-server.js
     return [];
   },
 

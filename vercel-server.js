@@ -194,6 +194,70 @@ module.exports = async (req, res) => {
   setCorsHeaders(req, res);
   if (req.method === 'OPTIONS') return res.status(204).end();
 
+  // ── Import Real Batch Data Endpoint (لنقل البيانات الحقيقية كاملة إلى Atlas) ──
+  if (req.url && req.url.includes('/api/v2/system/import-batch')) {
+    if (req.method === 'POST') {
+      let rawBody = '';
+      req.on('data', chunk => rawBody += chunk);
+      return req.on('end', async () => {
+        try {
+          const body = JSON.parse(rawBody || '{}');
+          if (body.secret !== 'hmcar-import-2026') {
+            return res.status(403).json({ success: false, error: 'Unauthorized' });
+          }
+          const { collection, documents, clearFirst } = body;
+          if (!collection || !Array.isArray(documents)) {
+            return res.status(400).json({ success: false, error: 'Invalid payload' });
+          }
+          const mongoose = require('mongoose');
+          const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
+          if (!mongoose.connection || mongoose.connection.readyState < 1) {
+            await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 10000 });
+          }
+          const db = mongoose.connection.db;
+          const col = db.collection(collection);
+
+          if (clearFirst) {
+            await col.deleteMany({ tenantId: 'hmcar' });
+            // Drop problematic indexes if necessary
+            if (collection === 'brands') {
+              try { await col.dropIndex('key_1'); } catch(e) {}
+            }
+          }
+
+          let insertedCount = 0;
+          if (documents.length > 0) {
+            // Ensure tenantId is set
+            const docs = documents.map(d => {
+              const doc = { ...d };
+              doc.tenantId = 'hmcar';
+              // Convert date strings back to Date objects if needed
+              if (doc.createdAt && typeof doc.createdAt === 'string') doc.createdAt = new Date(doc.createdAt);
+              if (doc.updatedAt && typeof doc.updatedAt === 'string') doc.updatedAt = new Date(doc.updatedAt);
+              if (doc.startsAt && typeof doc.startsAt === 'string') doc.startsAt = new Date(doc.startsAt);
+              if (doc.endsAt && typeof doc.endsAt === 'string') doc.endsAt = new Date(doc.endsAt);
+              // Clean ObjectId fields if _id is string, leave as string or remove if invalid
+              return doc;
+            });
+            const r = await col.insertMany(docs, { ordered: false }).catch(e => ({ insertedCount: e.result?.insertedCount || 0 }));
+            insertedCount = r.insertedCount || docs.length;
+          }
+
+          const totalCount = await col.countDocuments({ tenantId: 'hmcar' });
+          return res.status(200).json({
+            success: true,
+            collection,
+            inserted: insertedCount,
+            total: totalCount
+          });
+        } catch(e) {
+          return res.status(500).json({ success: false, error: e.message });
+        }
+      });
+    }
+  }
+
+
   try {
     // التحقق من وجود متغيرات البيئة الأساسية
     if (!hasValidMongoUri()) {

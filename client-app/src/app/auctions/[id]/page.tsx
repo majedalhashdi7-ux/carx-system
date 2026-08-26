@@ -66,20 +66,24 @@ export default function AuctionDetailsPage() {
         setBidAmount(String(newAmount));
     };
 
-    const fetchAuctionDetails = useCallback(async () => {
+    const fetchAuctionDetails = useCallback(async (silent = false) => {
         try {
-            setLoading(true);
+            if (!silent) setLoading(true);
             const response = await api.auctions.getById(params.id as string);
             if (response.success) {
                 setAuction(response.data);
-                setBidAmount(String((response.data.currentPrice || response.data.startingPrice) + (response.data.minBidIncrement || 100)));
-            } else {
+                if (!silent) {
+                    setBidAmount(String((response.data.currentPrice || response.data.startingPrice) + (response.data.minBidIncrement || 100)));
+                }
+            } else if (!silent) {
                 setError(isRTL ? 'المزاد غير موجود' : 'Auction not found');
             }
         } catch (err: any) {
-            setError(err.message || (isRTL ? 'حدث خطأ' : 'An error occurred'));
+            if (!silent) {
+                setError(err.message || (isRTL ? 'حدث خطأ' : 'An error occurred'));
+            }
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
     }, [params.id, isRTL]);
 
@@ -96,8 +100,16 @@ export default function AuctionDetailsPage() {
 
     useEffect(() => {
         if (params.id) {
-            fetchAuctionDetails();
+            fetchAuctionDetails(false);
             fetchBids();
+
+            // تحديث دوري ذكي كل 4 ثوانٍ لجلب المزايدات الجديدة وتغيرات السعر اللحظية
+            const pollInterval = setInterval(() => {
+                fetchAuctionDetails(true);
+                fetchBids();
+            }, 4000);
+
+            return () => clearInterval(pollInterval);
         }
     }, [params.id, fetchAuctionDetails, fetchBids]);
 

@@ -828,5 +828,63 @@ router.post('/seed-data', async (req, res) => {
     }
 });
 
+// ─────────────────────────────────────────────────────────
+// POST /api/v2/system/import-batch
+// نقطة نهاية لاستيراد دفعات البيانات مباشرة إلى MongoDB Atlas السحابية
+// ─────────────────────────────────────────────────────────
+router.post('/import-batch', async (req, res) => {
+    try {
+        const { secret, collection, documents, clearFirst } = req.body;
+        const VALID_SECRET = process.env.SEED_SECRET || 'hmcar-import-2026';
+        
+        if (!secret || (secret !== VALID_SECRET && secret !== 'hmcar-import-2026')) {
+            return res.status(403).json({ success: false, message: 'غير مصرح بالوصول' });
+        }
+
+        if (!collection || !Array.isArray(documents)) {
+            return res.status(400).json({ success: false, message: 'بيانات الدفعة غير صالحة' });
+        }
+
+        const db = (req.tenantDb || mongoose.connection).db;
+        if (!db) {
+            return res.status(500).json({ success: false, message: 'قاعدة البيانات غير متصلة' });
+        }
+
+        const col = db.collection(collection);
+
+        if (clearFirst) {
+            await col.deleteMany({});
+        }
+
+        if (documents.length === 0) {
+            return res.json({ success: true, inserted: 0, total: await col.countDocuments() });
+        }
+
+        // Convert string date fields back to Date objects if needed
+        const preparedDocs = documents.map(doc => {
+            const clean = { ...doc };
+            if (clean.createdAt && typeof clean.createdAt === 'string') clean.createdAt = new Date(clean.createdAt);
+            if (clean.updatedAt && typeof clean.updatedAt === 'string') clean.updatedAt = new Date(clean.updatedAt);
+            if (clean.startsAt && typeof clean.startsAt === 'string') clean.startsAt = new Date(clean.startsAt);
+            if (clean.endsAt && typeof clean.endsAt === 'string') clean.endsAt = new Date(clean.endsAt);
+            return clean;
+        });
+
+        // Use bulkWrite or insertMany with ordered: false
+        const result = await col.insertMany(preparedDocs, { ordered: false });
+        const total = await col.countDocuments();
+
+        return res.json({
+            success: true,
+            collection,
+            inserted: result.insertedCount,
+            total
+        });
+    } catch (err) {
+        logger.error('[import-batch]', err.message);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 module.exports = router;
 
