@@ -1,66 +1,39 @@
-# 🚗 Multi-Tenant Car Auction System
+# 🚗 نظام مزادات واستيراد السيارات الشامل | HM CAR SYSTEM V2
 
-## النظام الشامل لمزادات السيارات متعدد العملاء
-
-### 🎯 المشاريع المتاحة
-
-#### 1. **HM CAR** (client-app)
-- **الوصف**: منصة مزادات ومبيعات السيارات الفاخرة
-- **الدومين**: https://hmcar-system-two.vercel.app
-- **المجلد**: `client-app/`
-- **اللون الأساسي**: ذهبي (#D4AF37) 
-
-#### 2. **CAR X** (carx-system)  
-- **الوصف**: معرض وأمزاد CAR X
-- **الدومين**: https://hmcar-system-two.vercel.app (نفس الدومين، معرض مختلف)
-- **المجلد**: `carx-system/`
-- **اللون الأساسي**: أسود وأحمر (#000000, #ff0000) 
-### 🚀 التشغيل السريع
-
-#### تشغيل HM CAR:
-```bash
-cd client-app
-npm install
-npm run dev
-# يعمل على http://localhost:3000
-```
-
-#### تشغيل CAR X:
-```bash
-cd carx-system  
-npm install
-npm run dev
-# يعمل على http://localhost:3001
-```
-
-### 🔧 الإعدادات
-
-#### متغيرات البيئة المطلوبة في Vercel:
-```
-MONGO_URI=mongodb+srv://hmcar_user:PASSWORD@cluster.mongodb.net/hmcar_production
-MONGO_URI_CARX=mongodb+srv://carx_user:PASSWORD@cluster.mongodb.net/carx_production
-NEXTAUTH_SECRET=your-secure-secret-key
-ADMIN_PASSWORD=your-secure-admin-password
-```
-
-### 📁 هيكل المشروع
-```
-├── client-app/          # HM CAR System 
-├── carx-system/         # CAR X System  
-├── tenants/            # إعدادات العملاء
-├── scripts/            # سكريبتات الإدارة 
-└── README.md           # هذا الملف 
-```
-
-### 🔐 الأمان 
-- جميع كلمات السر في متغيرات البيئة 
-- لا توجد بيانات حساسة في الكود
-- تشفير قواعد البيانات  
-- حماية من CSRF و XSS 
-
-### 📞 الدعم
-- **الإيميل**: dawoodalhash@gmail.com 
-- **واتساب**: +967781007805 
+> **الدليل الشامل الموحد والتوثيق الكامل:** يرجى مراجعة [HM_CAR_SYSTEM_MASTER_GUIDE.md](file:///c:/car-auction/HM_CAR_SYSTEM_MASTER_GUIDE.md)  
+> **الرابط الحي المباشر:** [https://hmcar-system-two.vercel.app](https://hmcar-system-two.vercel.app)
 
 ---
-*آخر تحديث: ٣٠‏/٣‏/٢٠٢٦* 
+
+### 🌟 نبذة عن النظام
+منصة رقمية متكاملة لـ:
+1. **معرض السيارات الكوري والمحلي:** تصفح وفلترة بالريال والدولار والوون مع ترجمة فورية وفحوصات معتمدة.
+2. **مزادات السيارات الحية واللحظية:** مزايدات فورية مع تحديث تلقائي ومؤقتات تنازلية ذكية.
+3. **سوق قطع الغيار المتخصصة:** فهارس رقمية مدعومة بأرقام القطع الأصلية (OEM) والماركات.
+4. **بوابة الاستيراد الذكية المنفصلة:** استيراد معزول لقواعد البيانات لكل قسم على حدة.
+5. **محرك رفع الصور السحابي:** دعم كامل لـ Vercel Blob و Cloudinary مع ضغط تلقائي بصيغة WebP.
+
+---
+
+### 🚀 البدء السريع
+```bash
+# تثبيت الحزم
+npm install
+
+# تشغيل بيئة التطوير
+npm run dev
+
+# بناء ونشر المشروع على Vercel
+npx vercel --prod --yes
+
+# فحص واختبار جميع مسارات النظام (36 مسار)
+node scripts/audit_all_routes.js
+```
+
+---
+
+### 📚 الوثائق والأدلة المرجعية
+* 📘 [دليل النظام الشامل والتوثيق الموحد](file:///c:/car-auction/HM_CAR_SYSTEM_MASTER_GUIDE.md)
+* 🛠️ [دليل النشر والاستضافة السحابية](file:///c:/car-auction/DEPLOYMENT_GUIDE.md)
+* 🏗️ [المعمارية التقنية](file:///c:/car-auction/ARCHITECTURE.md)
+ 
