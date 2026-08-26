@@ -124,6 +124,16 @@ router.get('/:id', async (req, res) => {
             auction = await Auction.findOne(addTenantFilter(req, { $or: idConditions })).lean();
         }
 
+        if (!auction && Auction.collection) {
+            auction = await Auction.collection.findOne({
+                $or: [
+                    { _id: idParam },
+                    { id: idParam },
+                    ...(mongoose.Types.ObjectId.isValid(idParam) ? [{ _id: new mongoose.Types.ObjectId(idParam) }] : [])
+                ]
+            });
+        }
+
         if (!auction) {
             return sendResponse(res, notFoundResponse('Auction'));
         }

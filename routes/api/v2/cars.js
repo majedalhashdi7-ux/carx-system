@@ -309,6 +309,16 @@ router.get('/:id', cacheResponse(600), async (req, res, next) => {
             car = await Car.findOne(addTenantFilter(req, { $or: idConditions })).lean();
         }
 
+        if (!car && Car.collection) {
+            car = await Car.collection.findOne({
+                $or: [
+                    { _id: idParam },
+                    { id: idParam },
+                    ...(mongoose.Types.ObjectId.isValid(idParam) ? [{ _id: new mongoose.Types.ObjectId(idParam) }] : [])
+                ]
+            });
+        }
+
         if (!car) {
             return sendResponse(res, notFoundResponse('Car'));
         }
