@@ -268,6 +268,21 @@ module.exports = async (req, res) => {
       });
     }
 
+    // تهيئة اتصال MongoDB العام السريع لبيئة Serverless
+    const mongoose = require('mongoose');
+    const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
+    if (mongoUri && (!mongoose.connection || mongoose.connection.readyState < 1)) {
+      try {
+        await mongoose.connect(mongoUri, {
+          serverSelectionTimeoutMS: 5000,
+          maxPoolSize: 10,
+          bufferCommands: false
+        });
+      } catch (connErr) {
+        console.warn('⚠️ [Vercel] Mongoose connect warning:', connErr.message);
+      }
+    }
+
     // Use cached App instance for performance
     const appInstance = getOrCreateApp();
     const expressApp = appInstance.getExpressApp();
