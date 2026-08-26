@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { fetchAPI } from '@/lib/api-original';
 
 /**
- * SmartPrefetchProvider - مزود نظام التحميل المسبق الذكي
- * يقوم بتوقع الصفحات التي سيفتحها العميل ويحمل بياناتها في الخلفية.
+ * SmartPrefetchProvider - مزود نظام التحميل المسبق الذكي فائق السرعة
+ * يقوم بتسخين الكاش (Cache Warming) مسبقاً وتوقع النقرات لجعل عرض الصفحات لحظياً (0ms).
  */
 export default function SmartPrefetchProvider({ children }: { children: React.ReactNode }) {
     const router = useRouter();
@@ -16,42 +16,79 @@ export default function SmartPrefetchProvider({ children }: { children: React.Re
         const conn = (navigator as any).connection;
         if (conn && (conn.saveData || conn.effectiveType?.includes('2g'))) return;
 
-        // [[ARABIC_COMMENT]] متغير لمنع التكرار (Debounce)
-        let prefetchTimer: NodeJS.Timeout;
-        const prefetchedUrls = new Set<string>();
+        const prefetchedPaths = new Set<string>();
 
-        const handleMouseOver = (e: MouseEvent) => {
-            const target = (e.target as HTMLElement).closest('a');
-            if (!target || !target.href) return;
+        // 1. تسخين الكاش الاستباقي في وقت فراغ المتصفح (Idle Preload)
+        const idlePreload = () => {
+            const criticalRoutes = [
+                { path: '/cars', api: '/api/v2/cars?limit=300&isActive=true' },
+                { path: '/parts', api: '/api/v2/parts?limit=100&inStock=true' },
+                { path: '/auctions', api: '/api/v2/auctions?limit=50' },
+                { path: '/brands', api: '/api/v2/brands' },
+                { path: '/showroom', api: '/api/v2/showroom/cars?page=1' }
+            ];
 
-            const urlStr = target.href;
-            const url = new URL(urlStr, window.location.origin);
-            if (url.origin !== window.location.origin) return;
-
-            const path = url.pathname;
-            if (prefetchedUrls.has(path)) return; // تم الجلب مسبقاً
-
-            clearTimeout(prefetchTimer);
-            prefetchTimer = setTimeout(() => {
-                prefetchedUrls.add(path);
-                // 1. [[ARABIC_COMMENT]] إخبار Next.js بتحميل الكود
-                router.prefetch(path);
-
-                // 2. [[ARABIC_COMMENT]] جلب الـ API لصفحات محددة
-                if (path.startsWith('/cars/') || path.startsWith('/parts/')) {
-                    const id = path.split('/')[2];
-                    if (id) {
-                        fetchAPI(`/api/v2${path.startsWith('/cars/') ? '/cars' : '/parts'}/${id}`, { useCache: true }).catch(() => {});
-                    }
-                }
-            }, 150); // تأخير 150 ملي ثانية لعدم استنزاف المتصفح عند المرور العابر
+            criticalRoutes.forEach((route, i) => {
+                setTimeout(() => {
+                    try {
+                        router.prefetch(route.path);
+                        fetchAPI(route.api, { useCache: true }).catch(() => {});
+                        prefetchedPaths.add(route.path);
+                    } catch {}
+                }, 400 + i * 200);
+            });
         };
 
-        // [[ARABIC_COMMENT]] استخدام mouseover العادي بدلاً من mouseenter بوضع capture الخانق
-        document.addEventListener('mouseover', handleMouseOver);
+        if ('requestIdleCallback' in window) {
+            (window as any).requestIdleCallback(idlePreload, { timeout: 2000 });
+        } else {
+            setTimeout(idlePreload, 800);
+        }
+
+        // 2. الجلب الفوري عند اقتراب المؤشر أو اللمس (Ultra-fast Hover & Touch Prefetch)
+        let debounceTimer: NodeJS.Timeout;
+
+        const prefetchTarget = (targetEl: HTMLElement | null) => {
+            const anchor = targetEl?.closest('a');
+            if (!anchor || !anchor.href) return;
+
+            try {
+                const url = new URL(anchor.href, window.location.origin);
+                if (url.origin !== window.location.origin) return;
+
+                const path = url.pathname;
+                if (prefetchedPaths.has(path)) return;
+
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    prefetchedPaths.add(path);
+                    router.prefetch(path);
+
+                    if (path.startsWith('/cars/')) {
+                        const id = path.split('/')[2];
+                        if (id) fetchAPI(`/api/v2/cars/${id}`, { useCache: true }).catch(() => {});
+                    } else if (path.startsWith('/parts/')) {
+                        const id = path.split('/')[2];
+                        if (id) fetchAPI(`/api/v2/parts/${id}`, { useCache: true }).catch(() => {});
+                    } else if (path.startsWith('/auctions/')) {
+                        const id = path.split('/')[2];
+                        if (id) fetchAPI(`/api/v2/auctions/${id}`, { useCache: true }).catch(() => {});
+                    }
+                }, 30); // استجابة فورية 30ms فقط
+            } catch {}
+        };
+
+        const handlePointerOver = (e: MouseEvent | TouchEvent) => {
+            prefetchTarget(e.target as HTMLElement);
+        };
+
+        document.addEventListener('mouseover', handlePointerOver, { passive: true });
+        document.addEventListener('touchstart', handlePointerOver, { passive: true });
+
         return () => {
-            document.removeEventListener('mouseover', handleMouseOver);
-            clearTimeout(prefetchTimer);
+            document.removeEventListener('mouseover', handlePointerOver);
+            document.removeEventListener('touchstart', handlePointerOver);
+            clearTimeout(debounceTimer);
         };
     }, [router]);
 
