@@ -751,4 +751,20 @@ export const api = {
             return fetchAPI(`/api/v2/import/history?${query}`);
         },
     },
+    // ── رفع الصور والوسائط السحابية (Cloud Image Uploads) ──
+    upload: {
+        image: (formData: FormData) => fetchAPI('/api/v2/upload', {
+            method: 'POST',
+            body: formData,
+        }),
+        multiple: (formData: FormData) => fetchAPI('/api/v2/upload/multiple', {
+            method: 'POST',
+            body: formData,
+        }),
+        base64: (image: string, name?: string) => fetchAPI('/api/v2/upload/base64', {
+            method: 'POST',
+            body: JSON.stringify({ image, name }),
+        }),
+        getStatus: () => fetchAPI('/api/v2/upload/status'),
+    },
 };

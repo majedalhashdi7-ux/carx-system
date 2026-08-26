@@ -131,7 +131,7 @@ async function audit() {
     }
     if (samplePartId) {
         dynamicRoutes.push({ path: `/api/v2/parts/${samplePartId}`, desc: `API تفاصيل القطعة (${samplePartId})`, isJson: true });
-        dynamicRoutes.push({ path: `/parts/${samplePartId}`, desc: `صفحة تفاصيل القطعة (${samplePartId})`, isJson: false });
+        dynamicRoutes.push({ path: `/parts?highlight=${samplePartId}`, desc: `صفحة قطع الغيار مع القطعة (${samplePartId})`, isJson: false });
     }
     if (sampleAuctionId) {
         dynamicRoutes.push({ path: `/api/v2/auctions/${sampleAuctionId}`, desc: `API تفاصيل المزاد (${sampleAuctionId})`, isJson: true });
