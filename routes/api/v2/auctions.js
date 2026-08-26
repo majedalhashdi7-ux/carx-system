@@ -114,10 +114,15 @@ router.get('/:id', async (req, res) => {
             idConditions.push({ _id: new mongoose.Types.ObjectId(idParam) });
         }
         
-        const auction = await Auction.findOne(addTenantFilter(req, { $or: idConditions }))
-            .populate('car')
-            .populate('highestBidder', 'name')
-            .lean();
+        let auction = null;
+        try {
+            auction = await Auction.findOne(addTenantFilter(req, { $or: idConditions }))
+                .populate('car')
+                .populate('highestBidder', 'name')
+                .lean();
+        } catch (popErr) {
+            auction = await Auction.findOne(addTenantFilter(req, { $or: idConditions })).lean();
+        }
 
         if (!auction) {
             return sendResponse(res, notFoundResponse('Auction'));

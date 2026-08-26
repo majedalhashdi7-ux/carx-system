@@ -300,9 +300,14 @@ router.get('/:id', cacheResponse(600), async (req, res, next) => {
             idConditions.push({ _id: new mongoose.Types.ObjectId(idParam) });
         }
 
-        const car = await Car.findOne(addTenantFilter(req, { $or: idConditions }))
-            .populate('agency')
-            .lean();
+        let car = null;
+        try {
+            car = await Car.findOne(addTenantFilter(req, { $or: idConditions }))
+                .populate('agency')
+                .lean();
+        } catch (popErr) {
+            car = await Car.findOne(addTenantFilter(req, { $or: idConditions })).lean();
+        }
 
         if (!car) {
             return sendResponse(res, notFoundResponse('Car'));

@@ -247,9 +247,14 @@ router.get('/:id', cacheResponse(600), async (req, res) => {
             idConditions.push({ _id: new mongoose.Types.ObjectId(idParam) });
         }
 
-        let p = await SparePart.findOne({ $or: idConditions })
-            .populate('brand', 'name logoUrl')
-            .lean();
+        let p = null;
+        try {
+            p = await SparePart.findOne(addTenantFilter(req, { $or: idConditions }))
+                .populate('brand', 'name logoUrl')
+                .lean();
+        } catch (popErr) {
+            p = await SparePart.findOne(addTenantFilter(req, { $or: idConditions })).lean();
+        }
 
         if (!p) {
             return res.status(404).json({ success: false, error: 'Part not found' });
