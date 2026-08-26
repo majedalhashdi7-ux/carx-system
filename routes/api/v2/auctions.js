@@ -106,8 +106,15 @@ router.get('/:id', async (req, res) => {
     try {
         const Auction = getModel(req, 'Auction');
         const SiteSettings = getModel(req, 'SiteSettings');
+        const idParam = req.params.id;
+        const mongoose = require('mongoose');
+
+        const idConditions = [{ _id: idParam }, { id: idParam }];
+        if (mongoose.Types.ObjectId.isValid(idParam)) {
+            idConditions.push({ _id: new mongoose.Types.ObjectId(idParam) });
+        }
         
-        const auction = await Auction.findOne(addTenantFilter(req, { _id: req.params.id }))
+        const auction = await Auction.findOne(addTenantFilter(req, { $or: idConditions }))
             .populate('car')
             .populate('highestBidder', 'name')
             .lean();

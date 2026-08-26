@@ -292,7 +292,15 @@ router.get('/fix-tenant-id', requireAuthAPI, async (req, res, next) => {
 router.get('/:id', cacheResponse(600), async (req, res, next) => {
     try {
         const Car = getModel(req, 'Car');
-        const car = await Car.findOne(addTenantFilter(req, { _id: req.params.id }))
+        const idParam = req.params.id;
+        const mongoose = require('mongoose');
+
+        const idConditions = [{ _id: idParam }, { id: idParam }];
+        if (mongoose.Types.ObjectId.isValid(idParam)) {
+            idConditions.push({ _id: new mongoose.Types.ObjectId(idParam) });
+        }
+
+        const car = await Car.findOne(addTenantFilter(req, { $or: idConditions }))
             .populate('agency')
             .lean();
 

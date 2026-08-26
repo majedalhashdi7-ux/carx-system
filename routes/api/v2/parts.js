@@ -235,19 +235,21 @@ router.get('/', cacheResponse(600), async (req, res) => {
     }
 });
 
-// GET /api/v2/parts/:id - Get a single spare part details
 router.get('/:id', cacheResponse(600), async (req, res) => {
     try {
         const SparePart = getModel(req, 'SparePart');
         const SiteSettings = getModel(req, 'SiteSettings');
-        let p = null;
-        try {
-            p = await SparePart.findById(req.params.id)
-                .populate('brand', 'name logoUrl')
-                .lean();
-        } catch (_) {
-            p = await SparePart.findById(req.params.id).lean();
+        const idParam = req.params.id;
+        const mongoose = require('mongoose');
+
+        const idConditions = [{ _id: idParam }, { id: idParam }];
+        if (mongoose.Types.ObjectId.isValid(idParam)) {
+            idConditions.push({ _id: new mongoose.Types.ObjectId(idParam) });
         }
+
+        let p = await SparePart.findOne({ $or: idConditions })
+            .populate('brand', 'name logoUrl')
+            .lean();
 
         if (!p) {
             return res.status(404).json({ success: false, error: 'Part not found' });
