@@ -41,7 +41,7 @@
     "db:check": "node scripts/database/db-organize.js --check-only",
     "db:indexes": "node scripts/database/db-organize.js --indexes-only",
     "db:seed": "node scripts/database/db-organize.js --seed-only",
-    "build": "cd client-app && npm ci && npm run build",
+    "build": "cd client-app && npm run build",
     "deploy": "vercel --prod",
     "publish": "node deploy.js",
     "publish:check": "node deploy.js --check",
