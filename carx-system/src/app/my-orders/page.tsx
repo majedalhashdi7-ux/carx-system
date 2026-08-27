@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, Eye, X, CheckCircle2, Clock, XCircle, AlertCircle, 
-  ShoppingBag, Calendar, CreditCard, ArrowRight, Loader2, MessageSquare, Inbox
+  ShoppingBag, Calendar, CreditCard, ArrowRight, Loader2, MessageSquare, Inbox,
+  Printer, RefreshCw, Package, Truck, Building2
 } from 'lucide-react';
 import Link from 'next/link';
 import Navbar from '../../components/Navbar';
@@ -40,11 +41,18 @@ export default function MyOrdersPage() {
       const res = await api.orders.getAll();
       if (res.data) {
         const d = res.data as any;
-        const ordersList = Array.isArray(d?.data)
-          ? d.data
-          : Array.isArray(d)
-            ? d
-            : (d?.data?.orders || d?.orders || []);
+        // الـ API يرجع: { success, data: { orders: [...], pagination: {...} } }
+        // أو مصفوفة مباشرة
+        let ordersList: any[] = [];
+        if (Array.isArray(d)) {
+          ordersList = d;
+        } else if (Array.isArray(d?.data)) {
+          ordersList = d.data;
+        } else if (Array.isArray(d?.data?.orders)) {
+          ordersList = d.data.orders;
+        } else if (Array.isArray(d?.orders)) {
+          ordersList = d.orders;
+        }
         setOrders(ordersList);
       }
     } catch (err) {
@@ -63,13 +71,33 @@ export default function MyOrdersPage() {
   const openOrderDetails = async (orderId: string) => {
     try {
       const res = await api.orders.getById(orderId);
-      if (res.data && (res.data as any).success) {
-        setSelectedOrder((res.data as any).data);
+      if (res.data) {
+        const d = res.data as any;
+        const orderData = d?.success ? d.data : d;
+        setSelectedOrder(orderData);
         setModalOpen(true);
       }
     } catch (err) {
       console.error('Failed to fetch order details:', err);
     }
+  };
+
+  // طباعة/تنزيل الفاتورة
+  const handlePrintInvoice = (order: any) => {
+    const orderNum = order.orderNumber || `CARX-${order._id.substring(0, 6).toUpperCase()}`;
+    const date = new Date(order.createdAt).toLocaleDateString('ar-SA');
+    const items = (order.items || []).map((item: any) =>
+      `${item.titleSnapshot || 'منتج'} × ${item.quantity || 1} — ${(item.unitPriceSar || 0).toLocaleString()} ر.س`
+    ).join('\n');
+    const total = (order.pricing?.grandTotalSar || order.totalAmount || 0).toLocaleString();
+    const content = `فاتورة CAR X\n${'='.repeat(40)}\nرقم الطلب: ${orderNum}\nالتاريخ: ${date}\nالحالة: ${getStatusTextArabic(order.status)}\n\nالمشتريات:\n${items}\n\nالإجمالي: ${total} ر.س\n${'='.repeat(40)}\nشكراً لثقتكم بـ CAR X`;
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `invoice-${orderNum}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   const getStatusBadge = (status: string) => {
@@ -343,16 +371,23 @@ export default function MyOrdersPage() {
                     {getStatusBadge(order.status)}
                   </div>
                   
-                  <div className="flex items-center gap-2">
+  <div className="flex items-center gap-2">
                     <button
                       onClick={() => openOrderDetails(order._id)}
-                      className="px-5 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                      className="px-4 py-2.5 bg-white/5 hover:bg-luxury-gold hover:text-black rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
                     >
-                      <Eye className="w-3.5 h-3.5" /> عرض الفاتورة
+                      <Eye className="w-3.5 h-3.5" /> الفاتورة
+                    </button>
+                    <button
+                      onClick={() => handlePrintInvoice(order)}
+                      className="p-2.5 bg-white/5 border border-white/10 text-white/50 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+                      title="تنزيل الفاتورة"
+                    >
+                      <Printer className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleWhatsAppInquiry(order)}
-                      className="p-3 bg-[#25D366]/10 border border-[#25D366]/20 text-[#25D366] hover:bg-[#25D366]/20 rounded-xl transition-all"
+                      className="p-2.5 bg-[#25D366]/10 border border-[#25D366]/20 text-[#25D366] hover:bg-[#25D366]/20 rounded-xl transition-all"
                       title="استفسر عبر واتساب"
                     >
                       <MessageSquare className="w-4 h-4" />
@@ -456,19 +491,66 @@ export default function MyOrdersPage() {
                   </div>
                 </div>
 
-                {/* Action buttons */}
+{/* شريط تقدم الطلب */}
+                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5">
+                  <h3 className="text-xs font-black text-white/40 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <Truck className="w-4 h-4 text-luxury-gold" /> تتبع حالة الطلب
+                  </h3>
+                  <div className="flex items-center justify-between gap-1">
+                    {[
+                      { status: 'pending', label: 'قيد الانتظار', icon: Clock },
+                      { status: 'confirmed', label: 'تم التأكيد', icon: CheckCircle2 },
+                      { status: 'processing', label: 'قيد التجهيز', icon: RefreshCw },
+                      { status: 'shipped_sea', label: 'الشحن', icon: Truck },
+                      { status: 'arrived', label: 'وصل', icon: Package },
+                      { status: 'completed', label: 'مكتمل', icon: Building2 },
+                    ].map((step, idx, arr) => {
+                      const statuses = ['pending','confirmed','processing','shipped_sea','arrived','completed','approved'];
+                      const currentIdx = statuses.indexOf(selectedOrder.status);
+                      const stepIdx = statuses.indexOf(step.status);
+                      const isActive = stepIdx <= currentIdx;
+                      const isCurrent = step.status === selectedOrder.status || (selectedOrder.status === 'approved' && step.status === 'completed');
+                      const Icon = step.icon;
+                      return (
+                        <div key={step.status} className="flex-1 flex flex-col items-center gap-1">
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center border transition-all ${
+                            isCurrent ? 'bg-luxury-gold border-luxury-gold text-black shadow-[0_0_10px_rgba(212,175,55,0.4)]' :
+                            isActive ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' :
+                            'bg-white/5 border-white/10 text-white/20'
+                          }`}>
+                            <Icon className="w-3 h-3" />
+                          </div>
+                          {idx < arr.length - 1 && (
+                            <div className={`absolute translate-x-3.5 w-[calc(100%/6)] h-px mt-3.5 hidden`} />
+                          )}
+                          <span className={`text-[9px] font-bold text-center leading-tight ${
+                            isCurrent ? 'text-luxury-gold' : isActive ? 'text-white/60' : 'text-white/20'
+                          }`}>{step.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* أزرار الإجراءات */}
                 <div className="flex flex-col sm:flex-row gap-3 pt-2">
                   <button
                     onClick={() => handleWhatsAppInquiry(selectedOrder)}
-                    className="flex-1 py-4 bg-[#25D366] hover:bg-[#20ba59] text-black font-black rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-[#25D366]/10"
+                    className="flex-1 py-3.5 bg-[#25D366] hover:bg-[#20ba59] text-black font-black rounded-xl text-xs flex items-center justify-center gap-2 transition-all"
                   >
-                    <MessageSquare className="w-4 h-4" /> استفسر عن الطلب عبر واتساب
+                    <MessageSquare className="w-4 h-4" /> استفسر عبر واتساب
+                  </button>
+                  <button
+                    onClick={() => handlePrintInvoice(selectedOrder)}
+                    className="sm:flex-1 py-3.5 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white border border-white/10 font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-all"
+                  >
+                    <Printer className="w-3.5 h-3.5" /> تنزيل الفاتورة
                   </button>
                   <button
                     onClick={() => setModalOpen(false)}
-                    className="sm:w-32 py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl text-xs transition-all"
+                    className="sm:w-28 py-3.5 bg-white/5 hover:bg-white/10 text-white/50 font-bold rounded-xl text-xs transition-all"
                   >
-                    إغلاق الفاتورة
+                    إغلاق
                   </button>
                 </div>
               </div>
