@@ -292,81 +292,11 @@ export default function HomePage() {
         { name: 'BMW', nameAr: 'بي إم دبليو', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/44/BMW.svg' },
         { name: 'Mercedes-Benz', nameAr: 'مرسيدس بنز', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/90/Mercedes-Logo.svg' },
     ];
-    // Display exactly 5 circular brand logos (as requested)
+    // Display top circular brand logos
     const display5Brands = (brands.length > 0 ? brands : FALLBACK_BRANDS).slice(0, 5);
 
-    const FALLBACK_SHOWROOM_CARS = [
-        {
-            _id: '1',
-            title: isRTL ? 'هيونداي سانتا في 2024' : 'Hyundai Santa Fe 2024',
-            images: ['https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&q=80&w=600'],
-            price: 32000,
-            year: '2024', transmission: isRTL ? 'أوتوماتيك' : 'Automatic', fuel: isRTL ? 'بنزين' : 'Petrol',
-            type: 'showroom'
-        },
-        {
-            _id: '2',
-            title: isRTL ? 'كيا سورينتو 2023' : 'Kia Sorento 2023',
-            images: ['https://images.unsplash.com/photo-1606016159991-dfe4f2746ad5?auto=format&fit=crop&q=80&w=600'],
-            price: 28000,
-            year: '2023', transmission: isRTL ? 'أوتوماتيك' : 'Automatic', fuel: isRTL ? 'ديزل' : 'Diesel',
-            type: 'showroom'
-        },
-        {
-            _id: '3',
-            title: isRTL ? 'جينيسيس GV80 2023' : 'Genesis GV80 2023',
-            images: ['https://images.unsplash.com/photo-1619767886558-efdc259cde1a?auto=format&fit=crop&q=80&w=600'],
-            price: 65000,
-            year: '2023', transmission: isRTL ? 'أوتوماتيك' : 'Automatic', fuel: isRTL ? 'بنزين' : 'Petrol',
-            type: 'showroom'
-        },
-        {
-            _id: '4',
-            title: isRTL ? 'بي إم دبليو الفئة الخامسة 2023' : 'BMW 5 Series 2023',
-            images: ['https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=600'],
-            price: 49000,
-            year: '2023', transmission: isRTL ? 'أوتوماتيك' : 'Automatic', fuel: isRTL ? 'هجين' : 'Hybrid',
-            type: 'showroom'
-        }
-    ];
-
-    const FALLBACK_AUCTION_CARS = [
-        {
-            _id: 'auc-1',
-            title: isRTL ? 'كيا تلورايد 2024 - مزاد حي' : 'Kia Telluride 2024 - Live Auction',
-            images: ['https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&q=80&w=600'],
-            price: 34500,
-            year: '2024', transmission: isRTL ? 'أوتوماتيك' : 'Automatic', fuel: isRTL ? 'بنزين' : 'Petrol',
-            type: 'auctions'
-        },
-        {
-            _id: 'auc-2',
-            title: isRTL ? 'جينيسيس G90 2024 - مزاد حي' : 'Genesis G90 2024 - Live Auction',
-            images: ['https://images.unsplash.com/photo-1619767886558-efdc259cde1a?auto=format&fit=crop&q=80&w=600'],
-            price: 72000,
-            year: '2024', transmission: isRTL ? 'أوتوماتيك' : 'Automatic', fuel: isRTL ? 'بنزين' : 'Petrol',
-            type: 'auctions'
-        },
-        {
-            _id: 'auc-3',
-            title: isRTL ? 'هيونداي باليسيد 2024 - مزاد حي' : 'Hyundai Palisade 2024 - Live Auction',
-            images: ['https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&q=80&w=600'],
-            price: 39000,
-            year: '2024', transmission: isRTL ? 'أوتوماتيك' : 'Automatic', fuel: isRTL ? 'ديزل' : 'Diesel',
-            type: 'auctions'
-        },
-        {
-            _id: 'auc-4',
-            title: isRTL ? 'بورشه كايين 2023 - مزاد حي' : 'Porsche Cayenne 2023 - Live Auction',
-            images: ['https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=600'],
-            price: 88000,
-            year: '2023', transmission: isRTL ? 'أوتوماتيك' : 'Automatic', fuel: isRTL ? 'بنزين' : 'Petrol',
-            type: 'auctions'
-        }
-    ];
-
-    const displayShowroomCars = showroomCars.length > 0 ? showroomCars : FALLBACK_SHOWROOM_CARS;
-    const displayAuctionCars = liveAuctions.length > 0 ? liveAuctions : FALLBACK_AUCTION_CARS;
+    const displayShowroomCars = showroomCars;
+    const displayAuctionCars = liveAuctions;
 
     // ─── Dynamic Social Links Configuration ───
     const socialPlatforms = [
@@ -481,14 +411,27 @@ export default function HomePage() {
                 {carsLoading ? (
                     <div className="flex gap-4 justify-center items-center py-16">
                         <div className="w-6 h-6 rounded-full border-2 border-t-transparent border-[#C9A96E] animate-spin" />
-                        <span className="text-xs uppercase tracking-widest text-[#C9A96E] font-black italic">جاري تحميل سيارات المعرض...</span>
+                        <span className="text-xs uppercase tracking-widest text-[#C9A96E] font-black italic">{isRTL ? 'جاري تحميل سيارات المعرض...' : 'Loading showroom cars...'}</span>
+                    </div>
+                ) : displayShowroomCars.length === 0 ? (
+                    <div className="py-16 text-center border border-dashed border-white/10 rounded-3xl p-8 max-w-lg mx-auto">
+                        <Car className="w-12 h-12 text-[#C9A96E]/30 mx-auto mb-3" />
+                        <h3 className="text-base font-bold text-white mb-1">
+                            {isRTL ? 'جاري تجهيز وتحديث المعرض' : 'Updating Showroom Catalog'}
+                        </h3>
+                        <p className="text-xs text-white/40 mb-4">
+                            {isRTL ? 'يتم إضافة وتحديث أحدث سيارات المعرض المستوردة بانتظام.' : 'Latest imported cars are being updated regularly.'}
+                        </p>
+                        <Link href="/cars" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#C9A96E] text-black font-black text-xs hover:bg-white transition-all">
+                            {isRTL ? 'تصفح كل السيارات' : 'Browse All Cars'}
+                        </Link>
                     </div>
                 ) : (
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
                         {displayShowroomCars.slice(0, 8).map((car, idx) => {
                             const rawMake = typeof car.make === 'object' ? car.make?.name : car.make;
                             const title = formatCarTitle(car.title || `${rawMake || ''} ${car.model || ''} ${car.year || ''}`, rawMake || '', isRTL);
-                            const image = formatCarImage(Array.isArray(car.images) && car.images.length > 0 ? car.images[0] : undefined);
+                            const image = formatCarImage(Array.isArray(car.images) && car.images.length > 0 ? car.images[0] : (car.imageUrl || car.image));
                             const priceStr = formatPriceFromUsd(car.price || 0);
 
                             return (
@@ -577,56 +520,64 @@ export default function HomePage() {
                     </Link>
                 </div>
 
-                <div className="relative w-full overflow-hidden py-2">
-                    <div className="absolute inset-y-0 left-0 w-16 sm:w-24 bg-gradient-to-r from-[#0a0a12] to-transparent z-10 pointer-events-none" />
-                    <div className="absolute inset-y-0 right-0 w-16 sm:w-24 bg-gradient-to-l from-[#0a0a12] to-transparent z-10 pointer-events-none" />
-
-                    <div className="animate-marquee-infinite flex gap-4 sm:gap-6">
-                        {[...displayAuctionCars, ...displayAuctionCars, ...displayAuctionCars].map((car, idx) => {
-                            const rawMake = typeof car.make === 'object' ? car.make?.name : car.make;
-                            const title = formatCarTitle(car.title || `${rawMake || ''} ${car.model || ''} ${car.year || ''}`, rawMake || '', isRTL);
-                            const image = formatCarImage(Array.isArray(car.images) && car.images.length > 0 ? car.images[0] : undefined);
-                            const priceStr = car.priceEstimate || (car.price > 0 ? formatPriceFromUsd(car.price) : (isRTL ? 'مزاد مباشر' : 'Live Auction'));
-
-                            return (
-                                <div key={`auction-marquee-${idx}`} className="relative aspect-square w-[220px] sm:w-[260px] rounded-3xl overflow-hidden border border-red-500/20 bg-[#120d18] group flex-shrink-0 cursor-pointer shadow-xl hover:border-red-500 transition-all duration-300">
-                                    {image ? (
-                                        <img src={image} alt={title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 pointer-events-none" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-white/5">
-                                            <Gavel className="w-12 h-12 text-white/10" />
-                                        </div>
-                                    )}
-
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent flex flex-col justify-end p-4 text-start">
-                                        <div className="flex items-center justify-between mb-1">
-                                            <span className="px-2 py-0.5 rounded border text-[8.5px] font-black uppercase bg-red-500/30 border-red-500/40 text-red-300">
-                                                🔴 {isRTL ? 'مزاد حي' : 'LIVE'}
-                                            </span>
-                                            <span className="text-xs sm:text-sm font-black text-[#C9A96E] cockpit-num">
-                                                {priceStr}
-                                            </span>
-                                        </div>
-
-                                        <h4 className="text-xs sm:text-sm font-black text-white line-clamp-1 mb-1">
-                                            {title}
-                                        </h4>
-
-                                        <div className="flex justify-between items-center text-[8.5px] text-white/40 mt-1">
-                                            <span>{car.year || '2024'} • {car.transmission || (isRTL ? 'أوتوماتيك' : 'Auto')}</span>
-                                            <span className="text-red-400 font-bold flex items-center gap-1">
-                                                <Gavel className="w-3 h-3" />
-                                                {isRTL ? 'زايد الآن' : 'Bid Now'}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <Link href={car.type === 'live-auction' ? '/auctions' : `/auctions/${car._id}`} className="absolute inset-0 z-10" />
-                                </div>
-                            );
-                        })}
+                {displayAuctionCars.length === 0 ? (
+                    <div className="py-8 text-center px-4">
+                        <p className="text-xs text-white/40">
+                            {isRTL ? 'لا توجد سيارات في المزاد المباشر حالياً — تابعنا لمعرفة مواعيد الجلسات القادمة' : 'No cars in live auction currently — stay tuned for upcoming sessions'}
+                        </p>
                     </div>
-                </div>
+                ) : (
+                    <div className="relative w-full overflow-hidden py-2">
+                        <div className="absolute inset-y-0 left-0 w-16 sm:w-24 bg-gradient-to-r from-[#0a0a12] to-transparent z-10 pointer-events-none" />
+                        <div className="absolute inset-y-0 right-0 w-16 sm:w-24 bg-gradient-to-l from-[#0a0a12] to-transparent z-10 pointer-events-none" />
+
+                        <div className="animate-marquee-infinite flex gap-4 sm:gap-6">
+                            {[...displayAuctionCars, ...displayAuctionCars, ...displayAuctionCars].map((car, idx) => {
+                                const rawMake = typeof car.make === 'object' ? car.make?.name : car.make;
+                                const title = formatCarTitle(car.title || `${rawMake || ''} ${car.model || ''} ${car.year || ''}`, rawMake || '', isRTL);
+                                const image = formatCarImage(Array.isArray(car.images) && car.images.length > 0 ? car.images[0] : (car.imageUrl || car.image));
+                                const priceStr = car.priceEstimate || (car.price > 0 ? formatPriceFromUsd(car.price) : (isRTL ? 'مزاد مباشر' : 'Live Auction'));
+
+                                return (
+                                    <div key={`auction-marquee-${idx}`} className="relative aspect-square w-[220px] sm:w-[260px] rounded-3xl overflow-hidden border border-red-500/20 bg-[#120d18] group flex-shrink-0 cursor-pointer shadow-xl hover:border-red-500 transition-all duration-300">
+                                        {image ? (
+                                            <img src={image} alt={title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 pointer-events-none" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center bg-white/5">
+                                                <Gavel className="w-12 h-12 text-white/10" />
+                                            </div>
+                                        )}
+
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent flex flex-col justify-end p-4 text-start">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="px-2 py-0.5 rounded border text-[8.5px] font-black uppercase bg-red-500/30 border-red-500/40 text-red-300">
+                                                    🔴 {isRTL ? 'مزاد حي' : 'LIVE'}
+                                                </span>
+                                                <span className="text-xs sm:text-sm font-black text-[#C9A96E] cockpit-num">
+                                                    {priceStr}
+                                                </span>
+                                            </div>
+
+                                            <h4 className="text-xs sm:text-sm font-black text-white line-clamp-1 mb-1">
+                                                {title}
+                                            </h4>
+
+                                            <div className="flex justify-between items-center text-[8.5px] text-white/40 mt-1">
+                                                <span>{car.year || '2024'} • {car.transmission || (isRTL ? 'أوتوماتيك' : 'Auto')}</span>
+                                                <span className="text-red-400 font-bold flex items-center gap-1">
+                                                    <Gavel className="w-3 h-3" />
+                                                    {isRTL ? 'زايد الآن' : 'Bid Now'}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <Link href={car.type === 'live-auction' ? '/auctions' : `/auctions/${car._id}`} className="absolute inset-0 z-10" />
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
             </section>
 
             {/* ─── 5. قسم "لماذا تختار منصتنا؟" والتواصل الاجتماعي الديناميكي ─── */}

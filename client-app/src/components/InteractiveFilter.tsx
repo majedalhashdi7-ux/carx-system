@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Car, Calendar, Settings, ChevronDown, CheckCircle } from "lucide-react";
+import Link from "next/link";
 import { useLanguage } from "@/lib/LanguageContext";
 import { cn } from "@/lib/utils";
 
@@ -124,9 +125,12 @@ export default function InteractiveFilter() {
                                     }
                                 </p>
                                 <div className="flex gap-4 justify-center">
-                                    <button className="px-8 py-3 bg-[#c9a96e] text-black font-bold rounded-xl hover:bg-[#d4b57d] transition-colors">
+                                    <Link
+                                        href={`/parts?make=${encodeURIComponent(selection.brand)}`}
+                                        className="px-8 py-3 bg-[#c9a96e] text-black font-bold rounded-xl hover:bg-[#d4b57d] transition-colors inline-flex items-center justify-center"
+                                    >
                                         {isRTL ? "تصفح القطع" : "Browse Parts"}
-                                    </button>
+                                    </Link>
                                     <button
                                         onClick={reset}
                                         className="px-8 py-3 bg-white/5 text-white font-bold rounded-xl hover:bg-white/10 transition-colors"

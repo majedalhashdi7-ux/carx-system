@@ -8,6 +8,8 @@ interface FetchOptions extends RequestInit {
   params?: Record<string, string>;
 }
 
+import { apiCache } from './api-cache';
+
 export async function fetchAPI<T>(endpoint: string, options: FetchOptions = {}): Promise<{ data?: T; error?: string }> {
   try {
     let url = `${API_BASE_URL}${endpoint}`;
@@ -17,6 +19,31 @@ export async function fetchAPI<T>(endpoint: string, options: FetchOptions = {}):
       const urlObj = new URL(url);
       Object.keys(options.params).forEach(key => urlObj.searchParams.append(key, options.params![key]));
       url = urlObj.toString();
+    }
+
+    const isGet = !options.method || options.method.toUpperCase() === 'GET';
+    const cacheKey = `${endpoint}_${JSON.stringify(options.params || {})}`;
+
+    // ── 0ms Instant Cache Retrieval for GET requests ──
+    if (isGet) {
+      const cached = apiCache.get(cacheKey) as T | null;
+      if (cached) {
+        // Return instantly from memory cache, and refresh in background (SWR)
+        const bgHeaders: HeadersInit = {
+          'Content-Type': 'application/json',
+          'X-Tenant-ID': TENANT_ID,
+          ...(typeof window !== 'undefined' && localStorage.getItem('carx_token') ? { 'Authorization': `Bearer ${localStorage.getItem('carx_token')}` } : {})
+        };
+        fetch(url, { headers: bgHeaders })
+          .then(r => r.json())
+          .then(fresh => {
+            if (fresh && (fresh.success || Array.isArray(fresh) || fresh.data)) {
+              apiCache.set(cacheKey, fresh);
+            }
+          })
+          .catch(() => {});
+        return { data: cached };
+      }
     }
 
     // Prepare headers
@@ -47,6 +74,13 @@ export async function fetchAPI<T>(endpoint: string, options: FetchOptions = {}):
 
     if (!response.ok) {
       return { error: data.message || data.error || 'حدث خطأ في الاتصال بالخادم' };
+    }
+
+    // Save to cache on successful GET, or invalidate on mutations
+    if (isGet) {
+      apiCache.set(cacheKey, data);
+    } else {
+      apiCache.clear();
     }
 
     return { data };

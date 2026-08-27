@@ -81,7 +81,7 @@ router.get('/', cacheResponse(300), async (req, res, next) => {
         const conditions = [];
 
         if (status === 'active') {
-            conditions.push({ isActive: true, isSold: false });
+            conditions.push({ isActive: { $ne: false }, isSold: { $ne: true } });
         } else if (status === 'sold') {
             conditions.push({ isSold: true });
         } else if (status === 'inactive') {
