@@ -14,7 +14,7 @@ try {
     console.warn('[ImageProxy] Sharp not available - watermark will be text overlay only');
 }
 
-const WATERMARK_TEXT = 'HM CAR | CAR X';
+const WATERMARK_TEXT = 'HM CAR';
 
 /**
  * إضافة علامة مائية نصية على الصورة باستخدام Sharp

@@ -245,7 +245,7 @@ async function downloadAndProcessImages(imageUrls = [], folder = 'showroom') {
         try {
             // تطبيق العلامة المائية الشفافة الفاخرة عبر WatermarkService
             const wm = WatermarkService.applyWatermark(url, {
-                watermarkText: 'HM CAR | CAR X'
+                watermarkText: 'HM CAR'
             });
             watermarked.push(wm);
             local.push(url);
