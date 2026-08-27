@@ -54,9 +54,9 @@ const siteSettingsSchema = new mongoose.Schema({
     // محتوى الصفحة الرئيسية الديناميكي (لماذا تختارنا)
     features: [{
         icon: { type: String, default: 'Shield' },      // اسم الأيقونة من Lucide
-        title: { type: String, required: true },        // العنوان (عربي)
+        title: { type: String, default: '' },           // العنوان (عربي)
         titleEn: { type: String, default: '' },         // العنوان (إنجليزي)
-        desc: { type: String, required: true },         // الوصف (عربي)
+        desc: { type: String, default: '' },            // الوصف (عربي)
         descEn: { type: String, default: '' },          // الوصف (إنجليزي)
     }],
 

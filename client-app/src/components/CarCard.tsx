@@ -95,8 +95,9 @@ export default function CarCard({ car, index = 0, onClick, onLoginRequired }: Ca
                             src={imageSrc}
                             alt={car.title || ''}
                             fill
+                            unoptimized
                             sizes="(max-width: 768px) 100vw, 50vw"
-                            className="object-cover transition-all duration-700 group-hover:scale-105 opacity-80 group-hover:opacity-100"
+                            className="object-cover transition-all duration-700 group-hover:scale-105 opacity-90 group-hover:opacity-100"
                             onError={() => setImgError(true)}
                         />
                     ) : (

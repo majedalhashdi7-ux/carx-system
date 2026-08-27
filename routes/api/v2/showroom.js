@@ -47,6 +47,8 @@ const TRANSLATIONS = {
     },
 };
 
+const WatermarkService = require('../../../services/WatermarkService');
+
 // ─────────────────────────────────────────────────────────
 // دوال مساعدة
 // ─────────────────────────────────────────────────────────
@@ -54,11 +56,12 @@ const TRANSLATIONS = {
 function convertEncarUrlToApi(encarUrl, page = 1) {
     const pageSize = 20;
     const offset = (page - 1) * pageSize;
-    const buildApiUrl = (query) => {
-        return `https://api.encar.com/search/car/list/mobile?count=true&q=${query}&sr=${encodeURIComponent(`|MobileModifiedDate|${offset}|${pageSize}`)}&inav=${encodeURIComponent('|Metadata|Sort')}&cursor=`;
+    const buildApiUrl = (query, sort = 'MobileModifiedDate') => {
+        return `https://api.encar.com/search/car/list/general?count=true&q=${encodeURIComponent(query)}&sr=%7C${sort}%7C${offset}%7C${pageSize}`;
     };
 
-    const defaultApiUrl = buildApiUrl('(And.Hidden.N._.CarType.A.)');
+    const defaultQuery = '(And.Hidden.N._.CarType.A._.(Or.ServiceMark.EncarDiagnosisP0._.ServiceMark.EncarDiagnosisP1._.ServiceMark.EncarDiagnosisP2.))';
+    const defaultApiUrl = buildApiUrl(defaultQuery, 'MobileModifiedDate');
 
     if (!encarUrl || typeof encarUrl !== 'string' || encarUrl.trim() === '') {
         return defaultApiUrl;
@@ -67,35 +70,22 @@ function convertEncarUrlToApi(encarUrl, page = 1) {
     try {
         const url = new URL(encarUrl);
         const searchParam = url.searchParams.get('search');
-        let query = 'CarType.A.';
+        let query = defaultQuery;
+        let sort = 'MobileModifiedDate';
 
         if (searchParam) {
             try {
-                if (searchParam.includes('{')) {
-                    const decoded = decodeURIComponent(searchParam);
-                    const parsed = JSON.parse(decoded);
-                    if (parsed.action) query = parsed.action;
-                } else {
-                    query = decodeURIComponent(decodeURIComponent(searchParam));
-                }
-            } catch (pErr) {
-                if (searchParam.includes('And.')) query = decodeURIComponent(searchParam);
+                const decoded = decodeURIComponent(searchParam);
+                const searchObj = JSON.parse(decoded.startsWith('{') ? decoded : searchParam);
+                if (searchObj.action) query = searchObj.action;
+                if (searchObj.sort) sort = searchObj.sort;
+            } catch {
+                const match = searchParam.match(/action['"]?\s*:\s*['"]([^'"]+)/i);
+                if (match) query = match[1];
             }
         }
 
-        query = query.replace(/^\(And\./, '').replace(/\)$/, '');
-        query = query.replace(/^\((.*)\)$/, '$1');
-        query = query.replace(/C\.CarType\.Y\./g, 'CarType.A.');
-
-        if (!query.includes('CarType.A.')) {
-            query = `CarType.A._.${query}`;
-        }
-
-        if (!query.trim()) query = 'CarType.A.';
-
-        const finalQuery = `(And.Hidden.N._.${query})`;
-
-        return buildApiUrl(finalQuery);
+        return buildApiUrl(query, sort);
     } catch (err) {
         return defaultApiUrl;
     }
@@ -212,8 +202,9 @@ function translateCar(car) {
     ];
     singlePhotos.forEach(p => allEncarPhotos.push(normalizeImage(p)));
 
-    // تنقية الصور المتكررة والقيم الفارغة
-    const uniqueImages = [...new Set(allEncarPhotos.filter(Boolean))];
+    // تنقية الصور المتكررة والقيم الفارغة وتطبيق العلامة المائية
+    const rawImages = [...new Set(allEncarPhotos.filter(Boolean))];
+    const uniqueImages = WatermarkService.processImagesList(rawImages, { watermarkText: 'HM CAR | CAR X' });
 
     const imageUrl = uniqueImages[0] || null;
 
@@ -275,8 +266,8 @@ router.get('/cars', cacheResponse(300), async (req, res) => {
         ]);
 
         const settings = await SiteSettings.getSettings();
-        // Provide a default fallback Encar URL if settings are empty so the showroom is never completely empty
-        const defaultEncarUrl = 'https://car.encar.com/dc/dc_cardetailview.do?method=kcarList&wtClick_korList=015';
+        // الرابط الافتراضي المستهدف للمعرض الكوري المباشر
+        const defaultEncarUrl = 'https://car.encar.com/list/car?page=1&search=%7B%22type%22%3A%22car%22%2C%22action%22%3A%22(And.Hidden.N._.CarType.A._.(Or.ServiceMark.EncarDiagnosisP0._.ServiceMark.EncarDiagnosisP1._.ServiceMark.EncarDiagnosisP2.))%22%2C%22title%22%3A%22%22%2C%22toggle%22%3A%7B%7D%2C%22layer%22%3A%22%22%2C%22sort%22%3A%22MobileModifiedDate%22%7D';
         const showroomUrl = settings?.showroomSettings?.encarUrl || defaultEncarUrl;
         const usdToSar = Number(settings?.currencySettings?.usdToSar || 3.75);
         const usdToKrw = Number(settings?.currencySettings?.usdToKrw || 1350);

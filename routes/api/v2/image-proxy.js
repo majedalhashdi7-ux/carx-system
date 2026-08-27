@@ -14,7 +14,7 @@ try {
     console.warn('[ImageProxy] Sharp not available - watermark will be text overlay only');
 }
 
-const WATERMARK_TEXT = 'HM CAR';
+const WATERMARK_TEXT = 'HM CAR | CAR X';
 
 /**
  * إضافة علامة مائية نصية على الصورة باستخدام Sharp
@@ -28,40 +28,35 @@ async function applyWatermarkWithSharp(imageBuffer, text = WATERMARK_TEXT) {
         const w = meta.width || 800;
         const h = meta.height || 600;
 
-        // حجم الخط بناءً على الصورة
-        const fontSize = Math.max(18, Math.floor(Math.min(w, h) * 0.045));
+        // حساب أبعاد شارة العلامة المائية بناءً على حجم الصورة
+        const fontSize = Math.max(14, Math.floor(Math.min(w, h) * 0.032));
+        const badgeHeight = Math.max(28, fontSize * 2.2);
+        const textLen = (text || WATERMARK_TEXT).length;
+        const badgeWidth = Math.max(120, textLen * (fontSize * 0.65) + 36);
+        const posX = Math.max(15, w - badgeWidth - 20);
+        const posY = Math.max(15, h - badgeHeight - 20);
 
-        // إنشاء SVG للعلامة المائية
+        // إنشاء SVG لشارة العلامة المائية الشفافة الفاخرة
         const svgText = `
         <svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
           <defs>
-            <style>
-              .wm {
-                font-family: Arial, Helvetica, sans-serif;
-                font-weight: bold;
-                font-size: ${fontSize}px;
-                fill: rgba(255,255,255,0.75);
-                letter-spacing: 2px;
-              }
-              .shadow {
-                font-family: Arial, Helvetica, sans-serif;
-                font-weight: bold;
-                font-size: ${fontSize}px;
-                fill: rgba(0,0,0,0.45);
-                letter-spacing: 2px;
-              }
-            </style>
+            <filter id="wm-shadow" x="-10%" y="-10%" width="120%" height="120%">
+              <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.45"/>
+            </filter>
           </defs>
-          <!-- ظل -->
-          <text x="${w - 20}" y="${h - 22}" text-anchor="end" class="shadow">${text}</text>
-          <!-- النص الرئيسي -->
-          <text x="${w - 18}" y="${h - 20}" text-anchor="end" class="wm">${text}</text>
+          <g filter="url(#wm-shadow)">
+            <!-- خلفية الشارة الشفافة الفاخرة -->
+            <rect x="${posX}" y="${posY}" width="${badgeWidth}" height="${badgeHeight}" rx="${badgeHeight / 2}" fill="rgba(10, 12, 16, 0.45)" stroke="rgba(255, 255, 255, 0.25)" stroke-width="1"/>
+            <!-- نقطة ذهبية أنيقة -->
+            <circle cx="${posX + 16}" cy="${posY + badgeHeight / 2}" r="${Math.max(3, fontSize * 0.22)}" fill="#E5C158" opacity="0.9"/>
+            <!-- النص -->
+            <text x="${posX + 28}" y="${posY + badgeHeight / 2 + fontSize * 0.35}" font-family="Arial, 'Segoe UI', sans-serif" font-weight="bold" font-size="${fontSize}px" fill="rgba(255, 255, 255, 0.92)" letter-spacing="1.2px">${text || WATERMARK_TEXT}</text>
+          </g>
         </svg>`;
 
         return await sharp(imageBuffer)
             .composite([{
                 input: Buffer.from(svgText),
-                gravity: 'southeast',
                 blend: 'over'
             }])
             .jpeg({ quality: 85 })

@@ -217,7 +217,8 @@ function CarsContent() {
             };
 
             if (editingCar) {
-                await api.cars.update(editingCar.id, submitData);
+                const targetId = editingCar._id || editingCar.id || (editingCar as any)._id;
+                await api.cars.update(targetId, submitData);
             } else {
                 await api.cars.create(submitData);
             }

@@ -98,35 +98,47 @@ function fetchJson(url, options = {}) {
 
 // ─── استخراج كويري من رابط Encar ──────────────────────────────────────
 function parseEncarTargetUrl(targetUrl) {
-    if (!targetUrl || typeof targetUrl !== 'string') return { type: 'list', query: null, carId: null };
+    if (!targetUrl || typeof targetUrl !== 'string') return { type: 'list', query: null, carId: null, sort: 'MobileModifiedDate' };
 
-    const mCarId = targetUrl.match(/carid=(\d+)/i) || targetUrl.match(/car\/(\d+)/i) || targetUrl.match(/detail\/(\d+)/i);
+    const mCarId = targetUrl.match(/carid=(\d+)/i) || targetUrl.match(/car\/(\d+)/i) || targetUrl.match(/detail\/(\d+)/i) || targetUrl.match(/vehicle\/(\d+)/i);
     if (mCarId && mCarId[1]) {
-        return { type: 'single', carId: mCarId[1] };
+        return { type: 'single', carId: mCarId[1], query: null, sort: 'MobileModifiedDate' };
     }
     if (/^\d{6,10}$/.test(targetUrl.trim())) {
-        return { type: 'single', carId: targetUrl.trim() };
+        return { type: 'single', carId: targetUrl.trim(), query: null, sort: 'MobileModifiedDate' };
     }
+
+    let query = '(And.Hidden.N._.CarType.A._.(Or.ServiceMark.EncarDiagnosisP0._.ServiceMark.EncarDiagnosisP1._.ServiceMark.EncarDiagnosisP2.))';
+    let sort = 'MobileModifiedDate';
 
     try {
         const decoded = decodeURIComponent(targetUrl);
-        const actionMatch = decoded.match(/"action"\s*:\s*"([^"]+)"/) || decoded.match(/action=([^&]+)/);
-        if (actionMatch && actionMatch[1]) {
-            return { type: 'list', query: actionMatch[1], carId: null };
+        const searchMatch = decoded.match(/search=({[^}]+})/i) || decoded.match(/"action"\s*:\s*"([^"]+)"/i) || decoded.match(/action=([^&]+)/i);
+        if (searchMatch) {
+            try {
+                const searchObj = JSON.parse(searchMatch[1] || decoded);
+                if (searchObj.action) query = searchObj.action;
+                if (searchObj.sort) sort = searchObj.sort;
+            } catch {
+                if (searchMatch[1] && searchMatch[1].startsWith('(')) query = searchMatch[1];
+            }
         }
+        const sortMatch = decoded.match(/"sort"\s*:\s*"([^"]+)"/i) || decoded.match(/sort=([^&]+)/i);
+        if (sortMatch && sortMatch[1]) sort = sortMatch[1];
     } catch { }
 
-    return { type: 'list', query: null, carId: null };
+    return { type: 'list', query, carId: null, sort };
 }
 
 /**
  * جلب قائمة سيارات Encar
  */
-async function fetchEncarCars(limit = 20, page = 0, customQuery = null) {
+async function fetchEncarCars(limit = 20, page = 0, customQuery = null, customSort = 'MobileModifiedDate') {
     const offset = page * 20;
     const defaultQuery = '(And.Hidden.N._.CarType.A._.(Or.ServiceMark.EncarDiagnosisP0._.ServiceMark.EncarDiagnosisP1._.ServiceMark.EncarDiagnosisP2.))';
     const encarActionQuery = customQuery || defaultQuery;
-    const apiUrl = `https://api.encar.com/search/car/list/general?count=true&q=${encodeURIComponent(encarActionQuery)}&sr=%7CMobileModifiedDate%7C${offset}%7C${limit}`;
+    const sortField = customSort || 'MobileModifiedDate';
+    const apiUrl = `https://api.encar.com/search/car/list/general?count=true&q=${encodeURIComponent(encarActionQuery)}&sr=%7C${sortField}%7C${offset}%7C${limit}`;
 
     try {
         console.log(`🔍 [EncarShowroom] Fetching cars: ${apiUrl}`);
@@ -152,18 +164,23 @@ async function fetchEncarCarInspection(carId) {
 }
 
 /**
- * جلب تفاصيل السيارة الكاملة من Encar
+ * جلب تفاصيل السيارة الكاملة من Encar (v1 readside API)
  */
 async function fetchEncarCarDetail(carId) {
     try {
-        const detailUrl = `https://api.encar.com/cars/${carId}`;
+        const detailUrl = `https://api.encar.com/v1/readside/vehicle/${carId}`;
         const data = await fetchJson(detailUrl, { timeout: 15000 });
-        return data || null;
+        if (data && (data.category || data.spec || data.photos)) {
+            return data;
+        }
+        // بديل: الرابط القديم
+        const fallbackUrl = `https://api.encar.com/cars/${carId}`;
+        return await fetchJson(fallbackUrl, { timeout: 10000 }).catch(() => null);
     } catch { return null; }
 }
 
 /**
- * بناء رابط صورة Encar
+ * بناء رابط صورة Encar بجودة عالية
  */
 function buildEncarImageUrl(photo) {
     if (!photo) return null;
@@ -173,7 +190,7 @@ function buildEncarImageUrl(photo) {
         const clean = p.startsWith('/') ? p : `/${p}`;
         return `https://ci.encar.com/carpicture${clean}`;
     }
-    const path = photo.Path || photo.path || photo.location || photo.Location || photo.url || photo.Url || '';
+    const path = photo.path || photo.Path || photo.location || photo.Location || photo.url || photo.Url || '';
     if (typeof path === 'string' && path.trim()) {
         const p = path.trim();
         if (p.startsWith('http')) return p;
@@ -198,7 +215,6 @@ function convertEncarPrice(rawPrice) {
 function normalizeBrand(raw) {
     if (!raw) return { ar: 'غير محدد', en: 'Unknown' };
     const lower = raw.toLowerCase().trim();
-    // حاول الترجمة من القاموس أولاً
     const ar = BRAND_TRANSLATE[lower] || KoreanTranslationService.cleanAndTranslate(raw);
     const en = BRAND_TRANSLATE_EN[lower] || KoreanTranslationService.translateToEnglish(raw);
     return { ar: ar || raw, en: en || raw };
@@ -212,7 +228,7 @@ function normalizeFuel(raw) {
 }
 
 /**
- * تحميل وضغط مجموعة صور مع علامة مائية HM CAR
+ * تحميل وضغط مجموعة صور مع علامة مائية شفافة HM CAR / CAR X
  * @param {string[]} imageUrls
  * @param {string} folder
  * @returns {Promise<{original: string[], local: string[], watermarked: string[]}>}
@@ -222,29 +238,20 @@ async function downloadAndProcessImages(imageUrls = [], folder = 'showroom') {
     const local = [];
     const watermarked = [];
 
-    const toProcess = imageUrls.slice(0, 20); // حد أقصى 20 صورة لتفادي timeout
+    const toProcess = imageUrls.slice(0, 30); // سحب حتى 30 صورة لكل سيارة
 
     for (const url of toProcess) {
         if (!url || typeof url !== 'string') continue;
         try {
-            // تحميل وضغط الصورة
-            const optimizedPath = await downloadAndOptimize(url, folder, {
-                width: 1200,
-                height: 800,
-                quality: 80,
-            });
-            local.push(optimizedPath || url);
-
-            // تطبيق العلامة المائية
-            const wm = WatermarkService.applyWatermark(optimizedPath || url, {
-                watermarkText: 'HM CAR | منصة السيارات المباشرة'
+            // تطبيق العلامة المائية الشفافة الفاخرة عبر WatermarkService
+            const wm = WatermarkService.applyWatermark(url, {
+                watermarkText: 'HM CAR | CAR X'
             });
             watermarked.push(wm);
-        } catch (err) {
-            console.warn(`⚠️ [ShowroomImport] Image process failed for ${url}: ${err.message}`);
-            // نحتفظ بالرابط الأصلي كبديل
             local.push(url);
+        } catch (err) {
             watermarked.push(WatermarkService.applyWatermark(url));
+            local.push(url);
         }
     }
 
@@ -330,15 +337,19 @@ class ShowroomImportService {
                         const detail = detailData.status === 'fulfilled' ? detailData.value : null;
                         const insp = inspectionData.status === 'fulfilled' ? inspectionData.value : null;
 
-                        // ─── البيانات الخام ────────────────────────────────────────
-                        const rawManufacturer = rawCar.Manufacturer || detail?.Manufacturer || '';
-                        const rawModel = rawCar.Model || detail?.Model || '';
-                        const rawBadge = rawCar.Badge || detail?.Badge || '';
-                        const year = parseInt(rawCar.Year || detail?.Year || rawCar.year) || new Date().getFullYear();
-                        const mileage = parseInt(rawCar.Mileage || detail?.Mileage || rawCar.mileage) || 0;
-                        const rawFuelType = rawCar.FuelType || detail?.FuelType || 'G';
-                        const rawPrice = rawCar.Price || detail?.Price || 0;
-                        const rawColor = rawCar.Color || detail?.Color || '';
+                        // ─── البيانات الخام (دعم v1 readside و API العام) ───────────
+                        const cat = detail?.category || {};
+                        const sp = detail?.spec || {};
+                        const adv = detail?.advertisement || {};
+
+                        const rawManufacturer = cat.manufacturerEnglishName || cat.manufacturerName || rawCar.Manufacturer || detail?.Manufacturer || '';
+                        const rawModel = cat.modelGroupEnglishName || cat.modelName || rawCar.Model || detail?.Model || '';
+                        const rawBadge = cat.gradeDetailEnglishName || cat.gradeEnglishName || cat.gradeDetailName || rawCar.Badge || detail?.Badge || '';
+                        const year = parseInt(cat.formYear || (cat.yearMonth ? String(cat.yearMonth).slice(0,4) : null) || rawCar.Year || detail?.Year || rawCar.year) || new Date().getFullYear();
+                        const mileage = parseInt(sp.mileage || rawCar.Mileage || detail?.Mileage || rawCar.mileage) || 0;
+                        const rawFuelType = sp.fuelName || rawCar.FuelType || detail?.FuelType || 'G';
+                        const rawPrice = adv.price || rawCar.Price || detail?.Price || 0;
+                        const rawColor = sp.colorName || rawCar.Color || detail?.Color || '';
 
                         // ─── الترجمة الكاملة من الكورية ────────────────────────────
                         const brand = normalizeBrand(rawManufacturer);
@@ -363,7 +374,8 @@ class ShowroomImportService {
                         // ─── السعر ─────────────────────────────────────────────────
                         const { priceKrw, priceUsd, priceSar } = convertEncarPrice(rawPrice);
 
-                        // ─── استخراج الصور ──────────────────────────────────────────
+                        // ─── استخراج الصور (من v1 readside أو القائمة) ───────────────
+                        const readsidePhotos = Array.isArray(detail?.photos) ? detail.photos : [];
                         const listPhotos = [
                             ...(Array.isArray(rawCar.Photos) ? rawCar.Photos : []),
                             ...(Array.isArray(rawCar.photos) ? rawCar.photos : []),
@@ -372,6 +384,7 @@ class ShowroomImportService {
                             ...(Array.isArray(rawCar.images) ? rawCar.images : []),
                         ];
                         const detailPhotos = [
+                            ...readsidePhotos,
                             ...(Array.isArray(detail?.Photos) ? detail.Photos : []),
                             ...(Array.isArray(detail?.photos) ? detail.photos : []),
                             ...(detail?.Photo ? [detail.Photo] : []),
@@ -380,7 +393,7 @@ class ShowroomImportService {
                         const allPhotoObjs = detailPhotos.length > 0 ? detailPhotos : listPhotos;
                         let rawImageUrls = [...new Set(
                             allPhotoObjs.map(buildEncarImageUrl).filter(Boolean)
-                        )].slice(0, 25);
+                        )].slice(0, 30);
 
                         // إذا لم تتوفر صور من API، استخدم صور حقيقية مخصصة للموديل
                         if (rawImageUrls.length === 0) {
@@ -396,13 +409,13 @@ class ShowroomImportService {
                             'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=1200';
 
                         // ─── المميزات ثنائية اللغة ─────────────────────────────────
-                        const rawDesc = detail?.Description || rawCar.Description || '';
+                        const rawDesc = detail?.Description || rawCar.Description || adv.oneLineText || '';
                         const { featuresAr, featuresEn } = KoreanTranslationService.extractBilingualFeatures(rawDesc);
                         const inspectionReport = KoreanTranslationService.generateBilingualInspectionReport(rawDesc, insp);
 
                         // ─── الوصف العربي والإنجليزي ───────────────────────────────
                         const descriptionAr = KoreanTranslationService.cleanAndTranslate(rawDesc) ||
-                            `سيارة ${titleAr} مستوردة مفحوصة، سنة الصنع: ${year}، المسافة: ${mileage.toLocaleString('ar-SA')} كم، الوقود: ${fuel.ar}، ناقل الحركة: أوتوماتيك. مفحوصة ومعتمدة بالكامل.`;
+                            `سيارة ${titleAr} مستوردة مفحوصة، سنة الصنع: ${year}، المسافة: ${mileage.toLocaleString('ar-SA')} كم، الوقود: ${fuel.ar}، ناقل الحركة: ${sp.transmissionName === '오토' ? 'أوتوماتيك' : 'أوتوماتيك'}. مفحوصة ومعتمدة بالكامل.`;
                         const descriptionEn = KoreanTranslationService.translateToEnglish(rawDesc) ||
                             `${titleEn} imported car, fully inspected. Year: ${year}, Mileage: ${mileage.toLocaleString()} km, Fuel: ${fuel.en}, Transmission: Automatic.`;
 
@@ -422,9 +435,10 @@ class ShowroomImportService {
                             transmission_en: 'Automatic',
                             color_ar: colorAr,
                             color_en: colorEn,
-                            vin: detail?.Vin || detail?.VinNo || '',
-                            engineCc: detail?.EngineCapacity || '',
-                            seats: detail?.Seats || 5,
+                            vin: detail?.vin || detail?.Vin || detail?.VinNo || '',
+                            engineCc: sp.displacement || detail?.EngineCapacity || '',
+                            seats: sp.seatCount || detail?.Seats || 5,
+                            bodyType_ar: sp.bodyName || 'سيدان',
                             driveType_ar: 'دفع أمامي',
                             driveType_en: 'Front Wheel Drive',
                             source: 'encar_korea',
