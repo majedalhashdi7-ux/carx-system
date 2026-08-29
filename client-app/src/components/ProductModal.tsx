@@ -348,15 +348,31 @@ export default function ProductModal({ product, onClose, whatsappNumber }: Produ
                             <X className="w-4 h-4" />
                         </button>
 
-                        {/* [[ARABIC_COMMENT]] زر المشاركة - يفتح قائمة خيارات */}
-                        <div className="absolute top-4 left-4 z-30">
+                        {/* [[ARABIC_COMMENT]] زر المشاركة وقائمة الخيارات وزر المفضلة */}
+                        <div className="absolute top-4 left-4 z-30 flex items-center gap-2">
                             <button
                                 onClick={() => setShowShareMenu(p => !p)}
-                                className="w-9 h-9 rounded-full bg-black/60 border border-white/10 flex items-center justify-center text-white/50 hover:text-white hover:bg-black/80 transition-all backdrop-blur-sm"
+                                className="w-9 h-9 rounded-full bg-black/60 border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all backdrop-blur-md shadow-lg"
                                 aria-label="Share"
                             >
                                 {copied ? <Check className="w-4 h-4 text-green-400" /> : <Share2 className="w-4 h-4" />}
                             </button>
+
+                            {/* زر المفضلة الحر العائم */}
+                            <motion.button
+                                whileHover={{ scale: 1.15 }}
+                                whileTap={{ scale: 0.85 }}
+                                onClick={toggleFavorite}
+                                className="p-1 border-none bg-transparent hover:scale-115 transition-all duration-300 cursor-pointer shadow-none outline-none focus:outline-none flex items-center justify-center"
+                                aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                            >
+                                <Heart className={`w-6 h-6 transition-all duration-300 ${
+                                    isFavorite
+                                        ? 'fill-red-500 text-red-500 drop-shadow-[0_0_12px_rgba(239,68,68,0.95)]'
+                                        : 'text-white/90 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] hover:text-red-400'
+                                }`} />
+                            </motion.button>
+
                             {/* قائمة المشاركة */}
                             {showShareMenu && (
                                 <div className="absolute top-11 left-0 bg-[#111] border border-white/10 rounded-2xl p-2 shadow-2xl min-w-[170px] space-y-1 z-50 backdrop-blur-md">

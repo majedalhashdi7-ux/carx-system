@@ -226,21 +226,38 @@ module.exports = async (req, res) => {
           }
 
           let insertedCount = 0;
+          let skippedCount = 0;
           if (documents.length > 0) {
-            // Ensure tenantId is set
+            // Ensure tenantId is set + convert dates
             const docs = documents.map(d => {
               const doc = { ...d };
               doc.tenantId = 'hmcar';
-              // Convert date strings back to Date objects if needed
               if (doc.createdAt && typeof doc.createdAt === 'string') doc.createdAt = new Date(doc.createdAt);
               if (doc.updatedAt && typeof doc.updatedAt === 'string') doc.updatedAt = new Date(doc.updatedAt);
               if (doc.startsAt && typeof doc.startsAt === 'string') doc.startsAt = new Date(doc.startsAt);
               if (doc.endsAt && typeof doc.endsAt === 'string') doc.endsAt = new Date(doc.endsAt);
-              // Clean ObjectId fields if _id is string, leave as string or remove if invalid
               return doc;
             });
-            const r = await col.insertMany(docs, { ordered: false }).catch(e => ({ insertedCount: e.result?.insertedCount || 0 }));
-            insertedCount = r.insertedCount || docs.length;
+
+            // [[ARABIC_COMMENT]] تجنب التكرار عبر externalUrl (upsert ذكي)
+            if (collection === 'cars') {
+              for (const doc of docs) {
+                if (doc.externalUrl) {
+                  const exists = await col.findOne({ externalUrl: doc.externalUrl }, { projection: { _id: 1 } });
+                  if (exists) { skippedCount++; continue; }
+                }
+                try {
+                  await col.insertOne(doc);
+                  insertedCount++;
+                } catch (e) {
+                  if (e.code !== 11000) console.warn('Insert error:', e.message);
+                  else skippedCount++;
+                }
+              }
+            } else {
+              const r = await col.insertMany(docs, { ordered: false }).catch(e => ({ insertedCount: e.result?.insertedCount || 0 }));
+              insertedCount = r.insertedCount || docs.length;
+            }
           }
 
           const totalCount = await col.countDocuments({ tenantId: 'hmcar' });
@@ -248,6 +265,7 @@ module.exports = async (req, res) => {
             success: true,
             collection,
             inserted: insertedCount,
+            skipped: skippedCount,
             total: totalCount
           });
         } catch(e) {

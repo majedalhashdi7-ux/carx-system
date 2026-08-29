@@ -270,48 +270,24 @@ export default function UltraModernPartCard({
                         </motion.div>
                     </div>
 
-                    {/* زر الرجوع للصفحة الرئيسية */}
-                    <div className="absolute top-4 right-4">
+                    {/* زر المفضلة - أيقونة قلب حرة وشفافة فوق الصورة */}
+                    <div className="absolute top-4 end-4 z-30 flex items-center gap-2">
                         <motion.button
+                            whileHover={{ scale: 1.2 }}
+                            whileTap={{ scale: 0.8 }}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handleBackToHome();
+                                toggleFav(e);
                             }}
-                            whileHover={{ scale: 1.1, rotate: 5 }}
-                            whileTap={{ scale: 0.9 }}
-                            className="w-11 h-11 rounded-2xl bg-black/70 backdrop-blur-md border border-white/20 hover:border-amber-500/50 flex items-center justify-center text-white/80 hover:text-amber-400 hover:bg-black/90 transition-all duration-300 group/back shadow-lg"
-                            title={isRTL ? 'العودة للصفحة الرئيسية' : 'Back to Home'}
+                            className="p-1.5 border-none bg-transparent hover:scale-115 transition-all duration-300 cursor-pointer shadow-none outline-none focus:outline-none flex items-center justify-center"
+                            title={isRTL ? 'المفضلة' : 'Favorite'}
                         >
-                            <Home className="w-5 h-5 group-hover/back:scale-110 transition-transform" />
-                        </motion.button>
-                    </div>
-
-                    {/* ── أزرار علوية ── */}
-                    <div className="absolute top-20 right-4 flex flex-col gap-3 opacity-0 group-hover:opacity-100 transition-all duration-500">
-                        {/* زر التفاصيل */}
-                        <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={(e) => { e.stopPropagation(); onClick?.(); }}
-                            className="w-11 h-11 rounded-2xl flex items-center justify-center backdrop-blur-xl bg-black/70 border border-white/20 hover:bg-blue-500/20 hover:border-blue-400/40 transition-all duration-300 shadow-lg"
-                            title={isRTL ? 'التفاصيل' : 'Details'}
-                        >
-                            <FileText className="w-5 h-5 text-white/70 hover:text-blue-400 transition-colors" />
-                        </motion.button>
-
-                        {/* زر القلب */}
-                        <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={toggleFav}
-                            className={cn(
-                                "w-11 h-11 rounded-2xl flex items-center justify-center backdrop-blur-xl border transition-all duration-300 shadow-lg",
+                            <Heart className={cn(
+                                "w-6 h-6 transition-all duration-300",
                                 isFav
-                                    ? "bg-red-500/90 border-red-400/50 shadow-red-500/30"
-                                    : "bg-black/70 border-white/20 hover:bg-red-500/20 hover:border-red-400/40"
-                            )}
-                        >
-                            <Heart className={cn("w-5 h-5 transition-all", isFav ? "fill-white text-white" : "text-white/70")} />
+                                    ? "fill-red-500 text-red-500 drop-shadow-[0_0_12px_rgba(239,68,68,0.95)]"
+                                    : "text-white/90 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] hover:text-red-400"
+                            )} />
                         </motion.button>
                     </div>
 

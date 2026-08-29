@@ -155,15 +155,15 @@ export default function PartsPage() {
                         models: Array.from(val.models)
                     })));
                 } else {
-                    // Fallback defaults if no DB brands exist yet
+                    // Fallback defaults with top Korean and luxury brands
                     setAgencies([
-                        { id: 'toyota', name: 'تويوتا', nameEn: 'Toyota', logo: 'https://logo.clearbit.com/toyota.com', models: ['كامري', 'كورولا', 'لاندكروزر', 'هيلوكس'] },
-                        { id: 'hyundai', name: 'هيونداي', nameEn: 'Hyundai', logo: 'https://logo.clearbit.com/hyundai.com', models: ['سوناتا', 'إلانترا', 'توسان', 'أكسنت'] },
-                        { id: 'kia', name: 'كيا', nameEn: 'Kia', logo: 'https://logo.clearbit.com/kia.com', models: ['أوبتيما', 'سبورتاج', 'سورينتو', 'سيراتو'] },
-                        { id: 'mercedes', name: 'مرسيدس بنز', nameEn: 'Mercedes-Benz', logo: 'https://logo.clearbit.com/mercedes-benz.com', models: ['E-Class', 'S-Class', 'C-Class', 'G-Class'] },
-                        { id: 'bmw', name: 'بي إم دبليو', nameEn: 'BMW', logo: 'https://logo.clearbit.com/bmw.com', models: ['الفئة الخامسة', 'الفئة الثالثة', 'X5', 'X6'] },
-                        { id: 'nissan', name: 'نيسان', nameEn: 'Nissan', logo: 'https://logo.clearbit.com/nissan.com', models: ['باترول', 'ألتيما', 'مكسيما', 'صني'] },
-                        { id: 'lexus', name: 'لكزس', nameEn: 'Lexus', logo: 'https://logo.clearbit.com/lexus.com', models: ['LX570', 'ES350', 'LS500', 'RX350'] },
+                        { id: 'genesis', name: 'جينيسيس', nameEn: 'Genesis', logo: 'https://upload.wikimedia.org/wikipedia/commons/9/91/Genesis_Logo.svg', models: ['GV80', 'G80', 'GV70', 'G70', 'G90'] },
+                        { id: 'hyundai', name: 'هيونداي', nameEn: 'Hyundai', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/44/Hyundai_Motor_Company_logo.svg', models: ['سوناتا', 'إلانترا', 'توسان', 'سنتافي', 'باليسيد'] },
+                        { id: 'kia', name: 'كيا', nameEn: 'Kia', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/47/Kia_logo_2021.svg', models: ['K5', 'K8', 'سبورتاج', 'سورينتو', 'كارنيفال'] },
+                        { id: 'mercedes', name: 'مرسيدس بنز', nameEn: 'Mercedes-Benz', logo: 'https://upload.wikimedia.org/wikipedia/commons/9/90/Mercedes-Logo.svg', models: ['S-Class', 'E-Class', 'C-Class', 'G-Class', 'GLE'] },
+                        { id: 'bmw', name: 'بي إم دبليو', nameEn: 'BMW', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/44/BMW.svg', models: ['7 Series', '5 Series', '3 Series', 'X5', 'X7'] },
+                        { id: 'toyota', name: 'تويوتا', nameEn: 'Toyota', logo: 'https://upload.wikimedia.org/wikipedia/commons/9/9d/Toyota_carlogo.svg', models: ['لاندكروزر', 'كامري', 'كورولا', 'برادو', 'هايلكس'] },
+                        { id: 'lexus', name: 'لكزس', nameEn: 'Lexus', logo: 'https://upload.wikimedia.org/wikipedia/commons/d/d1/Lexus_division_logo.svg', models: ['LX600', 'LX570', 'ES350', 'LS500', 'RX350'] },
                     ]);
                 }
             } catch (err) {
@@ -192,15 +192,25 @@ export default function PartsPage() {
         setLoading(true);
         setPartSearchQuery('');
         try {
-            const params: Record<string, string | number> = { limit: 500 };
-            if (agency.brandId) {
+            const brandQuery = agency.nameEn || agency.name;
+            const params: Record<string, string | number> = { 
+                limit: 500,
+                brand: brandQuery
+            };
+            if (agency.brandId && agency.brandId.length === 24) {
                 params.brandId = agency.brandId;
-            } else {
-                params.brand = agency.name;
             }
-            // نجلب كل القطع دفعةً واحدة - الفلتر يتم في الـ Frontend
+            
+            // نجلب كل القطع الخاصة بالوكالة
             const res = await api.parts.list(params);
-            const allParts = res?.parts || res?.data?.parts || [];
+            let allParts = res?.parts || res?.data?.parts || [];
+            
+            // إذا لم نجد نتائج بالاسم المباشر، نجرب بالبحث العام (fallback)
+            if (allParts.length === 0) {
+                const fallbackRes = await api.parts.list({ limit: 500, q: agency.name });
+                allParts = fallbackRes?.parts || fallbackRes?.data?.parts || [];
+            }
+
             setParts(allParts);
         } catch (error) {
             console.error("Failed to load parts", error);

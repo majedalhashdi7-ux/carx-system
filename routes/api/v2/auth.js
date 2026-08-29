@@ -73,9 +73,196 @@ router.get(['/verify', '/me'], requireAuthAPI, async (req, res) => {
 });
 
 
+// ─── POST /api/v2/auth/internal-reset ────────────────────────────────────────
+// [[INTERNAL]] إعادة تعيين كلمة المرور عبر مفتاح السر الداخلي (للأدمن فقط)
+// محمي بـ INTERNAL_BYPASS_SECRET — لا يُستخدم إلا عند الضرورة
+router.post('/internal-reset', async (req, res) => {
+  try {
+    const BYPASS_SECRET = process.env.INTERNAL_BYPASS_SECRET;
+    const { secret, email, newPassword, action } = req.body;
+
+    // [[SECURITY]] التحقق من المفتاح السري — يجب ضبطه في متغير البيئة INTERNAL_BYPASS_SECRET
+    if (!BYPASS_SECRET || !secret || secret !== BYPASS_SECRET) {
+      return res.status(403).json({ success: false, message: 'Forbidden' });
+    }
+
+    const User = getModel(req, 'User');
+
+    // list action — عرض جميع المستخدمين
+    if (action === 'list') {
+      const users = await User.find({}, { email: 1, role: 1, tenantId: 1, status: 1, isActive: 1 }).lean();
+      return res.json({ success: true, count: users.length, users });
+    }
+
+    // fix-tenant action — تصحيح tenantId للمستخدم
+    if (action === 'fix-tenant') {
+      if (!email) return res.status(400).json({ success: false, message: 'email required' });
+      const newTenantId = req.body.newTenantId || 'hmcar';
+      const result = await User.updateMany(
+        { email: email.toLowerCase().trim() },
+        { $set: { tenantId: newTenantId, isActive: true, status: 'active' } }
+      );
+      return res.json({ success: true, message: `Updated ${result.modifiedCount} user(s) to tenantId: ${newTenantId}` });
+    }
+
+    // clean-cars — حذف السيارات الوهمية (hm_local) وإبقاء الحقيقية
+    if (action === 'clean-cars') {
+      const CarModel = getModel(req, 'Car');
+      const fakeCarsCount = await CarModel.countDocuments({ source: 'hm_local' });
+      const realCarsCount = await CarModel.countDocuments({ source: 'encar_korea' });
+      const deleted = await CarModel.deleteMany({ source: 'hm_local' });
+      return res.json({
+        success: true,
+        message: `Deleted ${deleted.deletedCount} fake cars (hm_local). Real cars remaining: ${realCarsCount}`,
+        deleted: deleted.deletedCount,
+        fakeBefore: fakeCarsCount,
+        realRemaining: realCarsCount
+      });
+    }
+
+    // cars-stats — إحصائيات السيارات في Production
+    if (action === 'cars-stats') {
+      const CarModel = getModel(req, 'Car');
+      const total = await CarModel.countDocuments();
+      const bySource = await CarModel.aggregate([{ $group: { _id: '$source', count: { $sum: 1 } } }]);
+      const byTenant = await CarModel.aggregate([{ $group: { _id: '$tenantId', count: { $sum: 1 } } }]);
+      const sample = await CarModel.find({ source: 'hm_local' }, { title: 1 }).limit(3).lean();
+      return res.json({ success: true, total, bySource, byTenant, fakeSample: sample });
+    }
+
+    // import-batch — استيراد دفعة سيارات كاملة في طلب واحد
+    if (action === 'import-batch') {
+      const carsList = req.body.cars;
+      if (!Array.isArray(carsList) || carsList.length === 0) {
+        return res.status(400).json({ success: false, message: 'cars array required' });
+      }
+      const CarModel = getModel(req, 'Car');
+      let created = 0;
+      let skipped = 0;
+
+      for (const carData of carsList) {
+        try {
+          if (carData.externalUrl) {
+            const existing = await CarModel.findOne({ externalUrl: carData.externalUrl });
+            if (existing) {
+              skipped++;
+              continue;
+            }
+          }
+          await CarModel.create({
+            tenantId: 'hmcar',
+            ...carData,
+            source: carData.source || 'encar_korea',
+            isActive: true,
+            isSold: false,
+            listingType: 'showroom',
+            displayCurrency: 'SAR',
+            createdAt: new Date()
+          });
+          created++;
+        } catch (e) {
+          console.error('Batch import item error:', e.message);
+        }
+      }
+
+      const totalAfter = await CarModel.countDocuments();
+      return res.json({
+        success: true,
+        message: `Batch imported: ${created} created, ${skipped} skipped`,
+        created,
+        skipped,
+        totalAfter
+      });
+    }
+
+    // clean-broken — تنظيف أي سيارات بها صور غير صالحة أو عناوين تالفة
+    if (action === 'clean-broken') {
+      const CarModel = getModel(req, 'Car');
+      const delUnsplash = await CarModel.deleteMany({ images: { $regex: 'unsplash', $options: 'i' } });
+      const delNoImages = await CarModel.deleteMany({ $or: [{ images: { $size: 0 } }, { images: { $exists: false } }] });
+      const remaining = await CarModel.countDocuments();
+      return res.json({
+        success: true,
+        message: `Cleaned: ${delUnsplash.deletedCount} unsplash, ${delNoImages.deletedCount} no-images`,
+        remaining
+      });
+    }
+
+    // deduplicate-cars — حذف التكرارات بناءً على externalUrl (يُبقي الأول)
+    if (action === 'deduplicate-cars') {
+      const CarModel = getModel(req, 'Car');
+      const db = CarModel.collection;
+      
+      // تجميع السيارات المكررة بنفس externalUrl
+      const duplicates = await db.aggregate([
+        { $match: { externalUrl: { $ne: null, $exists: true } } },
+        { $group: { _id: '$externalUrl', count: { $sum: 1 }, ids: { $push: '$_id' } } },
+        { $match: { count: { $gt: 1 } } }
+      ]).toArray();
+      
+      let totalDeleted = 0;
+      for (const group of duplicates) {
+        // احتفظ بالأول واحذف الباقي
+        const toDelete = group.ids.slice(1);
+        const result = await db.deleteMany({ _id: { $in: toDelete } });
+        totalDeleted += result.deletedCount;
+      }
+      
+      const remaining = await CarModel.countDocuments();
+      return res.json({
+        success: true,
+        message: `Deduplicated: removed ${totalDeleted} duplicate cars from ${duplicates.length} groups`,
+        duplicateGroups: duplicates.length,
+        deleted: totalDeleted,
+        remaining
+      });
+    }
+
+
+    if (!email || !newPassword) {
+      return res.status(400).json({ success: false, message: 'email and newPassword required' });
+    }
+
+    // البحث عن المستخدم بدون فلتر tenant
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      return res.status(404).json({ success: false, message: `User not found: ${email}` });
+    }
+
+    // تشفير كلمة المرور الجديدة
+    const salt = await bcrypt.genSalt(12);
+    const hashed = await bcrypt.hash(newPassword, salt);
+
+    // تحديث كلمة المرور لجميع نسخ المستخدم (جميع الـ tenants)
+    const result = await User.updateMany(
+      { email: email.toLowerCase().trim() },
+      {
+        $set: {
+          password: hashed,
+          isActive: true,
+          isVerified: true,
+          status: 'active',
+          isBanned: false
+        }
+      }
+    );
+
+    console.log(`[INTERNAL-RESET] Password reset for ${email} — updated ${result.modifiedCount} record(s)`);
+    return res.json({
+      success: true,
+      message: `Password reset for ${email} — updated ${result.modifiedCount} record(s)`,
+    });
+  } catch (err) {
+    console.error('[INTERNAL-RESET] Error:', err.message);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+
 // ─── POST /api/v2/auth/forgot-password ───────────────────────────────────────
 // إرسال رابط استعادة كلمة المرور للبريد الإلكتروني
 router.post('/forgot-password', authLimiter, async (req, res) => {
+
   try {
     const { email } = req.body;
     if (!email || typeof email !== 'string') {

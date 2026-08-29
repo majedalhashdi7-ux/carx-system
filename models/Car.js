@@ -131,6 +131,10 @@ carSchema.index({ make: 1, model: 1, year: -1 });
 carSchema.index({ price: 1, priceUsd: 1 });
 carSchema.index({ source: 1, isActive: 1 });
 carSchema.index({ seller: 1 });
+// [[PERFORMANCE]] فهرس مركب لتسريع الاستعلامات الرئيسية (tenantId + isActive + createdAt)
+carSchema.index({ tenantId: 1, isActive: 1, createdAt: -1 });
+carSchema.index({ tenantId: 1, isSold: 1, isActive: 1, createdAt: -1 });
+carSchema.index({ tenantId: 1, source: 1, isActive: 1 });
 carSchema.index(
   { title: 'text', description: 'text' },
   { 

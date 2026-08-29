@@ -108,7 +108,8 @@ async function fetchExternal(url, redirectCount = 0) {
                 'sec-ch-ua-mobile': '?0',
                 'Cache-Control': 'no-cache',
             },
-            timeout: 15000,
+            proxy: false,
+            timeout: 20000,
             maxRedirects: 3,
             httpsAgent: new https.Agent({ rejectUnauthorized: false })
         });
@@ -237,11 +238,11 @@ function translateCar(car) {
 // ─────────────────────────────────────────────────────────
 
 /**
- * GET /api/v2/showroom/cars
+ * GET /api/v2/showroom & GET /api/v2/showroom/cars
  * جلب سيارات المعرض الكوري (عام - للعملاء)
  * يستخدم الرابط المحفوظ في الإعدادات مع كاش 5 دقائق
  */
-router.get('/cars', cacheResponse(300), async (req, res) => {
+router.get(['/', '/cars'], cacheResponse(300), async (req, res) => {
     try {
         const SiteSettings = getModel(req, 'SiteSettings');
         const Car = getModel(req, 'Car');

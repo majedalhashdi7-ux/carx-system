@@ -192,12 +192,62 @@ const KOREAN_TITLE_TOKENS: Array<[RegExp, { ar: string; en: string }]> = [
     [/풀옵션/g, { ar: 'فل كامل', en: 'Full Option' }],
 ];
 
+const ARABIC_TO_ENGLISH_TOKENS: Array<[RegExp, string]> = [
+    // Brands
+    [/هيونداي/g, 'Hyundai'],
+    [/كيا/g, 'Kia'],
+    [/جينيسيس/g, 'Genesis'],
+    [/بي إم دبليو|بي ام دبليو/g, 'BMW'],
+    [/مرسيدس بنز|مرسيدس/g, 'Mercedes-Benz'],
+    [/تويوتا/g, 'Toyota'],
+    [/لكزس/g, 'Lexus'],
+    [/أودي/g, 'Audi'],
+    [/بورش/g, 'Porsche'],
+    [/فولفو/g, 'Volvo'],
+    [/لاند روفر/g, 'Land Rover'],
+    [/فورد/g, 'Ford'],
+    [/شيفروليه/g, 'Chevrolet'],
+    [/جيب/g, 'Jeep'],
+    [/نيسان/g, 'Nissan'],
+    [/سانغ يونغ/g, 'SsangYong'],
+    [/رينو سامسونج|رينو/g, 'Renault'],
+
+    // Terms & Specs
+    [/الجيل\s*(\d+)/g, 'Gen $1'],
+    [/نيو/g, 'New'],
+    [/أول نيو/g, 'All-New'],
+    [/بنزين \+ كهرباء/g, 'Gasoline + Electric'],
+    [/بنزين/g, 'Gasoline'],
+    [/ديزل/g, 'Diesel'],
+    [/هايبرد/g, 'Hybrid'],
+    [/كهربائي/g, 'Electric (EV)'],
+    [/غاز\s*\(LPG\)|غاز/g, 'LPG Gas'],
+    [/أوتوماتيك/g, 'Automatic'],
+    [/يدوي/g, 'Manual'],
+    [/فل كامل/g, 'Full Option'],
+    [/مقاعد/g, 'Seats'],
+    [/دفع رباعي/g, 'AWD'],
+    [/تيربو/g, 'Turbo'],
+    [/معرض/g, 'Showroom'],
+    [/مفحوصة/g, 'Inspected'],
+];
+
 export function cleanKoreanText(text: string, isRTL: boolean = true): string {
     if (!text || typeof text !== 'string') return '';
     let result = text;
+    
+    // Apply Korean tokens
     KOREAN_TITLE_TOKENS.forEach(([pattern, trans]) => {
         result = result.replace(pattern, isRTL ? trans.ar : trans.en);
     });
+
+    // If English mode, translate any Arabic tokens to English
+    if (!isRTL) {
+        ARABIC_TO_ENGLISH_TOKENS.forEach(([pattern, enText]) => {
+            result = result.replace(pattern, enText);
+        });
+    }
+
     // إزالة أية حروف كورية متبقية غير مترجمة
     result = result.replace(/[\uAC00-\uD7A3\u1100-\u11FF\u3130-\u318F]+/g, ' ').trim();
     result = result.replace(/\s+/g, ' ').replace(/\(\s*\)/g, '').trim();
@@ -213,6 +263,11 @@ export function formatCarTitle(rawTitle: string, rawMake: string, isRTL: boolean
 
     const brandInfo = getBrandInfo(rawMake || '');
     const brandName = isRTL ? brandInfo.ar : brandInfo.en;
+
+    // In English mode, ensure brand in title is English
+    if (!isRTL && brandInfo.ar && title.includes(brandInfo.ar)) {
+        title = title.replace(new RegExp(brandInfo.ar, 'g'), brandInfo.en);
+    }
 
     // Check all brand representations to avoid duplicates (ar/en/raw)
     const titleLower = title.toLowerCase();

@@ -166,31 +166,32 @@ export default function PartCard({ part, index = 0, onClick, onLoginRequired }: 
                     </div>
 
                     {/* ── أزرار علوية ── */}
-                    <div className="absolute top-3 right-3 flex gap-2">
+                    <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
                         {/* زر التفاصيل (الوصف) */}
                         <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             onClick={(e) => { e.stopPropagation(); onClick?.(); }}
-                            className="w-9 h-9 rounded-xl flex items-center justify-center backdrop-blur-xl bg-black/60 border border-white/20 hover:bg-blue-500/20 hover:border-blue-400/40 transition-all duration-300 shadow-lg"
+                            className="w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-xl bg-black/40 border border-white/20 hover:bg-blue-500/20 hover:border-blue-400/40 transition-all duration-300 shadow-lg"
                             title={isRTL ? 'التفاصيل' : 'Details'}
                         >
-                            <FileText className="w-4 h-4 text-white/70" />
+                            <FileText className="w-3.5 h-3.5 text-white/80" />
                         </motion.button>
 
-                        {/* زر القلب */}
+                        {/* زر القلب - حر وبدون مربع تحديد */}
                         <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
+                            whileHover={{ scale: 1.2 }}
+                            whileTap={{ scale: 0.8 }}
                             onClick={toggleFav}
-                            className={cn(
-                                "w-9 h-9 rounded-xl flex items-center justify-center backdrop-blur-xl border transition-all duration-300 shadow-lg",
-                                isFav
-                                    ? "bg-red-500/90 border-red-400/50"
-                                    : "bg-black/60 border-white/20 hover:bg-red-500/20 hover:border-red-400/40"
-                            )}
+                            className="p-1 border-none bg-transparent hover:scale-115 transition-all duration-300 cursor-pointer shadow-none outline-none focus:outline-none flex items-center justify-center"
+                            title={isRTL ? 'المفضلة' : 'Favorite'}
                         >
-                            <Heart className={cn("w-4 h-4", isFav ? "fill-white text-white" : "text-white/70")} />
+                            <Heart className={cn(
+                                "w-6 h-6 transition-all duration-300",
+                                isFav
+                                    ? "fill-red-500 text-red-500 drop-shadow-[0_0_12px_rgba(239,68,68,0.95)]"
+                                    : "text-white/90 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] hover:text-red-400"
+                            )} />
                         </motion.button>
                     </div>
 

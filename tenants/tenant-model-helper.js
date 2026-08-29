@@ -91,22 +91,31 @@ function addTenantFilter(req, filter = {}) {
 
   const tid = req.tenant.id;
 
-  // [[ARABIC_COMMENT]] المعارض الرئيسية (hmcar, carx, default) ترى بياناتها + البيانات المشتركة والقديمة
-  // أي معرض فرعي مخصص إضافي يرى بياناته الخاصة فقط
-  const PRIMARY_TENANTS = ['hmcar', 'carx', 'default'];
-
-  const tenantCondition = PRIMARY_TENANTS.includes(tid)
-    ? {
-        $or: [
-          { tenantId: tid },
-          { tenantId: 'hmcar' },
-          { tenantId: 'carx' },
-          { tenantId: 'default' },
-          { tenantId: { $exists: false } },
-          { tenantId: null },
-        ],
-      }
-    : { tenantId: tid };
+  // [[ARABIC_COMMENT]] كل معرض يرى بياناته الخاصة + البيانات المشتركة القديمة (default/null)
+  // لكن لا يرى بيانات المعارض الأخرى أبداً — عزل كامل بين hmcar و carx
+  let tenantCondition;
+  
+  if (tid === 'hmcar') {
+    // HM CAR يرى: hmcar + default (بيانات قديمة مشتركة) + بدون tenantId
+    tenantCondition = {
+      $or: [
+        { tenantId: 'hmcar' },
+        { tenantId: 'default' },
+        { tenantId: { $exists: false } },
+        { tenantId: null },
+      ],
+    };
+  } else if (tid === 'carx') {
+    // CAR X يرى: carx فقط — لا يرى hmcar أبداً
+    tenantCondition = {
+      $or: [
+        { tenantId: 'carx' },
+      ],
+    };
+  } else {
+    // أي معرض آخر مخصص يرى بياناته الخاصة فقط
+    tenantCondition = { tenantId: tid };
+  }
 
   // [[ARABIC_COMMENT]] إذا كان الفلتر يحتوي على $or نستخدم $and لتجنب الكتابة فوقه
   // مثال: { $or: [{email:x},{phone:y}] } مع شرط tenantId → يجب $and وليس overwrite

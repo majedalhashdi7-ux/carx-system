@@ -1,4 +1,5 @@
 // [[ARABIC_HEADER]] هذا الملف (routes/api/v2/cars.js) جزء من مشروع HM CAR ويحتوي تعليقات عربية لضمان الوضوح.
+// [[ARABIC_COMMENT]] تم إضافة دعم العلامة المائية التلقائية لصور Encar عبر /api/v2/image-proxy
 
 const express = require('express');
 const router = express.Router();
@@ -58,6 +59,21 @@ function normalizeCarPricing(payload, rates) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// [[ARABIC_COMMENT]] دالة مساعدة لتحويل روابط Encar عبر بروكسي العلامة المائية
+function applyWatermarkToImages(images = [], source = '') {
+    if (!Array.isArray(images) || images.length === 0) return images;
+    const isEncar = source === 'encar_korea' || source === 'encar' || source === 'korean_import';
+    if (!isEncar) return images;
+    return images.map(img => {
+        if (!img || typeof img !== 'string') return img;
+        if (img.includes('image-proxy') || img.includes('watermark=true')) return img;
+        if (img.includes('ci.encar.com') || img.includes('encar.co.kr') || img.includes('carpicture')) {
+            return `/api/v2/image-proxy?url=${encodeURIComponent(img)}&watermark=true&text=${encodeURIComponent('HM CAR')}`;
+        }
+        return img;
+    });
+}
+
 // GET /api/v2/cars — جلب قائمة السيارات (مفلترة حسب المعرض دائماً)
 // ─────────────────────────────────────────────────────────────────────────────
 router.get('/', cacheResponse(300), async (req, res, next) => {
@@ -193,8 +209,8 @@ router.get('/', cacheResponse(300), async (req, res, next) => {
                 basePriceUsd: car.basePriceUsd || car.priceUsd || (car.priceSar ? car.priceSar / usdToSar : 0) || 0,
                 priceKrw: car.priceKrw || 0,
                 displayCurrency: car.displayCurrency || 'SAR',
-                images: car.images || [],
-                imageUrl: car.imageUrl || (car.images && car.images[0]) || '',
+                images: applyWatermarkToImages(car.images || [], car.source),
+                imageUrl: applyWatermarkToImages([car.imageUrl || (car.images && car.images[0]) || ''], car.source)[0] || '',
                 category: car.category,
                 isActive: car.isActive,
                 isSold: car.isSold,
@@ -332,11 +348,19 @@ router.get('/:id', cacheResponse(600), async (req, res, next) => {
             ...publicCarData
         } = car;
 
+        // [[ARABIC_COMMENT]] تطبيق العلامة المائية على صور السيارة الكورية في صفحة التفاصيل
+        const watermarkedImages = applyWatermarkToImages(publicCarData.images || [], publicCarData.source);
+        const watermarkedImageUrl = applyWatermarkToImages(
+            [publicCarData.imageUrl || (publicCarData.images && publicCarData.images[0]) || ''],
+            publicCarData.source
+        )[0] || '';
+
         res.json({
             success: true,
             data: {
                 ...publicCarData,
-                imageUrl: car.imageUrl || (car.images && car.images[0]) || '',
+                images: watermarkedImages,
+                imageUrl: watermarkedImageUrl,
                 makeAr: car.makeAr || car.make,
                 badge: car.badge || '',
                 fuelAr: car.fuelAr || car.fuelType,
