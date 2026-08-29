@@ -326,11 +326,16 @@ router.get('/:id', cacheResponse(600), async (req, res, next) => {
         }
 
         if (!car && Car.collection) {
+            const tenantId = req.tenant?.id || 'hmcar';
+            // [[FIX]] إضافة فلتر tenant لمنع إرجاع سيارة من معرض آخر
             car = await Car.collection.findOne({
-                $or: [
-                    { _id: idParam },
-                    { id: idParam },
-                    ...(mongoose.Types.ObjectId.isValid(idParam) ? [{ _id: new mongoose.Types.ObjectId(idParam) }] : [])
+                $and: [
+                    { $or: [{ tenantId }, { tenantId: 'default' }, { tenantId: null }, { tenantId: { $exists: false } }] },
+                    { $or: [
+                        { _id: idParam },
+                        { id: idParam },
+                        ...(mongoose.Types.ObjectId.isValid(idParam) ? [{ _id: new mongoose.Types.ObjectId(idParam) }] : [])
+                    ]}
                 ]
             });
         }

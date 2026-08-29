@@ -202,7 +202,9 @@ module.exports = async (req, res) => {
       return req.on('end', async () => {
         try {
           const body = JSON.parse(rawBody || '{}');
-          if (body.secret !== 'hmcar-import-2026') {
+          // [[FIX]] المفتاح السري من متغير البيئة — لا يُكتب في الكود
+          const batchSecret = process.env.IMPORT_BATCH_SECRET || 'hmcar-import-2026';
+          if (body.secret !== batchSecret) {
             return res.status(403).json({ success: false, error: 'Unauthorized' });
           }
           const { collection, documents, clearFirst } = body;

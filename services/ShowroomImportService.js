@@ -16,7 +16,7 @@ async function safeLogImport(req, logData) {
         if (!db) return null;
         const ImportLog = db.models.ImportLog ||
             db.model('ImportLog', require('mongoose').model('ImportLog').schema);
-        return await ImportLog.create({ ...logData, tenantId: req.tenantId || 'default' });
+        return await ImportLog.create({ ...logData, tenantId: req.tenant?.id || 'hmcar' });
     } catch (e) {
         console.warn('⚠️ [ImportLog] Log save skipped (non-fatal):', e.message);
         return null;
@@ -291,7 +291,7 @@ class ShowroomImportService {
                 rawCars = [{ Id: parsedTarget.carId }];
             } else {
                 let page = 0;
-                const existingCars = await Car.find({ tenantId: req.tenantId || 'default' }, { externalId: 1 }).lean();
+                const existingCars = await Car.find({ tenantId: req.tenant?.id || 'hmcar' }, { externalId: 1 }).lean();
                 const existingIds = new Set(existingCars.map(c => String(c.externalId)));
 
                 while (rawCars.length < targetLimit && page < 5) {
@@ -500,7 +500,7 @@ class ShowroomImportService {
                                     // نحفظ المرجع فقط (غير قابل للنقر من الواجهة)
                                     externalRef: `encar:${carId}`,
                                     source: 'encar_korea',
-                                    tenantId: req.tenantId || 'default',
+                                    tenantId: req.tenant?.id || 'hmcar',
                                     updatedAt: new Date()
                                 }
                             },

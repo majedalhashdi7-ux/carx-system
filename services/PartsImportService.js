@@ -15,7 +15,7 @@ async function safeLogImport(req, logData) {
         // إنشاء الـ schema على الاتصال المتاح
         const ImportLog = db.models.ImportLog ||
             db.model('ImportLog', require('mongoose').model('ImportLog').schema);
-        return await ImportLog.create({ ...logData, tenantId: req.tenantId || 'default' });
+        return await ImportLog.create({ ...logData, tenantId: req.tenant?.id || 'hmcar' });
     } catch (e) {
         console.warn('⚠️ [ImportLog] Log save skipped (non-fatal):', e.message);
         return null;
@@ -443,7 +443,7 @@ class PartsImportService {
                         externalId: externalId,
                         externalUrl: item.url || `${sourceUrl}/${item.brandSlug || ''}`,
                         source: 'autospare_eg',
-                        tenantId: req.tenantId || 'default',
+                        tenantId: req.tenant?.id || 'hmcar',
                     };
 
                     // ─── upsert: أنشئ أو حدِّث ──────────────────────

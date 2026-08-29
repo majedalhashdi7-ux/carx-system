@@ -371,7 +371,7 @@ class RetroactiveSyncService {
 
         // ─── إصلاح صور السيارات ───────────────────────────────────
         const carsWithExternalImages = await Car.find({
-            tenantId: req.tenantId || 'default',
+            tenantId: req.tenant?.id || 'hmcar',
             $or: [
                 { images: { $regex: 'encar\\.com', $options: 'i' } },
                 { image: { $regex: 'encar\\.com', $options: 'i' } },
@@ -409,7 +409,7 @@ class RetroactiveSyncService {
 
         // ─── إصلاح الحقول المفقودة فقط (بدون تحميل الصور) ─────────
         const carsWithMissingMainImage = await Car.find({
-            tenantId: req.tenantId || 'default',
+            tenantId: req.tenant?.id || 'hmcar',
             'images.0': { $exists: true },
             $or: [
                 { mainImage: { $in: ['', null, undefined] } },
@@ -432,7 +432,7 @@ class RetroactiveSyncService {
 
         // ─── إصلاح الحقول المفقودة في قطع الغيار ─────────────────
         const partsWithMissingImage = await SparePart.find({
-            tenantId: req.tenantId || 'default',
+            tenantId: req.tenant?.id || 'hmcar',
             'images.0': { $exists: true },
             $or: [
                 { img: { $in: ['', null, undefined] } },
@@ -538,7 +538,7 @@ class RetroactiveSyncService {
     static async syncNewField(req, modelName, fieldName, defaultValue) {
         const { getModel } = require('../tenants/tenant-model-helper');
         const Model = getModel(req, modelName);
-        const tenantId = req.tenantId || 'default';
+        const tenantId = req.tenant?.id || 'hmcar';
 
         const result = await Model.updateMany(
             { tenantId, [fieldName]: { $exists: false } },

@@ -52,9 +52,9 @@ router.get('/', cacheResponse(120), async (req, res) => {
 
         const now = new Date();
 
-        // تحديث حالة المزادات تلقائياً قبل الإرجاع
+        // تحديث حالة المزادات المنتهية — مع فلتر tenant لمنع التأثير على معارض أخرى
         await Auction.updateMany(
-            { status: 'running', endsAt: { $lt: now } },
+            addTenantFilter(req, { status: 'running', endsAt: { $lt: now } }),
             { $set: { status: 'ended' } }
         ).catch(() => {});
 

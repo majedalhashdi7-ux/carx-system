@@ -115,7 +115,7 @@ async function safeLogImport(req, logData) {
         if (!db) return null;
         const ImportLog = db.models.ImportLog ||
             db.model('ImportLog', require('mongoose').model('ImportLog').schema);
-        return await ImportLog.create({ ...logData, tenantId: req.tenantId || 'default' });
+        return await ImportLog.create({ ...logData, tenantId: req.tenant?.id || 'hmcar' });
     } catch (e) {
         console.warn('⚠️ [ImportLog] Log save skipped:', e.message);
         return null;
@@ -386,7 +386,7 @@ function getFallbackCars() {
             images: ['https://ci.encar.com/carpicture04/pic4214/42148591_001.jpg'],
             image: 'https://ci.encar.com/carpicture04/pic4214/42148591_001.jpg',
             specs: { manufacturer_en: 'Hyundai', manufacturer_ar: 'هيونداي', model: 'Tucson', year: '2022', mileage: 38000, fuelType_ar: 'بنزين', fuelType_en: 'Gasoline', transmission: 'أوتوماتيك', transmission_en: 'Automatic' },
-            inspectionReport: null, isActive: true, isSold: false, listingType: 'auction', tenantId: 'default',
+            inspectionReport: null, isActive: true, isSold: false, listingType: 'auction', tenantId: 'hmcar',
             startsAt: now, endsAt: end,
         },
         {
@@ -400,7 +400,7 @@ function getFallbackCars() {
             images: ['https://ci.encar.com/carpicture08/pic4218/42182644_001.jpg'],
             image: 'https://ci.encar.com/carpicture08/pic4218/42182644_001.jpg',
             specs: { manufacturer_en: 'Genesis', manufacturer_ar: 'جينيسيس', model: 'GV70', year: '2023', mileage: 21720, fuelType_ar: 'بنزين', fuelType_en: 'Gasoline', transmission: 'أوتوماتيك', transmission_en: 'Automatic' },
-            inspectionReport: null, isActive: true, isSold: false, listingType: 'auction', tenantId: 'default',
+            inspectionReport: null, isActive: true, isSold: false, listingType: 'auction', tenantId: 'hmcar',
             startsAt: now, endsAt: end,
         },
     ];
@@ -464,7 +464,7 @@ class LiveAuctionImportService {
                 console.log(`📋 [EncarImport] List import — query: "${searchQuery || 'general'}"`);
                 
                 // جلب قائمة المعرفات الموجودة مسبقاً في قاعدة البيانات لمنع التكرار وجلب الجديد دائماً
-                const existingAuctions = await Auction.find({ tenantId: req.tenantId || 'default' }, { externalId: 1 }).lean();
+                const existingAuctions = await Auction.find({ tenantId: req.tenant?.id || 'hmcar' }, { externalId: 1 }).lean();
                 const existingIds = new Set(existingAuctions.map(a => String(a.externalId)));
 
                 let page = 0;
@@ -568,7 +568,7 @@ class LiveAuctionImportService {
                         externalId:      car.externalId,
                         externalUrl:     car.externalUrl,
                         source:          'encar',
-                        tenantId:        req.tenantId || 'default',
+                        tenantId:        req.tenant?.id || 'hmcar',
                     };
 
                     const createdCar = await Car.findOneAndUpdate(
@@ -603,7 +603,7 @@ class LiveAuctionImportService {
                                 endsAt:       auctionEnd,
                                 status:       'running',
                                 source:       'encar',
-                                tenantId:     req.tenantId || 'default',
+                                tenantId:     req.tenant?.id || 'hmcar',
                                 make:         car.make,
                                 makeAr:       car.makeAr,
                                 model:        car.model,
