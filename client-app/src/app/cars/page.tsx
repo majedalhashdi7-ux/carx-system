@@ -105,7 +105,17 @@ function CarCard({ car, onWhatsApp }: { car: CarItem; onWhatsApp: (car: CarItem)
     const transLabel   = cleanKoreanText(car.transmissionAr || car.transmission || '', isRTL);
 
     return (
-        <Link href={`/cars/${car.id}`} className="block h-full">
+        <Link
+            href={`/cars/${car.id}`}
+            className="block h-full"
+            onClick={() => {
+                // [[FIX]] حفظ موضع التمرير قبل الدخول لتفاصيل السيارة
+                if (typeof window !== 'undefined') {
+                    sessionStorage.setItem('hm_cars_scroll', String(window.scrollY));
+                }
+            }}
+        >
+
             <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -264,8 +274,16 @@ function CarsContent() {
     /* ── State ── */
     const [allCars, setAllCars] = useState<CarItem[]>([]);
     const [loading, setLoading] = useState(true);
-    const [page, setPage] = useState(1);
+    // [[FIX]] استعادة رقم الصفحة من sessionStorage عند العودة
+    const [page, setPage] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = sessionStorage.getItem('hm_cars_page');
+            return saved ? parseInt(saved, 10) : 1;
+        }
+        return 1;
+    });
     const LIMIT = 20;
+    const gridRef = useRef<HTMLDivElement>(null);
 
     /* ── Filters ── */
     const [search, setSearch] = useState('');
@@ -345,6 +363,26 @@ function CarsContent() {
     }, [currency.usdToKrw, currency.usdToSar]);
 
     useEffect(() => { fetchAllCars(); }, [fetchAllCars]);
+
+    // [[FIX]] استعادة موضع التمرير بعد تحميل السيارات عند العودة من تفاصيل سيارة
+    useEffect(() => {
+        if (!loading && allCars.length > 0) {
+            const savedScroll = sessionStorage.getItem('hm_cars_scroll');
+            if (savedScroll) {
+                setTimeout(() => {
+                    window.scrollTo({ top: parseInt(savedScroll, 10), behavior: 'instant' as ScrollBehavior });
+                    sessionStorage.removeItem('hm_cars_scroll');
+                }, 100);
+            }
+        }
+    }, [loading, allCars.length]);
+
+    // [[FIX]] حفظ رقم الصفحة في sessionStorage عند كل تغيير
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            sessionStorage.setItem('hm_cars_page', String(page));
+        }
+    }, [page]);
 
 
     /* ── Derived filter options ── */

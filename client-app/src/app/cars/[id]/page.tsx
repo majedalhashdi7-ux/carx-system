@@ -425,10 +425,10 @@ export default function DesertStyleCarDetail() {
                             {/* شارة التوفر والسعر */}
                             <div className="flex items-center justify-between border-b border-white/10 pb-4">
                                 <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold">
-                                    متاح الآن
+                                    {isRTL ? 'متاح الآن' : 'Available Now'}
                                 </span>
-                                <div className="text-right">
-                                    <span className="text-xs text-slate-400 block font-bold">السعر الكامل</span>
+                                <div className={isRTL ? 'text-right' : 'text-left'}>
+                                    <span className="text-xs text-slate-400 block font-bold">{isRTL ? 'السعر الكامل' : 'Full Price'}</span>
                                     <span className="text-2xl font-black text-amber-300 font-mono">{formattedPriceSar}</span>
                                 </div>
                             </div>
@@ -436,20 +436,20 @@ export default function DesertStyleCarDetail() {
                             {/* الجدول السريع للمواصفات */}
                             <div className="space-y-3 text-xs border-b border-white/10 pb-4">
                                 <div className="flex justify-between py-1.5 border-b border-white/5">
-                                    <span className="text-slate-400 font-bold">سنة الصنع:</span>
+                                    <span className="text-slate-400 font-bold">{isRTL ? 'سنة الصنع:' : 'Year:'}</span>
                                     <span className="font-bold text-white font-mono">{car.year}</span>
                                 </div>
                                 <div className="flex justify-between py-1.5 border-b border-white/5">
-                                    <span className="text-slate-400 font-bold">المسافة المقطوعة:</span>
-                                    <span className="font-bold text-white font-mono">{car.mileage ? `${Number(car.mileage).toLocaleString('en-US')} كم` : '—'}</span>
+                                    <span className="text-slate-400 font-bold">{isRTL ? 'المسافة المقطوعة:' : 'Mileage:'}</span>
+                                    <span className="font-bold text-white font-mono">{car.mileage ? `${Number(car.mileage).toLocaleString('en-US')} ${isRTL ? 'كم' : 'km'}` : '—'}</span>
                                 </div>
                                 <div className="flex justify-between py-1.5 border-b border-white/5">
-                                    <span className="text-slate-400 font-bold">ناقل الحركة:</span>
-                                    <span className="font-bold text-white">{cleanKoreanText(car.transmission || 'أوتوماتيك', isRTL)}</span>
+                                    <span className="text-slate-400 font-bold">{isRTL ? 'ناقل الحركة:' : 'Transmission:'}</span>
+                                    <span className="font-bold text-white">{cleanKoreanText(car.transmission || (isRTL ? 'أوتوماتيك' : 'Automatic'), isRTL)}</span>
                                 </div>
                                 <div className="flex justify-between py-1.5">
-                                    <span className="text-slate-400 font-bold">نوع الوقود:</span>
-                                    <span className="font-bold text-white">{cleanKoreanText(car.fuelType || 'بنزين', isRTL)}</span>
+                                    <span className="text-slate-400 font-bold">{isRTL ? 'نوع الوقود:' : 'Fuel Type:'}</span>
+                                    <span className="font-bold text-white">{cleanKoreanText(car.fuelType || (isRTL ? 'بنزين' : 'Gasoline'), isRTL)}</span>
                                 </div>
                             </div>
 
@@ -465,7 +465,7 @@ export default function DesertStyleCarDetail() {
                                         <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 1.891.524 3.66 1.436 5.168L2 22l4.98-1.39A9.956 9.956 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18c-1.615 0-3.116-.437-4.407-1.198l-.316-.188-2.956.825.84-2.883-.207-.328A7.954 7.954 0 014 12c0-4.418 3.582-8 8-8s8 3.582 8 8-3.582 8-8 8z"/>
                                     </svg>
                                 </div>
-                                <span className="tracking-wide text-white drop-shadow-md">اطلب الآن عبر الواتساب</span>
+                                <span className="tracking-wide text-white drop-shadow-md">{isRTL ? 'اطلب الآن عبر الواتساب' : 'Order via WhatsApp'}</span>
                                 <ChevronLeft className="w-5 h-5 opacity-75 group-hover:-translate-x-1 transition-transform" />
                             </button>
 
@@ -477,7 +477,7 @@ export default function DesertStyleCarDetail() {
                                     className="w-full py-3.5 rounded-full bg-[#C9A96E]/10 hover:bg-[#C9A96E]/20 text-amber-300 font-bold text-xs flex items-center justify-center gap-2 border border-[#C9A96E]/40 transition-all hover:scale-[1.01]"
                                 >
                                     <Calculator className="w-4 h-4 text-amber-300" />
-                                    <span>حاسبة تكلفة الاستيراد</span>
+                                    <span>{isRTL ? 'حاسبة تكلفة الاستيراد' : 'Import Cost Calculator'}</span>
                                 </button>
 
                                 <button
@@ -486,7 +486,7 @@ export default function DesertStyleCarDetail() {
                                     className="w-full py-3.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-200 font-bold text-xs flex items-center justify-center gap-2 border border-white/10 transition-all hover:scale-[1.01]"
                                 >
                                     <Scale className="w-4 h-4 text-amber-400" />
-                                    <span>مقارنة بسعر الجديد</span>
+                                    <span>{isRTL ? 'مقارنة بسعر الجديد' : 'Compare with New Price'}</span>
                                 </button>
                             </div>
                         </div>

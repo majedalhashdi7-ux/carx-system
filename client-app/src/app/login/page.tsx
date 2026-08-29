@@ -188,7 +188,7 @@ function HMCarLogin() {
                         window.location.href = "/admin/dashboard";
                     } else {
                         const isApp = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
-                        window.location.href = isApp ? "/" : "/client/dashboard";
+                        window.location.href = isApp ? "/" : "/cars";
                     }
                 }, 400);
 

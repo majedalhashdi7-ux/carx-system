@@ -93,7 +93,8 @@ export default function Register() {
                 login(response.token, response.user);
                 setSuccess(true);
                 setTimeout(() => {
-                    window.location.href = "/client/dashboard";
+                    window.location.href = "/cars";
+
                 }, 1200);
             } else {
                 const msg = response.message || response.error || '';
