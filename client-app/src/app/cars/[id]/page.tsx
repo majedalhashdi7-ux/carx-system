@@ -98,7 +98,21 @@ export default function DesertStyleCarDetail() {
     const [showLightbox, setShowLightbox] = useState(false);
 
     // ── دوال التنقل بين الصور (يجب تعريفها قبل أي return مشروط)
-    const allImages = car ? processCarImages((car as any).images?.filter(Boolean) || []) : [];
+    // [[FIX]] جمع كل مصادر الصور المتاحة لضمان ظهور الأسهم حتى لو images فارغة
+    const allImages = car ? (() => {
+        const c = car as any;
+        // جمع كل الصور من جميع الحقول
+        const rawImgs: string[] = [
+            ...(Array.isArray(c.watermarkedImages) ? c.watermarkedImages : []),
+            ...(Array.isArray(c.images) ? c.images : []),
+            ...(c.mainImage ? [c.mainImage] : []),
+            ...(c.imageUrl ? [c.imageUrl] : []),
+            ...(c.image ? [c.image] : []),
+        ].filter((img): img is string => !!img && typeof img === 'string' && img.trim() !== '');
+        // إزالة المكررات مع الحفاظ على الترتيب
+        const unique = [...new Set(rawImgs)];
+        return processCarImages(unique);
+    })() : [];
 
     const goNextImage = useCallback(() => {
         if (!allImages || allImages.length === 0) return;

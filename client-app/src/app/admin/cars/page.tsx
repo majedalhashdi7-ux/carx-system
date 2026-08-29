@@ -217,18 +217,21 @@ function CarsContent() {
             };
 
             if (editingCar) {
-                const targetId = editingCar._id || editingCar.id || (editingCar as any)._id;
-                await api.cars.update(targetId, submitData);
+                // [[FIX]] استخدام _id أو id بالترتيب الصحيح
+                const targetId = (editingCar as any)._id || editingCar.id;
+                const res = await api.cars.update(targetId, submitData);
+                if (!res || res.success === false) throw new Error((res as any)?.message || 'Update failed');
             } else {
-                await api.cars.create(submitData);
+                const res = await api.cars.create(submitData);
+                if (!res || res.success === false) throw new Error((res as any)?.message || 'Create failed');
             }
             setShowModal(false);
             resetForm();
             await loadData();
             showToast(isRTL ? '✅ تم حفظ البيانات بنجاح!' : '✅ Data saved!', 'success');
-        } catch (err) {
+        } catch (err: any) {
             console.error('فشل حفظ البيانات:', err);
-            showToast(isRTL ? '❌ فشل في الحفظ' : '❌ Save failed', 'error');
+            showToast(err.message || (isRTL ? '❌ فشل في الحفظ' : '❌ Save failed'), 'error');
         } finally {
             setSubmitting(false);
         }
@@ -332,13 +335,16 @@ function CarsContent() {
         try {
             showToast(isRTL ? '⏳ جاري تنظيف المعرض ومسح كافة السيارات...' : '⏳ Clearing showroom...', 'info');
             for (const car of cars) {
-                await api.cars.delete(car.id);
+                // [[FIX]] استخدام _id أو id بالترتيب الصحيح
+                const cid = car._id || car.id;
+                if (cid) await api.cars.delete(cid);
             }
             setSelectedIds([]);
             showToast(isRTL ? '🗑️ تم مسح المعرض بالكامل بنجاح!' : '🗑️ Showroom cleared!', 'success');
             await loadData();
         } catch {
             showToast(isRTL ? '❌ فشل مسح المعرض' : '❌ Clear failed', 'error');
+            await loadData();
         }
     };
 
