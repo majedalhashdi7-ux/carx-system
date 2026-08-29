@@ -9,11 +9,17 @@ const ENCAR_API_BASE    = 'https://api.encar.com';
 const ENCAR_IMAGE_BASE  = 'https://ci.encar.com';
 const ENCAR_CAR_URL     = 'https://www.encar.com/dc/dc/dcCarDetlView.do?carid=';
 
-// ─── أسعار الصرف (يمكن تحديثها لاحقاً من API خارجي) ────────────────────────
-const EXCHANGE_RATES = {
-    KRW_TO_SAR: 0.002778,   // 1 KRW = 0.002778 SAR  (تقريبي: 1 SAR = 360 KRW)
-    KRW_TO_USD: 0.000741,   // 1 KRW = 0.000741 USD  (تقريبي: 1 USD = 1350 KRW)
-};
+// ─── أسعار الصرف — تُقرأ من متغيرات البيئة أولاً ثم قيم افتراضية ───────────────
+function getExchangeRates() {
+    const usdToSar = Number(process.env.USD_TO_SAR) || 3.75;   // 1 USD = 3.75 SAR
+    const usdToKrw = Number(process.env.USD_TO_KRW) || 1350;   // 1 USD = 1350 KRW
+    return {
+        KRW_TO_SAR: usdToSar / usdToKrw,   // = ~0.002778
+        KRW_TO_USD: 1 / usdToKrw,          // = ~0.000741
+    };
+}
+// للتوافقية مع الكود القديم الذي يستخدم EXCHANGE_RATES مباشرة
+const EXCHANGE_RATES = getExchangeRates();
 
 // ─── ترجمة الماركات الكورية → إنجليزي/عربي ───────────────────────────────────
 const MANUFACTURER_MAP = {
@@ -274,11 +280,19 @@ async function fetchEncarInspection(carId) {
 }
 
 // ─── تحويل بيانات Encar → تنسيق السيارة في HMCar ─────────────────────────────
-function mapEncarCarToHMCar(listItem, detail, inspection) {
+// [[FIX]] تم إزالة tenantId المكتوب ثابتاً — يجب تمريره من req عند الاستدعاء
+function mapEncarCarToHMCar(listItem, detail, inspection, tenantId = 'default') {
     const carId     = String(listItem.Id || listItem.id || '');
     const maker     = translateManufacturer(listItem.Manufacturer || detail?.Manufacturer);
     const fuel      = translateFuel(listItem.FuelType || detail?.FuelType);
-    const prices    = convertPrice(listItem.Price || detail?.Price || 0);
+
+    // [[FIX]] إعادة حساب أسعار الصرف من متغيرات البيئة عند كل استدعاء
+    const rates     = getExchangeRates();
+    const rawPrice  = Number(listItem.Price || detail?.Price || 0);
+    const priceKrw  = Math.round(rawPrice * 10000);
+    const priceUsd  = Math.round(priceKrw * rates.KRW_TO_USD);
+    const priceSar  = Math.round(priceKrw * rates.KRW_TO_SAR);
+    const prices    = { priceKrw, priceUsd, priceSar };
 
     // الموديل: نُبقي الاسم الكوري + نُضيف الإنجليزي إن وُجد
     const modelKo   = listItem.Model || detail?.Model || '';
@@ -352,7 +366,7 @@ function mapEncarCarToHMCar(listItem, detail, inspection) {
         isActive:        true,
         isSold:          false,
         listingType:     'auction',
-        tenantId:        'default',
+        tenantId,   // [[FIX]] يُمرَّر من req.tenantId بدلاً من كونه ثابتاً
     };
 }
 
@@ -511,8 +525,10 @@ class LiveAuctionImportService {
             if (carsData.length === 0) {
                 console.log('📦 [EncarImport] Using fallback catalog');
                 usedFallback = true;
+                // [[FIX]] إضافة tenantId الصحيح للكتالوج الاحتياطي بدلاً من 'default'
                 carsData = getFallbackCars().slice(0, targetLimit).map(c => ({
-                    listItem: c, detail: null, inspection: null, _prefetched: c,
+                    listItem: c, detail: null, inspection: null,
+                    _prefetched: { ...c, tenantId: req.tenantId || 'default' },
                 }));
             }
 
@@ -522,7 +538,8 @@ class LiveAuctionImportService {
             // ─── حفظ كل سيارة في قاعدة البيانات ─────────────────────────────
             for (const { listItem, detail, inspection, _prefetched } of carsData) {
                 try {
-                    const car = _prefetched || mapEncarCarToHMCar(listItem, detail, inspection);
+                    // [[FIX]] تمرير tenantId من req بدلاً من كونه ثابتاً 'default'
+                    const car = _prefetched || mapEncarCarToHMCar(listItem, detail, inspection, req.tenantId || 'default');
                     const now = new Date();
 
                     const carDoc = {
