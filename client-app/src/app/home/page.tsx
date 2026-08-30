@@ -181,10 +181,13 @@ export default function HomePage() {
     useEffect(() => {
         setCarsLoading(true);
 
+        const withTimeout = <T,>(promise: Promise<T>, ms = 10000): Promise<T> =>
+            Promise.race([promise, new Promise<T>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))]);
+
         Promise.all([
-            api.cars.list({ isActive: true, limit: 100 }).catch(() => ({ success: false, data: [] })),
-            api.liveAuctions.list().catch(() => ({ success: false, data: [] })),
-            api.auctions.list({ status: 'running', limit: 100 }).catch(() => ({ success: false, data: [] }))
+            withTimeout(api.cars.list({ isActive: true, limit: 100 })).catch(() => ({ success: false, data: [] })),
+            withTimeout(api.liveAuctions.list()).catch(() => ({ success: false, data: [] })),
+            withTimeout(api.auctions.list({ status: 'running', limit: 100 })).catch(() => ({ success: false, data: [] }))
         ]).then(([carsRes, liveAuctionsRes, auctionsRes]) => {
             const rawCars = Array.isArray(carsRes?.data)
                 ? carsRes.data

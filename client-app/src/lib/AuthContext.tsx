@@ -109,13 +109,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 process.env.NEXT_PUBLIC_API_URL || '';
             const tenantId = process.env.NEXT_PUBLIC_TENANT_ID || 'hmcar';
 
+            // استخدام AbortController يدوي لدعم جميع البيئات (Vercel Edge + قديم)
+            const authController = new AbortController();
+            const authTimeout = setTimeout(() => authController.abort(), 5000); // 5 ثواني كافية
+
             const response = await fetch(`${apiBase}/v2/auth/verify`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'X-Tenant-ID': tenantId,
                 },
-                signal: AbortSignal.timeout(8000), // 8 ثواني timeout
+                signal: authController.signal,
             });
+            clearTimeout(authTimeout);
 
             // ⚠️ فقط عند 401 صريح نطرد المستخدم - أي شيء آخر نحافظ على الجلسة
             if (response.status === 401) {
