@@ -188,6 +188,25 @@ export default function AdminImportHub() {
         finally { setPartsLoading(false); }
     };
 
+    // ── استيراد تلقائي لوكالات وقطع AutoSpare (بدون سعر ← واتساب) ───
+    const [autospareLoading, setAutospareLoading] = useState(false);
+    const [autospareResult, setAutospareResult] = useState<any>(null);
+
+    const handleImportAutoSpare = useCallback(async () => {
+        setAutospareLoading(true); setAutospareResult(null);
+        try {
+            const res = await (api.import as any).autospare();
+            if (res?.success) {
+                const brands = res.brandsImported ?? res.data?.brandsImported ?? 0;
+                const parts  = res.partsImported  ?? res.data?.partsImported  ?? 0;
+                showToast(`✅ تم استيراد ${brands} وكالة و ${parts} قطعة من AutoSpare`, "success");
+                setAutospareResult(res);
+                loadImportLogs();
+            } else showToast(res?.error || "❌ فشل استيراد AutoSpare", "error");
+        } catch (e: any) { showToast(e.message || "❌ خطأ", "error"); }
+        finally { setAutospareLoading(false); }
+    }, [showToast, loadImportLogs]);
+
     // ── استيراد المزادات المباشرة (مستقل) ──────────────────────────
     const handleImportAuctions = async (targetUrl?: string) => {
         const urlToUse = targetUrl || auctionsUrl;
@@ -622,8 +641,58 @@ export default function AdminImportHub() {
                                 <InfoChip icon={Zap} color="bg-emerald-500/10 text-emerald-400" label={isRTL ? "الوجهة" : "Dest."} value={isRTL ? "قطع الغيار" : "Parts Mgmt"} />
                             </div>
 
+                            {/* ★ AutoSpare Auto Import Banner ★ */}
+                            <div className="bg-gradient-to-br from-emerald-950/60 to-slate-900 border border-emerald-500/30 rounded-2xl p-5 space-y-4">
+                                <div className="flex items-start justify-between gap-4 flex-wrap">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                                            <Globe className="w-5 h-5 text-emerald-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-black text-emerald-300">
+                                                {isRTL ? "🔄 استيراد تلقائي من AutoSpare — بدون سعر" : "🔄 Auto Import from AutoSpare — No Price"}
+                                            </p>
+                                            <p className="text-xs text-slate-400 mt-0.5">
+                                                {isRTL
+                                                    ? "يجلب جميع الوكالات وقطعهم تلقائياً — السعر عند الطلب عبر WhatsApp — علامة مائية HMCAR تلقائية"
+                                                    : "Fetches all brands & parts automatically — price on WhatsApp request — HMCAR watermark applied"}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={handleImportAutoSpare}
+                                        disabled={autospareLoading}
+                                        className={cn(
+                                            "flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-bold text-sm transition-all",
+                                            autospareLoading
+                                                ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+                                                : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/30 cursor-pointer"
+                                        )}
+                                    >
+                                        {autospareLoading ? (
+                                            <><RefreshCw className="w-4 h-4 animate-spin" />{isRTL ? "جاري الاستيراد..." : "Importing..."}</>
+                                        ) : (
+                                            <><Download className="w-4 h-4" />{isRTL ? "استيراد AutoSpare الآن" : "Import AutoSpare Now"}</>
+                                        )}
+                                    </button>
+                                </div>
+                                {autospareResult && (
+                                    <div className="px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-300 font-bold">
+                                        ✅ {isRTL
+                                            ? `تم استيراد ${autospareResult.brandsImported ?? 0} وكالة و ${autospareResult.partsImported ?? autospareResult.totalImported ?? 0} قطعة`
+                                            : `Imported ${autospareResult.brandsImported ?? 0} brands and ${autospareResult.partsImported ?? autospareResult.totalImported ?? 0} parts`}
+                                    </div>
+                                )}
+                                <div className="flex flex-wrap gap-3 pt-1 border-t border-white/5 text-[11px] text-slate-500 font-medium">
+                                    <span>✅ {isRTL ? "شعارات الوكالات" : "Brand logos"}</span>
+                                    <span>🖼️ {isRTL ? "صور القطع + علامة مائية" : "Part images + watermark"}</span>
+                                    <span>💬 {isRTL ? "السعر عبر WhatsApp" : "Price via WhatsApp"}</span>
+                                </div>
+                            </div>
+
                             <RunButton onClick={() => handleImportParts()} isLoading={partsLoading}
-                                label={isRTL ? "استيراد قطع الغيار الكاملة الآن →" : "Import Full Parts Catalog →"} />
+                                label={isRTL ? "استيراد قطع الغيار من رابط مخصص →" : "Import Parts from Custom URL →"} />
+
 
                             {/* نتيجة استيراد قطع الغيار المستقلة */}
                             <ImportResult result={partsResult} />

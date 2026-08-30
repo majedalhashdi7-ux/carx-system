@@ -731,6 +731,13 @@ export const api = {
                 body: JSON.stringify({ targetUrl }),
                 timeout: 60000,
             }),
+        // [[ARABIC_COMMENT]] استيراد تلقائي للوكالات والقطع من autospare.com.eg بدون سعر
+        autospare: () =>
+            fetchAPI('/api/v2/import/autospare', {
+                method: 'POST',
+                body: JSON.stringify({ skipPrice: true, whatsappRequest: true, applyWatermark: true }),
+                timeout: 120000,
+            }),
         // [[ARABIC_COMMENT]] استيراد منفصل لسيارات المزاد المباشر بعدد محدد
         liveAuctions: (limit = 10, targetUrl = '') =>
             fetchAPI('/api/v2/import/live-auctions', {
