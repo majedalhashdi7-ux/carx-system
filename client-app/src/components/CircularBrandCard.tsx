@@ -11,7 +11,7 @@ import { Building2, Car, ArrowRight, Star, Crown, Gem, Sparkles } from "lucide-r
 import { useLanguage } from "@/lib/LanguageContext";
 import Link from "next/link";
 import Image from "next/image";
-import { getBrandDisplayName, getClearbitLogoUrl, isLocalPath } from "@/lib/brandTranslations";
+import { getBrandDisplayName, getBrandLogoUrls, isLocalPath } from "@/lib/brandTranslations";
 
 interface CircularBrandCardProps {
     brand: {
@@ -31,14 +31,18 @@ interface CircularBrandCardProps {
 
 export default function CircularBrandCard({ brand, index, onClick: _onClick }: CircularBrandCardProps) {
     const { isRTL } = useLanguage();
-    const [imageError, setImageError] = useState(false);
-    const [logoSrc, setLogoSrc] = useState<string>(() => {
+    // مصادر الشعارات مرتّبة حسب الأولوية
+    const logoUrls = React.useMemo(() => {
         const l = brand.logo;
-        if (!l || isLocalPath(l)) {
-            return getClearbitLogoUrl(brand.name || brand.key) || '';
-        }
-        return l;
-    });
+        const fallbacks = getBrandLogoUrls(brand.name || brand.key);
+        // إذا كان الشعار موجوداً وليس مساراً محلياً، ضعه في المقدمة
+        if (l && !isLocalPath(l)) return [l, ...fallbacks];
+        return fallbacks;
+    }, [brand.logo, brand.name, brand.key]);
+
+    const [logoIndex, setLogoIndex] = useState(0);
+    const [imageError, setImageError] = useState(false);
+    const logoSrc = logoUrls[logoIndex] || '';
     // Motion values للتأثيرات ثلاثية الأبعاد
     const x = useMotionValue(0);
     const y = useMotionValue(0);
@@ -162,9 +166,9 @@ export default function CircularBrandCard({ brand, index, onClick: _onClick }: C
                                         alt={displayName}
                                         className="w-full h-full object-contain p-4 group-hover:scale-110 transition-transform duration-500"
                                         onError={() => {
-                                            const clearbit = getClearbitLogoUrl(brand.name || brand.key);
-                                            if (clearbit && logoSrc !== clearbit) {
-                                                setLogoSrc(clearbit);
+                                            // جرّب المصدر التالي في القائمة
+                                            if (logoIndex + 1 < logoUrls.length) {
+                                                setLogoIndex(logoIndex + 1);
                                             } else {
                                                 setImageError(true);
                                             }

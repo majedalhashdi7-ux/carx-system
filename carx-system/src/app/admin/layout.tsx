@@ -23,6 +23,13 @@ const NAV_ITEMS = [
   { label: 'الإعدادات',       icon: Settings,        href: '/admin/settings' },
 ];
 
+// روابط الاستيراد الفرعية
+const IMPORT_SUB_ITEMS = [
+  { label: 'استيراد سيارة',     icon: Car,    href: '/admin/import/cars' },
+  { label: 'استيراد قطعة غيار', icon: Wrench, href: '/admin/import/parts' },
+  { label: 'مزاد مباشر',        icon: Radio,  href: '/admin/live-auctions' },
+];
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoggedIn, isLoading, logout } = useAuth();
   const router = useRouter();
@@ -105,25 +112,50 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {NAV_ITEMS.map((item) => {
             const isActive = pathname === item.href || 
               (item.href !== '/admin' && pathname.startsWith(item.href));
+            const isImport = item.href === '/admin/import';
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center justify-between px-4 py-3.5 rounded-2xl text-sm font-bold transition-all group ${
-                  isActive
-                    ? 'bg-luxury-gold text-black shadow-[0_0_20px_rgba(212,175,55,0.25)]'
-                    : 'text-white/40 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <item.icon className={`w-5 h-5 transition-colors ${
-                    isActive ? 'text-black' : 'group-hover:text-luxury-gold'
-                  }`} />
-                  {item.label}
-                </div>
-                {isActive && <div className="w-1.5 h-1.5 rounded-full bg-black/30" />}
-              </Link>
+              <div key={item.href}>
+                <Link
+                  href={item.href}
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center justify-between px-4 py-3.5 rounded-2xl text-sm font-bold transition-all group ${
+                    isActive
+                      ? 'bg-luxury-gold text-black shadow-[0_0_20px_rgba(212,175,55,0.25)]'
+                      : 'text-white/40 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <item.icon className={`w-5 h-5 transition-colors ${
+                      isActive ? 'text-black' : 'group-hover:text-luxury-gold'
+                    }`} />
+                    {item.label}
+                  </div>
+                  {isActive && <div className="w-1.5 h-1.5 rounded-full bg-black/30" />}
+                </Link>
+                {/* روابط فرعية للاستيراد */}
+                {isImport && isActive && (
+                  <div className="mr-4 mt-1 space-y-0.5 border-r border-luxury-gold/20 pr-3">
+                    {IMPORT_SUB_ITEMS.map((sub) => {
+                      const subActive = pathname === sub.href || pathname.startsWith(sub.href + '/');
+                      return (
+                        <Link
+                          key={sub.href}
+                          href={sub.href}
+                          onClick={() => setSidebarOpen(false)}
+                          className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                            subActive
+                              ? 'text-luxury-gold bg-luxury-gold/10'
+                              : 'text-white/30 hover:text-white hover:bg-white/5'
+                          }`}
+                        >
+                          <sub.icon className="w-3.5 h-3.5 shrink-0" />
+                          {sub.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
         </nav>

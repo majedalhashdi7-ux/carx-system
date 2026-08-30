@@ -4,85 +4,98 @@
  * لضمان عدم ظهور أي نصوص كورية غير مترجمة للمستخدم
  */
 
-interface BrandEntry { ar: string; en: string; clearbitKey: string; }
+interface BrandEntry { ar: string; en: string; clearbitKey: string; domain?: string; }
 
+/** خريطة شاملة للماركات مع دومين الموقع الرسمي للشعار */
 const BRAND_MAP: Record<string, BrandEntry> = {
     // ── كوريا ──
-    'hyundai': { ar: 'هيونداي', en: 'Hyundai', clearbitKey: 'hyundai' },
-    'هيونداي': { ar: 'هيونداي', en: 'Hyundai', clearbitKey: 'hyundai' },
-    '현대': { ar: 'هيونداي', en: 'Hyundai', clearbitKey: 'hyundai' },
-    'kia': { ar: 'كيا', en: 'Kia', clearbitKey: 'kia' },
-    'كيا': { ar: 'كيا', en: 'Kia', clearbitKey: 'kia' },
-    '기아': { ar: 'كيا', en: 'Kia', clearbitKey: 'kia' },
-    'genesis': { ar: 'جينيسيس', en: 'Genesis', clearbitKey: 'genesis' },
-    'جينيسيس': { ar: 'جينيسيس', en: 'Genesis', clearbitKey: 'genesis' },
-    '제네시스': { ar: 'جينيسيس', en: 'Genesis', clearbitKey: 'genesis' },
-    'ssangyong': { ar: 'سانغ يونغ', en: 'SsangYong', clearbitKey: 'ssangyong' },
-    'سانغ يونغ': { ar: 'سانغ يونغ', en: 'SsangYong', clearbitKey: 'ssangyong' },
-    '쌍용': { ar: 'سانغ يونغ', en: 'SsangYong', clearbitKey: 'ssangyong' },
-    'kg mobility': { ar: 'كاي جي موبيليتي', en: 'KG Mobility', clearbitKey: 'kg-mobility' },
-    'samsung': { ar: 'سامسونج', en: 'Samsung', clearbitKey: 'samsung' },
-    'renault samsung': { ar: 'رينو سامسونج', en: 'Renault Samsung', clearbitKey: 'samsung' },
-    '르노코리아': { ar: 'رينو سامسونج', en: 'Renault Samsung', clearbitKey: 'samsung' },
-
-    // ── اليابان ──
-    'toyota': { ar: 'تويوتا', en: 'Toyota', clearbitKey: 'toyota' },
-    'تويوتا': { ar: 'تويوتا', en: 'Toyota', clearbitKey: 'toyota' },
-    'honda': { ar: 'هوندا', en: 'Honda', clearbitKey: 'honda' },
-    'هوندا': { ar: 'هوندا', en: 'Honda', clearbitKey: 'honda' },
-    'nissan': { ar: 'نيسان', en: 'Nissan', clearbitKey: 'nissan' },
-    'نيسان': { ar: 'نيسان', en: 'Nissan', clearbitKey: 'nissan' },
-    'infiniti': { ar: 'إنفينيتي', en: 'Infiniti', clearbitKey: 'infiniti' },
-    'lexus': { ar: 'لكزس', en: 'Lexus', clearbitKey: 'lexus' },
-    'لكزس': { ar: 'لكزس', en: 'Lexus', clearbitKey: 'lexus' },
-    'mazda': { ar: 'مازدا', en: 'Mazda', clearbitKey: 'mazda' },
-    'mitsubishi': { ar: 'ميتسوبيشي', en: 'Mitsubishi', clearbitKey: 'mitsubishi' },
-    'subaru': { ar: 'سوبارو', en: 'Subaru', clearbitKey: 'subaru' },
-    'suzuki': { ar: 'سوزوكي', en: 'Suzuki', clearbitKey: 'suzuki' },
-    'isuzu': { ar: 'إيسوزو', en: 'Isuzu', clearbitKey: 'isuzu' },
+    'hyundai': { ar: 'هيونداي', en: 'Hyundai', clearbitKey: 'hyundai', domain: 'hyundai.com' },
+    'هيونداي': { ar: 'هيونداي', en: 'Hyundai', clearbitKey: 'hyundai', domain: 'hyundai.com' },
+    '현대': { ar: 'هيونداي', en: 'Hyundai', clearbitKey: 'hyundai', domain: 'hyundai.com' },
+    'kia': { ar: 'كيا', en: 'Kia', clearbitKey: 'kia', domain: 'kia.com' },
+    'كيا': { ar: 'كيا', en: 'Kia', clearbitKey: 'kia', domain: 'kia.com' },
+    '기아': { ar: 'كيا', en: 'Kia', clearbitKey: 'kia', domain: 'kia.com' },
+    'genesis': { ar: 'جينيسيس', en: 'Genesis', clearbitKey: 'genesis', domain: 'genesis.com' },
+    'جينيسيس': { ar: 'جينيسيس', en: 'Genesis', clearbitKey: 'genesis', domain: 'genesis.com' },
+    '제네시스': { ar: 'جينيسيس', en: 'Genesis', clearbitKey: 'genesis', domain: 'genesis.com' },
+    'ssangyong': { ar: 'سانغ يونغ', en: 'SsangYong', clearbitKey: 'ssangyong', domain: 'ssangyong.com' },
+    'سانغ يونغ': { ar: 'سانغ يونغ', en: 'SsangYong', clearbitKey: 'ssangyong', domain: 'ssangyong.com' },
+    '쌍용': { ar: 'سانغ يونغ', en: 'SsangYong', clearbitKey: 'ssangyong', domain: 'ssangyong.com' },
+    'kg mobility': { ar: 'كاي جي موبيليتي', en: 'KG Mobility', clearbitKey: 'kg-mobility', domain: 'kgmobility.com' },
+    'كاي جي موبيليتي': { ar: 'كاي جي موبيليتي', en: 'KG Mobility', clearbitKey: 'kg-mobility', domain: 'kgmobility.com' },
+    'samsung': { ar: 'سامسونج', en: 'Samsung', clearbitKey: 'samsung', domain: 'samsung.com' },
+    'renault samsung': { ar: 'رينو سامسونج', en: 'Renault Samsung', clearbitKey: 'renault', domain: 'renault.com' },
+    '르노코리아': { ar: 'رينو سامسونج', en: 'Renault Samsung', clearbitKey: 'renault', domain: 'renault.com' },
 
     // ── الصين ──
-    'mg': { ar: 'ام جي', en: 'MG', clearbitKey: 'mg' },
-    'geely': { ar: 'جيلي', en: 'Geely', clearbitKey: 'geely' },
-    'haval': { ar: 'هافال', en: 'Haval', clearbitKey: 'haval' },
-    'chery': { ar: 'شيري', en: 'Chery', clearbitKey: 'chery' },
-    'byd': { ar: 'بي واي دي', en: 'BYD', clearbitKey: 'byd' },
-    'great wall': { ar: 'جريت وول', en: 'Great Wall', clearbitKey: 'great-wall' },
-    'changan': { ar: 'شانجان', en: 'Changan', clearbitKey: 'changan' },
+    'speranza': { ar: 'اسبرانزا', en: 'Speranza', clearbitKey: 'speranza', domain: 'speranza.com.eg' },
+    'اسبرانزا': { ar: 'اسبرانزا', en: 'Speranza', clearbitKey: 'speranza', domain: 'speranza.com.eg' },
+    'mg': { ar: 'ام جي', en: 'MG', clearbitKey: 'mg', domain: 'mgmotor.com' },
+    'ام جي': { ar: 'ام جي', en: 'MG', clearbitKey: 'mg', domain: 'mgmotor.com' },
+    'geely': { ar: 'جيلي', en: 'Geely', clearbitKey: 'geely', domain: 'geely.com' },
+    'haval': { ar: 'هافال', en: 'Haval', clearbitKey: 'haval', domain: 'haval.com' },
+    'chery': { ar: 'شيري', en: 'Chery', clearbitKey: 'chery', domain: 'chery.com' },
+    'byd': { ar: 'بي واي دي', en: 'BYD', clearbitKey: 'byd', domain: 'byd.com' },
+    'great wall': { ar: 'جريت وول', en: 'Great Wall', clearbitKey: 'gwm', domain: 'gwm.com' },
+    'changan': { ar: 'شانجان', en: 'Changan', clearbitKey: 'changan', domain: 'changan.com.cn' },
+
+    // ── اليابان ──
+    'toyota': { ar: 'تويوتا', en: 'Toyota', clearbitKey: 'toyota', domain: 'toyota.com' },
+    'تويوتا': { ar: 'تويوتا', en: 'Toyota', clearbitKey: 'toyota', domain: 'toyota.com' },
+    'honda': { ar: 'هوندا', en: 'Honda', clearbitKey: 'honda', domain: 'honda.com' },
+    'هوندا': { ar: 'هوندا', en: 'Honda', clearbitKey: 'honda', domain: 'honda.com' },
+    'nissan': { ar: 'نيسان', en: 'Nissan', clearbitKey: 'nissan', domain: 'nissan.com' },
+    'نيسان': { ar: 'نيسان', en: 'Nissan', clearbitKey: 'nissan', domain: 'nissan.com' },
+    'infiniti': { ar: 'إنفينيتي', en: 'Infiniti', clearbitKey: 'infiniti', domain: 'infiniti.com' },
+    'إنفينيتي': { ar: 'إنفينيتي', en: 'Infiniti', clearbitKey: 'infiniti', domain: 'infiniti.com' },
+    'lexus': { ar: 'لكزس', en: 'Lexus', clearbitKey: 'lexus', domain: 'lexus.com' },
+    'لكزس': { ar: 'لكزس', en: 'Lexus', clearbitKey: 'lexus', domain: 'lexus.com' },
+    'mazda': { ar: 'مازدا', en: 'Mazda', clearbitKey: 'mazda', domain: 'mazda.com' },
+    'mitsubishi': { ar: 'ميتسوبيشي', en: 'Mitsubishi', clearbitKey: 'mitsubishi', domain: 'mitsubishi-motors.com' },
+    'subaru': { ar: 'سوبارو', en: 'Subaru', clearbitKey: 'subaru', domain: 'subaru.com' },
+    'suzuki': { ar: 'سوزوكي', en: 'Suzuki', clearbitKey: 'suzuki', domain: 'suzuki.com' },
+    'isuzu': { ar: 'إيسوزو', en: 'Isuzu', clearbitKey: 'isuzu', domain: 'isuzu.com' },
 
     // ── أوروبا ──
-    'bmw': { ar: 'بي ام دبليو', en: 'BMW', clearbitKey: 'bmw' },
-    'بي ام دبليو': { ar: 'بي ام دبليو', en: 'BMW', clearbitKey: 'bmw' },
-    'بي إم دبليو': { ar: 'بي ام دبليو', en: 'BMW', clearbitKey: 'bmw' },
-    'mercedes': { ar: 'مرسيدس', en: 'Mercedes-Benz', clearbitKey: 'mercedes-benz' },
-    'مرسيدس': { ar: 'مرسيدس', en: 'Mercedes-Benz', clearbitKey: 'mercedes-benz' },
-    'mercedes-benz': { ar: 'مرسيدس بنز', en: 'Mercedes-Benz', clearbitKey: 'mercedes-benz' },
-    'مرسيدس بنز': { ar: 'مرسيدس بنز', en: 'Mercedes-Benz', clearbitKey: 'mercedes-benz' },
-    'audi': { ar: 'أودي', en: 'Audi', clearbitKey: 'audi' },
-    'أودي': { ar: 'أودي', en: 'Audi', clearbitKey: 'audi' },
-    'volkswagen': { ar: 'فولكس واجن', en: 'Volkswagen', clearbitKey: 'volkswagen' },
-    'فولكس واجن': { ar: 'فولكس واجن', en: 'Volkswagen', clearbitKey: 'volkswagen' },
-    'porsche': { ar: 'بورش', en: 'Porsche', clearbitKey: 'porsche' },
-    'بورش': { ar: 'بورش', en: 'Porsche', clearbitKey: 'porsche' },
-    'volvo': { ar: 'فولفو', en: 'Volvo', clearbitKey: 'volvo' },
-    'فولفو': { ar: 'فولفو', en: 'Volvo', clearbitKey: 'volvo' },
-    'land rover': { ar: 'لاند روفر', en: 'Land Rover', clearbitKey: 'land-rover' },
-    'لاند روفر': { ar: 'لاند روفر', en: 'Land Rover', clearbitKey: 'land-rover' },
-    'jaguar': { ar: 'جاكوار', en: 'Jaguar', clearbitKey: 'jaguar' },
-    'mini': { ar: 'ميني', en: 'MINI', clearbitKey: 'mini' },
-    'ميني': { ar: 'ميني', en: 'MINI', clearbitKey: 'mini' },
+    'bmw': { ar: 'بي ام دبليو', en: 'BMW', clearbitKey: 'bmw', domain: 'bmw.com' },
+    'بي ام دبليو': { ar: 'بي ام دبليو', en: 'BMW', clearbitKey: 'bmw', domain: 'bmw.com' },
+    'بي إم دبليو': { ar: 'بي ام دبليو', en: 'BMW', clearbitKey: 'bmw', domain: 'bmw.com' },
+    'mercedes': { ar: 'مرسيدس', en: 'Mercedes-Benz', clearbitKey: 'mercedes-benz', domain: 'mercedes-benz.com' },
+    'مرسيدس': { ar: 'مرسيدس', en: 'Mercedes-Benz', clearbitKey: 'mercedes-benz', domain: 'mercedes-benz.com' },
+    'mercedes-benz': { ar: 'مرسيدس بنز', en: 'Mercedes-Benz', clearbitKey: 'mercedes-benz', domain: 'mercedes-benz.com' },
+    'مرسيدس بنز': { ar: 'مرسيدس بنز', en: 'Mercedes-Benz', clearbitKey: 'mercedes-benz', domain: 'mercedes-benz.com' },
+    'audi': { ar: 'أودي', en: 'Audi', clearbitKey: 'audi', domain: 'audi.com' },
+    'أودي': { ar: 'أودي', en: 'Audi', clearbitKey: 'audi', domain: 'audi.com' },
+    'volkswagen': { ar: 'فولكس واجن', en: 'Volkswagen', clearbitKey: 'volkswagen', domain: 'vw.com' },
+    'فولكس واجن': { ar: 'فولكس واجن', en: 'Volkswagen', clearbitKey: 'volkswagen', domain: 'vw.com' },
+    'porsche': { ar: 'بورش', en: 'Porsche', clearbitKey: 'porsche', domain: 'porsche.com' },
+    'بورش': { ar: 'بورش', en: 'Porsche', clearbitKey: 'porsche', domain: 'porsche.com' },
+    'volvo': { ar: 'فولفو', en: 'Volvo', clearbitKey: 'volvo', domain: 'volvocars.com' },
+    'فولفو': { ar: 'فولفو', en: 'Volvo', clearbitKey: 'volvo', domain: 'volvocars.com' },
+    'land rover': { ar: 'لاند روفر', en: 'Land Rover', clearbitKey: 'landrover', domain: 'landrover.com' },
+    'لاند روفر': { ar: 'لاند روفر', en: 'Land Rover', clearbitKey: 'landrover', domain: 'landrover.com' },
+    'jaguar': { ar: 'جاكوار', en: 'Jaguar', clearbitKey: 'jaguar', domain: 'jaguar.com' },
+    'جاكوار': { ar: 'جاكوار', en: 'Jaguar', clearbitKey: 'jaguar', domain: 'jaguar.com' },
+    'mini': { ar: 'ميني', en: 'MINI', clearbitKey: 'mini', domain: 'mini.com' },
+    'ميني': { ar: 'ميني', en: 'MINI', clearbitKey: 'mini', domain: 'mini.com' },
+    'peugeot': { ar: 'بيجو', en: 'Peugeot', clearbitKey: 'peugeot', domain: 'peugeot.com' },
+    'renault': { ar: 'رينو', en: 'Renault', clearbitKey: 'renault', domain: 'renault.com' },
+    'fiat': { ar: 'فيات', en: 'Fiat', clearbitKey: 'fiat', domain: 'fiat.com' },
+    'alfa romeo': { ar: 'ألفا روميو', en: 'Alfa Romeo', clearbitKey: 'alfaromeo', domain: 'alfaromeo.com' },
 
     // ── أمريكا ──
-    'ford': { ar: 'فورد', en: 'Ford', clearbitKey: 'ford' },
-    'فورد': { ar: 'فورد', en: 'Ford', clearbitKey: 'ford' },
-    'chevrolet': { ar: 'شيفروليه', en: 'Chevrolet', clearbitKey: 'chevrolet' },
-    'شيفروليه': { ar: 'شيفروليه', en: 'Chevrolet', clearbitKey: 'chevrolet' },
-    'gmc': { ar: 'جي ام سي', en: 'GMC', clearbitKey: 'gmc' },
-    'cadillac': { ar: 'كاديلاك', en: 'Cadillac', clearbitKey: 'cadillac' },
-    'jeep': { ar: 'جيب', en: 'Jeep', clearbitKey: 'jeep' },
-    'جيب': { ar: 'جيب', en: 'Jeep', clearbitKey: 'jeep' },
-    'dodge': { ar: 'دودج', en: 'Dodge', clearbitKey: 'dodge' },
-    'tesla': { ar: 'تسلا', en: 'Tesla', clearbitKey: 'tesla' },
+    'ford': { ar: 'فورد', en: 'Ford', clearbitKey: 'ford', domain: 'ford.com' },
+    'فورد': { ar: 'فورد', en: 'Ford', clearbitKey: 'ford', domain: 'ford.com' },
+    'chevrolet': { ar: 'شيفروليه', en: 'Chevrolet', clearbitKey: 'chevrolet', domain: 'chevrolet.com' },
+    'شيفروليه': { ar: 'شيفروليه', en: 'Chevrolet', clearbitKey: 'chevrolet', domain: 'chevrolet.com' },
+    'gmc': { ar: 'جي ام سي', en: 'GMC', clearbitKey: 'gmc', domain: 'gmc.com' },
+    'cadillac': { ar: 'كاديلاك', en: 'Cadillac', clearbitKey: 'cadillac', domain: 'cadillac.com' },
+    'jeep': { ar: 'جيب', en: 'Jeep', clearbitKey: 'jeep', domain: 'jeep.com' },
+    'جيب': { ar: 'جيب', en: 'Jeep', clearbitKey: 'jeep', domain: 'jeep.com' },
+    'dodge': { ar: 'دودج', en: 'Dodge', clearbitKey: 'dodge', domain: 'dodge.com' },
+    'tesla': { ar: 'تسلا', en: 'Tesla', clearbitKey: 'tesla', domain: 'tesla.com' },
+    'lincoln': { ar: 'لينكولن', en: 'Lincoln', clearbitKey: 'lincoln', domain: 'lincoln.com' },
+    'ram': { ar: 'رام', en: 'RAM', clearbitKey: 'ram', domain: 'ramtrucks.com' },
 };
 
 export function getBrandInfo(rawName: string): BrandEntry {
@@ -103,10 +116,33 @@ export function getBrandDisplayName(rawName: string, isRTL: boolean): string {
     return isRTL ? info.ar : info.en;
 }
 
+/**
+ * يعيد قائمة مرتبة من روابط شعار الماركة من مصادر CDN متعددة موثوقة
+ * يُجرَّب الأول فإن فشل يُجرَّب الثاني... وهكذا
+ */
+export function getBrandLogoUrls(rawName: string): string[] {
+    const info = getBrandInfo(rawName);
+    const { clearbitKey, domain } = info;
+    if (!clearbitKey) return [];
+
+    const urls: string[] = [];
+
+    // المصدر 1: Clearbit (الأكثر شهرة للشعارات عالية الجودة)
+    urls.push(`https://logo.clearbit.com/${domain || clearbitKey + '.com'}`);
+
+    // المصدر 2: Google Favicons (موثوق جداً ومتاح دائماً)
+    urls.push(`https://www.google.com/s2/favicons?domain=${domain || clearbitKey + '.com'}&sz=128`);
+
+    // المصدر 3: Brandfetch CDN
+    urls.push(`https://cdn.brandfetch.io/${domain || clearbitKey + '.com'}/w/128/h/128/logo`);
+
+    return urls.filter(Boolean);
+}
+
+/** للتوافق مع الكود القديم — يُعيد أول رابط متاح */
 export function getClearbitLogoUrl(rawName: string): string {
-    const { clearbitKey } = getBrandInfo(rawName);
-    if (!clearbitKey) return '';
-    return `https://logo.clearbit.com/${clearbitKey}.com`;
+    const urls = getBrandLogoUrls(rawName);
+    return urls[0] || '';
 }
 
 export function isLocalPath(url: string): boolean {
