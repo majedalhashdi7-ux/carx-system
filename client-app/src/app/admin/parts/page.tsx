@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
     Package,
     Edit,
@@ -12,6 +12,7 @@ import {
     Save,
     CheckCircle2,
     RefreshCcw,
+    RefreshCw,
     Eye,
     EyeOff,
     Settings,
@@ -22,7 +23,8 @@ import {
     Building2,
     Layers,
     ArrowLeft,
-    ArrowRight
+    ArrowRight,
+    Globe
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -241,22 +243,61 @@ export default function AdminPartsPage() {
         setShowModal(true);
     };
 
-    const handleScrape = async () => {
-        if (!confirm(isRTL ? 'هل تريد جلب البيانات من المصدر الخارجي؟ قد يستغرق هذا وقتاً.' : 'Do you want to scrape data from external source? This may take some time.')) return;
+    // استيراد تلقائي من AutoSpare بدون سعر + Cooldown دقيقتان
+    const AS_COOLDOWN_MS = 120_000;
+    const AS_LS_KEY = 'hm_autospare_last_import';
+    const [asCooldown, setAsCooldown] = useState(0);
+    const asCooldownRef = useRef<NodeJS.Timeout | null>(null);
+
+    useEffect(() => {
+        const last = parseInt(localStorage.getItem(AS_LS_KEY) || '0', 10);
+        const elapsed = Date.now() - last;
+        if (elapsed < AS_COOLDOWN_MS) {
+            const remaining = Math.ceil((AS_COOLDOWN_MS - elapsed) / 1000);
+            setAsCooldown(remaining);
+            asCooldownRef.current = setInterval(() => {
+                setAsCooldown(prev => {
+                    if (prev <= 1) { clearInterval(asCooldownRef.current!); return 0; }
+                    return prev - 1;
+                });
+            }, 1000);
+        }
+        return () => { if (asCooldownRef.current) clearInterval(asCooldownRef.current); };
+    }, []);
+
+    const handleScrape = useCallback(async () => {
+        if (scraping || asCooldown > 0) return;
         setScraping(true);
         try {
-            const res = await api.parts.scrape();
-            if (res.success) {
-                showToast(isRTL ? `✅ اكتمل الجلب: ${res.stats.brandsCreated} وكالات و ${res.stats.partsCreated} قطع.` : `✅ Scrape complete: ${res.stats.brandsCreated} brands and ${res.stats.partsCreated} parts.`, 'success');
+            showToast(isRTL ? '⏳ جاري استيراد الوكالات والقطع من AutoSpare...' : '⏳ Importing brands & parts from AutoSpare...', 'info');
+            const res = await (api.import as any).autospare();
+            if (res?.success) {
+                const brands = res.brandsImported ?? res.data?.brandsImported ?? 0;
+                const partsCount = res.partsImported ?? res.totalImported ?? res.data?.partsImported ?? 0;
+                showToast(
+                    isRTL
+                        ? `✅ تم استيراد ${brands} وكالة و ${partsCount} قطعة`
+                        : `✅ Imported ${brands} brands and ${partsCount} parts`,
+                    'success'
+                );
+                localStorage.setItem(AS_LS_KEY, String(Date.now()));
+                setAsCooldown(Math.ceil(AS_COOLDOWN_MS / 1000));
+                asCooldownRef.current = setInterval(() => {
+                    setAsCooldown(prev => {
+                        if (prev <= 1) { clearInterval(asCooldownRef.current!); return 0; }
+                        return prev - 1;
+                    });
+                }, 1000);
                 loadParts();
+            } else {
+                showToast(res?.error || (isRTL ? '❌ فشل الاستيراد' : '❌ Import failed'), 'error');
             }
-        } catch (err) {
-            console.error('Scraping failed', err);
-            showToast(isRTL ? '❌ فشل جلب البيانات' : '❌ Scraping failed', 'error');
+        } catch (err: any) {
+            showToast(err.message || '❌ خطأ', 'error');
         } finally {
             setScraping(false);
         }
-    };
+    }, [scraping, asCooldown, isRTL, showToast, loadParts]);
 
     const resetForm = () => {
         setFormData({
@@ -309,20 +350,17 @@ export default function AdminPartsPage() {
                                 <Settings className="w-4 h-4" />
                                 {isRTL ? 'إعدادات التسعير' : 'PRICING SETTINGS'}
                             </motion.button>
-                            <motion.button
-                                whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
-                                onClick={() => setShowImportModal(true)}
-                                className="ck-btn-ghost flex items-center gap-2 text-blue-400 border-blue-500/20 hover:bg-blue-500/10">
-                                <Upload className="w-4 h-4" />
-                                {isRTL ? 'تعيين رابط الاستيراد' : 'SET IMPORT URL'}
-                            </motion.button>
-                            <motion.button
+                        <motion.button
                                 whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
                                 onClick={handleScrape}
-                                disabled={scraping}
-                                className="ck-btn-primary bg-orange-500 hover:bg-orange-400 text-black flex items-center gap-2 border-none">
-                                {scraping ? <div className="ck-radar w-4 h-4" /> : <RefreshCcw className="w-4 h-4" />}
-                                {isRTL ? 'استيراد تلقائي للوكالات والقطع' : 'AUTO SCRAPE BRANDS & PARTS'}
+                                disabled={scraping || asCooldown > 0}
+                                className="ck-btn-primary bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-2 border-none disabled:opacity-40 disabled:cursor-not-allowed">
+                                {scraping
+                                    ? <><RefreshCw className="w-4 h-4 animate-spin" />{isRTL ? 'جاري الاستيراد...' : 'IMPORTING...'}</>
+                                    : asCooldown > 0
+                                    ? <><Globe className="w-4 h-4" />{isRTL ? `انتظر ${asCooldown}ث` : `Wait ${asCooldown}s`}</>
+                                    : <><Globe className="w-4 h-4" />{isRTL ? '🔄 استيراد AutoSpare تلقائياً' : '🔄 AUTO IMPORT PARTS'}</>
+                                }
                             </motion.button>
                         </div>
                     </div>

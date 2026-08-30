@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense, useRef } from 'react';
 import { 
     Plus, Download, RefreshCw, Trash2,
-    Car as CarIcon
+    Car as CarIcon, Globe
 } from 'lucide-react';
 import NextLink from 'next/link';
 import { cn } from '@/lib/utils';
@@ -131,23 +131,61 @@ function CarsContent() {
         }
     }, [page]);
 
-    const handleScrapeKorea = async () => {
+    // ── استيراد سيارات كوريا التلقائي مع Cooldown 45 ثانية ──
+    const ENCAR_COOLDOWN_MS = 45_000;
+    const ENCAR_LS_KEY = 'hm_encar_last_import';
+    const [encarCooldown, setEncarCooldown] = useState(0); // ثواني متبقية
+    const cooldownRef = useRef<NodeJS.Timeout | null>(null);
+
+    useEffect(() => {
+        const last = parseInt(localStorage.getItem(ENCAR_LS_KEY) || '0', 10);
+        const elapsed = Date.now() - last;
+        if (elapsed < ENCAR_COOLDOWN_MS) {
+            const remaining = Math.ceil((ENCAR_COOLDOWN_MS - elapsed) / 1000);
+            setEncarCooldown(remaining);
+            cooldownRef.current = setInterval(() => {
+                setEncarCooldown(prev => {
+                    if (prev <= 1) { clearInterval(cooldownRef.current!); return 0; }
+                    return prev - 1;
+                });
+            }, 1000);
+        }
+        return () => { if (cooldownRef.current) clearInterval(cooldownRef.current); };
+    }, []);
+
+    const handleScrapeKorea = useCallback(async () => {
+        if (scraping || encarCooldown > 0) return;
         setScraping(true);
         try {
-            showToast(isRTL ? '⏳ جاري استيراد وجلب السيارات الكورية...' : '⏳ Scraping & importing Korean cars...', 'info');
-            const res = await api.showroom.scrape();
-            if (res.success) {
-                showToast(res.message || (isRTL ? '✅ تم استيراد السيارات الكورية بنجاح!' : '✅ Cars imported!'), 'success');
+            showToast(isRTL ? '⏳ جاري جلب 20 سيارة من كوريا...' : '⏳ Fetching 20 cars from Korea...', 'info');
+            const res = await api.import.showroom(20, '');
+            if (res?.success) {
+                const imported = res.imported ?? res.totalImported ?? 0;
+                const skipped = res.skipped ?? res.totalSkipped ?? 0;
+                showToast(
+                    isRTL
+                        ? `✅ تم استيراد ${imported} سيارة${skipped ? ` (${skipped} موجودة مسبقاً)` : ''}`
+                        : `✅ Imported ${imported} cars${skipped ? ` (${skipped} skipped)` : ''}`,
+                    'success'
+                );
+                localStorage.setItem(ENCAR_LS_KEY, String(Date.now()));
+                setEncarCooldown(Math.ceil(ENCAR_COOLDOWN_MS / 1000));
+                cooldownRef.current = setInterval(() => {
+                    setEncarCooldown(prev => {
+                        if (prev <= 1) { clearInterval(cooldownRef.current!); return 0; }
+                        return prev - 1;
+                    });
+                }, 1000);
                 await loadData();
             } else {
-                showToast(res.message || (isRTL ? '❌ فشل الاستيراد' : '❌ Import failed'), 'error');
+                showToast(res?.error || (isRTL ? '❌ فشل الاستيراد' : '❌ Import failed'), 'error');
             }
         } catch (err: any) {
             showToast(err.message || 'Error', 'error');
         } finally {
             setScraping(false);
         }
-    };
+    }, [scraping, encarCooldown, isRTL, showToast, loadData]);
 
     useEffect(() => { loadData(); }, [loadData]);
 
@@ -400,19 +438,16 @@ function CarsContent() {
                         </button>
                         <button
                             onClick={handleScrapeKorea}
-                            disabled={scraping}
-                            title={isRTL ? 'جلب واستيراد سيارات كوريا الكورية فوراً' : 'Scrape Korean cars now'}
-                            className="h-11 px-5 rounded-2xl border border-blue-400/30 text-blue-400 font-black text-xs uppercase tracking-widest hover:bg-blue-400/10 transition-all flex items-center gap-2 bg-blue-500/5 disabled:opacity-50"
+                            disabled={scraping || encarCooldown > 0}
+                            title={isRTL ? '🇰🇷 جلب 20 سيارة تلقائياً من Encar كوريا' : '🇰🇷 Auto-import 20 cars from Encar Korea'}
+                            className="h-11 px-5 rounded-2xl border border-blue-400/30 text-blue-400 font-black text-xs uppercase tracking-widest hover:bg-blue-400/10 transition-all flex items-center gap-2 bg-blue-500/5 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                            <Download className={cn("w-4 h-4", scraping && "animate-spin")} />
-                            {scraping ? (isRTL ? 'جاري الجلب...' : 'SCRAPING...') : (isRTL ? 'جلب سيارات كوريا' : 'IMPORT KOREAN')}
-                        </button>
-                        <button
-                            onClick={() => setShowInlineImport(true)}
-                            className="h-11 px-5 rounded-2xl border border-orange-500/30 text-orange-400 font-black text-xs uppercase tracking-widest hover:bg-orange-500/10 transition-all flex items-center gap-2 bg-orange-500/5"
-                        >
-                            <Download className="w-4 h-4" />
-                            {isRTL ? 'استيراد مباشر من رابط' : 'INLINE IMPORT'}
+                            {scraping
+                                ? <><RefreshCw className="w-4 h-4 animate-spin" />{isRTL ? 'جاري الجلب...' : 'IMPORTING...'}</>
+                                : encarCooldown > 0
+                                ? <><Globe className="w-4 h-4" />{isRTL ? `انتظر ${encarCooldown}ث` : `Wait ${encarCooldown}s`}</>
+                                : <><Globe className="w-4 h-4" />{isRTL ? '🇰🇷 جلب سيارات كوريا' : '🇰🇷 IMPORT KOREA'}</>
+                            }
                         </button>
                     </div>
                 }
