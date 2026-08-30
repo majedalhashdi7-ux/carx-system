@@ -1,13 +1,17 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { 
   Plus, Search, Edit2, Trash2, ExternalLink, 
-  Wrench, CheckCircle2, XCircle, ArrowRight, Package, Globe
+  Wrench, CheckCircle2, XCircle, ArrowRight, Package, Globe,
+  Download, Loader2, Clock, RefreshCw, AlertCircle
 } from 'lucide-react';
 import { api } from '../../../lib/api';
+
+const PARTS_COOLDOWN_MS = 120_000; // دقيقتان — استيراد الوكالات يستغرق وقتاً أطول
+const PARTS_STORAGE_KEY = 'hmcar_last_autospare_import';
 
 // مكون صورة آمن لقطع الغيار مع proxy وfallback
 function SafePartImage({ src, alt, className }: { src?: string; alt?: string; className?: string }) {
@@ -43,6 +47,94 @@ function SafePartImage({ src, alt, className }: { src?: string; alt?: string; cl
   );
 }
 
+// ─── زر الاستيراد التلقائي من AutoSpare ─────────────────────────────────────
+function AutoSpareImportButton({ onImported }: { onImported: () => void }) {
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [msg, setMsg]       = useState('');
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    const last = Number(localStorage.getItem(PARTS_STORAGE_KEY) || 0);
+    const remaining = Math.max(0, PARTS_COOLDOWN_MS - (Date.now() - last));
+    if (remaining > 0) setCooldown(Math.ceil(remaining / 1000));
+  }, []);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setInterval(() => setCooldown(p => { if (p <= 1) { clearInterval(t); return 0; } return p - 1; }), 1000);
+    return () => clearInterval(t);
+  }, [cooldown]);
+
+  const handleImport = useCallback(async () => {
+    if (cooldown > 0 || status === 'loading') return;
+    setStatus('loading');
+    setMsg('');
+    try {
+      const res = await api.import.autospare() as any;
+      const d = res.data || res;
+      if (res.error) { setStatus('error'); setMsg(res.error); return; }
+
+      const brands = d?.brandsImported ?? d?.data?.brandsImported ?? 0;
+      const parts  = d?.partsImported  ?? d?.data?.partsImported  ?? 0;
+
+      setStatus('success');
+      setMsg(`✅ تم استيراد ${brands} وكالة و ${parts} قطعة غيار من AutoSpare`);
+      localStorage.setItem(PARTS_STORAGE_KEY, String(Date.now()));
+      setCooldown(Math.ceil(PARTS_COOLDOWN_MS / 1000));
+      onImported();
+      setTimeout(() => setStatus('idle'), 10000);
+    } catch (e: any) {
+      setStatus('error');
+      setMsg(e.message || 'فشل الاستيراد');
+      setTimeout(() => setStatus('idle'), 5000);
+    }
+  }, [cooldown, status, onImported]);
+
+  const isDisabled = cooldown > 0 || status === 'loading';
+
+  return (
+    <div className="flex flex-col gap-3">
+      <motion.button
+        whileHover={!isDisabled ? { scale: 1.02 } : {}}
+        whileTap={!isDisabled ? { scale: 0.97 } : {}}
+        onClick={handleImport}
+        disabled={isDisabled}
+        className={`flex items-center gap-3 px-6 py-3.5 rounded-2xl font-bold text-sm transition-all relative overflow-hidden
+          ${isDisabled
+            ? 'bg-white/5 border border-white/10 text-white/30 cursor-not-allowed'
+            : 'bg-luxury-gold text-black hover:bg-white shadow-[0_0_25px_rgba(212,175,55,0.2)] cursor-pointer'
+          }`}
+      >
+        {status === 'loading' ? <Loader2 className="w-4 h-4 animate-spin" />
+          : cooldown > 0 ? <Clock className="w-4 h-4" />
+          : <Download className="w-4 h-4" />}
+        {status === 'loading' ? 'جاري الاستيراد...'
+          : cooldown > 0 ? `انتظر ${cooldown}ث`
+          : 'استيراد تلقائي للوكالات والقطع'}
+        {cooldown > 0 && (
+          <div className="absolute bottom-0 left-0 h-0.5 bg-luxury-gold/40"
+            style={{ width: `${(cooldown / (PARTS_COOLDOWN_MS / 1000)) * 100}%` }} />
+        )}
+      </motion.button>
+      <AnimatePresence>
+        {msg && (
+          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            className={`flex items-start gap-2 px-4 py-3 rounded-xl text-xs font-bold
+              ${status === 'success'
+                ? 'bg-green-500/10 border border-green-500/20 text-green-400'
+                : 'bg-red-500/10 border border-red-500/20 text-red-400'}`}
+          >
+            <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+            {msg}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+const useImportedCallback = (fn: () => void) => useCallback(fn, []);
+
 export default function AdminPartsPage() {
   const [parts, setParts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +142,7 @@ export default function AdminPartsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeSection, setActiveSection] = useState<'imported' | 'carx' | null>(null);
 
-  const fetchParts = async () => {
+  const fetchParts = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.parts.getAll() as any;
@@ -65,12 +157,12 @@ export default function AdminPartsPage() {
             : (result?.data?.parts || result?.parts || []);
         setParts(partsList);
       }
-    } catch (err) {
+    } catch {
       setError('فشل جلب قطع الغيار من الخادم');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const handleDelete = async (id: string) => {
     if (window.confirm('هل أنت متأكد من حذف قطعة الغيار هذه؟')) {
@@ -213,22 +305,60 @@ export default function AdminPartsPage() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
                 <h1 className="text-3xl font-black">
-                  إدارة قطع الغيار - {activeSection === 'imported' ? 'القطع المستوردة' : 'قطع CAR X'}
+                  إدارة قطع الغيار —{' '}
+                  <span className="text-luxury-gold">
+                    {activeSection === 'imported' ? 'القطع المستوردة' : 'قطع CAR X'}
+                  </span>
                 </h1>
                 <p className="text-white/40 text-sm mt-1">
                   {activeSection === 'imported'
-                    ? 'إدارة مخزون قطع الغيار المستوردة تلقائياً'
+                    ? 'وكالات وقطع غيار مستوردة من AutoSpare — السعر عند الطلب عبر WhatsApp'
                     : 'تحكم في مخزون قطع الغيار المضافة يدوياً من إدارة المعرض'}
                 </p>
               </div>
-              <Link
-                href={activeSection === 'imported' ? '/admin/import' : '/admin/parts/new'}
-                className="flex items-center gap-2 px-5 py-3 bg-luxury-gold text-black font-bold rounded-xl hover:bg-white transition-all text-sm"
-              >
-                <Plus className="w-4 h-4" />
-                {activeSection === 'imported' ? 'استيراد قطعة غيار' : 'إضافة قطعة غيار جديدة'}
-              </Link>
+              {activeSection === 'carx' && (
+                <Link
+                  href="/admin/parts/new"
+                  className="flex items-center gap-2 px-5 py-3 bg-luxury-gold text-black font-bold rounded-xl hover:bg-white transition-all text-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  إضافة قطعة غيار جديدة
+                </Link>
+              )}
             </div>
+
+            {/* ── زر الاستيراد التلقائي (للقطع المستوردة فقط) ── */}
+            {activeSection === 'imported' && (
+              <div className="bg-gradient-to-br from-blue-500/5 to-transparent border border-blue-500/15 rounded-2xl p-6 space-y-4">
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Globe className="w-4 h-4 text-blue-400" />
+                      <h3 className="text-sm font-black text-white">استيراد تلقائي من AutoSpare</h3>
+                    </div>
+                    <p className="text-white/30 text-xs leading-relaxed max-w-md">
+                      يجلب جميع <strong className="text-white/60">الوكالات</strong> (الاسم + الشعار) وقطع كل وكالة (الاسم + الصورة) —
+                      {' '}<strong className="text-white/60">بدون سعر</strong>، الطلب يكون عبر WhatsApp.
+                    </p>
+                  </div>
+                  <AutoSpareImportButton onImported={fetchParts} />
+                </div>
+                <div className="flex flex-wrap gap-3 pt-2 border-t border-white/5">
+                  <div className="flex items-center gap-1.5 text-[10px] text-white/30 font-medium">
+                    <CheckCircle2 className="w-3 h-3 text-green-400" />
+                    شعارات الوكالات محفوظة
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[10px] text-white/30 font-medium">
+                    <Download className="w-3 h-3 text-blue-400" />
+                    صور القطع + علامة مائية HM CAR
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[10px] text-white/30 font-medium">
+                    <RefreshCw className="w-3 h-3 text-luxury-gold" />
+                    السعر: «اطلب عبر WhatsApp»
+                  </div>
+                </div>
+              </div>
+            )}
 
             {error && (
               <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 text-center text-sm font-bold">

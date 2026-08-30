@@ -230,7 +230,11 @@ export default function PartDetailPage({ params }: { params: Promise<{ id: strin
                 <div dir="rtl">
                   <div className="text-luxury-gold font-bold text-xs uppercase tracking-[0.3em] mb-3">السعر</div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-black">{format(price)}</span>
+                    {price > 0 && !part.priceOnRequest ? (
+                      <span className="text-5xl font-black">{format(price)}</span>
+                    ) : (
+                      <span className="text-3xl font-black text-green-400">اطلب عبر واتساب</span>
+                    )}
                   </div>
                   {part.stock > 0 ? (
                     <div className="flex items-center gap-2 mt-3 text-green-400 text-sm font-bold">
@@ -246,23 +250,34 @@ export default function PartDetailPage({ params }: { params: Promise<{ id: strin
                 </div>
 
                 <div className="space-y-3">
-                  <button
-                    onClick={handleAddToCart}
-                    disabled={part.stock <= 0}
-                    className="w-full py-5 bg-white text-black font-black uppercase tracking-widest rounded-2xl hover:bg-luxury-gold transition-all shadow-2xl shadow-white/5 active:scale-95 flex items-center justify-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    {addedToCart ? (
-                      <>
-                        <Check className="w-5 h-5" />
-                        تمت الإضافة!
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingCart className="w-5 h-5" />
-                        أضف للسلة
-                      </>
-                    )}
-                  </button>
+                  {price > 0 && !part.priceOnRequest ? (
+                    <button
+                      onClick={handleAddToCart}
+                      disabled={part.stock <= 0}
+                      className="w-full py-5 bg-white text-black font-black uppercase tracking-widest rounded-2xl hover:bg-luxury-gold transition-all shadow-2xl shadow-white/5 active:scale-95 flex items-center justify-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {addedToCart ? (
+                        <>
+                          <Check className="w-5 h-5" />
+                          تمت الإضافة!
+                        </>
+                      ) : (
+                        <>
+                          <ShoppingCart className="w-5 h-5" />
+                          أضف للسلة
+                        </>
+                      )}
+                    </button>
+                  ) : (
+                    <a
+                      href={`https://wa.me/966500000000?text=${encodeURIComponent(`السلام عليكم، أود الاستفسار وطلب قطعة الغيار: ${part.name} ${part.partNumber ? `(رقم: ${part.partNumber})` : ''}`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase tracking-widest rounded-2xl transition-all shadow-2xl shadow-emerald-900/30 flex items-center justify-center gap-3"
+                    >
+                      طلب عبر واتساب
+                    </a>
+                  )}
                 </div>
 
                 <div className="pt-8 border-t border-white/5 space-y-4" dir="rtl">

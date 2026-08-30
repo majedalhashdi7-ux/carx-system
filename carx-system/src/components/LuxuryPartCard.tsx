@@ -22,9 +22,11 @@ interface Part {
   partNumber?: string;
   category?: string;
   brand?: string;
-  price: number;
+  price?: number;
   priceSar?: number;
   priceUsd?: number;
+  priceOnRequest?: boolean;
+  whatsappRequest?: boolean;
   images: string[];
   stock?: number;
   condition?: string;
@@ -245,42 +247,60 @@ export default function LuxuryPartCard({
           <div className="flex items-center justify-between gap-3 pt-3 border-t border-white/5">
             <div>
               <p className="text-xs text-gray-500 mb-0.5">السعر</p>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-xl font-black text-gradient-red">
-                  {displayPrice.toLocaleString('ar-SA')}
-                </span>
-                <span className="text-xs text-gray-400 font-bold">ر.س</span>
-              </div>
+              {displayPrice > 0 && !part.priceOnRequest ? (
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-xl font-black text-gradient-red">
+                    {displayPrice.toLocaleString('ar-SA')}
+                  </span>
+                  <span className="text-xs text-gray-400 font-bold">ر.س</span>
+                </div>
+              ) : (
+                <div className="text-sm font-bold text-green-400">
+                  اطلب عبر واتساب
+                </div>
+              )}
             </div>
 
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={(e) => {
-                e.preventDefault();
-                onAddToCart?.(partId);
-              }}
-              disabled={!part.stock || part.stock === 0}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm shadow-lg transition-all ${
-                inCart
-                  ? 'bg-green-600 hover:bg-green-700 text-white'
-                  : part.stock && part.stock > 0
-                  ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white hover:shadow-red-500/50'
-                  : 'bg-gray-700 text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              {inCart ? (
-                <>
-                  <CheckCircle className="w-4 h-4" />
-                  <span>في السلة</span>
-                </>
-              ) : (
-                <>
-                  <ShoppingCart className="w-4 h-4" />
-                  <span>أضف</span>
-                </>
-              )}
-            </motion.button>
+            {displayPrice > 0 && !part.priceOnRequest ? (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onAddToCart?.(partId);
+                }}
+                disabled={!part.stock || part.stock === 0}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm shadow-lg transition-all ${
+                  inCart
+                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                    : part.stock && part.stock > 0
+                    ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white hover:shadow-red-500/50'
+                    : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                {inCart ? (
+                  <>
+                    <CheckCircle className="w-4 h-4" />
+                    <span>في السلة</span>
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart className="w-4 h-4" />
+                    <span>أضف</span>
+                  </>
+                )}
+              </motion.button>
+            ) : (
+              <a
+                href={`https://wa.me/966500000000?text=${encodeURIComponent(`السلام عليكم، أود الاستفسار وطلب قطعة الغيار: ${part.name} ${part.partNumber ? `(رقم: ${part.partNumber})` : ''}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/30 transition-all"
+              >
+                <span>طلب واتساب</span>
+              </a>
+            )}
           </div>
 
           {/* التوافق */}

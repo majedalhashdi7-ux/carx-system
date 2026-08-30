@@ -639,6 +639,32 @@ router.post('/live-auctions', requireAuthAPI, requireAdmin, async (req, res, nex
 });
 
 /**
+ * POST /api/v2/import/autospare
+ * استيراد تلقائي شامل للوكالات والقطع من autospare.com.eg
+ * - يستورد: اسم الوكالة + شعارها + قطع كل وكالة (اسم + صورة)
+ * - لا يستورد: السعر — الطلب عبر WhatsApp
+ * - يُطبّق العلامة المائية HM CAR على صور القطع
+ */
+router.post('/autospare', requireAuthAPI, requireAdmin, async (req, res, next) => {
+    try {
+        const adminUser = req.user?.name || req.user?.email || 'Admin';
+        const result = await partsImportService.importAllParts(req, {
+            targetUrl: 'https://autospare.com.eg/brands',
+            skipPrice: true,        // لا يستورد السعر
+            whatsappRequest: true,  // الطلب عبر WhatsApp
+            applyWatermark: true,   // علامة مائية HM CAR
+            adminUser
+        });
+        invalidateCache('/api/v2/parts');
+        invalidateCache('/api/v2/brands');
+        res.json(result);
+    } catch (error) {
+        next(error);
+    }
+});
+
+
+/**
  * GET /api/v2/import/logs
  * جلب سجلات وتاريخ جميع دفعة الاستيراد المنفذة
  */

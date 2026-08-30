@@ -112,6 +112,8 @@ export default function PartsPage() {
                     brand: part.brand,
                     price: part.price,
                     priceSar: part.priceSar,
+                    priceOnRequest: part.priceOnRequest || part.whatsappRequest || !part.price,
+                    whatsappRequest: part.whatsappRequest,
                     images: part.images || [part.img],
                     stock: part.stock || part.stockQty,
                     condition: part.condition,

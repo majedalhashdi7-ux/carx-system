@@ -342,7 +342,13 @@ class PartsImportService {
      * استيراد شامل لقطع الغيار من autospare.com.eg
      */
     static async importAllParts(req, options = {}) {
-        const { targetUrl = '', adminUser = 'admin' } = options;
+        const {
+            targetUrl = '',
+            adminUser = 'admin',
+            skipPrice = false,        // لا يستورد السعر (طلب عبر WhatsApp)
+            whatsappRequest = false,  // يضع علامة «اطلب عبر WhatsApp»
+            applyWatermark = false,   // يطبق العلامة المائية
+        } = options;
 
         const { getModel } = require('../tenants/tenant-model-helper');
         const SparePart = getModel(req, 'SparePart');
@@ -385,7 +391,7 @@ class PartsImportService {
             }
 
             totalFetched = partsToImport.length;
-            console.log(`📊 [PartsImport] Processing ${totalFetched} parts...`);
+            console.log(`📊 [PartsImport] Processing ${totalFetched} parts... skipPrice=${skipPrice}`);
 
             // ─── حفظ كل قطعة (upsert: إنشاء أو تحديث) ──────────────────
             for (const item of partsToImport) {
@@ -409,12 +415,14 @@ class PartsImportService {
 
                     const mainImage = optimizedImages[0] || '';
 
-                    // ─── حساب السعر بالريال السعودي ──────────────────
-                    const rawPrice = Number(item.price || item.priceSar || item.priceEgp || 0);
-                    const priceSar = item.priceSar ||
-                        (rawPrice > 0 && !item.currency?.includes('SAR')
-                            ? Number((rawPrice / 13.5).toFixed(2))  // EGP → SAR تقريبي
-                            : rawPrice);
+                    // ─── تحديد السعر حسب الخيارات ──────────────────────
+                    // إذا skipPrice = true → السعر صفر ويظهر «اطلب عبر WhatsApp»
+                    const rawPrice = skipPrice ? 0 : Number(item.price || item.priceSar || item.priceEgp || 0);
+                    const priceSar = skipPrice ? 0 :
+                        (item.priceSar ||
+                            (rawPrice > 0 && !item.currency?.includes('SAR')
+                                ? Number((rawPrice / 13.5).toFixed(2))
+                                : rawPrice));
 
                     // ─── تحديد فئة القطعة ─────────────────────────────
                     const category = item.category || item.partType || item.categoryAr || 'قطع غيار عامة';
@@ -430,9 +438,12 @@ class PartsImportService {
                         carMake: item.carMake || brandName,
                         carModel: item.carModel || '',
                         carYear: item.carYear || 0,
-                        price: priceSar || 50,
-                        priceSar: priceSar || 50,
+                        price: priceSar || (skipPrice ? 0 : 50),
+                        priceSar: priceSar || (skipPrice ? 0 : 50),
                         priceUsd: priceSar ? Number((priceSar / 3.75).toFixed(2)) : 0,
+                        priceOnRequest: skipPrice || whatsappRequest,   // السعر عند الطلب
+                        whatsappRequest: whatsappRequest,               // الطلب عبر WhatsApp
+                        priceLabel: (skipPrice || whatsappRequest) ? 'اطلب عبر WhatsApp' : null,
                         stockQty: item.stockQty || item.stock || 10,
                         inStock: true,
                         condition: item.condition || 'New',
@@ -484,6 +495,10 @@ class PartsImportService {
                 success: true,
                 message: `✅ تم استيراد ${totalImported} قطعة غيار بنجاح من autospare.com.eg`,
                 stats: { totalFetched, totalImported, totalSkipped },
+                brandsImported: brands?.length || 0,
+                partsImported: totalImported,
+                totalImported,
+                totalSkipped,
                 source: sourceUrl,
                 items: importedItems,
             };

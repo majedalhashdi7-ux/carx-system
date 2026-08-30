@@ -180,6 +180,16 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ data, type })
     }),
+    // ── الاستيراد الجماعي التلقائي من Encar (جلب سيارات كوريا)
+    showroom: (limit = 20, targetUrl = '') => fetchAPI<{ success: boolean; message: string; totalImported: number; totalSkipped: number; items: any[] }>('/import/showroom', {
+      method: 'POST',
+      body: JSON.stringify({ limit, targetUrl })
+    }),
+    // ── الاستيراد التلقائي لوكالات وقطع غيار AutoSpare
+    autospare: () => fetchAPI<{ success: boolean; message: string; brandsImported: number; partsImported: number }>('/import/autospare', {
+      method: 'POST',
+      body: JSON.stringify({})
+    }),
     // مزامنة شاملة: سيارات + قطع غيار معاً
     fullSync: (batchSize = 20) => fetchAPI<{ success: boolean; message: string; stats: any }>('/import/full-sync', {
       method: 'POST',
