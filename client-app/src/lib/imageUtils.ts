@@ -95,11 +95,50 @@ export function getProxiedImageUrl(rawUrl: string | null | undefined, watermarkT
 }
 
 /**
- * معالجة مصفوفة صور السيارة
+ * توليد وتوسيع قائمة صور السيارة لتشمل جميع الزوايا الكاملة (001 إلى 020)
+ * إذا كانت الصورة من Encar وتحتوي على 001.jpg أو نمط مماثل
+ */
+export function expandCarImages(images: (string | null | undefined)[]): string[] {
+    if (!Array.isArray(images) || images.length === 0) return [FALLBACK_IMAGE];
+    const valid = images.filter((img): img is string => !!img && typeof img === 'string' && img.trim() !== '');
+    if (valid.length === 0) return [FALLBACK_IMAGE];
+
+    // إذا كانت هناك بالفعل عدة صور مختلفة (أكثر من 4 صور)، نحتفظ بها
+    if (valid.length > 4) {
+        return valid;
+    }
+
+    // البحث عن أي رابط صورة لـ Encar يحتوي على نمط ترقيم (مثل _001.jpg أو 001.jpg أو نهاية _)
+    for (const rawUrl of valid) {
+        const normalized = normalizeImageUrl(rawUrl);
+        const match = normalized.match(/^(.*?)_0*1\.(jpe?g|png|webp)(\?.*)?$/i) ||
+                      normalized.match(/^(.*?)001\.(jpe?g|png|webp)(\?.*)?$/i) ||
+                      (normalized.endsWith('_') ? [null, normalized.slice(0, -1), 'jpg', ''] : null);
+        if (match) {
+            const prefix = match[1];
+            const ext = match[2] || 'jpg';
+            const query = match[3] || '';
+            const expanded: string[] = [];
+            // توليد الصور من 001 إلى 020
+            for (let i = 1; i <= 20; i++) {
+                const numStr = String(i).padStart(3, '0');
+                const candidate = `${prefix}_${numStr}.${ext}${query}`;
+                expanded.push(candidate);
+            }
+            return expanded;
+        }
+    }
+
+    return valid;
+}
+
+/**
+ * معالجة مصفوفة صور السيارة مع التوسيع التلقائي لكامل صور المعرض (20 زاوية)
  */
 export function processCarImages(images: (string | null | undefined)[], watermarkText = 'HM CAR'): string[] {
     if (!Array.isArray(images) || images.length === 0) return [FALLBACK_IMAGE];
-    const processed = images
+    const expanded = expandCarImages(images);
+    const processed = expanded
         .filter((img): img is string => !!img && typeof img === 'string' && img.trim() !== '')
         .map(img => getProxiedImageUrl(img, watermarkText));
     return processed.length > 0 ? processed : [FALLBACK_IMAGE];

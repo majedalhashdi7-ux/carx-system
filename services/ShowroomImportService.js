@@ -395,6 +395,20 @@ class ShowroomImportService {
                             allPhotoObjs.map(buildEncarImageUrl).filter(Boolean)
                         )].slice(0, 30);
 
+                        // إذا كانت الصور قليلة وتحتوي على الصورة الأولى لـ Encar، نقوم بتوليد كامل الزوايا (001 إلى 020)
+                        if (rawImageUrls.length < 5) {
+                            const firstEncarImg = rawImageUrls.find(u => typeof u === 'string' && (u.includes('_001.jpg') || u.includes('001.jpg') || u.endsWith('_')));
+                            if (firstEncarImg) {
+                                const basePrefix = firstEncarImg.replace(/_0*1\.jpe?g$/i, '').replace(/001\.jpe?g$/i, '').replace(/_$/, '');
+                                const fullAngles = [];
+                                for (let num = 1; num <= 20; num++) {
+                                    const numStr = String(num).padStart(3, '0');
+                                    fullAngles.push(`${basePrefix}_${numStr}.jpg`);
+                                }
+                                rawImageUrls = fullAngles;
+                            }
+                        }
+
                         // إذا لم تتوفر صور من API، استخدم صور حقيقية مخصصة للموديل
                         if (rawImageUrls.length === 0) {
                             rawImageUrls = getCuratedModelImages(brand.en || rawManufacturer, modelEn || rawModel);
