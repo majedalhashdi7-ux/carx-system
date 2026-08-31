@@ -41,7 +41,7 @@ export default function Navbar() {
     const { isLoggedIn, isAdmin } = useAuth();
     const accountHref = isAdmin ? '/admin/dashboard' : '/client/dashboard';
     const { isRTL, toggleLanguage } = useLanguage();
-    const { siteInfo, displayCurrency, setDisplayCurrency } = useSettings();
+    const { siteInfo, displayCurrency, setDisplayCurrency, socialLinks } = useSettings();
     const { setNotificationsOpen } = useUI();
     const { tenant } = useTenant();
     const isCarX = tenant?.id === 'carx';
@@ -69,7 +69,8 @@ export default function Navbar() {
     }, []);
 
     // روابط التنقل الرئيسية
-    const whatsappUrl = `https://wa.me/821080880014`;
+    const rawWa = socialLinks?.whatsapp || tenant?.contact?.whatsapp || '821080880014';
+    const whatsappUrl = `https://wa.me/${rawWa.replace(/\D/g, '')}`;
     const navLinks = [
         { href: '/', label: isRTL ? 'الرئيسية' : 'Home', icon: Home, isExternal: false },
         { href: '/cars', label: isRTL ? 'السيارات' : 'Cars', icon: Car, isExternal: false },

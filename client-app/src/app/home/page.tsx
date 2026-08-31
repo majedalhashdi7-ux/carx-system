@@ -181,7 +181,7 @@ export default function HomePage() {
     useEffect(() => {
         setCarsLoading(true);
 
-        const withTimeout = <T,>(promise: Promise<T>, ms = 10000): Promise<T> =>
+        const withTimeout = <T,>(promise: Promise<T>, ms = 3500): Promise<T> =>
             Promise.race([promise, new Promise<T>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))]);
 
         Promise.all([

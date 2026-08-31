@@ -68,6 +68,46 @@ const nextConfig = {
     return [];
   },
 
+  async redirects() {
+    return [
+      {
+        source: '/gallery',
+        destination: '/cars',
+        permanent: false,
+      },
+      {
+        source: '/showroom',
+        destination: '/cars',
+        permanent: false,
+      },
+      {
+        source: '/showroom/:id',
+        destination: '/cars/:id',
+        permanent: false,
+      },
+      {
+        source: '/social',
+        destination: '/contact',
+        permanent: false,
+      },
+      {
+        source: '/cart',
+        destination: '/cars',
+        permanent: false,
+      },
+      {
+        source: '/cart/share',
+        destination: '/cars',
+        permanent: false,
+      },
+      {
+        source: '/compare',
+        destination: '/comparisons',
+        permanent: false,
+      },
+    ];
+  },
+
   compress: true,
   poweredByHeader: false,
   generateEtags: true,
