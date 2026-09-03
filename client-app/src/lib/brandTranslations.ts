@@ -117,26 +117,87 @@ export function getBrandDisplayName(rawName: string, isRTL: boolean): string {
 }
 
 /**
- * يعيد قائمة مرتبة من روابط شعار الماركة من مصادر CDN متعددة موثوقة
- * يُجرَّب الأول فإن فشل يُجرَّب الثاني... وهكذا
+ * [[FIX]] خريطة ثابتة بشعارات SVG موثوقة من Wikipedia/Wikimedia و Car Logos CDN
+ * هذه الروابط مستقرة ولا تتطلب API keys ولا تنتهي
+ */
+const BRAND_SVG_LOGOS: Record<string, string[]> = {
+    // روابط Wikipedia SVG (ثابتة جداً) + احتياطي
+    'toyota':        ['https://upload.wikimedia.org/wikipedia/commons/e/ee/Toyota_logo_%28Red%29.svg',
+                      'https://www.carlogos.org/car-logos/toyota-logo-2019-3700x1200.png'],
+    'hyundai':       ['https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Hyundai_Motor_Company_logo.svg/320px-Hyundai_Motor_Company_logo.svg.png',
+                      'https://www.carlogos.org/car-logos/hyundai-logo-2011-1250x520.png'],
+    'kia':           ['https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Kia-logo.svg/320px-Kia-logo.svg.png',
+                      'https://www.carlogos.org/car-logos/kia-logo-2012-2560x1600.png'],
+    'genesis':       ['https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Genesis_Motor_logo.svg/320px-Genesis_Motor_logo.svg.png'],
+    'bmw':           ['https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/320px-BMW.svg.png',
+                      'https://www.carlogos.org/car-logos/bmw-logo-2020-grey.png'],
+    'mercedes':      ['https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Mercedes-Logo.svg/320px-Mercedes-Logo.svg.png'],
+    'mercedes-benz': ['https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Mercedes-Logo.svg/320px-Mercedes-Logo.svg.png'],
+    'audi':          ['https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Audi-Logo_2016.svg/320px-Audi-Logo_2016.svg.png',
+                      'https://www.carlogos.org/car-logos/audi-logo-2016-1280x1024.png'],
+    'volkswagen':    ['https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Volkswagen_logo_2019.svg/320px-Volkswagen_logo_2019.svg.png'],
+    'porsche':       ['https://upload.wikimedia.org/wikipedia/de/thumb/7/70/Porsche_Logo.svg/320px-Porsche_Logo.svg.png'],
+    'nissan':        ['https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Nissan_Motor_logo.svg/320px-Nissan_Motor_logo.svg.png',
+                      'https://www.carlogos.org/car-logos/nissan-logo-2020-black.png'],
+    'honda':         ['https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Honda.svg/320px-Honda.svg.png',
+                      'https://www.carlogos.org/car-logos/honda-logo-2000-full-2048x1536.png'],
+    'lexus':         ['https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Lexus_division_emblem.svg/320px-Lexus_division_emblem.svg.png'],
+    'infiniti':      ['https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Infiniti_logo.svg/320px-Infiniti_logo.svg.png'],
+    'ford':          ['https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Ford_logo_flat.svg/320px-Ford_logo_flat.svg.png',
+                      'https://www.carlogos.org/car-logos/ford-logo-2017-1500x648.png'],
+    'chevrolet':     ['https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Chevrolet_logo.svg/320px-Chevrolet_logo.svg.png'],
+    'land-rover':    ['https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Land_Rover_logo.svg/320px-Land_Rover_logo.svg.png'],
+    'land rover':    ['https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Land_Rover_logo.svg/320px-Land_Rover_logo.svg.png'],
+    'jeep':          ['https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Jeep_Logo.svg/320px-Jeep_Logo.svg.png'],
+    'mazda':         ['https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Mazda_logo_with_Japanese_text.svg/320px-Mazda_logo_with_Japanese_text.svg.png'],
+    'mitsubishi':    ['https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Mitsubishi_logo.svg/320px-Mitsubishi_logo.svg.png'],
+    'subaru':        ['https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Subaru_Corporation_trademark.svg/320px-Subaru_Corporation_trademark.svg.png'],
+    'volvo':         ['https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Volvo_logo.svg/320px-Volvo_logo.svg.png'],
+    'renault':       ['https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/2021_Renault_Logo.svg/320px-2021_Renault_Logo.svg.png'],
+    'peugeot':       ['https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Peugeot_2021_Logo.svg/320px-Peugeot_2021_Logo.svg.png'],
+    'tesla':         ['https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Tesla_T_symbol.svg/320px-Tesla_T_symbol.svg.png'],
+    'mg':            ['https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/MG_Motor_brand.svg/320px-MG_Motor_brand.svg.png'],
+    'opel':          ['https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/Opel_logo_2017.svg/320px-Opel_logo_2017.svg.png'],
+    'suzuki':        ['https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Suzuki_logo_2.svg/320px-Suzuki_logo_2.svg.png'],
+    'gmc':           ['https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/GMC_logo_2012.svg/320px-GMC_logo_2012.svg.png'],
+    'cadillac':      ['https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/Cadillac_logo.svg/320px-Cadillac_logo.svg.png'],
+    'dodge':         ['https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Dodge_logo.svg/320px-Dodge_logo.svg.png'],
+    'lincoln':       ['https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Lincoln_Motor_Company_logo.svg/320px-Lincoln_Motor_Company_logo.svg.png'],
+    'fiat':          ['https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Logo_FIAT.svg/320px-Logo_FIAT.svg.png'],
+    'alfa romeo':    ['https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Alfa_Romeo_logo.svg/320px-Alfa_Romeo_logo.svg.png'],
+    'mini':          ['https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/MINI-Logo.svg/320px-MINI-Logo.svg.png'],
+    'jaguar':        ['https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Jaguar_Cars_logo.svg/320px-Jaguar_Cars_logo.svg.png'],
+    'geely':         ['https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Geely_Logo.svg/320px-Geely_Logo.svg.png'],
+    'kg-mobility':   ['https://www.carlogos.org/car-logos/ssangyong-logo.png'],
+    'kg mobility':   ['https://www.carlogos.org/car-logos/ssangyong-logo.png'],
+    'ssangyong':     ['https://www.carlogos.org/car-logos/ssangyong-logo.png'],
+};
+
+/**
+ * يعيد قائمة مرتبة من روابط شعار الماركة
+ * يُجرَّب الأول فإن فشل يُجرَّب الثاني — الأولوية لـ Wikipedia SVGs ثم Clearbit
  */
 export function getBrandLogoUrls(rawName: string): string[] {
     const info = getBrandInfo(rawName);
     const { clearbitKey, domain } = info;
-    if (!clearbitKey) return [];
 
-    const urls: string[] = [];
+    // البحث في الخريطة الثابتة أولاً (الأموثوق)
+    const key = rawName.toLowerCase().trim();
+    const enKey = (info.en || '').toLowerCase().trim();
+    const staticUrls = BRAND_SVG_LOGOS[key] || BRAND_SVG_LOGOS[enKey] || BRAND_SVG_LOGOS[clearbitKey] || [];
 
-    // المصدر 1: Clearbit (الأكثر شهرة للشعارات عالية الجودة)
-    urls.push(`https://logo.clearbit.com/${domain || clearbitKey + '.com'}`);
+    if (!clearbitKey) return staticUrls;
 
-    // المصدر 2: Google Favicons (موثوق جداً ومتاح دائماً)
-    urls.push(`https://www.google.com/s2/favicons?domain=${domain || clearbitKey + '.com'}&sz=128`);
+    const cdnUrls: string[] = [];
 
-    // المصدر 3: Brandfetch CDN
-    urls.push(`https://cdn.brandfetch.io/${domain || clearbitKey + '.com'}/w/128/h/128/logo`);
+    // احتياطي 1: Clearbit (قد يُحجب أحياناً)
+    cdnUrls.push(`https://logo.clearbit.com/${domain || clearbitKey + '.com'}`);
 
-    return urls.filter(Boolean);
+    // احتياطي 2: Google Favicons (متاح دائماً)
+    cdnUrls.push(`https://www.google.com/s2/favicons?domain=${domain || clearbitKey + '.com'}&sz=128`);
+
+    // دمج: Wikipedia SVG أولاً ثم Clearbit
+    return [...staticUrls, ...cdnUrls].filter(Boolean);
 }
 
 /** للتوافق مع الكود القديم — يُعيد أول رابط متاح */

@@ -39,9 +39,32 @@ export default function BrandsPage() {
     const loadBrands = async () => {
       try {
         const res = await api.brands.list();
-        if (res?.brands) {
-          setBrands(res.brands);
-        }
+        // [[FIX]] API يُرجع { brands: [], data: [] } — نستخدم أيهما متاح
+        const raw: any[] = res?.brands || res?.data || [];
+
+        // تنظيف وتصفية البيانات: نحذف الماركات ذات الأسماء الكورية فقط بدون ترجمة
+        const cleanBrands = raw
+          .filter((b: any) => {
+            const nameEn = (b.nameEn || b.name || '').toString().trim();
+            // إذا الاسم يحتوي على أحرف كورية فقط بدون ترجمة → نحذفه
+            const hasKorean = /[\u3130-\u318F\uAC00-\uD7AF]/.test(nameEn);
+            const hasLatin = /[a-zA-Z]/.test(nameEn);
+            return !hasKorean || hasLatin;
+          })
+          .map((b: any) => ({
+            id: b._id || b.id,
+            key: b.key || (b.nameEn || b.name || '').toLowerCase().replace(/\s+/g, '-'),
+            name: b.nameEn || b.name || '',
+            nameAr: b.name !== b.nameEn ? b.name : undefined,
+            // [[FIX]] API يُرجع logoUrl لكن البطاقة تتوقع logo
+            logo: (!b.logoUrl || b.logoUrl.startsWith('/uploads/')) ? undefined : b.logoUrl,
+            description: b.description,
+            descriptionAr: b.description_ar || b.descriptionAr,
+            carCount: b.carCount || 0,
+            isActive: b.isActive !== false,
+          }));
+
+        setBrands(cleanBrands);
       } catch (err) {
         console.error('Failed to load brands:', err);
       } finally {
