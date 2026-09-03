@@ -262,6 +262,7 @@ export const api = {
             const query = new URLSearchParams(params as Record<string, string>).toString();
             return fetchAPI(`/api/v2/parts?${query}`);
         },
+        getById: (id: string) => fetchAPI(`/api/v2/parts/${id}`),
         create: (data: Record<string, unknown>) => fetchAPI('/api/v2/parts', {
             method: 'POST',
             body: JSON.stringify(data),
