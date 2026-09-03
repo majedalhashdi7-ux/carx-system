@@ -11,7 +11,7 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Menu, X, User, ChevronDown,
-    Car, MessageCircle, Bell, LogIn, UserPlus, Home, Wrench, Gavel, Globe
+    Car, MessageCircle, Bell, LogIn, UserPlus, Home, Wrench, Gavel, Globe, Ship
 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -73,6 +73,7 @@ export default function Navbar() {
     const whatsappUrl = `https://wa.me/${rawWa.replace(/\D/g, '')}`;
     const navLinks = [
         { href: '/', label: isRTL ? 'الرئيسية' : 'Home', icon: Home, isExternal: false },
+        { href: '/showroom', label: isRTL ? 'المعرض الكوري' : 'Korean Showroom', icon: Ship, isExternal: false },
         { href: '/cars', label: isRTL ? 'السيارات' : 'Cars', icon: Car, isExternal: false },
         { href: '/parts', label: isRTL ? 'قطع الغيار' : 'Parts', icon: Wrench, isExternal: false },
         { href: '/auctions', label: isRTL ? 'المزادات' : 'Auctions', icon: Gavel, isExternal: false },
