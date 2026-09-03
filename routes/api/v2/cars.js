@@ -106,7 +106,88 @@ router.get('/', cacheResponse(300), async (req, res, next) => {
         // status === 'all' → لا فلتر، يُعيد كل السيارات (للأدمن)
 
         if (category) conditions.push({ category });
-        if (make) conditions.push({ make });
+        
+        // خريطة شاملة للترجمة والبحث الثنائي للماركات (عربي ↔ إنجليزي)
+        const BRAND_BILINGUAL_MAP = {
+            'toyota': ['تويوتا', 'Toyota'],
+            'hyundai': ['هيونداي', 'Hyundai'],
+            'kia': ['كيا', 'Kia'],
+            'genesis': ['جينيسيس', 'Genesis'],
+            'nissan': ['نيسان', 'Nissan'],
+            'honda': ['هوندا', 'Honda'],
+            'suzuki': ['سوزوكي', 'Suzuki'],
+            'mercedes': ['مرسيدس', 'مرسيدس بنز', 'Mercedes', 'Mercedes-Benz'],
+            'mercedes-benz': ['مرسيدس', 'مرسيدس بنز', 'Mercedes', 'Mercedes-Benz'],
+            'bmw': ['بي ام دبليو', 'بي إم دبليو', 'BMW'],
+            'audi': ['أودي', 'Audi'],
+            'volkswagen': ['فولكسواجن', 'فولكس واجن', 'Volkswagen', 'VW'],
+            'porsche': ['بورش', 'Porsche'],
+            'ford': ['فورد', 'Ford'],
+            'chevrolet': ['شيفروليه', 'Chevrolet', 'Chevy'],
+            'lexus': ['لكزس', 'Lexus'],
+            'infiniti': ['إنفينيتي', 'انفينيتي', 'Infiniti'],
+            'land rover': ['لاند روفر', 'Land Rover', 'Range Rover'],
+            'land-rover': ['لاند روفر', 'Land Rover', 'Range Rover'],
+            'jeep': ['جيب', 'Jeep'],
+            'mazda': ['مازدا', 'Mazda'],
+            'mitsubishi': ['ميتسوبيشي', 'Mitsubishi'],
+            'subaru': ['سوبارو', 'Subaru'],
+            'volvo': ['فولفو', 'Volvo'],
+            'renault': ['رينو', 'Renault'],
+            'peugeot': ['بيجو', 'Peugeot'],
+            'tesla': ['تسلا', 'Tesla'],
+            'mg': ['ام جي', 'إم جي', 'MG'],
+            'cadillac': ['كاديلاك', 'Cadillac'],
+            'dodge': ['دودج', 'Dodge'],
+            'gmc': ['جي ام سي', 'GMC'],
+
+            'تويوتا': ['Toyota', 'تويوتا'],
+            'هيونداي': ['Hyundai', 'هيونداي'],
+            'كيا': ['Kia', 'كيا'],
+            'جينيسيس': ['Genesis', 'جينيسيس'],
+            'نيسان': ['Nissan', 'نيسان'],
+            'هوندا': ['Honda', 'هوندا'],
+            'سوزوكي': ['Suzuki', 'سوزوكي'],
+            'مرسيدس': ['Mercedes', 'مرسيدس', 'مرسيدس بنز'],
+            'مرسيدس بنز': ['Mercedes-Benz', 'Mercedes', 'مرسيدس', 'مرسيدس بنز'],
+            'بي ام دبليو': ['BMW', 'بي ام دبليو', 'بي إم دبليو'],
+            'بي إم دبليو': ['BMW', 'بي ام دبليو', 'بي إم دبليو'],
+            'أودي': ['Audi', 'أودي'],
+            'فولكسواجن': ['Volkswagen', 'فولكسواجن'],
+            'فولكس واجن': ['Volkswagen', 'فولكس واجن'],
+            'بورش': ['Porsche', 'بورش'],
+            'فورد': ['Ford', 'فورد'],
+            'شيفروليه': ['Chevrolet', 'شيفروليه'],
+            'لكزس': ['Lexus', 'لكزس'],
+            'إنفينيتي': ['Infiniti', 'إنفينيتي', 'انفينيتي'],
+            'انفينيتي': ['Infiniti', 'إنفينيتي', 'انفينيتي'],
+            'لاند روفر': ['Land Rover', 'Range Rover', 'لاند روفر'],
+            'جيب': ['Jeep', 'جيب'],
+            'مازدا': ['Mazda', 'مازدا'],
+            'ميتسوبيشي': ['Mitsubishi', 'ميتسوبيشي'],
+            'سوبارو': ['Subaru', 'سوبارو'],
+            'فولفو': ['Volvo', 'فولفو'],
+            'رينو': ['Renault', 'رينو'],
+            'بيجو': ['Peugeot', 'بيجو'],
+            'تسلا': ['Tesla', 'تسلا'],
+            'ام جي': ['MG', 'ام جي'],
+            'إم جي': ['MG', 'إم جي'],
+            'كاديلاك': ['Cadillac', 'كاديلاك'],
+            'دودج': ['Dodge', 'دودج'],
+            'جي ام سي': ['GMC', 'جي ام سي']
+        };
+
+        if (make) {
+            const makeKey = make.trim().toLowerCase();
+            const equivalents = BRAND_BILINGUAL_MAP[makeKey] || BRAND_BILINGUAL_MAP[make.trim()] || [make];
+            const makeOr = [];
+            equivalents.forEach(eq => {
+                const escaped = eq.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                makeOr.push({ make: { $regex: `^${escaped}$`, $options: 'i' } });
+                makeOr.push({ makeAr: { $regex: `^${escaped}$`, $options: 'i' } });
+            });
+            conditions.push({ $or: makeOr });
+        }
 
         if (listingType) {
             if (listingType === 'store') {
@@ -134,35 +215,36 @@ router.get('/', cacheResponse(300), async (req, res, next) => {
 
         if (search) {
             const s = search.trim();
-            const arabicBrandMap = {
-                'تويوتا': 'Toyota', 'هيونداي': 'Hyundai', 'كيا': 'Kia',
-                'نيسان': 'Nissan', 'هوندا': 'Honda', 'سوزوكي': 'Suzuki',
-                'مرسيدس': 'Mercedes', 'بي إم دبليو': 'BMW', 'بي ام دبليو': 'BMW',
-                'أودي': 'Audi', 'فولكسواجن': 'Volkswagen', 'فورد': 'Ford',
-                'جينيسيس': 'Genesis', 'لكزس': 'Lexus', 'إنفينيتي': 'Infiniti'
-            };
             const lowerS = s.toLowerCase();
-            const mappedSearchEn = arabicBrandMap[s] || arabicBrandMap[lowerS] || null;
+            const equivalents = BRAND_BILINGUAL_MAP[lowerS] || BRAND_BILINGUAL_MAP[s] || [];
             const fuzzyTokens = s.split(/\s+/).filter(t => t.length > 1);
             const safeKey = s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
             const searchConditions = [
                 { title: { $regex: safeKey, $options: 'i' } },
+                { titleAr: { $regex: safeKey, $options: 'i' } },
                 { make: { $regex: safeKey, $options: 'i' } },
+                { makeAr: { $regex: safeKey, $options: 'i' } },
                 { model: { $regex: safeKey, $options: 'i' } },
                 { description: { $regex: safeKey, $options: 'i' } },
+                { descriptionAr: { $regex: safeKey, $options: 'i' } },
             ];
 
-            if (mappedSearchEn) {
-                searchConditions.push({ make: { $regex: mappedSearchEn, $options: 'i' } });
-                searchConditions.push({ title: { $regex: mappedSearchEn, $options: 'i' } });
-            }
+            equivalents.forEach(eq => {
+                const safeEq = eq.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                searchConditions.push({ make: { $regex: safeEq, $options: 'i' } });
+                searchConditions.push({ makeAr: { $regex: safeEq, $options: 'i' } });
+                searchConditions.push({ title: { $regex: safeEq, $options: 'i' } });
+                searchConditions.push({ titleAr: { $regex: safeEq, $options: 'i' } });
+            });
 
             fuzzyTokens.forEach(token => {
                 if (token !== s) {
                     const safeToken = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                     searchConditions.push({ make: { $regex: safeToken, $options: 'i' } });
+                    searchConditions.push({ makeAr: { $regex: safeToken, $options: 'i' } });
                     searchConditions.push({ title: { $regex: safeToken, $options: 'i' } });
+                    searchConditions.push({ titleAr: { $regex: safeToken, $options: 'i' } });
                     searchConditions.push({ model: { $regex: safeToken, $options: 'i' } });
                 }
             });
