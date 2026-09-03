@@ -39,7 +39,7 @@ export default function Navbar() {
     const pathname = usePathname();
 
     const { isLoggedIn, isAdmin } = useAuth();
-    const accountHref = isAdmin ? '/admin/dashboard' : '/client/dashboard';
+    const accountHref = !isLoggedIn ? '/login' : isAdmin ? '/admin/dashboard' : '/client/dashboard';
     const { isRTL, toggleLanguage } = useLanguage();
     const { siteInfo, displayCurrency, setDisplayCurrency, socialLinks } = useSettings();
     const { setNotificationsOpen } = useUI();

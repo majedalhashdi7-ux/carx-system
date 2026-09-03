@@ -257,10 +257,32 @@ router.get('/makes', cacheResponse(1800), async (req, res, next) => {
         const filter = includeInactive ? {} : { isActive: true, isSold: false };
 
         const makes = await Car.distinct('make', addTenantFilter(req, filter));
+
+        // [[FIX]] إزالة تكرار الماركات (case-insensitive dedup)
+        // مثلاً: 'Kia' و 'kia' و 'كيا' — نُبقي الأكثر شيوعاً
+        const seen = new Map();
         const cleaned = makes
-            .map(m => (typeof m === 'string' ? m.trim() : m))
+            .map(m => (typeof m === 'string' ? m.trim() : String(m || '').trim()))
             .filter(Boolean)
-            .sort((a, b) => String(a).localeCompare(String(b)));
+            .reduce((acc, make) => {
+                const key = make.toLowerCase().replace(/\s+/g, '');
+                if (!seen.has(key)) {
+                    seen.set(key, make);
+                    acc.push(make);
+                } else {
+                    // إذا النسخة الحالية أطول أو عربية — نستبدل
+                    const existing = seen.get(key);
+                    const isCurrentArabic = /[\u0600-\u06FF]/.test(make);
+                    const isExistingArabic = /[\u0600-\u06FF]/.test(existing);
+                    if (!isExistingArabic && isCurrentArabic) {
+                        seen.set(key, make);
+                        const idx = acc.indexOf(existing);
+                        if (idx !== -1) acc[idx] = make;
+                    }
+                }
+                return acc;
+            }, [])
+            .sort((a, b) => String(a).localeCompare(String(b), 'ar'));
 
         res.json({ success: true, data: cleaned });
     } catch (error) {

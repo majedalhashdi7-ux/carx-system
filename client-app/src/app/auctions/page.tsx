@@ -126,7 +126,7 @@ export default function AuctionsPage() {
             // Load live showroom sessions, scheduled auctions, and imported Encar auctions
             const [showroomRes, liveRes, upcomingRes, allAuctionsRes] = await Promise.all([
                 api.liveAuctions.list().catch(() => ({ success: false, data: [] })),
-                api.auctions.list({ status: 'live' }).catch(() => ({ success: false, data: [] })),
+                api.auctions.list({ status: 'running' }).catch(() => ({ success: false, data: [] })),
                 api.auctions.list({ status: 'upcoming' }).catch(() => ({ success: false, data: [] })),
                 api.auctions.list({ limit: 100 }).catch(() => ({ success: false, data: [] })),
             ]);
@@ -198,7 +198,7 @@ export default function AuctionsPage() {
         } finally {
             setLoading(false);
         }
-    }, [isRTL, globalWhatsapp]);
+    }, [isRTL]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         loadData();

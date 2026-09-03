@@ -45,12 +45,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             // تحقق صامت في الخلفية
             const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
             fetch(`${apiBase}/v2/auth/verify`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'X-Tenant-ID': process.env.NEXT_PUBLIC_TENANT_ID || 'hmcar',
                 },
-                signal: AbortSignal.timeout(8000),
+                signal: controller.signal,
             })
                 .then(r => {
                     // ⚠️ فقط 401 صريح يطرد الأدمن - أي خطأ آخر يُبقيه
@@ -73,7 +75,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         document.cookie = `hm_user_role=${data.user.role}; path=/; max-age=${maxAge}; SameSite=Lax`;
                     }
                 })
-                .catch(() => { /* صامت — نحافظ على جلسة الأدمن */ });
+                .catch(() => { /* صامت — نحافظ على جلسة الأدمن */ })
+                .finally(() => clearTimeout(timeoutId));
 
         } else if (token) {
             // توكن موجود لكن بدون role محلي → نتحقق من السيرفر
