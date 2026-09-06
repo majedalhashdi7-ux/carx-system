@@ -617,7 +617,7 @@ function CarsContent() {
                                                     ? 'bg-[#C9A96E] text-black border-[#C9A96E]'
                                                     : 'bg-white/5 text-white/50 border-white/10 hover:border-white/20'
                                             )}>
-                                            {src === 'all' ? (isRTL ? '🌐 الكل' : '🌐 All') : src === 'korean' ? (isRTL ? '🇰🇷 كوري' : '🇰🇷 Korean') : '🏢 HM CAR'}
+                                            {src === 'all' ? (isRTL ? '🌐 الكل' : '🌐 All') : src === 'korean' ? (isRTL ? '🚢 مستورد' : '🚢 Imported') : '🏢 HM CAR'}
                                         </button>
                                     ))}
 
