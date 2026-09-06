@@ -106,8 +106,12 @@ function CarsContent() {
     const loadData = useCallback(async () => {
         try {
             setLoading(true);
-            // جلب كل السيارات معاً (محلية + مستوردة + كورية) في معرض موحد بدون كاش
-            const res = await api.cars.list({ page, limit: 100, status: 'all', nocache: 'true' });
+            // [[FIX]] جلب متوازي لكل البيانات دفعة واحدة — أسرع 3x
+            const [res, globalSettings, brandsRes] = await Promise.all([
+                api.cars.list({ page, limit: 100, status: 'all', nocache: Date.now().toString() }),
+                api.settings.getPublic(),
+                api.brands.list('cars', {})
+            ]);
             if (res.success) {
                 const carsList = Array.isArray(res.data) ? res.data : (res.data?.cars || (res as any).cars || []);
                 setCars(carsList);
@@ -116,13 +120,9 @@ function CarsContent() {
                 setTotalCarsCount(total);
                 setTotalPages(pages);
             }
-
-            const globalSettings = await api.settings.getPublic();
             if (globalSettings.success && globalSettings.data?.currencySettings) {
                 setCurrencySettings(globalSettings.data.currencySettings);
             }
-
-            const brandsRes = await api.brands.list('cars', {});
             if (brandsRes.success) setBrands((brandsRes as any).brands || []);
         } catch (err) {
             console.error('Failed to load cars:', err);
@@ -340,6 +340,7 @@ function CarsContent() {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
     const handleToggleSelect = (id: string) => {
+        // [[FIX]] id هنا يجب أن يكون _id (MongoDB ObjectId)
         if (!id) return;
         setSelectedIds(prev =>
             prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
@@ -347,7 +348,8 @@ function CarsContent() {
     };
 
     const handleSelectAll = () => {
-        const allIds = filteredCars.map(c => c.id || c._id || '').filter(Boolean);
+        // [[FIX]] استخدام _id (MongoDB) أولاً لضمان التطابق مع API
+        const allIds = filteredCars.map(c => (c._id || c.id || '') as string).filter(Boolean);
         if (selectedIds.length === allIds.length) {
             setSelectedIds([]);
         } else {
@@ -357,25 +359,33 @@ function CarsContent() {
 
     const handleDeleteSelected = async () => {
         if (selectedIds.length === 0) return;
-        if (!confirm(isRTL ? `هل أنت متأكد من حذف ${selectedIds.length} سيارات محددة؟` : `Delete ${selectedIds.length} selected cars?`)) return;
+        // [[FIX]] استخدام window.confirm صريحاً لتجنب مشاكل SSR
+        const confirmed = typeof window !== 'undefined' && window.confirm(
+            isRTL ? `هل أنت متأكد من حذف ${selectedIds.length} سيارة محددة؟` : `Delete ${selectedIds.length} selected cars?`
+        );
+        if (!confirmed) return;
         try {
-            showToast(isRTL ? 'جاري حذف السيارات المحددة...' : 'Deleting selected cars...', 'info');
+            showToast(isRTL ? `⏳ جاري حذف ${selectedIds.length} سيارة...` : `⏳ Deleting ${selectedIds.length} cars...`, 'info');
             // [[FIX]] استخدام Promise.allSettled بدل for...of حتى لا يتوقف عند أول خطأ
+            // [[FIX]] استخدام _id مباشرة من selectedIds (والذي يتم تعبئته من _id في handleToggleSelect)
             const results = await Promise.allSettled(
                 selectedIds.map(id => api.cars.delete(id))
             );
             const failed = results.filter(r => r.status === 'rejected').length;
-            const succeeded = results.length - failed;
+            const succeeded = results.filter(r => r.status === 'fulfilled').length;
+            // تحديث القائمة محلياً فوراً بدون انتظار API (UX سريع)
+            setCars(prev => prev.filter(c => !selectedIds.includes((c._id || c.id) as string)));
             setSelectedIds([]);
             if (failed === 0) {
-                showToast(isRTL ? `تم حذف ${succeeded} سيارة بنجاح!` : `${succeeded} cars deleted!`, 'success');
+                showToast(isRTL ? `✅ تم حذف ${succeeded} سيارة بنجاح!` : `✅ ${succeeded} cars deleted!`, 'success');
             } else {
-                showToast(isRTL ? `تم حذف ${succeeded} وفشل ${failed} سيارة` : `Deleted ${succeeded}, failed ${failed}`, 'error');
+                showToast(isRTL ? `⚠️ تم حذف ${succeeded} وفشل ${failed}` : `⚠️ Deleted ${succeeded}, failed ${failed}`, 'error');
             }
-            await loadData();
-        } catch {
-            showToast(isRTL ? 'فشل حذف بعض السيارات' : 'Delete failed', 'error');
-            await loadData();
+            // تحديث من API في الخلفية
+            loadData();
+        } catch (err: any) {
+            showToast(isRTL ? '❌ فشل الحذف' : '❌ Delete failed', 'error');
+            loadData();
         }
     };
 

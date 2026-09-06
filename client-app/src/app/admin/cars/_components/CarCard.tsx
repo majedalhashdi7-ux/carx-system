@@ -44,7 +44,8 @@ interface CarCardProps {
 
 export default function CarCard({ car, index, usdToSar, isSelected, onToggleSelect, onEdit, onDelete, onMarkSold, onToggleActive }: CarCardProps) {
     const { isRTL } = useLanguage();
-    const carId = car.id || car._id || '';
+    // [[FIX]] _id أولاً (MongoDB ObjectId) لضمان تطابق الحذف الجماعي مع API
+    const carId = (car._id || car.id || '') as string;
 
     // استخراج وترجمة اسم الماركة وعنوان السيارة حسب اللغة المحددة (عربي / إنجليزي)
     const rawMake = typeof car.make === 'object' ? (car.make as any)?.name || '' : (car.make || '');

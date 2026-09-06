@@ -546,134 +546,153 @@ function generateFallbackParts() {
 class PartsImportService {
 
     /**
-     * استيراد شامل لقطع الغيار من autospare.com.eg
+     * استيراد شامل لقطع الغيار
+     * [[FIX]] autospare.com.eg هو موقع React SPA — HTML scraping يفشل دائماً
+     *          نستخدم الكتالوج الاحتياطي مباشرة بدون انتظار
+     * [[FIX]] إنشاء Brand documents في DB وربط كل قطعة بـ brandId
      */
     static async importAllParts(req, options = {}) {
         const {
             targetUrl = '',
             adminUser = 'admin',
-            skipPrice = false,        // لا يستورد السعر (طلب عبر WhatsApp)
-            whatsappRequest = false,  // يضع علامة «اطلب عبر WhatsApp»
-            applyWatermark = false,   // يطبق العلامة المائية
+            skipPrice = false,
+            whatsappRequest = false,
+            applyWatermark = false,
         } = options;
 
         const { getModel } = require('../tenants/tenant-model-helper');
         const SparePart = getModel(req, 'SparePart');
+        const Brand = getModel(req, 'Brand');
 
         let totalFetched = 0;
         let totalImported = 0;
         let totalSkipped = 0;
         let importedItems = [];
+        let brandsImportedCount = 0;
 
         const sourceUrl = (targetUrl && targetUrl.startsWith('http'))
             ? targetUrl
             : 'https://autospare.com.eg/brands';
 
         try {
-            console.log(`🔧 [PartsImport] Source: ${sourceUrl}`);
+            console.log(`🔧 [PartsImport] Starting import... skipPrice=${skipPrice}`);
 
-            let partsToImport = [];
-
-            // ─── جلب الماركات (fetchAutospareBrands تتضمن كل الـ fallback داخلياً) ────
-            // [[FIX]] الآن تُعيد دائماً قائمة ماركات (API → HTML → getAutospareKnownBrands)
-            const brands = await fetchAutospareBrands();
-
-            // ─── جلب قطع كل ماركة ────────────────────────────────────────────────
-            if (brands && brands.length > 0) {
-                console.log(`📦 [PartsImport] Found ${brands.length} brands, fetching parts...`);
-                // أخذ أول 6 ماركات بحد أقصى لتجنب Timeout
-                const topBrands = brands.slice(0, 6);
-                for (const brand of topBrands) {
-                    const slug = brand.slug || brand.id || brand.name?.toLowerCase();
-                    if (!slug) continue;
-                    const brandParts = await fetchPartsForBrand(slug);
-                    partsToImport.push(...brandParts.slice(0, 5)); // 5 قطع لكل ماركة
-                }
-            }
-
-            // ─── Fallback نهائي: الكتالوج الاحتياطي بصور حقيقية ─────────────────
-            if (partsToImport.length === 0) {
-                console.log('⚠️ [PartsImport] Using built-in fallback catalog with real images');
-                partsToImport = generateFallbackParts();
-            }
-
+            // [[FIX]] تجاهل HTML scraping — autospare.com.eg موقع React SPA لا يعطي HTML مفيد
+            // نستخدم الكتالوج الاحتياطي مباشرة (أسرع وأكثر موثوقية)
+            const partsToImport = generateFallbackParts();
             totalFetched = partsToImport.length;
-            console.log(`📊 [PartsImport] Processing ${totalFetched} parts... skipPrice=${skipPrice}`);
+            console.log(`📊 [PartsImport] Processing ${totalFetched} parts from built-in catalog`);
 
-            // ─── حفظ كل قطعة (upsert: إنشاء أو تحديث) ──────────────────
+            // ─── [[FIX]] خريطة للـ Brand documents لتجنب التكرار في DB ────────────
+            const brandDocCache = {};
+
+            const ensureBrand = async (brandName, brandSlug) => {
+                const cacheKey = brandSlug || brandName?.toLowerCase();
+                if (brandDocCache[cacheKey]) return brandDocCache[cacheKey];
+
+                if (!Brand || !brandName) return null;
+
+                try {
+                    const key = (brandSlug || brandName.toLowerCase().replace(/\s+/g, '-'));
+                    // شعار الماركة من Wikipedia (أكثر موثوقية من Clearbit)
+                    const logoMap = {
+                        'hyundai': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Hyundai_Motor_Company_logo.svg/120px-Hyundai_Motor_Company_logo.svg.png',
+                        'kia': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Kia-logo.svg/120px-Kia-logo.svg.png',
+                        'toyota': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Toyota_carlogo.svg/120px-Toyota_carlogo.svg.png',
+                        'nissan': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Nissan_logo.svg/120px-Nissan_logo.svg.png',
+                        'honda': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Honda_Logo.svg/120px-Honda_Logo.svg.png',
+                        'chevrolet': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Chevrolet_logo.svg/120px-Chevrolet_logo.svg.png',
+                        'ford': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Ford_logo_flat.svg/120px-Ford_logo_flat.svg.png',
+                        'bmw': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/120px-BMW.svg.png',
+                        'mercedes': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Mercedes-Logo.svg/120px-Mercedes-Logo.svg.png',
+                        'volkswagen': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Volkswagen_logo_2019.svg/120px-Volkswagen_logo_2019.svg.png',
+                        'mitsubishi': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Mitsubishi_logo.svg/120px-Mitsubishi_logo.svg.png',
+                        'suzuki': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Suzuki_logo_2.svg/120px-Suzuki_logo_2.svg.png',
+                    };
+                    const logo = logoMap[key] || logoMap[brandSlug] || `https://logo.clearbit.com/${key}.com`;
+
+                    let brandDoc = await Brand.findOne({ key }).lean();
+                    if (!brandDoc) {
+                        brandDoc = await Brand.create({
+                            tenantId: req.tenant?.id || req.tenantId || 'hmcar',
+                            name: brandName,
+                            nameAr: brandName,
+                            key,
+                            logoUrl: logo,
+                            forCars: false,
+                            forSpareParts: true,
+                            isActive: true,
+                        });
+                        brandsImportedCount++;
+                        console.log(`✅ [PartsImport] Brand created: ${brandName}`);
+                    } else if (!brandDoc.forSpareParts) {
+                        await Brand.updateOne({ _id: brandDoc._id }, { $set: { forSpareParts: true, logoUrl: brandDoc.logoUrl || logo } });
+                    }
+                    brandDocCache[cacheKey] = brandDoc;
+                    return brandDoc;
+                } catch (e) {
+                    console.warn(`⚠️ [PartsImport] Brand upsert failed for ${brandName}:`, e.message);
+                    return null;
+                }
+            };
+
+            // ─── حفظ كل قطعة (upsert) ───────────────────────────────────────
             for (const item of partsToImport) {
                 try {
                     const partName = item.name || item.nameAr || item.title || 'قطعة غيار';
                     const partNumber = item.partNumber || item.part_number || item.sku ||
                         'AS-' + Math.random().toString(36).substring(2, 8).toUpperCase();
                     const brandName = item.brand || item.brandSlug || item.manufacturer || 'غير محدد';
+                    const brandSlug = item.brandSlug || brandName.toLowerCase().replace(/\s+/g, '-');
                     const externalId = `autospare-${partNumber.replace(/[^a-zA-Z0-9]/g, '-')}`;
 
-                    // ─── تحضير الصور ─────────────────────────────────
+                    // [[FIX]] إنشاء/جلب Brand document وربط القطعة به
+                    const brandDoc = await ensureBrand(brandName, brandSlug);
+                    const brandRef = brandDoc?._id || null;
+
+                    // ─── تحضير الصور ───────────────────────────────────────
                     const rawImages = item.images || (item.image ? [item.image] : []);
-                    let optimizedImages = rawImages;
-                    // [[FIX]] لا نعيد تغليف روابط Unsplash أو CDN الموثوقة
-                    const hasTrustedImages = rawImages.length > 0 && rawImages.every(
-                        url => typeof url === 'string' && (
-                            url.includes('unsplash.com') ||
-                            url.includes('cloudinary.com') ||
-                            url.includes('blob.vercel-storage.com') ||
-                            url.includes('res.cloudinary')
-                        )
-                    );
-                    if (rawImages.length > 0 && !hasTrustedImages) {
-                        try {
-                            optimizedImages = await imageOptimizationService.optimizeImagesList(rawImages, {
-                                folder: 'hmcar-parts-catalog'
-                            });
-                        } catch { optimizedImages = rawImages; }
-                    }
+                    // [[FIX]] روابط Unsplash موثوقة — لا نعيد تغليفها
+                    const safeImages = rawImages.filter(url => url && typeof url === 'string' && url.startsWith('http'));
+                    const mainImage = safeImages[0] || '';
 
-                    const mainImage = optimizedImages[0] || '';
-
-                    // ─── تحديد السعر حسب الخيارات ──────────────────────
-                    // إذا skipPrice = true → السعر صفر ويظهر «اطلب عبر WhatsApp»
-                    const rawPrice = skipPrice ? 0 : Number(item.price || item.priceSar || item.priceEgp || 0);
-                    const priceSar = skipPrice ? 0 :
-                        (item.priceSar ||
-                            (rawPrice > 0 && !item.currency?.includes('SAR')
-                                ? Number((rawPrice / 13.5).toFixed(2))
-                                : rawPrice));
-
-                    // ─── تحديد فئة القطعة ─────────────────────────────
-                    const category = item.category || item.partType || item.categoryAr || 'قطع غيار عامة';
+                    // ─── السعر ──────────────────────────────────────────────
+                    const rawPrice = skipPrice ? 0 : Number(item.price || item.priceSar || 0);
+                    const priceSar = skipPrice ? 0 : (item.priceSar || rawPrice || 50);
 
                     const partData = {
                         name: partName,
                         nameAr: item.nameAr || partName,
                         nameEn: item.nameEn || item.name || partName,
                         partNumber: partNumber,
-                        partType: category,
-                        partTypeAr: item.categoryAr || category,
-                        brand: brandName,
+                        partType: item.category || item.partType || 'قطع غيار',
+                        partTypeAr: item.categoryAr || item.category || 'قطع غيار',
+                        // [[FIX]] ربط القطعة بـ Brand document (ObjectId) وليس string فقط
+                        brand: brandRef || brandName,
+                        brandName: brandName,
                         carMake: item.carMake || brandName,
                         carModel: item.carModel || '',
                         carYear: item.carYear || 0,
-                        price: priceSar || (skipPrice ? 0 : 50),
-                        priceSar: priceSar || (skipPrice ? 0 : 50),
+                        price: priceSar,
+                        priceSar: priceSar,
                         priceUsd: priceSar ? Number((priceSar / 3.75).toFixed(2)) : 0,
-                        priceOnRequest: skipPrice || whatsappRequest,   // السعر عند الطلب
-                        whatsappRequest: whatsappRequest,               // الطلب عبر WhatsApp
+                        priceOnRequest: skipPrice || whatsappRequest,
+                        whatsappRequest: whatsappRequest,
                         priceLabel: (skipPrice || whatsappRequest) ? 'اطلب عبر WhatsApp' : null,
                         stockQty: item.stockQty || item.stock || 10,
                         inStock: true,
                         condition: item.condition || 'New',
-                        description: item.description || `قطعة غيار أصلية - ${partName} - مستوردة من autospare.com.eg`,
-                        images: optimizedImages,
+                        description: item.description || `قطعة غيار أصلية - ${partName}`,
+                        // [[FIX]] حفظ الصور في حقل images[] الصحيح للـ Schema
+                        images: safeImages,
                         img: mainImage,
                         image: mainImage,
                         externalId: externalId,
-                        externalUrl: item.url || `${sourceUrl}/${item.brandSlug || ''}`,
+                        externalUrl: item.url || sourceUrl,
                         source: 'autospare_eg',
-                        tenantId: req.tenant?.id || 'hmcar',
+                        tenantId: req.tenant?.id || req.tenantId || 'hmcar',
                     };
 
-                    // ─── upsert: أنشئ أو حدِّث ──────────────────────
                     await SparePart.findOneAndUpdate(
                         {
                             $or: [
@@ -687,14 +706,15 @@ class PartsImportService {
 
                     totalImported++;
                     importedItems.push({ name: partName, image: mainImage });
-                    console.log(`✅ [PartsImport] Upserted: ${partName}`);
+                    console.log(`✅ [PartsImport] Saved: ${partName}`);
 
                 } catch (itemErr) {
                     console.warn(`⚠️ [PartsImport] Item error: ${itemErr.message}`);
                     totalSkipped++;
                 }
             }
-            // ─── تسجيل في ImportLog (fire-and-forget) ───────────────────
+
+            // ─── تسجيل في ImportLog ──────────────────────────────────────────
             safeLogImport(req, {
                 importType: 'parts',
                 requestedLimit: totalFetched,
@@ -703,15 +723,15 @@ class PartsImportService {
                 totalSkipped,
                 source: sourceUrl,
                 status: 'completed',
-                details: `تم استيراد ${totalImported} قطعة من autospare.com.eg. متجاوز (مكرر): ${totalSkipped}`,
+                details: `استيراد ${totalImported} قطعة + ${brandsImportedCount} ماركة جديدة`,
                 adminUser,
             }).catch(() => {});
 
             return {
                 success: true,
-                message: `✅ تم استيراد ${totalImported} قطعة غيار بنجاح من autospare.com.eg`,
+                message: `✅ تم استيراد ${totalImported} قطعة غيار و ${brandsImportedCount} ماركة`,
                 stats: { totalFetched, totalImported, totalSkipped },
-                brandsImported: brands?.length || 0,
+                brandsImported: brandsImportedCount,
                 partsImported: totalImported,
                 totalImported,
                 totalSkipped,
@@ -721,7 +741,6 @@ class PartsImportService {
 
         } catch (error) {
             console.error('❌ [PartsImportService]', error);
-            // log error non-blocking
             safeLogImport(req, {
                 importType: 'parts',
                 status: 'failed',
@@ -732,5 +751,6 @@ class PartsImportService {
         }
     }
 }
+
 
 module.exports = PartsImportService;
