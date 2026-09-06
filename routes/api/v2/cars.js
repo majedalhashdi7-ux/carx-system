@@ -59,16 +59,20 @@ function normalizeCarPricing(payload, rates) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// [[ARABIC_COMMENT]] دالة مساعدة لتحويل روابط Encar عبر بروكسي العلامة المائية
+// [[FIX]] دالة العلامة المائية الشاملة — تغطي جميع الصور الخارجية بدون استثناء
 function applyWatermarkToImages(images = [], source = '') {
     if (!Array.isArray(images) || images.length === 0) return images;
-    const isEncar = source === 'encar_korea' || source === 'encar' || source === 'korean_import';
-    if (!isEncar) return images;
     return images.map(img => {
         if (!img || typeof img !== 'string') return img;
-        if (img.includes('image-proxy') || img.includes('watermark=true')) return img;
-        if (img.includes('ci.encar.com') || img.includes('encar.co.kr') || img.includes('carpicture')) {
-            return `/api/v2/image-proxy?url=${encodeURIComponent(img)}&watermark=true&text=${encodeURIComponent('HM CAR')}`;
+        const trimmed = img.trim();
+        if (!trimmed) return img;
+        // تخطّى الصور المعالجة مسبقاً
+        if (trimmed.includes('image-proxy') || trimmed.includes('watermark=true')) return img;
+        // تخطّى الصور المرفوعة داخلياً (uploads/) — لا تحتاج proxy
+        if (trimmed.startsWith('/uploads/') || trimmed.includes('/uploads/')) return img;
+        // تطبيق البروكسي على كل رابط خارجي (http/https)
+        if (trimmed.startsWith('http')) {
+            return `/api/v2/image-proxy?url=${encodeURIComponent(trimmed)}&watermark=true&text=${encodeURIComponent('HM CAR')}`;
         }
         return img;
     });
@@ -496,6 +500,15 @@ router.post('/', requireAuthAPI, requirePermissionAPI('manage_cars'), invalidate
 
         const payload = normalizeCarPricing(req.body, settings?.currencySettings);
 
+        // [[FIX]] تطبيق العلامة المائية تلقائياً على الصور عند الإنشاء
+        if (payload.images && Array.isArray(payload.images)) {
+            payload.images = applyWatermarkToImages(payload.images, payload.source);
+        }
+        if (payload.imageUrl) {
+            const wmArr = applyWatermarkToImages([payload.imageUrl], payload.source);
+            payload.imageUrl = wmArr[0] || payload.imageUrl;
+        }
+
         // [[ARABIC_COMMENT]] ربط السيارة الجديدة بمعرف المعرض الحالي دائماً — لا تخلط
         const car = new Car({
             ...payload,
@@ -567,6 +580,15 @@ router.put('/:id', requireAuthAPI, requirePermissionAPI('manage_cars'), invalida
         // دمج البيانات القديمة مع الجديدة
         const mergedPayload = { ...oldCar.toObject(), ...req.body };
         const normalizedPayload = normalizeCarPricing(mergedPayload, settings?.currencySettings);
+
+        // [[FIX]] تطبيق العلامة المائية تلقائياً على الصور عند التحديث
+        if (normalizedPayload.images && Array.isArray(normalizedPayload.images)) {
+            normalizedPayload.images = applyWatermarkToImages(normalizedPayload.images, normalizedPayload.source);
+        }
+        if (normalizedPayload.imageUrl) {
+            const wmArr = applyWatermarkToImages([normalizedPayload.imageUrl], normalizedPayload.source);
+            normalizedPayload.imageUrl = wmArr[0] || normalizedPayload.imageUrl;
+        }
 
         // حقول لا يجوز تعديلها
         delete normalizedPayload._id;

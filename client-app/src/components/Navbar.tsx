@@ -73,12 +73,12 @@ export default function Navbar() {
     const whatsappUrl = `https://wa.me/${rawWa.replace(/\D/g, '')}`;
     const navLinks = [
         { href: '/', label: isRTL ? 'الرئيسية' : 'Home', icon: Home, isExternal: false },
-        { href: '/showroom', label: isRTL ? 'المعرض الكوري' : 'Korean Showroom', icon: Ship, isExternal: false },
         { href: '/cars', label: isRTL ? 'السيارات' : 'Cars', icon: Car, isExternal: false },
         { href: '/parts', label: isRTL ? 'قطع الغيار' : 'Parts', icon: Wrench, isExternal: false },
         { href: '/auctions', label: isRTL ? 'المزادات' : 'Auctions', icon: Gavel, isExternal: false },
         { href: whatsappUrl, label: isRTL ? 'تواصل معنا' : 'Contact', icon: MessageCircle, isExternal: true },
     ];
+
 
     const isActive = (href: string) => pathname === href || (href !== '/' && pathname?.startsWith(href));
 

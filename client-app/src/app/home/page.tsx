@@ -181,17 +181,36 @@ export default function HomePage() {
     useEffect(() => {
         setCarsLoading(true);
 
-        const withTimeout = <T,>(promise: Promise<T>, ms = 3500): Promise<T> =>
+        const withTimeout = <T,>(promise: Promise<T>, ms = 5000): Promise<T> =>
             Promise.race([promise, new Promise<T>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))]);
 
+        // [[FIX]] جلب سريع أولاً (12 سيارة) لعرض المحتوى بسرعة
+        withTimeout(api.cars.list({ limit: 12, status: 'all' }), 2500)
+            .then((quickRes: any) => {
+                const quickCars = Array.isArray(quickRes?.data) ? quickRes.data
+                    : (quickRes?.data?.cars || quickRes?.cars || []);
+                if (quickCars.length > 0) {
+                    setShowroomCars(quickCars.map((c: any) => ({
+                        ...c, _id: c.id || c._id, type: 'showroom',
+                        price: c.price || c.priceSar || 0,
+                        year: c.year || '2024',
+                        transmission: c.transmission || (isRTL ? 'أوتوماتيك' : 'Auto'),
+                        fuel: c.fuelType || (isRTL ? 'ديزل' : 'Diesel'),
+                        images: c.images || (c.image ? [c.image] : [])
+                    })));
+                    setCarsLoading(false);
+                }
+            }).catch(() => {});
+
+        // [[FIX]] جلب كامل بعد ذلك
         Promise.all([
-            withTimeout(api.cars.list({ isActive: true, limit: 100 })).catch(() => ({ success: false, data: [] })),
+            withTimeout(api.cars.list({ limit: 100, status: 'all' })).catch(() => ({ success: false, data: [] })),
             withTimeout(api.liveAuctions.list()).catch(() => ({ success: false, data: [] })),
             withTimeout(api.auctions.list({ status: 'running', limit: 100 })).catch(() => ({ success: false, data: [] }))
         ]).then(([carsRes, liveAuctionsRes, auctionsRes]) => {
-            const rawCars = Array.isArray(carsRes?.data)
-                ? carsRes.data
-                : (carsRes?.data?.cars || carsRes?.cars || []);
+            const rawCars = Array.isArray((carsRes as any)?.data)
+                ? (carsRes as any).data
+                : ((carsRes as any)?.data?.cars || (carsRes as any)?.cars || []);
 
             if (rawCars.length > 0) {
                 setShowroomCars(rawCars.map((c: any) => ({
@@ -205,6 +224,7 @@ export default function HomePage() {
                     images: c.images || (c.image ? [c.image] : [])
                 })));
             }
+
 
             // تجميع سيارات المزادات المباشرة الحقيقية من جلسات المزاد الحي ومن فئة المزادات
             const realAuctionCars: any[] = [];

@@ -598,42 +598,92 @@ export default function PartsPage() {
     );
 }
 
-// ── مكوّن دائرة شعار الوكالة ──────────────────────────────────────────────
-const BRAND_TO_CLEARBIT: Record<string, string> = {
-    'هيونداي': 'hyundai', 'كيا': 'kia', 'جينيسيس': 'genesis',
-    'تويوتا': 'toyota', 'هوندا': 'honda', 'نيسان': 'nissan',
-    'إنفينيتي': 'infiniti', 'لكزس': 'lexus', 'مازدا': 'mazda',
-    'ميتسوبيشي': 'mitsubishi', 'سوزوكي': 'suzuki', 'سوبارو': 'subaru',
-    'ام جي': 'mg', 'جيلي': 'geely', 'هافال': 'haval', 'شيري': 'chery',
-    'بي واي دي': 'byd', 'بي ام دبليو': 'bmw', 'مرسيدس': 'mercedes',
-    'مرسيدس بنز': 'mercedes-benz', 'أودي': 'audi', 'فولكس واجن': 'volkswagen',
-    'بورش': 'porsche', 'فولفو': 'volvo', 'بيجو': 'peugeot', 'رينو': 'renault',
-    'فورد': 'ford', 'شيفروليه': 'chevrolet', 'جي ام سي': 'gmc',
-    'كاديلاك': 'cadillac', 'جيب': 'jeep', 'دودج': 'dodge', 'تسلا': 'tesla',
-    'لاند روفر': 'land-rover', 'جاكوار': 'jaguar', 'اسبرانزا': 'esperanza',
-    // English names
-    'hyundai': 'hyundai', 'kia': 'kia', 'toyota': 'toyota', 'honda': 'honda',
-    'nissan': 'nissan', 'infiniti': 'infiniti', 'lexus': 'lexus', 'mazda': 'mazda',
-    'mitsubishi': 'mitsubishi', 'suzuki': 'suzuki', 'mg': 'mg', 'geely': 'geely',
-    'haval': 'haval', 'chery': 'chery', 'byd': 'byd', 'bmw': 'bmw',
-    'mercedes': 'mercedes', 'audi': 'audi', 'volkswagen': 'volkswagen',
-    'porsche': 'porsche', 'volvo': 'volvo', 'ford': 'ford', 'chevrolet': 'chevrolet',
-    'gmc': 'gmc', 'jeep': 'jeep', 'dodge': 'dodge', 'tesla': 'tesla',
+// ── شعارات الوكالات — Wikipedia SVG (موثوق) + Clearbit كـ fallback ─────────
+const BRAND_WIKI_LOGOS: Record<string, string> = {
+    // كورية
+    'hyundai':      'https://upload.wikimedia.org/wikipedia/commons/4/44/Hyundai_Motor_Company_logo.svg',
+    'هيونداي':      'https://upload.wikimedia.org/wikipedia/commons/4/44/Hyundai_Motor_Company_logo.svg',
+    'kia':          'https://upload.wikimedia.org/wikipedia/commons/4/47/Kia_logo_2021.svg',
+    'كيا':          'https://upload.wikimedia.org/wikipedia/commons/4/47/Kia_logo_2021.svg',
+    'genesis':      'https://upload.wikimedia.org/wikipedia/commons/9/91/Genesis_Logo.svg',
+    'جينيسيس':      'https://upload.wikimedia.org/wikipedia/commons/9/91/Genesis_Logo.svg',
+    // يابانية
+    'toyota':       'https://upload.wikimedia.org/wikipedia/commons/9/9d/Toyota_carlogo.svg',
+    'تويوتا':       'https://upload.wikimedia.org/wikipedia/commons/9/9d/Toyota_carlogo.svg',
+    'honda':        'https://upload.wikimedia.org/wikipedia/commons/7/7b/Honda_Logo.svg',
+    'هوندا':        'https://upload.wikimedia.org/wikipedia/commons/7/7b/Honda_Logo.svg',
+    'nissan':       'https://upload.wikimedia.org/wikipedia/commons/2/2f/Nissan_Motor_logo.svg',
+    'نيسان':        'https://upload.wikimedia.org/wikipedia/commons/2/2f/Nissan_Motor_logo.svg',
+    'lexus':        'https://upload.wikimedia.org/wikipedia/commons/d/d1/Lexus_division_logo.svg',
+    'لكزس':         'https://upload.wikimedia.org/wikipedia/commons/d/d1/Lexus_division_logo.svg',
+    'infiniti':     'https://upload.wikimedia.org/wikipedia/commons/a/ab/Infiniti_logo.svg',
+    'إنفينيتي':     'https://upload.wikimedia.org/wikipedia/commons/a/ab/Infiniti_logo.svg',
+    'mazda':        'https://upload.wikimedia.org/wikipedia/commons/a/a4/Mazda_logo_with_emblem.svg',
+    'مازدا':        'https://upload.wikimedia.org/wikipedia/commons/a/a4/Mazda_logo_with_emblem.svg',
+    'mitsubishi':   'https://upload.wikimedia.org/wikipedia/commons/8/8c/Mitsubishi_logo.svg',
+    'ميتسوبيشي':   'https://upload.wikimedia.org/wikipedia/commons/8/8c/Mitsubishi_logo.svg',
+    'subaru':       'https://upload.wikimedia.org/wikipedia/commons/1/1a/Subaru_logo.svg',
+    'سوبارو':       'https://upload.wikimedia.org/wikipedia/commons/1/1a/Subaru_logo.svg',
+    // ألمانية
+    'bmw':          'https://upload.wikimedia.org/wikipedia/commons/4/44/BMW.svg',
+    'بي ام دبليو':  'https://upload.wikimedia.org/wikipedia/commons/4/44/BMW.svg',
+    'mercedes':     'https://upload.wikimedia.org/wikipedia/commons/9/90/Mercedes-Logo.svg',
+    'مرسيدس':       'https://upload.wikimedia.org/wikipedia/commons/9/90/Mercedes-Logo.svg',
+    'مرسيدس بنز':   'https://upload.wikimedia.org/wikipedia/commons/9/90/Mercedes-Logo.svg',
+    'audi':         'https://upload.wikimedia.org/wikipedia/commons/9/92/Audi-Logo_2016.svg',
+    'أودي':         'https://upload.wikimedia.org/wikipedia/commons/9/92/Audi-Logo_2016.svg',
+    'volkswagen':   'https://upload.wikimedia.org/wikipedia/commons/6/6d/Volkswagen_logo_2019.svg',
+    'فولكس واجن':   'https://upload.wikimedia.org/wikipedia/commons/6/6d/Volkswagen_logo_2019.svg',
+    'porsche':      'https://upload.wikimedia.org/wikipedia/de/5/5b/Porsche_Logo.svg',
+    'بورش':         'https://upload.wikimedia.org/wikipedia/de/5/5b/Porsche_Logo.svg',
+    // أمريكية
+    'ford':         'https://upload.wikimedia.org/wikipedia/commons/3/3e/Ford_logo_flat.svg',
+    'فورد':         'https://upload.wikimedia.org/wikipedia/commons/3/3e/Ford_logo_flat.svg',
+    'chevrolet':    'https://upload.wikimedia.org/wikipedia/commons/3/3d/Chevrolet_logo.svg',
+    'شيفروليه':     'https://upload.wikimedia.org/wikipedia/commons/3/3d/Chevrolet_logo.svg',
+    'gmc':          'https://upload.wikimedia.org/wikipedia/commons/1/1a/GMC_Truck_Logo.svg',
+    'جي ام سي':     'https://upload.wikimedia.org/wikipedia/commons/1/1a/GMC_Truck_Logo.svg',
+    'cadillac':     'https://upload.wikimedia.org/wikipedia/commons/f/f3/Cadillac_logo.svg',
+    'كاديلاك':      'https://upload.wikimedia.org/wikipedia/commons/f/f3/Cadillac_logo.svg',
+    'jeep':         'https://upload.wikimedia.org/wikipedia/commons/d/d5/Jeep_logo.svg',
+    'جيب':          'https://upload.wikimedia.org/wikipedia/commons/d/d5/Jeep_logo.svg',
+    'dodge':        'https://upload.wikimedia.org/wikipedia/commons/b/b4/Dodge_logo.svg',
+    'دودج':         'https://upload.wikimedia.org/wikipedia/commons/b/b4/Dodge_logo.svg',
+    'tesla':        'https://upload.wikimedia.org/wikipedia/commons/b/bd/Tesla_Motors.svg',
+    'تسلا':         'https://upload.wikimedia.org/wikipedia/commons/b/bd/Tesla_Motors.svg',
+    // صينية
+    'mg':           'https://upload.wikimedia.org/wikipedia/commons/a/aa/MG_Cars_logo.svg',
+    'ام جي':        'https://upload.wikimedia.org/wikipedia/commons/a/aa/MG_Cars_logo.svg',
+    'byd':          'https://upload.wikimedia.org/wikipedia/commons/0/02/BYD_Auto_logo.svg',
+    'بي واي دي':    'https://upload.wikimedia.org/wikipedia/commons/0/02/BYD_Auto_logo.svg',
+    'haval':        'https://upload.wikimedia.org/wikipedia/commons/d/d2/Haval_logo.svg',
+    'هافال':        'https://upload.wikimedia.org/wikipedia/commons/d/d2/Haval_logo.svg',
+    // بريطانية
+    'land rover':   'https://upload.wikimedia.org/wikipedia/commons/a/ad/Land-Rover_Defender_logo.svg',
+    'لاند روفر':    'https://upload.wikimedia.org/wikipedia/commons/a/ad/Land-Rover_Defender_logo.svg',
+    'jaguar':       'https://upload.wikimedia.org/wikipedia/commons/6/6d/Jaguar_Cars_logo.svg',
+    'جاكوار':       'https://upload.wikimedia.org/wikipedia/commons/6/6d/Jaguar_Cars_logo.svg',
+    'volvo':        'https://upload.wikimedia.org/wikipedia/commons/2/23/Volvo_Cars_logo.svg',
+    'فولفو':        'https://upload.wikimedia.org/wikipedia/commons/2/23/Volvo_Cars_logo.svg',
 };
 
-function getClearbitUrl(brandName: string): string {
-    const name = brandName?.trim() || '';
-    // بحث مطابق
-    const key = BRAND_TO_CLEARBIT[name] || BRAND_TO_CLEARBIT[name.toLowerCase()];
-    if (key) return `https://logo.clearbit.com/${key}.com`;
-    // بحث جزئي
-    for (const [k, v] of Object.entries(BRAND_TO_CLEARBIT)) {
-        if (name.includes(k) || k.includes(name.toLowerCase())) {
-            return `https://logo.clearbit.com/${v}.com`;
-        }
-    }
-    // آخر محاولة: استخدام الاسم مباشرة
-    return `https://logo.clearbit.com/${name.toLowerCase().replace(/\s+/g, '')}.com`;
+function getBrandLogoUrl(brandName: string, dbLogoUrl?: string): string[] {
+    const name = (brandName || '').trim();
+    const nameLower = name.toLowerCase();
+    // 1. شعار من قاعدة البيانات (إذا كان صورة حقيقية)
+    const dbUrls = (dbLogoUrl && !dbLogoUrl.includes('placeholder') && dbLogoUrl.startsWith('http'))
+        ? [dbLogoUrl] : [];
+    // 2. Wikipedia SVG (موثوق جداً)
+    const wikiUrl = BRAND_WIKI_LOGOS[name] || BRAND_WIKI_LOGOS[nameLower];
+    const wikiUrls = wikiUrl ? [wikiUrl] : [];
+    // 3. بحث جزئي في قاموس Wikipedia
+    const partialMatch = Object.entries(BRAND_WIKI_LOGOS).find(([k]) =>
+        k.length > 2 && (name.includes(k) || k.includes(nameLower) || nameLower.includes(k))
+    );
+    const partialUrls = (partialMatch && !wikiUrl) ? [partialMatch[1]] : [];
+    // 4. Clearbit كآخر محاولة
+    const clearbitUrl = `https://logo.clearbit.com/${nameLower.replace(/\s+/g, '')}.com`;
+    return [...dbUrls, ...wikiUrls, ...partialUrls, clearbitUrl];
 }
 
 function AgencyLogoCircle({
@@ -645,21 +695,14 @@ function AgencyLogoCircle({
     displayName: string;
     logoUrl?: string;
 }) {
-    const getInitialLogo = () => {
-        if (logoUrl && typeof logoUrl === 'string' && logoUrl.startsWith('http') && !logoUrl.includes('placeholder')) {
-            return logoUrl;
-        }
-        return getClearbitUrl(brandName);
-    };
-
-    const [logoSrc, setLogoSrc] = useState<string>(getInitialLogo);
-    const [showLetter, setShowLetter] = useState(false);
+    const logoSources = React.useMemo(() => getBrandLogoUrl(brandName, logoUrl), [brandName, logoUrl]);
+    const [logoIdx, setLogoIdx] = React.useState(0);
+    const [showLetter, setShowLetter] = React.useState(false);
     const firstLetter = (displayName || brandName).trim().charAt(0).toUpperCase();
 
     const handleError = () => {
-        const clearbit = getClearbitUrl(brandName);
-        if (logoSrc !== clearbit && clearbit) {
-            setLogoSrc(clearbit);
+        if (logoIdx < logoSources.length - 1) {
+            setLogoIdx(prev => prev + 1);
         } else {
             setShowLetter(true);
         }
@@ -672,7 +715,7 @@ function AgencyLogoCircle({
                 {!showLetter ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                        src={logoSrc}
+                        src={logoSources[logoIdx] || ''}
                         alt={displayName}
                         className="w-full h-full object-contain p-3"
                         onError={handleError}
@@ -688,3 +731,4 @@ function AgencyLogoCircle({
         </div>
     );
 }
+

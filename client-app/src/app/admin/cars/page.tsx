@@ -246,8 +246,11 @@ function CarsContent() {
         if (submitting) return;
         setSubmitting(true);
         try {
+            // [[FIX]] تنقية الصور الفارغة قبل الإرسال لمنع محو الصور الأصلية عند التعديل
+            const cleanImages = (formData.images || []).filter(img => img.trim() !== '');
             const submitData = { 
                 ...formData,
+                images: cleanImages.length > 0 ? cleanImages : (editingCar as any)?.images || [],
                 source: formData.source || 'hm_local',
                 listingType: formData.listingType || (formData.source === 'korean_import' ? 'showroom' : 'store'),
                 priceUsd: formData.usdPrice,
@@ -274,6 +277,7 @@ function CarsContent() {
             setSubmitting(false);
         }
     };
+
 
     const handleDelete = async (id: string) => {
         if (!confirm(isRTL ? 'هل أنت متأكد من حذف هذه السيارة نهائياً؟' : 'Delete this car permanently?')) return;
@@ -355,36 +359,43 @@ function CarsContent() {
         if (selectedIds.length === 0) return;
         if (!confirm(isRTL ? `هل أنت متأكد من حذف ${selectedIds.length} سيارات محددة؟` : `Delete ${selectedIds.length} selected cars?`)) return;
         try {
-            showToast(isRTL ? '⏳ جاري حذف السيارات المحددة...' : '⏳ Deleting selected cars...', 'info');
-            for (const id of selectedIds) {
-                await api.cars.delete(id);
-            }
+            showToast(isRTL ? 'جاري حذف السيارات المحددة...' : 'Deleting selected cars...', 'info');
+            // [[FIX]] استخدام Promise.allSettled بدل for...of حتى لا يتوقف عند أول خطأ
+            const results = await Promise.allSettled(
+                selectedIds.map(id => api.cars.delete(id))
+            );
+            const failed = results.filter(r => r.status === 'rejected').length;
+            const succeeded = results.length - failed;
             setSelectedIds([]);
-            showToast(isRTL ? '🗑️ تم حذف السيارات المحددة بنجاح!' : '🗑️ Selected cars deleted!', 'success');
+            if (failed === 0) {
+                showToast(isRTL ? `تم حذف ${succeeded} سيارة بنجاح!` : `${succeeded} cars deleted!`, 'success');
+            } else {
+                showToast(isRTL ? `تم حذف ${succeeded} وفشل ${failed} سيارة` : `Deleted ${succeeded}, failed ${failed}`, 'error');
+            }
             await loadData();
         } catch {
-            showToast(isRTL ? '❌ فشل حذف بعض السيارات' : '❌ Delete failed', 'error');
+            showToast(isRTL ? 'فشل حذف بعض السيارات' : 'Delete failed', 'error');
+            await loadData();
         }
     };
 
     const handleDeleteAll = async () => {
         if (cars.length === 0) return;
-        if (!confirm(isRTL ? `⚠️ تحذير: هل أنت متأكد من حذف كــافة السيارات (${cars.length} سيارة) من المعرض؟` : `Delete ALL ${cars.length} cars?`)) return;
+        if (!confirm(isRTL ? `تحذير: هل أنت متأكد من حذف كافة السيارات (${cars.length} سيارة)؟` : `Delete ALL ${cars.length} cars?`)) return;
         try {
-            showToast(isRTL ? '⏳ جاري تنظيف المعرض ومسح كافة السيارات...' : '⏳ Clearing showroom...', 'info');
-            for (const car of cars) {
-                // [[FIX]] استخدام _id أو id بالترتيب الصحيح
-                const cid = car._id || car.id;
-                if (cid) await api.cars.delete(cid);
-            }
+            showToast(isRTL ? 'جاري تنظيف المعرض...' : 'Clearing showroom...', 'info');
+            // [[FIX]] حذف متوازي بدل تسلسلي
+            const allIds = cars.map(c => c._id || c.id).filter(Boolean) as string[];
+            await Promise.allSettled(allIds.map(id => api.cars.delete(id)));
             setSelectedIds([]);
-            showToast(isRTL ? '🗑️ تم مسح المعرض بالكامل بنجاح!' : '🗑️ Showroom cleared!', 'success');
+            showToast(isRTL ? 'تم مسح المعرض بالكامل بنجاح!' : 'Showroom cleared!', 'success');
             await loadData();
         } catch {
-            showToast(isRTL ? '❌ فشل مسح المعرض' : '❌ Clear failed', 'error');
+            showToast(isRTL ? 'فشل مسح المعرض' : 'Clear failed', 'error');
             await loadData();
         }
     };
+
 
     // فلترة السيارات بالبحث
     const filteredCars = searchQuery.trim()
