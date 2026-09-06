@@ -5,7 +5,7 @@
  */
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { AlertCircle, Zap, ChevronLeft, ChevronRight } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import UltraModernPartCard from "@/components/UltraModernPartCard";
@@ -695,9 +695,10 @@ function AgencyLogoCircle({
     displayName: string;
     logoUrl?: string;
 }) {
-    const logoSources = React.useMemo(() => getBrandLogoUrl(brandName, logoUrl), [brandName, logoUrl]);
-    const [logoIdx, setLogoIdx] = React.useState(0);
-    const [showLetter, setShowLetter] = React.useState(false);
+    const logoSources = useMemo(() => getBrandLogoUrl(brandName, logoUrl), [brandName, logoUrl]);
+    const [logoIdx, setLogoIdx] = useState(0);
+    const [showLetter, setShowLetter] = useState(false);
+
     const firstLetter = (displayName || brandName).trim().charAt(0).toUpperCase();
 
     const handleError = () => {
