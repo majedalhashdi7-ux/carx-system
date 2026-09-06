@@ -61,6 +61,7 @@ export default function SystemAuditPage() {
                     </button>
                 }
             >
+
                 {loading && !health ? (
                     <div className="flex bg-white/5 border border-white/10 rounded-2xl p-8 items-center justify-center">
                         <RefreshCw className="w-8 h-8 text-orange-500 animate-spin" />

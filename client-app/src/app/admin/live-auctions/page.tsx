@@ -1,9 +1,9 @@
-import { redirect } from 'next/navigation';
-
-/**
- * إعادة توجيه سلسة لجميع زوار صفحة /admin/live-auctions
- * إلى مركز إدارة المزادات الموحد الرئيسي /admin/auctions
- */
-export default function LiveAuctionsRedirect() {
-    redirect('/admin/auctions?tab=live');
+'use client';
+// [[MERGED]] /admin/live-auctions → /admin/auctions
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+export default function LiveAuctionsAdminRedirect() {
+    const router = useRouter();
+    useEffect(() => { router.replace('/admin/auctions'); }, [router]);
+    return null;
 }

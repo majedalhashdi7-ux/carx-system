@@ -1,9 +1,8 @@
-import { redirect } from 'next/navigation';
-
-/**
- * إعادة توجيه سلسة لجميع زوار صفحة /admin/market
- * إلى مركز إدارة المزادات الموحد الرئيسي /admin/auctions
- */
-export default function MarketRedirect() {
-    redirect('/admin/auctions');
+'use client';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+export default function AdminMarketRedirect() {
+    const router = useRouter();
+    useEffect(() => { router.replace('/admin/dashboard'); }, [router]);
+    return null;
 }

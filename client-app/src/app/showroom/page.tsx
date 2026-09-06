@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 /**
  * @file showroom/page.tsx
@@ -115,14 +115,14 @@ export default function ShowroomPage() {
                                 <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full">
                                     <Ship className="w-3.5 h-3.5 text-blue-400" />
                                     <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em]">
-                                        {isRTL ? 'مستورد من كوريا' : 'IMPORTED FROM KOREA'}
+                                        {isRTL ? 'سيارات مستوردة' : 'IMPORTED VEHICLES'}
                                     </span>
                                 </div>
                             </div>
                             <h1 className="text-3xl sm:text-5xl font-black italic tracking-tighter uppercase text-white">
-                                {isRTL ? 'المعرض الكوري' : 'KOREAN SHOWROOM'}
+                                {isRTL ? 'السيارات المستوردة' : 'IMPORTED CARS'}
                                 <span className="block text-xs not-italic font-light tracking-[0.4em] text-white/25 mt-2">
-                                    {isRTL ? 'سيارات كورية مستوردة بجودة عالية' : 'PREMIUM KOREAN IMPORTED VEHICLES'}
+                                    {isRTL ? 'سيارات مستوردة بجودة عالية' : 'PREMIUM IMPORTED VEHICLES'}
                                 </span>
                             </h1>
                         </div>
