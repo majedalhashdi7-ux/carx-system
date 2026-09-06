@@ -70,7 +70,7 @@ export default function AdminNewPartPage() {
       stockQty: parseInt(stockQty) || 999,
       inStock,
       description,
-      images: finalImages.length > 0 ? finalImages : ['https://images.unsplash.com/photo-1486006920555-c77dce18193b?auto=format&fit=crop&q=80&w=800'], // Fallback elegant image
+      images: finalImages.length > 0 ? finalImages : ['https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&q=80&w=800'], // Fallback elegant image
     };
 
     try {

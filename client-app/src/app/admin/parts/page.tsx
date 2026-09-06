@@ -158,10 +158,14 @@ export default function AdminPartsPage() {
         if (submitting) return;
         setSubmitting(true);
         try {
+            // [[FIX]] تنقية الصور: حذف الروابط الفارغة قبل الحفظ لمنع محو الصور الأصلية
+            const cleanImages = (formData.images || []).filter((img: string) => img.trim() !== '');
+            const submitData = { ...formData, images: cleanImages.length > 0 ? cleanImages : formData.images };
+
             if (editingPart) {
-                await api.parts.update(editingPart._id, formData);
+                await api.parts.update(editingPart._id, submitData);
             } else {
-                await api.parts.create(formData);
+                await api.parts.create(submitData);
             }
             setShowModal(false);
             resetForm();
@@ -176,15 +180,20 @@ export default function AdminPartsPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (confirm(isRTL ? 'هل أنت متأكد من حذف هذه القطعة؟' : 'Are you sure you want to delete this part?')) {
-            try {
-                await api.parts.delete(id);
-                loadParts();
-                showToast(isRTL ? '🗑️ تم الحذف بنجاح' : '🗑️ Deleted successfully', 'success');
-            } catch (err) {
-                console.error('Failed to delete part', err);
-                showToast(isRTL ? '❌ فشل في الحذف' : '❌ Failed to delete', 'error');
-            }
+        if (!confirm(isRTL ? 'هل أنت متأكد من حذف هذه القطعة نهائياً؟' : 'Delete this part permanently?')) return;
+        
+        // [[FIX]] تحديث فوري للواجهة قبل انتظار السيرفر (Optimistic Update)
+        setParts(prev => prev.filter(p => p._id !== id && p.id !== id));
+        setTotalPartsCount(prev => Math.max(0, prev - 1));
+
+        try {
+            await api.parts.delete(id);
+            showToast(isRTL ? '🗑️ تم حذف القطعة بنجاح' : '🗑️ Part deleted successfully', 'success');
+        } catch (err) {
+            console.error('Failed to delete part', err);
+            showToast(isRTL ? '❌ فشل في الحذف، جاري استعادة البيانات' : '❌ Delete failed, reloading...', 'error');
+            // استعادة البيانات إذا فشل الحذف
+            await loadParts();
         }
     };
 
@@ -214,15 +223,44 @@ export default function AdminPartsPage() {
     };
 
     const handleToggleVisibility = async (id: string) => {
+        // [[FIX]] تحديث فوري للواجهة بالـ _id أو id لمطابقة MongoDB
+        setParts(prev => prev.map(p => {
+            if (p._id === id || p.id === id) {
+                return { ...p, inStock: !p.inStock };
+            }
+            return p;
+        }));
+
         try {
             const res = await api.parts.toggleStock(id);
             if (res.success) {
-                showToast(res.message, 'success');
-                setParts(prev => prev.map(p => p.id === id ? { ...p, inStock: res.data.inStock } : p));
+                showToast(res.message || (isRTL ? '✅ تم تغيير حالة الظهور' : '✅ Visibility updated'), 'success');
+                // تأكيد بالقيمة الفعلية من السيرفر
+                setParts(prev => prev.map(p => {
+                    if (p._id === id || p.id === id) {
+                        return { ...p, inStock: res.data?.inStock ?? p.inStock };
+                    }
+                    return p;
+                }));
+            } else {
+                // إذا فشل، نعيد الحالة الأصلية
+                setParts(prev => prev.map(p => {
+                    if (p._id === id || p.id === id) {
+                        return { ...p, inStock: !p.inStock };
+                    }
+                    return p;
+                }));
             }
         } catch (err) {
             console.error('Failed to toggle visibility', err);
             showToast(isRTL ? '❌ فشل تغيير حالة الظهور' : '❌ Failed to toggle visibility', 'error');
+            // إعادة الحالة إذا فشل الطلب
+            setParts(prev => prev.map(p => {
+                if (p._id === id || p.id === id) {
+                    return { ...p, inStock: !p.inStock };
+                }
+                return p;
+            }));
         }
     };
 

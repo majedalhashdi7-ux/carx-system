@@ -125,6 +125,7 @@ router.get('/', async (req, res) => {
 
         const isEncar = imageUrl.includes('encar.com') || imageUrl.includes('encar.co.kr') ||
             imageUrl.includes('ci.encar') || imageUrl.includes('carpicture');
+        const isAutospare = imageUrl.includes('autospare.com.eg') || imageUrl.includes('autospare');
 
         const headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
@@ -134,6 +135,12 @@ router.get('/', async (req, res) => {
         if (isEncar) {
             headers['Referer'] = 'https://www.encar.com/';
             headers['Origin'] = 'https://www.encar.com';
+            headers['Sec-Fetch-Dest'] = 'image';
+            headers['Sec-Fetch-Mode'] = 'no-cors';
+            headers['Sec-Fetch-Site'] = 'cross-site';
+        } else if (isAutospare) {
+            headers['Referer'] = 'https://autospare.com.eg/';
+            headers['Origin'] = 'https://autospare.com.eg';
             headers['Sec-Fetch-Dest'] = 'image';
             headers['Sec-Fetch-Mode'] = 'no-cors';
             headers['Sec-Fetch-Site'] = 'cross-site';
@@ -168,7 +175,15 @@ router.get('/', async (req, res) => {
 
     } catch (err) {
         console.warn('[ImageProxy] Failed for:', req.query.url, '-', err.message);
-        return res.redirect('https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=1000');
+        const isPart = req.query.url && (
+            req.query.url.includes('part') ||
+            req.query.url.includes('autospare') ||
+            req.query.url.includes('spare')
+        );
+        const fallbackUrl = isPart
+            ? 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=800&auto=format&fit=crop'
+            : 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=1000';
+        return res.redirect(fallbackUrl);
     }
 });
 

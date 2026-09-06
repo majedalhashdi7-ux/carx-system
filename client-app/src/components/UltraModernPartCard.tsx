@@ -62,7 +62,7 @@ interface UltraModernPartCardProps {
 
 function resolvePartCardImg(part: any): string {
     const raw = part.img || part.image || (Array.isArray(part.images) && part.images.length > 0 ? part.images[0] : '') || '';
-    if (!raw || typeof raw !== 'string') return 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?q=80&w=1000';
+    if (!raw || typeof raw !== 'string') return 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=1000';
     let url = raw.trim();
     if (url.startsWith('//')) url = `https:${url}`;
     else if (url.startsWith('/')) {

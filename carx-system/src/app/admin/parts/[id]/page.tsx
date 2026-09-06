@@ -109,7 +109,7 @@ export default function AdminEditPartPage() {
       stockQty: parseInt(stockQty) || 999,
       inStock,
       description,
-      images: images.length > 0 ? images : ['https://images.unsplash.com/photo-1486006920555-c77dce18193b?auto=format&fit=crop&q=80&w=800'],
+      images: images.length > 0 ? images : ['https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&q=80&w=800'],
     };
 
     try {

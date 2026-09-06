@@ -208,10 +208,11 @@ function getAutospareKnownBrands() {
 }
 
 /**
-/**
- * كتالوج قطع غيار احتياطي حقيقي بصور حقيقية لكل قطعة
+ * كتالوج قطع غيار احتياطي بصور مباشرة (Unsplash CDN)
+ * [[FIX]] لا نستخدم image-proxy عند التخزين في DB — الروابط تُخزَّن مباشرة
  */
 function generateFallbackParts() {
+
     return [
         {
             name: 'فلتر زيت هيونداي توسان / سانتا في 2018-2024',
@@ -222,7 +223,7 @@ function generateFallbackParts() {
             carMake: 'Hyundai', carModel: 'Tucson / Santa Fe',
             images: [
                 'https://images.unsplash.com/photo-1632823471565-1ecdf5c6da11?q=80&w=600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?q=80&w=600&auto=format&fit=crop',
             ],
         },
         {
@@ -234,7 +235,7 @@ function generateFallbackParts() {
             carMake: 'Kia', carModel: 'Sportage',
             images: [
                 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1600705722908-bda697a08f93?q=80&w=600&auto=format&fit=crop',
             ],
         },
         {
@@ -246,7 +247,7 @@ function generateFallbackParts() {
             carMake: 'Toyota', carModel: 'Camry',
             images: [
                 'https://images.unsplash.com/photo-1609630875171-b1321377ee65?q=80&w=600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1631296109939-cf5dc09d66ec?q=80&w=600&auto=format&fit=crop',
             ],
         },
         {
@@ -258,7 +259,7 @@ function generateFallbackParts() {
             carMake: 'Nissan', carModel: 'Altima',
             images: [
                 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1632823471565-1ecdf5c6da11?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?q=80&w=600&auto=format&fit=crop',
             ],
         },
         {
@@ -270,7 +271,7 @@ function generateFallbackParts() {
             carMake: 'Honda', carModel: 'Civic',
             images: [
                 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1609630875171-b1321377ee65?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1597005610759-27a8b72daea0?q=80&w=600&auto=format&fit=crop',
             ],
         },
         {
@@ -282,7 +283,7 @@ function generateFallbackParts() {
             carMake: 'Chevrolet', carModel: 'Cruze',
             images: [
                 'https://images.unsplash.com/photo-1620714223084-8fcacc2dfd4d?q=80&w=600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?q=80&w=600&auto=format&fit=crop',
             ],
         },
         {
@@ -293,7 +294,7 @@ function generateFallbackParts() {
             category: 'كهرباء', price: 450, priceSar: 450,
             carMake: 'Ford', carModel: 'Focus',
             images: [
-                'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1614027164847-1b28cfe1df60?q=80&w=600&auto=format&fit=crop',
                 'https://images.unsplash.com/photo-1620714223084-8fcacc2dfd4d?q=80&w=600&auto=format&fit=crop',
             ],
         },
@@ -305,7 +306,7 @@ function generateFallbackParts() {
             category: 'تبريد', price: 520, priceSar: 520,
             carMake: 'BMW', carModel: '3 Series',
             images: [
-                'https://images.unsplash.com/photo-1609630875171-b1321377ee65?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1561049933-c8fbef47b329?q=80&w=600&auto=format&fit=crop',
                 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=600&auto=format&fit=crop',
             ],
         },
@@ -318,7 +319,7 @@ function generateFallbackParts() {
             carMake: 'Mercedes-Benz', carModel: 'C-Class',
             images: [
                 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1597005610759-27a8b72daea0?q=80&w=600&auto=format&fit=crop',
             ],
         },
         {
@@ -329,8 +330,213 @@ function generateFallbackParts() {
             category: 'ناقل الحركة', price: 65, priceSar: 65,
             carMake: 'Mitsubishi', carModel: 'Pajero',
             images: [
-                'https://images.unsplash.com/photo-1620714223084-8fcacc2dfd4d?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1631296109939-cf5dc09d66ec?q=80&w=600&auto=format&fit=crop',
                 'https://images.unsplash.com/photo-1609630875171-b1321377ee65?q=80&w=600&auto=format&fit=crop',
+            ],
+        },
+        {
+            name: 'فلتر وقود تويوتا هايلاكس 2016-2024',
+            nameEn: 'Fuel Filter - Toyota Hilux 2016-2024',
+            partNumber: '23390-0L070',
+            brand: 'Toyota Genuine', brandSlug: 'toyota',
+            category: 'فلاتر', price: 75, priceSar: 75,
+            carMake: 'Toyota', carModel: 'Hilux',
+            images: [
+                'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?q=80&w=600&auto=format&fit=crop',
+            ],
+        },
+        {
+            name: 'مرآة جانبية هيونداي اكسنت 2018-2023',
+            nameEn: 'Side Mirror - Hyundai Accent 2018-2023',
+            partNumber: '87610-1R710',
+            brand: 'Hyundai Genuine', brandSlug: 'hyundai',
+            category: 'هيكل', price: 140, priceSar: 140,
+            carMake: 'Hyundai', carModel: 'Accent',
+            images: [
+                'https://images.unsplash.com/photo-1600705722908-bda697a08f93?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1614027164847-1b28cfe1df60?q=80&w=600&auto=format&fit=crop',
+            ],
+        },
+        // ── قطع إضافية لتوسيع الكتالوج إلى 25 قطعة ──────────────────────
+        {
+            name: 'قرص فرامل خلفي كيا أوبتيما 2016-2022',
+            nameEn: 'Rear Brake Disc - Kia Optima 2016-2022',
+            partNumber: '58411-C2000',
+            brand: 'Kia Genuine', brandSlug: 'kia',
+            category: 'فرامل', price: 220, priceSar: 220,
+            carMake: 'Kia', carModel: 'Optima',
+            images: [
+                'https://images.unsplash.com/photo-1559416523-140ddc3d238c?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=600&auto=format&fit=crop',
+            ],
+        },
+        {
+            name: 'حزام سير توقيت هيونداي سوناتا 2015-2021',
+            nameEn: 'Timing Belt - Hyundai Sonata 2015-2021',
+            partNumber: '24312-2E001',
+            brand: 'Hyundai MOBIS', brandSlug: 'hyundai',
+            category: 'المحرك', price: 160, priceSar: 160,
+            carMake: 'Hyundai', carModel: 'Sonata',
+            images: [
+                'https://images.unsplash.com/photo-1617469767083-5aca8fbf07dc?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?q=80&w=600&auto=format&fit=crop',
+            ],
+        },
+        {
+            name: 'مبرد زيت محرك نيسان باترول V8 2010-2023',
+            nameEn: 'Engine Oil Cooler - Nissan Patrol V8 2010-2023',
+            partNumber: '21305-1LA0A',
+            brand: 'Nissan Genuine', brandSlug: 'nissan',
+            category: 'تبريد', price: 480, priceSar: 480,
+            carMake: 'Nissan', carModel: 'Patrol',
+            images: [
+                'https://images.unsplash.com/photo-1625047509248-ec889cbff17f?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1561049933-c8fbef47b329?q=80&w=600&auto=format&fit=crop',
+            ],
+        },
+        {
+            name: 'بوجيهات هوندا أكورد 2.4 2013-2020',
+            nameEn: 'Ignition Coil Set - Honda Accord 2.4 2013-2020',
+            partNumber: '30520-R40-007',
+            brand: 'Honda Genuine', brandSlug: 'honda',
+            category: 'المحرك', price: 340, priceSar: 340,
+            carMake: 'Honda', carModel: 'Accord',
+            images: [
+                'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=600&auto=format&fit=crop',
+            ],
+        },
+        {
+            name: 'كومبريسور مكيف تويوتا لاندكروزر 200 2012-2021',
+            nameEn: 'A/C Compressor - Toyota Land Cruiser 200 2012-2021',
+            partNumber: '88320-60860',
+            brand: 'Toyota Genuine', brandSlug: 'toyota',
+            category: 'مكيف', price: 950, priceSar: 950,
+            carMake: 'Toyota', carModel: 'Land Cruiser',
+            images: [
+                'https://images.unsplash.com/photo-1625047509248-ec889cbff17f?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1597005610759-27a8b72daea0?q=80&w=600&auto=format&fit=crop',
+            ],
+        },
+        {
+            name: 'سيل كرستالة BMW X5 E70 2007-2013',
+            nameEn: 'Windshield Washer Pump - BMW X5 E70 2007-2013',
+            partNumber: '67127302589',
+            brand: 'BMW Genuine', brandSlug: 'bmw',
+            category: 'هيكل', price: 120, priceSar: 120,
+            carMake: 'BMW', carModel: 'X5',
+            images: [
+                'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=600&auto=format&fit=crop',
+            ],
+        },
+        {
+            name: 'تيل دبرياج شيفروليه ماليبو 2016-2023',
+            nameEn: 'Clutch Kit - Chevrolet Malibu 2016-2023',
+            partNumber: '96626073',
+            brand: 'LUK OEM', brandSlug: 'chevrolet',
+            category: 'ناقل الحركة', price: 680, priceSar: 680,
+            carMake: 'Chevrolet', carModel: 'Malibu',
+            images: [
+                'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1631296109939-cf5dc09d66ec?q=80&w=600&auto=format&fit=crop',
+            ],
+        },
+        {
+            name: 'شمعة احتراق مرسيدس E200 CGI 2013-2020',
+            nameEn: 'Spark Plug - Mercedes E200 CGI 2013-2020',
+            partNumber: 'A0031596603',
+            brand: 'NGK OEM', brandSlug: 'mercedes',
+            category: 'المحرك', price: 130, priceSar: 130,
+            carMake: 'Mercedes-Benz', carModel: 'E200',
+            images: [
+                'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1609630875171-b1321377ee65?q=80&w=600&auto=format&fit=crop',
+            ],
+        },
+        {
+            name: 'راديتر تبريد فورد إكسبلورر 2011-2019',
+            nameEn: 'Engine Radiator - Ford Explorer 2011-2019',
+            partNumber: 'BB5Z-8005-B',
+            brand: 'Ford Genuine', brandSlug: 'ford',
+            category: 'تبريد', price: 750, priceSar: 750,
+            carMake: 'Ford', carModel: 'Explorer',
+            images: [
+                'https://images.unsplash.com/photo-1625047509248-ec889cbff17f?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1561049933-c8fbef47b329?q=80&w=600&auto=format&fit=crop',
+            ],
+        },
+        {
+            name: 'بومبة ديزل ميتسوبيشي L200 2015-2023',
+            nameEn: 'Diesel Fuel Pump - Mitsubishi L200 2015-2023',
+            partNumber: '294000-1370',
+            brand: 'Denso OEM', brandSlug: 'mitsubishi',
+            category: 'الوقود', price: 1100, priceSar: 1100,
+            carMake: 'Mitsubishi', carModel: 'L200',
+            images: [
+                'https://images.unsplash.com/photo-1617469767083-5aca8fbf07dc?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?q=80&w=600&auto=format&fit=crop',
+            ],
+        },
+        {
+            name: 'سوستة علوية هيونداي جنسيس كوبيه 2013-2016',
+            nameEn: 'Coil Spring - Hyundai Genesis Coupe 2013-2016',
+            partNumber: '54630-2M001',
+            brand: 'Hyundai MOBIS', brandSlug: 'hyundai',
+            category: 'مساعدات', price: 195, priceSar: 195,
+            carMake: 'Hyundai', carModel: 'Genesis Coupe',
+            images: [
+                'https://images.unsplash.com/photo-1559416523-140ddc3d238c?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1600705722908-bda697a08f93?q=80&w=600&auto=format&fit=crop',
+            ],
+        },
+        {
+            name: 'زجاج خلفي تويوتا كورولا 2014-2019',
+            nameEn: 'Rear Window Glass - Toyota Corolla 2014-2019',
+            partNumber: '64810-02560',
+            brand: 'Toyota Genuine', brandSlug: 'toyota',
+            category: 'هيكل', price: 290, priceSar: 290,
+            carMake: 'Toyota', carModel: 'Corolla',
+            images: [
+                'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1614027164847-1b28cfe1df60?q=80&w=600&auto=format&fit=crop',
+            ],
+        },
+        {
+            name: 'صمام EGR نيسان قاشقاي 2014-2021',
+            nameEn: 'EGR Valve - Nissan Qashqai 2014-2021',
+            partNumber: '147102929R',
+            brand: 'Pierburg OEM', brandSlug: 'nissan',
+            category: 'المحرك', price: 420, priceSar: 420,
+            carMake: 'Nissan', carModel: 'Qashqai',
+            images: [
+                'https://images.unsplash.com/photo-1617469767083-5aca8fbf07dc?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=600&auto=format&fit=crop',
+            ],
+        },
+        {
+            name: 'حساس ABS أمامي سوزوكي فيتارا 2015-2023',
+            nameEn: 'Front ABS Sensor - Suzuki Vitara 2015-2023',
+            partNumber: '56090-71L10',
+            brand: 'Suzuki Genuine', brandSlug: 'suzuki',
+            category: 'كهرباء', price: 115, priceSar: 115,
+            carMake: 'Suzuki', carModel: 'Vitara',
+            images: [
+                'https://images.unsplash.com/photo-1620714223084-8fcacc2dfd4d?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1597005610759-27a8b72daea0?q=80&w=600&auto=format&fit=crop',
+            ],
+        },
+        {
+            name: 'فلتر مكيف داخلي هوندا CR-V 2017-2022',
+            nameEn: 'Cabin Air Filter - Honda CR-V 2017-2022',
+            partNumber: '80292-TLA-A01',
+            brand: 'Honda Genuine', brandSlug: 'honda',
+            category: 'فلاتر', price: 35, priceSar: 35,
+            carMake: 'Honda', carModel: 'CR-V',
+            images: [
+                'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=600&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=600&auto=format&fit=crop',
             ],
         },
     ];
@@ -338,6 +544,7 @@ function generateFallbackParts() {
 
 
 class PartsImportService {
+
     /**
      * استيراد شامل لقطع الغيار من autospare.com.eg
      */
@@ -405,7 +612,16 @@ class PartsImportService {
                     // ─── تحضير الصور ─────────────────────────────────
                     const rawImages = item.images || (item.image ? [item.image] : []);
                     let optimizedImages = rawImages;
-                    if (rawImages.length > 0) {
+                    // [[FIX]] لا نعيد تغليف روابط Unsplash أو CDN الموثوقة
+                    const hasTrustedImages = rawImages.length > 0 && rawImages.every(
+                        url => typeof url === 'string' && (
+                            url.includes('unsplash.com') ||
+                            url.includes('cloudinary.com') ||
+                            url.includes('blob.vercel-storage.com') ||
+                            url.includes('res.cloudinary')
+                        )
+                    );
+                    if (rawImages.length > 0 && !hasTrustedImages) {
                         try {
                             optimizedImages = await imageOptimizationService.optimizeImagesList(rawImages, {
                                 folder: 'hmcar-parts-catalog'

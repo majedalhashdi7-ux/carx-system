@@ -15,32 +15,28 @@ const PARTS_STORAGE_KEY = 'hmcar_last_autospare_import';
 
 // مكون صورة آمن لقطع الغيار مع proxy وfallback
 function SafePartImage({ src, alt, className }: { src?: string; alt?: string; className?: string }) {
-  const [imgSrc, setImgSrc] = React.useState(src || '');
-  const [errored, setErrored] = React.useState(false);
+  const fallback = 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=800&auto=format&fit=crop';
+  const [imgSrc, setImgSrc] = React.useState(src || fallback);
+  const [hasFallback, setHasFallback] = React.useState(false);
 
   React.useEffect(() => {
-    setImgSrc(src || '');
-    setErrored(false);
+    setImgSrc(src || fallback);
+    setHasFallback(false);
   }, [src]);
 
-  if (!imgSrc || errored) {
-    return <Wrench className="w-5 h-5 text-white/20" />;
-  }
-
-  const resolved = imgSrc.startsWith('http') && !imgSrc.includes('cloudinary') && !imgSrc.includes('unsplash')
+  const resolved = imgSrc && imgSrc.startsWith('http') && !imgSrc.includes('cloudinary') && !imgSrc.includes('unsplash')
     ? `/api/v2/image-proxy?url=${encodeURIComponent(imgSrc)}`
-    : imgSrc;
+    : (imgSrc || fallback);
 
   return (
     <img
-      src={resolved}
+      src={hasFallback ? fallback : resolved}
       alt={alt || ''}
       className={className}
       onError={() => {
-        if (resolved !== imgSrc) {
-          setImgSrc(imgSrc);
-        } else {
-          setErrored(true);
+        if (!hasFallback) {
+          setHasFallback(true);
+          setImgSrc(fallback);
         }
       }}
     />

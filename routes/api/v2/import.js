@@ -992,4 +992,47 @@ router.post('/sync-field', requireAuthAPI, requireAdmin, async (req, res, next) 
     }
 });
 
+// ─── POST /api/v2/import/autospare ──────────────────────
+/**
+ * استيراد تلقائي شامل للوكالات وقطع الغيار من autospare.com.eg
+ * يُستدعى من زر "استيراد تلقائي للوكالات والقطع" في لوحة التحكم
+ */
+router.post('/autospare', requireAuthAPI, requireAdmin, invalidateCache(['/api/v2/parts*', '/api/v2/brands*']), async (req, res, next) => {
+    try {
+        if (!req.tenantModels) {
+            return res.status(503).json({ success: false, error: 'قاعدة البيانات غير متاحة' });
+        }
+
+        const PartsImportService = require('../../../services/PartsImportService');
+        const { targetUrl = '', skipPrice = false, whatsappRequest = false } = req.body || {};
+
+        console.log('[AutoSpare] Starting autospare import...');
+        const result = await PartsImportService.importAllParts(req, {
+            targetUrl,
+            adminUser: req.user?.name || req.user?.email || 'admin',
+            skipPrice,
+            whatsappRequest,
+        });
+
+        if (!result.success) {
+            return res.status(500).json({ success: false, error: result.error || 'فشل الاستيراد' });
+        }
+
+        return res.json({
+            success: true,
+            message: result.message,
+            brandsImported: result.brandsImported || 0,
+            partsImported: result.partsImported || result.totalImported || 0,
+            totalImported: result.totalImported || 0,
+            totalSkipped: result.totalSkipped || 0,
+            source: result.source || 'autospare.com.eg',
+        });
+
+    } catch (error) {
+        console.error('[AutoSpare] Error:', error.message);
+        res.status(500).json({ success: false, error: 'فشل استيراد AutoSpare: ' + error.message });
+    }
+});
+
 module.exports = router;
+

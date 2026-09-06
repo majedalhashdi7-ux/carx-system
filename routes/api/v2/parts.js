@@ -15,11 +15,11 @@ function normalizeExternalImage(url) {
     if (trimmed.startsWith('http')) return trimmed;
     if (trimmed.startsWith('//')) return `https:${trimmed}`;
     
-    // [[ARABIC_COMMENT]] إذا كان المسار يبدأ بـ /storage أو /media فمن المرجح أنه تابع للموقع الأصلي
+    // [[ARABIC_COMMENT]] إذا كان المسار محلياً لنظامنا (مرفوع مسبقاً أو ملفات ثابتة)
+    if (trimmed.startsWith('/uploads') || trimmed.startsWith('/images') || trimmed.startsWith('/icons')) return trimmed;
+
+    // [[ARABIC_COMMENT]] إذا كان المسار يبدأ بـ / فمن المرجح أنه تابع لموقع autospare الأصلي
     if (trimmed.startsWith('/')) return `https://autospare.com.eg${trimmed}`;
-    
-    // [[ARABIC_COMMENT]] إذا كان المسار محلياً لنظامنا (مرفوع مسبقاً)
-    if (trimmed.startsWith('/uploads')) return trimmed;
     
     return `https://autospare.com.eg/${trimmed}`;
 }
@@ -34,6 +34,22 @@ function toArabicCategory(value = '') {
     if (normalized.includes('body')) return 'هيكل';
     if (normalized.includes('accessories')) return 'إكسسوارات';
     return value || 'عام';
+}
+
+// [[FIX]] دالة العلامة المائية لقطع الغيار — تطبق تلقائياً على كل صورة خارجية
+function applyWatermarkToParts(images = []) {
+    if (!Array.isArray(images) || images.length === 0) return images;
+    return images.map(img => {
+        if (!img || typeof img !== 'string') return img;
+        const trimmed = img.trim();
+        if (!trimmed) return img;
+        if (trimmed.includes('image-proxy') || trimmed.includes('watermark=true')) return img;
+        if (trimmed.startsWith('/uploads/') || trimmed.includes('/uploads/')) return img;
+        if (trimmed.startsWith('http')) {
+            return `/api/v2/image-proxy?url=${encodeURIComponent(trimmed)}&watermark=true&text=${encodeURIComponent('HM CAR')}`;
+        }
+        return img;
+    });
 }
 
 function translatePartNameToArabic(value = '') {
@@ -216,8 +232,8 @@ router.get('/', cacheResponse(600), async (req, res) => {
                 partType: p.partType,
                 partTypeAr: p.partTypeAr || toArabicCategory(p.partType),
                 condition: String(p.condition || 'NEW').toUpperCase(),
-                img: normalizeExternalImage(p.images?.[0]) || 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=1000&auto=format&fit=crop',
-                images: (p.images || []).map(normalizeExternalImage).filter(Boolean),
+                img: normalizeExternalImage(p.images?.[0] || p.img || p.image) || 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=800&auto=format&fit=crop',
+                images: ((Array.isArray(p.images) && p.images.length > 0) ? p.images : [p.img, p.image].filter(Boolean)).map(normalizeExternalImage).filter(Boolean),
                 compatibility: p.compatibility || [cleanModelName(p.carModel || '') || 'ALL Models'],
                 stock: typeof p.stockQty === 'number' ? p.stockQty : 1,
                 stockQty: typeof p.stockQty === 'number' ? p.stockQty : 1,
@@ -308,8 +324,8 @@ router.get('/:id', cacheResponse(600), async (req, res) => {
             partType: p.partType,
             partTypeAr: p.partTypeAr || toArabicCategory(p.partType),
             condition: String(p.condition || 'NEW').toUpperCase(),
-            img: normalizeExternalImage(p.images?.[0]) || 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=1000&auto=format&fit=crop',
-            images: (p.images || []).map(normalizeExternalImage).filter(Boolean),
+            img: normalizeExternalImage(p.images?.[0] || p.img || p.image) || 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=800&auto=format&fit=crop',
+            images: ((Array.isArray(p.images) && p.images.length > 0) ? p.images : [p.img, p.image].filter(Boolean)).map(normalizeExternalImage).filter(Boolean),
             carModel: cleanModelName(p.carModel || ''),
             compatibility: [cleanModelName(p.carModel || '') || 'ALL Models'],
             _id: p._id,
@@ -337,6 +353,8 @@ router.post('/', requireAuthAPI, invalidateCache('/api/v2/parts*'), async (req, 
     try {
         const SparePart = getModel(req, 'SparePart');
         const { name, brand, model, year, price, category, images, description, condition, stockQty } = req.body;
+        // [[FIX]] تطبيق العلامة المائية تلقائياً على صور القطع الجديدة
+        const wmImages = applyWatermarkToParts(images || []);
         const part = await SparePart.create({
             name,
             carMake: brand,
@@ -345,7 +363,7 @@ router.post('/', requireAuthAPI, invalidateCache('/api/v2/parts*'), async (req, 
             price: price || 0,
             priceSar: price || 0,
             partType: category || 'Engine',
-            images: images || [],
+            images: wmImages,
             description: description || '',
             condition: condition || 'New',
             stockQty: stockQty || 1,
@@ -362,6 +380,11 @@ router.put('/:id', requireAuthAPI, invalidateCache('/api/v2/parts*'), async (req
     try {
         const SparePart = getModel(req, 'SparePart');
         const { name, brand, model, year, price, category, images, description, condition, stockQty } = req.body;
+        // [[FIX]] تطبيق العلامة المائية تلقائياً على صور القطع عند التحديث
+        const wmImages = applyWatermarkToParts(images || []);
+        const existingPart = await SparePart.findById(req.params.id);
+        // إذا لم ترسل صور جديدة، احتفظ بالصور الأصلية
+        const finalImages = wmImages.length > 0 ? wmImages : (existingPart?.images || []);
         const part = await SparePart.findByIdAndUpdate(req.params.id, {
             name,
             carMake: brand,
@@ -370,7 +393,7 @@ router.put('/:id', requireAuthAPI, invalidateCache('/api/v2/parts*'), async (req
             price: price || 0,
             priceSar: price || 0,
             partType: category || 'Engine',
-            images: images || [],
+            images: finalImages,
             description: description || '',
             condition: condition || 'New',
             stockQty: stockQty || 1,
