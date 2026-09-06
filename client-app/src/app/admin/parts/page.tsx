@@ -769,6 +769,24 @@ const getBrandLogo = (brand: string) => {
     return domainMap[b] ? `https://logo.clearbit.com/${domainMap[b]}` : null;
 };
 
+// [[ARABIC_COMMENT]] دالة مساعدة: إرجاع رابط الصورة عبر proxy إذا كانت خارجية
+function resolvePartImage(url?: string): string {
+    const defaultImage = 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=1000&auto=format&fit=crop';
+    if (!url || typeof url !== 'string' || !url.trim()) return defaultImage;
+    const trimmed = url.trim();
+    // مسارات محلية — أعدها مباشرة
+    if (trimmed.startsWith('/uploads') || trimmed.startsWith('/images')) return trimmed;
+    // إذا كانت الصورة بالفعل عبر proxy — أعدها مباشرة
+    if (trimmed.includes('image-proxy')) return trimmed;
+    // صور Unsplash / Cloudinary تعمل بشكل مباشر
+    if (trimmed.includes('unsplash.com') || trimmed.includes('cloudinary.com')) return trimmed;
+    // أي صورة خارجية أخرى — مررها عبر image-proxy لضمان الظهور الصحيح
+    if (trimmed.startsWith('http')) {
+        return `/api/v2/image-proxy?url=${encodeURIComponent(trimmed)}`;
+    }
+    return defaultImage;
+}
+
 // [[ARABIC_COMMENT]] مكون بطاقة القطعة المنفصل لإعادة الاستخدام
 function PartCard({ part, i, isRTL, onEdit, onDelete, onToggle, onMarkSold }: {
     part: Part;
@@ -780,7 +798,9 @@ function PartCard({ part, i, isRTL, onEdit, onDelete, onToggle, onMarkSold }: {
     onMarkSold: (id: string, name: string, count: number) => void;
 }) {
     const defaultImage = 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=1000&auto=format&fit=crop';
-    const initialImg = part.img || part.images?.[0] || defaultImage;
+    // [[FIX]] استخدم resolvePartImage لتوجيه الصور الخارجية عبر proxy
+    const rawImg = part.img || part.images?.[0];
+    const initialImg = resolvePartImage(rawImg);
     const [imgSrc, setImgSrc] = useState(initialImg);
 
     return (

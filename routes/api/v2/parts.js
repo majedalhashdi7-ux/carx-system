@@ -7,20 +7,49 @@ const { getModel, addTenantFilter } = require('../../../tenants/tenant-model-hel
 const { requireAuthAPI, requireAdmin } = require('../../../middleware/auth');
 const { cacheResponse, invalidateCache } = require('../../../middleware/cache');
 
+// [[FIX]] امتدادات الصور المقبولة
+const IMAGE_EXTENSIONS = /\.(jpe?g|png|webp|gif|avif|svg|bmp)(\?.*)?$/i;
+// [[FIX]] كلمات تدل على أن الرابط ليس صورة قطعة غيار حقيقية
+const INVALID_IMG_PATTERNS = [
+    /vercel\.app\/admin/i,     // لقطات داشبورد
+    /localhost.*admin/i,
+    /screenshot/i,
+    /dashboard/i,
+];
+
+function isValidImageUrl(url) {
+    if (!url || typeof url !== 'string') return false;
+    const trimmed = url.trim();
+    // قبول data URIs
+    if (trimmed.startsWith('data:image')) return true;
+    // قبول مسارات محلية
+    if (trimmed.startsWith('/uploads') || trimmed.startsWith('/images') || trimmed.startsWith('/icons')) return true;
+    // التحقق من الامتداد أو image-proxy
+    if (IMAGE_EXTENSIONS.test(trimmed)) return true;
+    if (trimmed.includes('image-proxy')) return true;
+    // مصادر CDN موثوقة لا تحتاج امتداد
+    const trustedCdns = ['unsplash.com', 'cloudinary.com', 'res.cloudinary', 'blob.vercel-storage.com',
+        'autospare.com.eg', 'encar.com', 'ci.encar.com', 'carpicture'];
+    if (trustedCdns.some(cdn => trimmed.includes(cdn))) return true;
+    // رفض الروابط التي تحتوي على كلمات دالة على عدم كونها صورة
+    if (INVALID_IMG_PATTERNS.some(p => p.test(trimmed))) return false;
+    // افتراضياً: قبول الصور من روابط http واضحة
+    return trimmed.startsWith('http');
+}
+
 function normalizeExternalImage(url) {
     if (!url || typeof url !== 'string') return null;
     const trimmed = url.trim();
     if (!trimmed) return null;
-    if (trimmed.startsWith('data:')) return trimmed;
-    if (trimmed.startsWith('http')) return trimmed;
-    if (trimmed.startsWith('//')) return `https:${trimmed}`;
-    
+    if (trimmed.startsWith('data:image')) return trimmed;
     // [[ARABIC_COMMENT]] إذا كان المسار محلياً لنظامنا (مرفوع مسبقاً أو ملفات ثابتة)
     if (trimmed.startsWith('/uploads') || trimmed.startsWith('/images') || trimmed.startsWith('/icons')) return trimmed;
-
+    // [[FIX]] التحقق من صحة الرابط كصورة قبل القبول
+    if (!isValidImageUrl(trimmed)) return null;
+    if (trimmed.startsWith('http')) return trimmed;
+    if (trimmed.startsWith('//')) return `https:${trimmed}`;
     // [[ARABIC_COMMENT]] إذا كان المسار يبدأ بـ / فمن المرجح أنه تابع لموقع autospare الأصلي
     if (trimmed.startsWith('/')) return `https://autospare.com.eg${trimmed}`;
-    
     return `https://autospare.com.eg/${trimmed}`;
 }
 
