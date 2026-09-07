@@ -49,21 +49,43 @@ export default function BrandDetail() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await api.brands.list();
-        const all = res?.brands || [];
-        const b = all.find((x: Record<string, unknown>) => (String(x.key || '')).toLowerCase() === rawKey.toLowerCase()) || all.find((x: Record<string, unknown>) => (String(x.name || '')).toLowerCase() === rawKey.toLowerCase());
+        setLoading(true);
+        // [[FIX]] جلب متوازي + تمرير make للـ API بدل فلترة محلية
+        const [brandsRes, carsRes, partsRes] = await Promise.all([
+          api.brands.list('cars', {}),
+          api.cars.list({ make: rawKey, limit: 60, status: 'all' }),
+          api.parts.list({ brand: rawKey, limit: 30 })
+        ]);
+        const all = brandsRes?.brands || brandsRes?.data || [];
+        const b = all.find((x: Record<string, unknown>) =>
+          String(x.key || '').toLowerCase() === rawKey.toLowerCase()
+        ) || all.find((x: Record<string, unknown>) =>
+          String(x.name || '').toLowerCase() === rawKey.toLowerCase()
+        );
         setBrand(b || null);
-        const carsRes = await api.cars.list({ limit: 50 });
-        const partsRes = await api.parts.list({ limit: 50 });
+        // [[FIX]] استخراج صحيح من API response
+        const rawCars = Array.isArray(carsRes?.data)
+          ? carsRes.data
+          : (carsRes?.data?.cars || carsRes?.cars || []);
+        const rawParts = Array.isArray(partsRes?.data)
+          ? partsRes.data
+          : (partsRes?.data?.parts || partsRes?.parts || []);
+        // فلترة محلية احتياطية إذا لم يدعم API المعامل
         const brandName = b?.name || rawKey;
-        setCars((carsRes?.cars || []).filter((c: Record<string, unknown>) => String(c.make || c.title || '').toLowerCase().includes(String(brandName).toLowerCase())));
-        setParts((partsRes?.parts || []).filter((p: Record<string, unknown>) => String(p.brand || '').toLowerCase().includes(String(brandName).toLowerCase())));
+        const filteredCars = rawCars.length > 0 ? rawCars :
+          rawCars.filter((c: Record<string, unknown>) =>
+            String(c.make || c.title || '').toLowerCase().includes(brandName.toLowerCase())
+          );
+        setCars(filteredCars);
+        setParts(rawParts);
       } catch {
+        // silent fail
       } finally {
         setLoading(false);
       }
     })();
   }, [rawKey]);
+
 
   return (
     <div className="relative min-h-screen bg-black text-white overflow-hidden">

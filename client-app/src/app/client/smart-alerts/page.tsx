@@ -9,8 +9,10 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 import { api } from '@/lib/api-original';
 import { useRouter } from 'next/navigation';
+import Navbar from '@/components/Navbar';
 
 // ===================== Types =====================
 interface SmartAlertCriteria {
@@ -544,6 +546,15 @@ const AlertCard = ({
 export default function SmartAlertsPage() {
     const router = useRouter();
     const { isRTL } = useLanguage();
+    const { user, isLoading: authLoading } = useAuth();
+
+    // [[FIX]] Auth guard — redirect to login if not authenticated
+    useEffect(() => {
+        if (!authLoading && !user) {
+            router.replace('/login?redirect=/client/smart-alerts');
+        }
+    }, [user, authLoading, router]);
+
     const [alerts, setAlerts] = useState<SmartAlert[]>([]);
     const [stats, setStats] = useState({ total: 0, active: 0, totalTriggers: 0 });
     const [loading, setLoading] = useState(true);

@@ -358,17 +358,17 @@ export default function HomePage() {
                 >
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] sm:text-xs font-black uppercase tracking-widest text-[#C9A96E] mb-6">
                         <Sparkles className="w-3.5 h-3.5" />
-                        {isRTL ? 'بوابتك المباشرة لأسواق السيارات الكورية' : 'YOUR DIRECT ACCESS TO KOREAN AUTOMOTIVE MARKET'}
+                        {isRTL ? 'بوابتك المباشرة لسوق السيارات المستوردة' : 'YOUR DIRECT ACCESS TO IMPORTED CARS MARKET'}
                     </div>
 
                     <h1 className="text-3xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.1] mb-6 bg-gradient-to-b from-white via-white to-white/40 bg-clip-text text-transparent uppercase italic">
                         {isRTL ? (
                             <>
-                                استورد سيارتك <span className="text-[#C9A96E] drop-shadow-[0_0_20px_rgba(201,169,110,0.3)]">الكورية الفاخرة</span> مباشرة بنقرة واحدة
+                                استورد سيارتك <span className="text-[#C9A96E] drop-shadow-[0_0_20px_rgba(201,169,110,0.3)]">المستوردة الفاخرة</span> مباشرة بنقرة واحدة
                             </>
                         ) : (
                             <>
-                                IMPORT YOUR <span className="text-[#C9A96E] drop-shadow-[0_0_20px_rgba(201,169,110,0.3)]">LUXURY KOREAN</span> CAR DIRECTLY
+                                IMPORT YOUR <span className="text-[#C9A96E] drop-shadow-[0_0_20px_rgba(201,169,110,0.3)]">PREMIUM IMPORTED</span> CAR DIRECTLY
                             </>
                         )}
                     </h1>
@@ -695,13 +695,53 @@ export default function HomePage() {
             )}
 
             {/* ─── Footer ─── */}
-            <footer className="mt-auto py-10 bg-[#06060a] border-t border-white/5 relative z-10 text-center text-xs text-white/30">
-                <div className="max-w-7xl mx-auto px-4 flex flex-col items-center gap-4">
-                    <HMCarLogo variant="horizontal" size="md" />
-                    <p className="mb-1">© {new Date().getFullYear()} {isRTL ? 'إتش إم كار لخدمات استيراد السيارات. جميع الحقوق محفوظة.' : 'HM CAR Automotive Imports. All rights reserved.'}</p>
-                    <p className="text-[10px] text-white/15">
-                        {isRTL ? 'منصة استيراد ومزادات السيارات الفاخرة المعتمدة' : 'Official Luxury Car Export & Live Auction Platform'}
-                    </p>
+            <footer className="mt-auto pt-12 pb-8 bg-[#06060a] border-t border-white/5 relative z-10">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                    {/* روابط التنقل */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-10">
+                        <div>
+                            <h4 className="text-[10px] font-black text-[#C9A96E] uppercase tracking-widest mb-3">{isRTL ? 'المعرض' : 'Showroom'}</h4>
+                            <ul className="space-y-2">
+                                <li><Link href="/cars" className="text-xs text-white/40 hover:text-white transition-colors">{isRTL ? 'كل السيارات' : 'All Cars'}</Link></li>
+                                <li><Link href="/brands" className="text-xs text-white/40 hover:text-white transition-colors">{isRTL ? 'الماركات' : 'Brands'}</Link></li>
+                                <li><Link href="/parts" className="text-xs text-white/40 hover:text-white transition-colors">{isRTL ? 'قطع الغيار' : 'Spare Parts'}</Link></li>
+                                <li><Link href="/search" className="text-xs text-white/40 hover:text-white transition-colors">{isRTL ? 'البحث' : 'Search'}</Link></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 className="text-[10px] font-black text-[#C9A96E] uppercase tracking-widest mb-3">{isRTL ? 'المزادات' : 'Auctions'}</h4>
+                            <ul className="space-y-2">
+                                <li><Link href="/auctions" className="text-xs text-white/40 hover:text-white transition-colors">{isRTL ? 'المزادات الحية' : 'Live Auctions'}</Link></li>
+                                <li><Link href="/auctions/my-bids" className="text-xs text-white/40 hover:text-white transition-colors">{isRTL ? 'مزايداتي' : 'My Bids'}</Link></li>
+                                <li><Link href="/comparisons" className="text-xs text-white/40 hover:text-white transition-colors">{isRTL ? 'مقارنة السيارات' : 'Compare Cars'}</Link></li>
+                                <li><Link href="/favorites" className="text-xs text-white/40 hover:text-white transition-colors">{isRTL ? 'المفضلة' : 'Favorites'}</Link></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 className="text-[10px] font-black text-[#C9A96E] uppercase tracking-widest mb-3">{isRTL ? 'الخدمات' : 'Services'}</h4>
+                            <ul className="space-y-2">
+                                <li><Link href="/concierge" className="text-xs text-white/40 hover:text-white transition-colors">{isRTL ? 'طلب خاص' : 'Concierge'}</Link></li>
+                                <li><Link href="/contact" className="text-xs text-white/40 hover:text-white transition-colors">{isRTL ? 'تواصل معنا' : 'Contact'}</Link></li>
+                                <li><Link href="/support" className="text-xs text-white/40 hover:text-white transition-colors">{isRTL ? 'الدعم' : 'Support'}</Link></li>
+                                <li><Link href="/orders" className="text-xs text-white/40 hover:text-white transition-colors">{isRTL ? 'طلباتي' : 'My Orders'}</Link></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 className="text-[10px] font-black text-[#C9A96E] uppercase tracking-widest mb-3">{isRTL ? 'الحساب' : 'Account'}</h4>
+                            <ul className="space-y-2">
+                                <li><Link href="/client/dashboard" className="text-xs text-white/40 hover:text-white transition-colors">{isRTL ? 'لوحتي' : 'Dashboard'}</Link></li>
+                                <li><Link href="/client/profile" className="text-xs text-white/40 hover:text-white transition-colors">{isRTL ? 'الملف الشخصي' : 'Profile'}</Link></li>
+                                <li><Link href="/login" className="text-xs text-white/40 hover:text-white transition-colors">{isRTL ? 'تسجيل دخول' : 'Login'}</Link></li>
+                                <li><Link href="/privacy" className="text-xs text-white/40 hover:text-white transition-colors">{isRTL ? 'سياسة الخصوصية' : 'Privacy Policy'}</Link></li>
+                            </ul>
+                        </div>
+                    </div>
+                    {/* الخط الفاصل + Copyright */}
+                    <div className="border-t border-white/5 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] text-white/25">
+                        <HMCarLogo variant="horizontal" size="sm" />
+                        <p>© {new Date().getFullYear()} {isRTL ? 'إتش إم كار — جميع الحقوق محفوظة.' : 'HM CAR — All rights reserved.'}</p>
+                        <p className="hidden sm:block">{isRTL ? 'منصة السيارات المستوردة الفاخرة' : 'Premium Imported Cars Platform'}</p>
+                    </div>
                 </div>
             </footer>
 
