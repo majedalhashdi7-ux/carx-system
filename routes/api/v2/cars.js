@@ -560,13 +560,17 @@ router.put('/:id', requireAuthAPI, requirePermissionAPI('manage_cars'), invalida
 
         const mongoose = require('mongoose');
         const idParam = req.params.id;
-        const idFilter = {
-            $or: [
-                { _id: idParam },
-                { id: idParam },
-                ...(mongoose.Types.ObjectId.isValid(idParam) ? [{ _id: new mongoose.Types.ObjectId(idParam) }] : [])
-            ]
-        };
+        const isValidObjectId = mongoose.Types.ObjectId.isValid(idParam);
+
+        // ── بناء شرط البحث بشكل آمن ──
+        // نتجنب إضافة _id كـ string خام لأن Mongoose يحاول Castه ويرمي CastError
+        const idConditions: any[] = [
+            { id: idParam },  // حقل الـ id النصي (string)
+        ];
+        if (isValidObjectId) {
+            idConditions.push({ _id: new mongoose.Types.ObjectId(idParam) });
+        }
+        const idFilter = { $or: idConditions };
 
         // [[ARABIC_COMMENT]] addTenantFilter ضروري: يمنع تعديل سيارة من معرض آخر
         const oldCar = await Car.findOne(addTenantFilter(req, idFilter));
@@ -651,13 +655,10 @@ router.delete('/:id', requireAuthAPI, requirePermissionAPI('manage_cars'), inval
         const tenantId = getTenantId(req);
         const mongoose = require('mongoose');
         const idParam = req.params.id;
-        const idFilter = {
-            $or: [
-                { _id: idParam },
-                { id: idParam },
-                ...(mongoose.Types.ObjectId.isValid(idParam) ? [{ _id: new mongoose.Types.ObjectId(idParam) }] : [])
-            ]
-        };
+        const isValidObjId = mongoose.Types.ObjectId.isValid(idParam);
+        const deleteConditions: any[] = [{ id: idParam }];
+        if (isValidObjId) deleteConditions.push({ _id: new mongoose.Types.ObjectId(idParam) });
+        const idFilter = { $or: deleteConditions };
 
         // [[ARABIC_COMMENT]] addTenantFilter إلزامي هنا: يمنع حذف سيارة من معرض آخر
         const car = await Car.findOneAndDelete(addTenantFilter(req, idFilter));

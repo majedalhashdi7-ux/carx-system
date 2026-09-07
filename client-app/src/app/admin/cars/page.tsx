@@ -258,8 +258,11 @@ function CarsContent() {
             };
 
             if (editingCar) {
-                // [[FIX]] استخدام _id أو id بالترتيب الصحيح
+                // [[FIX]] استخدام _id أو id بالترتيب الصحيح مع تحقق
                 const targetId = (editingCar as any)._id || editingCar.id;
+                if (!targetId) {
+                    throw new Error(isRTL ? 'لم يتم العثور على معرّف السيارة — أعد تحميل الصفحة' : 'Car ID not found — please refresh');
+                }
                 const res = await api.cars.update(targetId, submitData);
                 if (!res || res.success === false) throw new Error((res as any)?.message || 'Update failed');
             } else {
