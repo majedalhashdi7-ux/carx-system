@@ -406,9 +406,65 @@ export default function HomePage() {
                                 <HomeBrandLogo key={`brand-circle-${idx}`} brand={brand} isRTL={isRTL} />
                             ))}
                         </div>
+
+                        {/* رابط لكل الماركات */}
+                        <div className="mt-6">
+                            <Link href="/brands" className="inline-flex items-center gap-1.5 text-[10px] font-black text-[#C9A96E]/70 hover:text-[#C9A96E] uppercase tracking-widest transition-colors">
+                                {isRTL ? 'عرض كل الماركات' : 'VIEW ALL BRANDS'}
+                                <ArrowRight className={cn('w-3 h-3', isRTL && 'rotate-180')} />
+                            </Link>
+                        </div>
                     </div>
                 </section>
             )}
+
+            {/* ─── Stats Counter Bar ─── */}
+            <section className="py-8 bg-[#0a0a12] border-b border-white/5 relative z-10">
+                <div className="max-w-7xl mx-auto px-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        {[
+                            {
+                                value: showroomCars.length > 0 ? `+${showroomCars.length}` : '100+',
+                                labelAr: 'سيارة في المعرض',
+                                labelEn: 'Cars in Showroom',
+                                color: '#C9A96E',
+                                href: '/cars'
+                            },
+                            {
+                                value: liveAuctions.length > 0 ? `${liveAuctions.length}` : '🔴 Live',
+                                labelAr: 'مزاد مباشر حالياً',
+                                labelEn: 'Live Auctions Now',
+                                color: '#ef4444',
+                                href: '/auctions'
+                            },
+                            {
+                                value: brands.length > 0 ? `${brands.length}` : '10+',
+                                labelAr: 'ماركة عالمية',
+                                labelEn: 'Global Brands',
+                                color: '#a78bfa',
+                                href: '/brands'
+                            },
+                            {
+                                value: '24/7',
+                                labelAr: 'دعم ومتابعة',
+                                labelEn: 'Support & Follow-up',
+                                color: '#34d399',
+                                href: '/support'
+                            },
+                        ].map((stat, i) => (
+                            <Link key={i} href={stat.href}
+                                className="flex flex-col items-center text-center p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-[#C9A96E]/20 hover:bg-white/[0.04] transition-all group">
+                                <span className="text-2xl sm:text-3xl font-black mb-1 group-hover:scale-110 transition-transform" style={{ color: stat.color }}>
+                                    {stat.value}
+                                </span>
+                                <span className="text-[10px] font-bold text-white/40 leading-tight">
+                                    {isRTL ? stat.labelAr : stat.labelEn}
+                                </span>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            </section>
 
             {/* ─── 3. شبكة بطاقات سيارات المعرض الرئيسية (Showroom Cars Main Grid) ─── */}
             <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative z-10">
