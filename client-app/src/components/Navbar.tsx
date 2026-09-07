@@ -11,7 +11,8 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Menu, X, User, ChevronDown,
-    Car, MessageCircle, Bell, LogIn, UserPlus, Home, Wrench, Gavel, Globe, Ship
+    Car, MessageCircle, Bell, LogIn, UserPlus, Home, Wrench, Gavel, Globe, Ship,
+    Search, Heart, Package
 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -21,6 +22,7 @@ import { useStandalone } from '@/lib/useStandalone';
 import { useUI } from '@/lib/UIContext';
 import { useTenant } from '@/lib/TenantContext';
 import HMCarLogo from '@/components/HMCarLogo';
+import { useRouter } from 'next/navigation';
 
 const rawText = (value: string) => value;
 
@@ -35,8 +37,13 @@ export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const [currencyOpen, setCurrencyOpen] = useState(false);
+    const [searchOpen, setSearchOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [favCount, setFavCount] = useState(0);
     const currencyRef = useRef<HTMLDivElement>(null);
+    const searchRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
+    const router = useRouter();
 
     const { isLoggedIn, isAdmin } = useAuth();
     const accountHref = !isLoggedIn ? '/login' : isAdmin ? '/admin/dashboard' : '/client/dashboard';
@@ -56,6 +63,28 @@ export default function Navbar() {
         const timer = setTimeout(() => { if (isOpen) setIsOpen(false); }, 0);
         return () => clearTimeout(timer);
     }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // تحديث عدد المفضلة
+    useEffect(() => {
+        const updateFavs = () => {
+            try {
+                const favs = JSON.parse(localStorage.getItem('hm_favorites') || '[]');
+                setFavCount(Array.isArray(favs) ? favs.length : 0);
+            } catch { setFavCount(0); }
+        };
+        updateFavs();
+        window.addEventListener('storage', updateFavs);
+        return () => window.removeEventListener('storage', updateFavs);
+    }, []);
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (searchQuery.trim()) {
+            router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+            setSearchQuery('');
+            setSearchOpen(false);
+        }
+    };
 
     // إغلاق قائمة العملة عند النقر خارجها
     useEffect(() => {
@@ -238,7 +267,71 @@ export default function Navbar() {
                                 <span>{isRTL ? 'EN' : 'عر'}</span>
                             </button>
 
-                            {/* الإشعارات - بدون مربع حاد (أيقونة جرس حرة وأنيقة) */}
+                            {/* ── أيقونة البحث ── */}
+                            <div className="relative" ref={searchRef}>
+                                <button
+                                    onClick={() => setSearchOpen(!searchOpen)}
+                                    className="p-2.5 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-all"
+                                    title={isRTL ? 'بحث' : 'Search'}
+                                >
+                                    <Search className="w-4.5 h-4.5" />
+                                </button>
+                                <AnimatePresence>
+                                    {searchOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                                            className={cn(
+                                                'absolute top-full mt-2 bg-[#0f0f23] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 w-72',
+                                                isRTL ? 'right-0' : 'left-0'
+                                            )}
+                                        >
+                                            <form onSubmit={handleSearch} className="flex items-center gap-2 p-3">
+                                                <Search className="w-4 h-4 text-white/30 shrink-0" />
+                                                <input
+                                                    autoFocus
+                                                    type="text"
+                                                    value={searchQuery}
+                                                    onChange={e => setSearchQuery(e.target.value)}
+                                                    placeholder={isRTL ? 'ابحث عن سيارة...' : 'Search cars...'}
+                                                    className="flex-1 bg-transparent text-sm text-white placeholder:text-white/30 outline-none"
+                                                />
+                                                {searchQuery && (
+                                                    <button type="button" onClick={() => setSearchQuery('')}
+                                                        className="text-white/30 hover:text-white">
+                                                        <X className="w-3.5 h-3.5" />
+                                                    </button>
+                                                )}
+                                            </form>
+                                            <div className="px-3 pb-3">
+                                                <p className="text-[10px] text-white/30 mb-1.5 font-bold uppercase tracking-widest">{isRTL ? 'بحث سريع' : 'Quick'}</p>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {['Hyundai','Kia','BMW','Toyota'].map(b => (
+                                                        <button key={b}
+                                                            onClick={() => { router.push(`/cars?make=${b}`); setSearchOpen(false); }}
+                                                            className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-[10px] font-bold text-white/60 hover:text-white hover:border-[#C9A96E]/30 transition-all">
+                                                            {b}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+
+                            {/* ── أيقونة المفضلة مع Badge ── */}
+                            <Link href="/favorites" className="relative p-2.5 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-all">
+                                <Heart className="w-4.5 h-4.5" />
+                                {favCount > 0 && (
+                                    <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full bg-[#C9A96E] text-black text-[9px] font-black flex items-center justify-center px-1">
+                                        {favCount > 9 ? '9+' : favCount}
+                                    </span>
+                                )}
+                            </Link>
+
+                            {/* الإشعارات */}
                             {isLoggedIn && (
                                 <button
                                     onClick={() => setNotificationsOpen(true)}
@@ -421,5 +514,54 @@ export default function Navbar() {
                 )}
             </AnimatePresence>
         </>
+    );
+}
+
+/* ─── Bottom Navigation Bar للجوال ─── */
+export function BottomNavBar() {
+    const pathname = usePathname();
+    const { isRTL } = useLanguage();
+    const { isLoggedIn, isAdmin } = useAuth();
+    const isStandalone = useStandalone();
+
+    // لا يظهر في صفحات الأدمن
+    if (pathname?.startsWith('/admin')) return null;
+    // يظهر فقط على الجوال
+    return (
+        <nav className={cn(
+            'fixed bottom-0 left-0 right-0 z-40 lg:hidden',
+            'bg-[#0A0A14]/95 backdrop-blur-2xl border-t border-white/8',
+            isStandalone ? 'pb-safe' : ''
+        )} dir={isRTL ? 'rtl' : 'ltr'}>
+            <div className="flex items-center justify-around px-2 py-2">
+                {[
+                    { href: '/', icon: Home, labelAr: 'الرئيسية', labelEn: 'Home' },
+                    { href: '/cars', icon: Car, labelAr: 'السيارات', labelEn: 'Cars' },
+                    { href: '/auctions', icon: Gavel, labelAr: 'المزادات', labelEn: 'Auctions' },
+                    { href: '/parts', icon: Package, labelAr: 'قطع الغيار', labelEn: 'Parts' },
+                    { href: isLoggedIn ? (isAdmin ? '/admin/dashboard' : '/client/dashboard') : '/login', icon: User, labelAr: 'حسابي', labelEn: 'Account' },
+                ].map((item) => {
+                    const active = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
+                    return (
+                        <Link key={item.href} href={item.href}
+                            className="flex flex-col items-center gap-1 py-1.5 px-3 rounded-xl transition-all min-w-[56px]"
+                        >
+                            <div className={cn(
+                                'w-8 h-8 rounded-xl flex items-center justify-center transition-all',
+                                active ? 'bg-[#C9A96E]/15 text-[#C9A96E] scale-110' : 'text-white/40'
+                            )}>
+                                <item.icon className="w-4.5 h-4.5" />
+                            </div>
+                            <span className={cn(
+                                'text-[9px] font-black tracking-wide transition-colors',
+                                active ? 'text-[#C9A96E]' : 'text-white/30'
+                            )}>
+                                {isRTL ? item.labelAr : item.labelEn}
+                            </span>
+                        </Link>
+                    );
+                })}
+            </div>
+        </nav>
     );
 }

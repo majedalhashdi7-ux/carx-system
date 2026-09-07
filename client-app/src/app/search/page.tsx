@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Search, Tag, AlertCircle, ArrowRight, ShoppingBag, Sparkles } from "lucide-react";
+import { Search, Tag, AlertCircle, ArrowRight, ShoppingBag, Sparkles, Bell, CheckCircle2 } from "lucide-react";
 import Link from 'next/link';
 import NextImage from 'next/image';
 import ClientPageHeader from '@/components/ClientPageHeader';
@@ -91,6 +91,27 @@ function SearchContent() {
         router.push('/concierge');
     };
 
+    // ── حفظ البحث كـ Smart Alert ──
+    const [alertSaved, setAlertSaved] = useState(false);
+    const handleSaveAlert = () => {
+        if (!q && !brand) return;
+        try {
+            const alerts: any[] = JSON.parse(localStorage.getItem('hm_smart_alerts') || '[]');
+            const newAlert = {
+                id: Date.now().toString(),
+                label: q ? `بحث: "${q}"` : `ماركة: ${brand}`,
+                q, brand, price,
+                createdAt: new Date().toISOString(),
+            };
+            if (!alerts.find((a: any) => a.q === q && a.brand === brand)) {
+                alerts.unshift(newAlert);
+                localStorage.setItem('hm_smart_alerts', JSON.stringify(alerts.slice(0, 20)));
+            }
+            setAlertSaved(true);
+            setTimeout(() => setAlertSaved(false), 3000);
+        } catch {}
+    };
+
     return (
         <div className="min-h-screen bg-black text-white selection:bg-luxury-gold selection:text-black font-sans perspective-1000 overflow-x-hidden">
             <Navbar />
@@ -111,6 +132,29 @@ function SearchContent() {
                     subtitle={loading ? (isRTL ? "جاري المسح..." : "SCANNING MATRIX...") : `${cars.length + parts.length} ${isRTL ? "أصل متاح" : "IDENTIFIED ASSETS"}`}
                     icon={Search}
                 />
+
+                {/* ── Smart Alert Save Button ── */}
+                {(q || brand) && (
+                    <div className="mb-8 flex items-center gap-3 flex-wrap">
+                        <button
+                            onClick={handleSaveAlert}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-black transition-all ${
+                                alertSaved
+                                    ? 'bg-green-500/15 border-green-500/40 text-green-400'
+                                    : 'bg-[#C9A96E]/10 border-[#C9A96E]/30 text-[#C9A96E] hover:bg-[#C9A96E]/20'
+                            }`}
+                        >
+                            {alertSaved
+                                ? <><CheckCircle2 className="w-4 h-4" />{isRTL ? 'تم حفظ التنبيه ✔' : 'Alert Saved ✔'}</>
+                                : <><Bell className="w-4 h-4" />{isRTL ? '🔔 نبّهني عند توفر هذا البحث' : '🔔 Alert me when available'}</>
+                            }
+                        </button>
+                        <Link href="/client/smart-alerts"
+                            className="text-[10px] font-bold text-white/30 hover:text-white/60 transition-colors underline">
+                            {isRTL ? 'إدارة التنبيهات' : 'Manage Alerts'}
+                        </Link>
+                    </div>
+                )}
 
                 {/* Agencies / Brands Filter Bar */}
                 {brands.length > 0 && (
