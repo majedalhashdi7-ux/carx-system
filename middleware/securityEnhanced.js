@@ -22,7 +22,7 @@ const crypto = require('crypto');
  * للبيئة المحلية والـ VPS هذا يعمل بشكل صحيح تماماً.
  */
 const suspiciousAttempts = new Map();
-const blockedIPs = new Set();
+const blockedIPs = new Map(); // ip -> unblockTimestamp (Map with auto-expiry)
 
 // في بيئة Serverless (Vercel) المتغيرات العالمية لا تُحفظ بين الطلبات
 // هذا التحذير يذكّر المطور بالقيود
@@ -95,10 +95,11 @@ const logSuspiciousActivity = (req, reason, severity = 'medium') => {
   attempts.reasons.push(reason);
   suspiciousAttempts.set(ip, attempts);
   
-  // حظر تلقائي بعد عدد معين من المحاولات
-  if (attempts.count >= 10) {
-    blockedIPs.add(ip);
-    console.error(`🚫 [SECURITY] IP ${ip} has been auto-blocked after ${attempts.count} suspicious attempts`);
+  // حظر مؤقت بعد عدد محاولات مشبوهة متكررة (5 دقائق فقط لتجنب حبس المستخدمين)
+  if (attempts.count >= 15) {
+    const unblockAt = Date.now() + (5 * 60 * 1000);
+    blockedIPs.set(ip, unblockAt);
+    console.error(`🚫 [SECURITY] IP ${ip} has been auto-blocked for 5 minutes after ${attempts.count} suspicious attempts`);
   }
 };
 
@@ -111,15 +112,28 @@ const checkBlockedIP = (req, res, next) => {
     return next();
   }
   
+  // استثناء الطلبات الإدارية المصحوبة بـ Token أو المسارات الموثوقة
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+  
   const ip = getClientIP(req);
   
   if (blockedIPs.has(ip)) {
-    console.warn(`🚫 [SECURITY] Blocked IP attempted access: ${ip}`);
-    return res.status(403).json({
-      success: false,
-      error: 'Access denied',
-      message: 'Your IP has been temporarily blocked due to suspicious activity'
-    });
+    const unblockTime = blockedIPs.get(ip);
+    if (unblockTime && Date.now() < unblockTime) {
+      console.warn(`🚫 [SECURITY] Blocked IP attempted access: ${ip}`);
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied',
+        message: 'Your IP has been temporarily blocked due to suspicious activity'
+      });
+    } else {
+      // انتهت مدة الحظر التلقائي - فك الحظر
+      blockedIPs.delete(ip);
+      suspiciousAttempts.delete(ip);
+    }
   }
   
   next();
@@ -158,7 +172,13 @@ const detectInjection = (req, res, next) => {
   const checkValue = (value, location) => {
     if (typeof value !== 'string') return;
     
+    // إذا كانت القيمة رابط URL أو صورة، نتجاوز فحص SQL لعدم التعارض مع معاملات الروابط (مثل فلاتر Encar)
+    const isUrlOrMedia = value.startsWith('http://') || value.startsWith('https://') || value.startsWith('//') || value.startsWith('data:image/');
+    
     for (const pattern of suspicious) {
+      if (isUrlOrMedia && (pattern.source.includes('SELECT') || pattern.source.includes('\\$where') || pattern.source.includes('OR|AND'))) {
+        continue; // تخطي فحص SQL للروابط الخارجية
+      }
       if (pattern.test(value)) {
         logSuspiciousActivity(req, `Potential injection detected in ${location}: ${pattern}`, 'high');
         return true;
@@ -171,9 +191,17 @@ const detectInjection = (req, res, next) => {
     // [[ARABIC_COMMENT]] حد أقصى للعمق لتجنب Stack Overflow
     if (!obj || typeof obj !== 'object' || depth > 5) return false;
     
+    // قائمة الحقول الآمنة المسموح باحتوائها على روابط أو نصوص طويلة أو فلاتر
+    const safeKeys = [
+      'message', 'note', 'notes', 'description', 'details', 'comment', 'content', 
+      'title', 'reason', 'address', 'url', 'targeturl', 'sourceurl', 'externalurl', 
+      'externalref', 'image', 'images', 'imageurl', 'img', 'logo', 'logourl', 
+      'search', 'q', 'query', 'filter', 'action', 'data', 'specs', 'inspectionreport', 
+      'featuresar', 'featuresen', 'vin', 'name', 'namear', 'nameen', 'titlear', 'titleen'
+    ];
+    
     for (const [key, value] of Object.entries(obj)) {
-      // تخطي فحص النصوص المسموح للزوار كتابتها لتجنب حظرهم
-      if (['message', 'note', 'notes', 'description', 'details', 'comment', 'content', 'title', 'reason', 'address'].includes(key.toLowerCase())) {
+      if (safeKeys.includes(key.toLowerCase())) {
           continue;
       }
       

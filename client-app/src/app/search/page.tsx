@@ -68,9 +68,13 @@ function SearchContent() {
                     ...(brand !== '' && { category: brand })
                 }).catch(() => ({ data: { parts: [] } }));
 
-                // [[ARABIC_COMMENT]] استخراج البيانات من المستوى الصحيح
-                const fetchedCars = carsRes?.data?.cars || [];
-                const fetchedParts = partsRes?.data?.parts || [];
+                // [[ARABIC_COMMENT]] استخراج البيانات من المستوى الصحيح (يدعم كلاً من Array و data.cars)
+                const fetchedCars = Array.isArray(carsRes?.data) 
+                    ? carsRes.data 
+                    : (carsRes?.data?.cars || carsRes?.cars || []);
+                const fetchedParts = Array.isArray(partsRes?.data) 
+                    ? partsRes.data 
+                    : (partsRes?.data?.parts || partsRes?.parts || []);
 
                 setCars(fetchedCars);
                 setParts(fetchedParts);

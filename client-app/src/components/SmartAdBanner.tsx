@@ -393,9 +393,10 @@ export default function SmartAdBanner() {
                 if (src !== 'none') {
                     try {
                         if (src === 'hmcar' || src === 'both') {
-                            const carsRes = await api.cars.list({ status: 'active', limit: 20 });
-                            if (carsRes.success && carsRes.data?.cars) {
-                                carsRes.data.cars.forEach((c: any) => {
+                            const carsRes: any = await api.cars.list({ status: 'active', limit: 20 });
+                            const carsList = Array.isArray(carsRes?.data) ? carsRes.data : (carsRes?.data?.cars || carsRes?.cars || []);
+                            if (carsRes?.success && carsList.length > 0) {
+                                carsList.forEach((c: any) => {
                                     sCars.push({
                                         id: c._id || c.id,
                                         title: c.title,

@@ -1,9 +1,20 @@
 import { fetchAPI } from './index';
 
 export const cars = {
-    list: (params: Record<string, string | number | boolean> = {}) => {
+    list: async (params: Record<string, string | number | boolean> = {}) => {
         const query = new URLSearchParams(params as Record<string, string>).toString();
-        return fetchAPI(`/api/v2/cars?${query}`);
+        const res: any = await fetchAPI(`/api/v2/cars?${query}`);
+        if (res && (res.success || Array.isArray(res.data) || res.data)) {
+            const list = Array.isArray(res.data) ? res.data : (res.data?.cars || res.cars || []);
+            if (Array.isArray(res.data)) {
+                res.data.cars = list;
+            } else if (!res.data) {
+                res.data = list;
+                res.data.cars = list;
+            }
+            if (!res.cars) res.cars = list;
+        }
+        return res;
     },
     
     getById: (id: string) => fetchAPI(`/api/v2/cars/${id}`),
