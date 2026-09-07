@@ -20,7 +20,9 @@ const carSchema = new mongoose.Schema({
   listingType: { type: String, enum: ['store', 'auction', 'showroom'], default: 'store' },
   // رابط خارجي والمعرفات الخاصة بالاستيراد والبحث
   externalUrl: { type: String, default: '' },
-  externalId: { type: String, default: '', index: true },
+  // unique: true + sparse: true يمنع الاستيراد المكرر للسيارات من المصادر الخارجية
+  // sparse يتجاهل السيارات ذات externalId الفارغ (السيارات المحلية)
+  externalId: { type: String, default: '', index: true, sparse: true },
   externalRef: { type: String, default: '' },
   // مصدر السيارة لتطبيق الفصل التام بين مخزون HM المحلي والمعرض الكوري
   source: { type: String, enum: ['hm_local', 'korean_import', 'encar_korea', 'hmcar'], default: 'hm_local', index: true },

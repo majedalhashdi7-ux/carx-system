@@ -329,6 +329,14 @@ class ShowroomImportService {
                         const carId = String(rawCar.Id || rawCar.id || rawCar.CarId || `encar-${Date.now()}`);
                         const externalId = `encar-${carId}`;
 
+                        // ── تحقق مبكر: هل السيارة موجودة فعلاً في قاعدة البيانات? ──
+                        const existing = await Car.findOne({ externalId }).lean();
+                        if (existing) {
+                            console.log(`⏩ [ShowroomImport] SKIP (already exists): ${externalId}`);
+                            totalSkipped++;
+                            return;
+                        }
+
                         // جلب التفاصيل والفحص بالتوازي
                         const [detailData, inspectionData] = await Promise.allSettled([
                             fetchEncarCarDetail(carId),
