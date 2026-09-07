@@ -563,9 +563,8 @@ router.put('/:id', requireAuthAPI, requirePermissionAPI('manage_cars'), invalida
         const isValidObjectId = mongoose.Types.ObjectId.isValid(idParam);
 
         // ── بناء شرط البحث بشكل آمن ──
-        // نتجنب إضافة _id كـ string خام لأن Mongoose يحاول Castه ويرمي CastError
-        const idConditions: any[] = [
-            { id: idParam },  // حقل الـ id النصي (string)
+        const idConditions = [
+            { id: idParam },
         ];
         if (isValidObjectId) {
             idConditions.push({ _id: new mongoose.Types.ObjectId(idParam) });
@@ -656,7 +655,7 @@ router.delete('/:id', requireAuthAPI, requirePermissionAPI('manage_cars'), inval
         const mongoose = require('mongoose');
         const idParam = req.params.id;
         const isValidObjId = mongoose.Types.ObjectId.isValid(idParam);
-        const deleteConditions: any[] = [{ id: idParam }];
+        const deleteConditions = [{ id: idParam }];
         if (isValidObjId) deleteConditions.push({ _id: new mongoose.Types.ObjectId(idParam) });
         const idFilter = { $or: deleteConditions };
 
