@@ -330,5 +330,105 @@ router.put('/carx', requireAuthAPI, requireAdmin, invalidateCache('/api/v2/setti
     }
 });
 
+// ── شعارات الصفحة الرئيسية: جلب ──
+router.get('/home-brands', async (req, res) => {
+    try {
+        const SiteSettings = getModel(req, 'SiteSettings');
+        const settings = await SiteSettings.getSettings(req.tenantId || 'default');
+        const brands = (settings.homeBrands || []).sort((a, b) => (a.order || 0) - (b.order || 0));
+        res.json({ success: true, brands });
+    } catch (error) {
+        console.error('Error fetching home brands:', error);
+        res.status(500).json({ success: false, message: 'فشل في جلب شعارات الصفحة الرئيسية' });
+    }
+});
+
+// ── شعارات الصفحة الرئيسية: إضافة ──
+router.post('/home-brands', requireAuthAPI, requireAdmin, invalidateCache('/api/v2/settings*'), async (req, res) => {
+    try {
+        const { name, nameAr, logoUrl, order } = req.body;
+        if (!name || !name.trim()) {
+            return res.status(400).json({ success: false, message: 'اسم الماركة مطلوب' });
+        }
+        const SiteSettings = getModel(req, 'SiteSettings');
+        const settings = await SiteSettings.findOneAndUpdate(
+            { key: 'main', tenantId: req.tenantId || 'default' },
+            {
+                $push: {
+                    homeBrands: {
+                        name: name.trim(),
+                        nameAr: (nameAr || '').trim(),
+                        logoUrl: logoUrl || '',
+                        order: Number(order) || (settings?.homeBrands?.length || 0),
+                        isActive: true,
+                    }
+                },
+                $setOnInsert: { key: 'main', tenantId: req.tenantId || 'default' }
+            },
+            { new: true, upsert: true }
+        );
+        const newBrand = settings.homeBrands?.[settings.homeBrands.length - 1];
+        res.json({ success: true, brand: newBrand, message: 'تم إضافة الشعار بنجاح' });
+    } catch (error) {
+        console.error('Error adding home brand:', error);
+        res.status(500).json({ success: false, message: 'فشل في إضافة الشعار' });
+    }
+});
+
+// ── شعارات الصفحة الرئيسية: تعديل ──
+router.put('/home-brands/:brandId', requireAuthAPI, requireAdmin, invalidateCache('/api/v2/settings*'), async (req, res) => {
+    try {
+        const { name, nameAr, logoUrl, order, isActive } = req.body;
+        const { brandId } = req.params;
+        const SiteSettings = getModel(req, 'SiteSettings');
+
+        const updateFields = {};
+        if (name !== undefined) updateFields['homeBrands.$.name'] = name.trim();
+        if (nameAr !== undefined) updateFields['homeBrands.$.nameAr'] = nameAr.trim();
+        if (logoUrl !== undefined) updateFields['homeBrands.$.logoUrl'] = logoUrl;
+        if (order !== undefined) updateFields['homeBrands.$.order'] = Number(order);
+        if (isActive !== undefined) updateFields['homeBrands.$.isActive'] = Boolean(isActive);
+
+        const settings = await SiteSettings.findOneAndUpdate(
+            { key: 'main', tenantId: req.tenantId || 'default', 'homeBrands._id': brandId },
+            { $set: updateFields },
+            { new: true }
+        );
+
+        if (!settings) {
+            return res.status(404).json({ success: false, message: 'الشعار غير موجود' });
+        }
+
+        const updated = settings.homeBrands.find(b => b._id.toString() === brandId);
+        res.json({ success: true, brand: updated, message: 'تم تحديث الشعار بنجاح' });
+    } catch (error) {
+        console.error('Error updating home brand:', error);
+        res.status(500).json({ success: false, message: 'فشل في تحديث الشعار' });
+    }
+});
+
+// ── شعارات الصفحة الرئيسية: حذف ──
+router.delete('/home-brands/:brandId', requireAuthAPI, requireAdmin, invalidateCache('/api/v2/settings*'), async (req, res) => {
+    try {
+        const { brandId } = req.params;
+        const SiteSettings = getModel(req, 'SiteSettings');
+
+        const settings = await SiteSettings.findOneAndUpdate(
+            { key: 'main', tenantId: req.tenantId || 'default' },
+            { $pull: { homeBrands: { _id: brandId } } },
+            { new: true }
+        );
+
+        if (!settings) {
+            return res.status(404).json({ success: false, message: 'لم يتم العثور على الإعدادات' });
+        }
+
+        res.json({ success: true, message: 'تم حذف الشعار بنجاح' });
+    } catch (error) {
+        console.error('Error deleting home brand:', error);
+        res.status(500).json({ success: false, message: 'فشل في حذف الشعار' });
+    }
+});
+
 module.exports = router;
 

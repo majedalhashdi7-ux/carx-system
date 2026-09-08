@@ -601,6 +601,22 @@ export const api = {
                 method: 'PUT',
                 body: JSON.stringify(data),
             }),
+        // ── شعارات الصفحة الرئيسية ──
+        getHomeBrands: () => fetchAPI('/api/v2/settings/home-brands'),
+        addHomeBrand: (data: { name: string; nameAr?: string; logoUrl?: string; order?: number }) =>
+            fetchAPI('/api/v2/settings/home-brands', {
+                method: 'POST',
+                body: JSON.stringify(data),
+            }),
+        updateHomeBrand: (id: string, data: { name?: string; nameAr?: string; logoUrl?: string; order?: number; isActive?: boolean }) =>
+            fetchAPI(`/api/v2/settings/home-brands/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify(data),
+            }),
+        deleteHomeBrand: (id: string) =>
+            fetchAPI(`/api/v2/settings/home-brands/${id}`, {
+                method: 'DELETE',
+            }),
     },
     // ── الطلبات الخاصة (Concierge) ──
     concierge: {

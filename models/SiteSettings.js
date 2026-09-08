@@ -60,6 +60,15 @@ const siteSettingsSchema = new mongoose.Schema({
         descEn: { type: String, default: '' },          // الوصف (إنجليزي)
     }],
 
+    // ── شعارات الصفحة الرئيسية (يتحكم بها الأدمن) ──
+    homeBrands: [{
+        name: { type: String, required: true },          // اسم الماركة (إنجليزي)
+        nameAr: { type: String, default: '' },           // اسم الماركة (عربي)
+        logoUrl: { type: String, default: '' },          // رابط الشعار المقتوص دائرياً
+        order: { type: Number, default: 0 },             // ترتيب الظهور
+        isActive: { type: Boolean, default: true },      // هل يظهر في الصفحة الرئيسية؟
+    }],
+
     // محتوى إضافي
     homeContent: {
         heroTitle: String,

@@ -131,8 +131,17 @@ export default function HomePage() {
         return img;
     };
 
+    const [homeBrands, setHomeBrands] = useState<any[]>([]);
+
     useEffect(() => {
-        // Fetch active car brands
+        // أولاً: جلب شعارات الصفحة الرئيسية التي يتحكم بها الأدمن
+        api.settings.getHomeBrands().then((res: any) => {
+            if (res?.success && res.brands && res.brands.length > 0) {
+                setHomeBrands(res.brands.filter((b: any) => b.isActive !== false));
+            }
+        }).catch(() => {});
+
+        // ثانياً: جلب وكالات السيارات كـ fallback
         api.brands.list('cars').then(res => {
             if (res?.success && res.brands) {
                 const activeWithLogos = res.brands.filter((b: any) => b.isActive !== false);
@@ -315,8 +324,12 @@ export default function HomePage() {
         { name: 'BMW', nameAr: 'بي إم دبليو', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/44/BMW.svg' },
         { name: 'Mercedes-Benz', nameAr: 'مرسيدس بنز', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/90/Mercedes-Logo.svg' },
     ];
-    // Display top circular brand logos
-    const display5Brands = (brands.length > 0 ? brands : FALLBACK_BRANDS).slice(0, 5);
+    // أولوية العرض: شعارات الأدمن ← وكالات السيارات ← FALLBACK
+    const display5Brands = (
+        homeBrands.length > 0 ? homeBrands
+        : brands.length > 0 ? brands
+        : FALLBACK_BRANDS
+    ).slice(0, 8);
 
     const displayShowroomCars = showroomCars;
     const displayAuctionCars = liveAuctions;

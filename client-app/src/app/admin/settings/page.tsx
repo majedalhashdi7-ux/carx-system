@@ -29,11 +29,11 @@ import AdminPageShell from '@/components/AdminPageShell';
 
 // ── المكونات المقسمة ──
 import ProfileTab from './_components/ProfileTab';
-import { SocialTab, ContactTab, CurrencyTab, SiteTab, HomeTab, FeaturesTab, MarketingTab } from './_components/SettingsTabs';
+import { SocialTab, ContactTab, CurrencyTab, SiteTab, HomeTab, FeaturesTab, MarketingTab, HomeBrandsTab } from './_components/SettingsTabs';
 import AdsTab from './_components/AdsTab';
 
 // ── أنواع التبويبات ──
-type TabID = 'profile' | 'security' | 'social' | 'contact' | 'currency' | 'site' | 'home' | 'features' | 'ads' | 'marketing';
+type TabID = 'profile' | 'security' | 'social' | 'contact' | 'currency' | 'site' | 'home' | 'features' | 'ads' | 'marketing' | 'brands';
 
 // ── أنواع البيانات ──
 interface SocialLinks { whatsapp: string; instagram: string; twitter: string; facebook: string; youtube: string; tiktok: string; snapchat: string; telegram: string; linkedin: string; }
@@ -59,7 +59,7 @@ function AdminSettingsContent() {
     const [activeTab, setActiveTab] = useState<TabID>('profile');
 
     useEffect(() => {
-        const allowedTabs: TabID[] = ['profile', 'security', 'social', 'contact', 'currency', 'site', 'home', 'features', 'ads', 'marketing'];
+        const allowedTabs: TabID[] = ['profile', 'security', 'social', 'contact', 'currency', 'site', 'home', 'features', 'ads', 'marketing', 'brands'];
         if (tabParam && allowedTabs.includes(tabParam)) {
             setActiveTab(tabParam);
         }
@@ -254,6 +254,8 @@ function AdminSettingsContent() {
         { id: 'contact', label: isRTL ? 'معلومات الاتصال' : 'Contact Info', icon: Phone },
         { id: 'currency', label: isRTL ? 'إعدادات العملة' : 'Currency', icon: DollarSign },
         { id: 'features', label: isRTL ? 'لماذا تختارنا' : 'Features', icon: Shield },
+        // ── تبويب شعارات الصفحة الرئيسية ──
+        { id: 'brands', label: isRTL ? 'شعارات الرئيسية' : 'Home Brands', icon: Camera },
         // ── تبويب الإعلانات الجديد ──
         { id: 'ads', label: isRTL ? 'الإعلانات' : 'Ads', icon: Megaphone },
         { id: 'marketing', label: isRTL ? 'التتبع التسويقي' : 'Pixels', icon: Globe },
@@ -373,6 +375,11 @@ function AdminSettingsContent() {
                             onSave={handleSaveFeatures}
                             onFeaturesChange={setFeatures}
                         />
+                    )}
+
+                    {/* ── تبويب شعارات الصفحة الرئيسية ── */}
+                    {activeTab === 'brands' && (
+                        <HomeBrandsTab isRTL={isRTL} />
                     )}
 
                     {/* ── تبويب إدارة الإعلانات ── */}
