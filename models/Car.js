@@ -120,7 +120,41 @@ const carSchema = new mongoose.Schema({
   pendingSaleToken: { type: String, default: '' },
   pendingSaleBuyer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   pendingSaleAt: { type: Date, default: null }
-}, { timestamps: true });
+}, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } });
+
+// ======== Virtual Getters — توحيد الحقول المكررة ========
+// هذه الحقول تجمع بين المستويين (الجذر و specs) وتعيد القيمة من أي منهما
+
+/** الماركة بالعربية — يدعم كلاً من makeAr (جذر) و specs.makeAr */
+carSchema.virtual('makeArUnified').get(function () {
+  return this.makeAr || this.specs?.makeAr || this.make || '';
+});
+
+/** نوع الوقود بالعربية — يدعم fuelAr و specs.fuelTypeAr */
+carSchema.virtual('fuelArUnified').get(function () {
+  return this.fuelAr || this.specs?.fuelTypeAr || this.fuelType || '';
+});
+
+/** ناقل الحركة بالعربية — يدعم transmissionAr و specs.transmissionAr */
+carSchema.virtual('transmissionArUnified').get(function () {
+  return this.transmissionAr || this.specs?.transmissionAr || this.transmission || '';
+});
+
+/** المسافة — يدعم mileage و specs.mileage */
+carSchema.virtual('mileageUnified').get(function () {
+  return this.mileage || this.specs?.mileage || 0;
+});
+
+/** السنة — يدعم year و specs.year */
+carSchema.virtual('yearUnified').get(function () {
+  return this.year || this.specs?.year || 0;
+});
+
+/** الصورة الرئيسية — يدعم imageUrl, mainImage, وأول عنصر في images[] */
+carSchema.virtual('primaryImage').get(function () {
+  return this.imageUrl || this.mainImage || (this.images && this.images[0]) || '';
+});
+
 
 // [[ARABIC_COMMENT]] إضافة فهارس (Indexes) لتحسين سرعة الاستعلامات
 // Composite indexes for multi-tenant queries

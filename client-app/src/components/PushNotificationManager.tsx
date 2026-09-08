@@ -7,91 +7,91 @@ import { api } from '@/lib/api-original';
  * مدير إشعارات الـ Push لنظام PWA
  * يقوم بطلب الصلاحية وتسجيل اشتراك الجهاز في الخلفية
  */
-const VAPID_PUBLIC_KEY = 'BNghi5tZPhPvYdmdEEPQPn6M5xuonh0cUsBRpdKjPsy1a9MusGgJuVFZcaE_-t38LfJmeHdIznWWQKfjuUviRVc';
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_KEY ||
+    'BNghi5tZPhPvYdmdEEPQPn6M5xuonh0cUsBRpdKjPsy1a9MusGgJuVFZcaE_-t38LfJmeHdIznWWQKfjuUviRVc';
 
-function urlBase64ToUint8Array(base64String: string) {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding)
-    .replace(/\-/g, '+') // تحويل تنسيق Base64 الخاص بالعناوين إلى تنسيق قياسي
-    .replace(/_/g, '/');
-
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
+function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const buffer = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; i++) {
+        buffer[i] = rawData.charCodeAt(i);
+    }
+    return buffer.buffer;
 }
 
-export default function PushNotificationManager() {
-  useEffect(() => {
-    async function sendSubscriptionToBackend(subscription: PushSubscription) {
-      try {
+async function sendSubscriptionToBackend(subscription: PushSubscription): Promise<void> {
+    try {
         const deviceInfo = {
-          browser: navigator.userAgent,
-          os: navigator.platform,
-          deviceId: localStorage.getItem('hm_device_id') || 'web-pwa'
+            browser: navigator.userAgent,
+            os: navigator.platform,
+            deviceId: localStorage.getItem('hm_device_id') || `web-${Date.now()}`,
         };
-
         await api.notifications.subscribePush(subscription, deviceInfo);
-      } catch (error) {
-        console.error('[Push] Failed to sync with backend:', error);
-      }
+    } catch (error) {
+        console.error('[Push] Failed to sync subscription with backend:', error);
     }
+}
 
-    async function requestAndSubscribe(registration: ServiceWorkerRegistration) {
-      try {
-        // طلب الإذن من المستخدم
+async function requestAndSubscribe(registration: ServiceWorkerRegistration): Promise<void> {
+    try {
         const permission = await Notification.requestPermission();
-        if (permission !== 'granted') return;
+        if (permission !== 'granted') {
+            console.info('[Push] Permission denied by user');
+            return;
+        }
 
-        // إنشاء اشتراك جديد
         const subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
         });
 
         await sendSubscriptionToBackend(subscription);
-      } catch (error) {
-        console.error('[Push] Failed to subscribe user:', error);
-      }
+        console.info('[Push] ✅ Subscribed successfully');
+    } catch (error) {
+        console.error('[Push] Subscribe failed:', error);
     }
+}
 
-    // التحقق من دعم المتصفح لنظام الإشعارات واستمرارية الاشتراك الفعال
-    async function initPush() {
-      if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
-        console.warn('[Push] Browser does not support push notifications');
+async function initPush(): Promise<void> {
+    if (
+        typeof window === 'undefined' ||
+        !('serviceWorker' in navigator) ||
+        !('PushManager' in window) ||
+        !('Notification' in window)
+    ) {
+        console.info('[Push] Push notifications not supported in this browser');
         return;
-      }
-
-      // التحقق مما إذا كان المستخدم مسجل دخول
-      const user = localStorage.getItem('hm_user');
-      if (!user) return;
-
-      try {
-        const registration = await navigator.serviceWorker.ready;
-        
-        // التحقق من وجود اشتراك مسبق
-        const subscription = await registration.pushManager.getSubscription();
-        
-        if (subscription) {
-          // تحديث بيانات الاشتراك في كل مرة لضمان مزامنة التوكين مع الخادم
-          await sendSubscriptionToBackend(subscription);
-        } else {
-          // إذا لم يكن هناك اشتراك، نطلب الصلاحية ونشترك
-          await requestAndSubscribe(registration);
-        }
-      } catch (error) {
-        console.error('[Push] Initialization failed:', error);
-      }
     }
 
-    // تأخير بسيط لضمان استقرار باقي الكومبوننتس
-    const timeout = setTimeout(initPush, 5000);
-    return () => clearTimeout(timeout);
-  }, []);
+    // التحقق من تسجيل دخول المستخدم
+    const userStr = localStorage.getItem('hm_user');
+    if (!userStr) return;
 
-  // هذا الكومبوننت لا يظهر شيئاً في الواجهة، يعمل في الخلفية
-  return null;
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        const existingSub = await registration.pushManager.getSubscription();
+
+        if (existingSub) {
+            // تحديث بيانات الاشتراك في كل مرة لضمان مزامنة التوكين مع الخادم
+            await sendSubscriptionToBackend(existingSub);
+        } else {
+            // اشتراك جديد بعد تأخير بسيط لضمان استقرار باقي الكومبوننتس
+            await requestAndSubscribe(registration);
+        }
+    } catch (error) {
+        console.error('[Push] Initialization failed:', error);
+    }
+}
+
+export default function PushNotificationManager() {
+    useEffect(() => {
+        // تأخير 5 ثوان لضمان استقرار باقي الكومبوننتس وتسجيل السرفيس ووركر
+        const timeoutId = setTimeout(initPush, 5000);
+        return () => clearTimeout(timeoutId);
+    }, []);
+
+    // هذا الكومبوننت لا يظهر شيئاً في الواجهة، يعمل في الخلفية فقط
+    return null;
 }

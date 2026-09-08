@@ -100,14 +100,52 @@ function ComparisonsPage() {
 
     const formatPrice = (price: number) => formatGlobalPrice(Number(price || 0));
 
+    // تحديد أفضل وأسوأ قيمة في صف معين
+    const getBestIdx = (key: string, lower = true): number => {
+        const vals = cars.map(c => Number((c as unknown as Record<string, unknown>)[key]) || 0);
+        if (vals.every(v => v === 0)) return -1;
+        return lower
+            ? vals.indexOf(Math.min(...vals.filter(v => v > 0)))
+            : vals.indexOf(Math.max(...vals));
+    };
+
     const specs = [
-        { key: 'price', label: isRTL ? 'السعر' : 'Price', icon: null, format: (v: any) => formatPrice(v) },
-        { key: 'year', label: isRTL ? 'السنة' : 'Year', icon: Calendar },
-        { key: 'mileage', label: isRTL ? 'المسافة' : 'Mileage', icon: Gauge, format: (v: any) => v ? `${v.toLocaleString()} ${isRTL ? rawText('كم') : rawText('km')}` : rawText('-') },
+        { key: 'price', label: isRTL ? 'السعر' : 'Price', icon: null,
+            format: (v: unknown) => formatPrice(v as number),
+            bestType: 'lower' as const },
+        { key: 'year', label: isRTL ? 'السنة' : 'Year', icon: Calendar,
+            bestType: 'higher' as const },
+        { key: 'mileage', label: isRTL ? 'المسافة' : 'Mileage', icon: Gauge,
+            format: (v: unknown) => v ? `${Number(v).toLocaleString()} ${isRTL ? rawText('كم') : rawText('km')}` : rawText('-'),
+            bestType: 'lower' as const },
         { key: 'fuelType', label: isRTL ? 'الوقود' : 'Fuel', icon: Fuel },
         { key: 'transmission', label: isRTL ? 'ناقل الحركة' : 'Transmission', icon: Settings },
         { key: 'color', label: isRTL ? 'اللون' : 'Color', icon: null },
+        { key: 'description', label: isRTL ? 'الوصف' : 'Description', icon: null },
     ];
+
+    const getBadge = (key: string, carIdx: number, bestType?: 'higher' | 'lower') => {
+        if (!bestType) return null;
+        const bestIdx = getBestIdx(key, bestType === 'lower');
+        if (bestIdx === -1 || cars.length < 2) return null;
+        if (carIdx === bestIdx) return (
+            <span className="ml-1 text-[8px] font-black text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 rounded px-1">
+                {isRTL ? rawText('أفضل') : rawText('BEST')}
+            </span>
+        );
+        const vals = cars.map(c => Number((c as unknown as Record<string, unknown>)[key]) || 0).filter(v => v > 0);
+        const unique = new Set(vals);
+        if (unique.size > 1) {
+            const worst = bestType === 'lower' ? Math.max(...vals) : Math.min(...vals.filter(v => v > 0));
+            const carVal = Number((cars[carIdx] as unknown as Record<string, unknown>)[key]) || 0;
+            if (carVal === worst) return (
+                <span className="ml-1 text-[8px] font-black text-red-400/70 bg-red-400/10 border border-red-400/20 rounded px-1">
+                    {isRTL ? rawText('أعلى') : rawText('HIGH')}
+                </span>
+            );
+        }
+        return null;
+    };
 
     if (loading) {
         return (
@@ -250,23 +288,33 @@ function ComparisonsPage() {
                             {/* Specs Rows */}
                             <tbody>
                                 {specs.map((spec, specIndex) => (
-                                    <tr key={spec.key} className={specIndex % 2 === 0 ? 'bg-white/5' : ''}>
+                                    <tr key={spec.key} className={cn(
+                                        'border-b border-white/5 transition-colors',
+                                        specIndex % 2 === 0 ? 'bg-white/[0.02]' : ''
+                                    )}>
                                         <td className="p-4 font-bold text-white/60">
                                             <div className="flex items-center gap-3">
                                                 {spec.icon && <spec.icon className="w-5 h-5 text-cinematic-neon-gold" />}
-                                                {spec.label}
+                                                <span className="text-sm">{spec.label}</span>
                                             </div>
                                         </td>
-                                        {cars.map((car) => (
-                                            <td key={car._id} className="p-4 text-center">
-                                                <span className={spec.key === 'price' ? 'text-cinematic-neon-gold font-bold text-xl' : ''}>
-                                                    {spec.format
-                                                        ? spec.format((car as any)[spec.key])
-                                                        : (car as any)[spec.key] || rawText('-')}
-                                                </span>
-                                            </td>
-                                        ))}
-                                        {cars.length < 4 && <td></td>}
+                                        {cars.map((car, carIdx) => {
+                                            const val = (car as unknown as Record<string, unknown>)[spec.key];
+                                            const badge = spec.bestType ? getBadge(spec.key, carIdx, spec.bestType) : null;
+                                            return (
+                                                <td key={car._id} className="p-4 text-center">
+                                                    <span className={[
+                                                        spec.key === 'price' ? 'text-cinematic-neon-gold font-bold text-xl' : 'text-white/80',
+                                                    ].join(' ')}>
+                                                        {spec.format
+                                                            ? spec.format(val)
+                                                            : (String(val || '-'))}
+                                                    </span>
+                                                    {badge}
+                                                </td>
+                                            );
+                                        })}
+                                        {cars.length < 4 && <td />}
                                     </tr>
                                 ))}
                             </tbody>

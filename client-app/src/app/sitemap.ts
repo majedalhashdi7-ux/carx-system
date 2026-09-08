@@ -24,23 +24,25 @@ function getApiBase() {
 }
 
 // Helper function to fetch from API with robust error handling
-async function fetchAPI(endpoint: string): Promise<any> {
+async function fetchAPI(endpoint: string): Promise<unknown> {
   try {
     const apiBase = getApiBase();
     const url = `${apiBase}${endpoint}`;
+    const tenantId = process.env.NEXT_PUBLIC_TENANT_ID || process.env.TENANT_ID || 'default';
     
     const res = await fetch(url, {
       next: { revalidate: 3600 }, // Cache for 1 hour
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
+        'X-Tenant-ID': tenantId,
         ...(process.env.NODE_ENV === 'production' && { 'x-sitemap-request': '1' })
       }
     });
     
     if (!res.ok) return null;
     
-    // تحقق أن الاستجابة JSON وليست HTML (حدث هذا أثناء بناء Vercel)
+    // تحقق أن الاستجابة JSON وليست HTML
     const contentType = res.headers.get('content-type') || '';
     if (!contentType.includes('application/json')) return null;
     
@@ -77,10 +79,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     fetchAPI('/api/v2/brands?limit=100'),
   ]);
 
-  const cars = carsData?.data?.cars || [];
-  const parts = partsData?.data?.parts || [];
-  const auctions = auctionsData?.data?.auctions || [];
-  const brands = brandsData?.data?.brands || [];
+  const data = (d: unknown) => d as Record<string, unknown>;
+  const cars: unknown[] = (data(carsData)?.data as Record<string, unknown[]>)?.cars || [];
+  const parts: unknown[] = (data(partsData)?.data as Record<string, unknown[]>)?.parts || [];
+  const auctions: unknown[] = (data(auctionsData)?.data as Record<string, unknown[]>)?.auctions || [];
+  const brands: unknown[] = (data(brandsData)?.data as Record<string, unknown[]>)?.brands || [];
 
   const carUrls: MetadataRoute.Sitemap = cars.map((car: any) => ({
     url: `${BASE_URL}/cars/${car._id || car.id}`,

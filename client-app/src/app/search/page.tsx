@@ -1,9 +1,10 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Search, Tag, AlertCircle, ArrowRight, ShoppingBag, Sparkles, Bell, CheckCircle2 } from "lucide-react";
+import { Search, Tag, AlertCircle, ArrowRight, ShoppingBag, Sparkles, Bell, CheckCircle2,
+    SlidersHorizontal, ChevronDown, X } from "lucide-react";
 import Link from 'next/link';
 import NextImage from 'next/image';
 import ClientPageHeader from '@/components/ClientPageHeader';
@@ -12,6 +13,186 @@ import { api } from '@/lib/api-original';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useSettings } from '@/lib/SettingsContext';
+
+// ── Types ──
+interface CarResult {
+    id?: string; _id?: string; title?: string;
+    make?: string | { name: string }; model?: string;
+    year?: number; price?: number; priceSar?: number;
+    images?: string[]; fuelType?: string; transmission?: string;
+}
+interface PartResult {
+    id?: string; _id?: string; name?: string;
+    brand?: string; price?: number; img?: string;
+    condition?: string;
+}
+interface BrandResult { name: string; logoUrl?: string; }
+
+// ── Filter Panel Component ──
+function AdvancedFilters({
+    isRTL, onApply, currentFilters
+}: {
+    isRTL: boolean;
+    onApply: (f: FilterValues) => void;
+    currentFilters: FilterValues;
+}) {
+    const [open, setOpen] = useState(false);
+    const [local, setLocal] = useState<FilterValues>(currentFilters);
+
+    const fuelOptions = [
+        { value: '', label: isRTL ? 'كل الأنواع' : 'All Fuels' },
+        { value: 'Petrol', label: isRTL ? 'بنزين' : 'Petrol' },
+        { value: 'Diesel', label: isRTL ? 'ديزل' : 'Diesel' },
+        { value: 'Hybrid', label: isRTL ? 'هجين' : 'Hybrid' },
+        { value: 'Electric', label: isRTL ? 'كهربائي' : 'Electric' },
+    ];
+    const transmissionOptions = [
+        { value: '', label: isRTL ? 'كل الأنواع' : 'All' },
+        { value: 'Automatic', label: isRTL ? 'أوتوماتيك' : 'Automatic' },
+        { value: 'Manual', label: isRTL ? 'يدوي' : 'Manual' },
+    ];
+    const currentYear = new Date().getFullYear();
+    const years = Array.from({ length: 20 }, (_, i) => currentYear - i);
+
+    const hasActiveFilters = local.fuel || local.transmission || local.yearFrom || local.yearTo ||
+        local.minPrice || local.maxPrice;
+
+    return (
+        <div className="mb-8">
+            <button
+                onClick={() => setOpen(v => !v)}
+                className={cn(
+                    'flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-black transition-all',
+                    hasActiveFilters
+                        ? 'bg-[#C9A96E]/15 border-[#C9A96E]/50 text-[#C9A96E]'
+                        : 'bg-white/5 border-white/10 text-white/50 hover:text-white hover:border-white/20'
+                )}
+            >
+                <SlidersHorizontal className="w-4 h-4" />
+                {isRTL ? 'فلاتر متقدمة' : 'Advanced Filters'}
+                {hasActiveFilters && <span className="w-2 h-2 rounded-full bg-[#C9A96E] animate-pulse" />}
+                <ChevronDown className={cn('w-3 h-3 transition-transform', open && 'rotate-180')} />
+            </button>
+
+            {open && (
+                <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mt-3 p-5 rounded-2xl bg-white/[0.03] border border-white/10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4"
+                >
+                    {/* نوع الوقود */}
+                    <div>
+                        <label className="block text-[9px] font-black text-white/40 uppercase tracking-widest mb-1.5">
+                            {isRTL ? 'نوع الوقود' : 'Fuel Type'}
+                        </label>
+                        <select
+                            value={local.fuel}
+                            onChange={e => setLocal(p => ({ ...p, fuel: e.target.value }))}
+                            className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-[#C9A96E]/50 focus:outline-none"
+                        >
+                            {fuelOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </select>
+                    </div>
+
+                    {/* ناقل الحركة */}
+                    <div>
+                        <label className="block text-[9px] font-black text-white/40 uppercase tracking-widest mb-1.5">
+                            {isRTL ? 'ناقل الحركة' : 'Transmission'}
+                        </label>
+                        <select
+                            value={local.transmission}
+                            onChange={e => setLocal(p => ({ ...p, transmission: e.target.value }))}
+                            className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-[#C9A96E]/50 focus:outline-none"
+                        >
+                            {transmissionOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </select>
+                    </div>
+
+                    {/* سنة من */}
+                    <div>
+                        <label className="block text-[9px] font-black text-white/40 uppercase tracking-widest mb-1.5">
+                            {isRTL ? 'السنة من' : 'Year From'}
+                        </label>
+                        <select
+                            value={local.yearFrom}
+                            onChange={e => setLocal(p => ({ ...p, yearFrom: e.target.value }))}
+                            className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-[#C9A96E]/50 focus:outline-none"
+                        >
+                            <option value="">{isRTL ? 'أي سنة' : 'Any'}</option>
+                            {years.map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
+                    </div>
+
+                    {/* سنة إلى */}
+                    <div>
+                        <label className="block text-[9px] font-black text-white/40 uppercase tracking-widest mb-1.5">
+                            {isRTL ? 'السنة إلى' : 'Year To'}
+                        </label>
+                        <select
+                            value={local.yearTo}
+                            onChange={e => setLocal(p => ({ ...p, yearTo: e.target.value }))}
+                            className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-[#C9A96E]/50 focus:outline-none"
+                        >
+                            <option value="">{isRTL ? 'أي سنة' : 'Any'}</option>
+                            {years.map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
+                    </div>
+
+                    {/* نطاق السعر */}
+                    <div>
+                        <label className="block text-[9px] font-black text-white/40 uppercase tracking-widest mb-1.5">
+                            {isRTL ? 'نطاق السعر (ر.س)' : 'Price Range (SAR)'}
+                        </label>
+                        <div className="flex gap-1 items-center">
+                            <input
+                                type="number" placeholder={isRTL ? 'من' : 'Min'}
+                                value={local.minPrice}
+                                onChange={e => setLocal(p => ({ ...p, minPrice: e.target.value }))}
+                                className="w-full bg-black/50 border border-white/10 rounded-xl px-2 py-2 text-xs text-white focus:border-[#C9A96E]/50 focus:outline-none"
+                            />
+                            <span className="text-white/20 text-xs">—</span>
+                            <input
+                                type="number" placeholder={isRTL ? 'إلى' : 'Max'}
+                                value={local.maxPrice}
+                                onChange={e => setLocal(p => ({ ...p, maxPrice: e.target.value }))}
+                                className="w-full bg-black/50 border border-white/10 rounded-xl px-2 py-2 text-xs text-white focus:border-[#C9A96E]/50 focus:outline-none"
+                            />
+                        </div>
+                    </div>
+
+                    {/* أزرار */}
+                    <div className="col-span-full flex gap-3 pt-2">
+                        <button
+                            onClick={() => { onApply(local); setOpen(false); }}
+                            className="px-5 py-2 rounded-xl bg-[#C9A96E] text-black text-xs font-black hover:bg-[#b8955b] transition-all"
+                        >
+                            {isRTL ? 'تطبيق الفلاتر' : 'Apply Filters'}
+                        </button>
+                        <button
+                            onClick={() => {
+                                const empty = { fuel: '', transmission: '', yearFrom: '', yearTo: '', minPrice: '', maxPrice: '' };
+                                setLocal(empty); onApply(empty); setOpen(false);
+                            }}
+                            className="px-5 py-2 rounded-xl bg-white/5 border border-white/10 text-white/50 text-xs font-black hover:text-white transition-all flex items-center gap-1"
+                        >
+                            <X className="w-3 h-3" /> {isRTL ? 'مسح الكل' : 'Clear All'}
+                        </button>
+                    </div>
+                </motion.div>
+            )}
+        </div>
+    );
+}
+
+interface FilterValues {
+    fuel: string;
+    transmission: string;
+    yearFrom: string;
+    yearTo: string;
+    minPrice: string;
+    maxPrice: string;
+}
 
 export default function SearchPage() {
     return (
@@ -30,65 +211,74 @@ function SearchContent() {
     const { isRTL } = useLanguage();
     const { formatPrice } = useSettings();
 
-    const [cars, setCars] = useState<any[]>([]);
-    const [parts, setParts] = useState<any[]>([]);
-    const [brands, setBrands] = useState<any[]>([]);
+    const [cars, setCars] = useState<CarResult[]>([]);
+    const [parts, setParts] = useState<PartResult[]>([]);
+    const [brands, setBrands] = useState<BrandResult[]>([]);
     const [loading, setLoading] = useState(true);
     const [hasResults, setHasResults] = useState(false);
+    const [advFilters, setAdvFilters] = useState<FilterValues>({
+        fuel: '', transmission: '', yearFrom: '', yearTo: '', minPrice: '', maxPrice: ''
+    });
 
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                // Fetch brands for the filter bar
                 const brandsRes = await api.brands.list().catch(() => ({ brands: [] }));
-                setBrands(brandsRes?.brands || []);
+                setBrands((brandsRes as any)?.brands || []);
 
-                let minPrice = undefined;
-                let maxPrice = undefined;
-                if (price === '0-100' || price === '0-100k') { maxPrice = 100000; }
-                else if (price === '100-300' || price === '100-500k') { minPrice = 100000; maxPrice = 500000; }
-                else if (price === '300+' || price === '500k+') { minPrice = 500000; }
+                let minPrice: string | undefined = advFilters.minPrice || undefined;
+                let maxPrice: string | undefined = advFilters.maxPrice || undefined;
 
-                // [[ARABIC_COMMENT]] api.cars.list يرجع { success, data: { cars, pagination } }
+                // URL-based price shortcuts (backward compat)
+                if (!minPrice && !maxPrice) {
+                    if (price === '0-100' || price === '0-100k') { maxPrice = '100000'; }
+                    else if (price === '100-300' || price === '100-500k') { minPrice = '100000'; maxPrice = '500000'; }
+                    else if (price === '300+' || price === '500k+') { minPrice = '500000'; }
+                }
+
                 const carsRes = await api.cars.list({
-                    page: 1,
-                    limit: 100,
-                    search: q,
-                    make: brand || '',
-                    minPrice: minPrice?.toString() ?? '',
-                    maxPrice: maxPrice?.toString() ?? ''
+                    page: 1, limit: 100, search: q, make: brand || '',
+                    minPrice: minPrice ?? '',
+                    maxPrice: maxPrice ?? '',
+                    ...(advFilters.fuel ? { fuelType: advFilters.fuel } : {}),
+                    ...(advFilters.transmission ? { transmission: advFilters.transmission } : {}),
+                    ...(advFilters.yearFrom ? { yearFrom: advFilters.yearFrom } : {}),
+                    ...(advFilters.yearTo ? { yearTo: advFilters.yearTo } : {}),
                 }).catch(() => ({ data: { cars: [] } }));
 
-                // [[ARABIC_COMMENT]] api.parts.list يرجع { success, data: { parts } }
                 const partsRes = await api.parts.list({
-                    page: 1,
-                    limit: 100,
-                    q: q,
+                    page: 1, limit: 100, q: q,
                     ...(brand !== '' && { category: brand })
                 }).catch(() => ({ data: { parts: [] } }));
 
-                // [[ARABIC_COMMENT]] استخراج البيانات من المستوى الصحيح (يدعم كلاً من Array و data.cars)
-                const fetchedCars = Array.isArray(carsRes?.data) 
-                    ? carsRes.data 
-                    : (carsRes?.data?.cars || carsRes?.cars || []);
-                const fetchedParts = Array.isArray(partsRes?.data) 
-                    ? partsRes.data 
-                    : (partsRes?.data?.parts || partsRes?.parts || []);
+                const fetchedCars: CarResult[] = Array.isArray((carsRes as any)?.data)
+                    ? (carsRes as any).data
+                    : ((carsRes as any)?.data?.cars || (carsRes as any)?.cars || []);
+                const fetchedParts: PartResult[] = Array.isArray((partsRes as any)?.data)
+                    ? (partsRes as any).data
+                    : ((partsRes as any)?.data?.parts || (partsRes as any)?.parts || []);
 
-                setCars(fetchedCars);
+                // Client-side filtering for year/fuel/transmission if API doesn't support
+                const filtered = fetchedCars.filter(c => {
+                    if (advFilters.yearFrom && c.year && Number(c.year) < Number(advFilters.yearFrom)) return false;
+                    if (advFilters.yearTo && c.year && Number(c.year) > Number(advFilters.yearTo)) return false;
+                    if (advFilters.fuel && c.fuelType && !c.fuelType.toLowerCase().includes(advFilters.fuel.toLowerCase())) return false;
+                    if (advFilters.transmission && c.transmission && !c.transmission.toLowerCase().includes(advFilters.transmission.toLowerCase())) return false;
+                    return true;
+                });
+
+                setCars(filtered);
                 setParts(fetchedParts);
-                setHasResults(fetchedCars.length > 0 || fetchedParts.length > 0);
-
+                setHasResults(filtered.length > 0 || fetchedParts.length > 0);
             } catch (err) {
-                console.error("Search failed", err);
+                console.error('Search failed', err);
             } finally {
                 setLoading(false);
             }
         };
-
         fetchData();
-    }, [q, brand, price]);
+    }, [q, brand, price, advFilters]);
 
 
     const handleConciergeRequest = () => {
@@ -137,7 +327,14 @@ function SearchContent() {
                     icon={Search}
                 />
 
-                {/* ── Smart Alert Save Button ── */}
+                {/* Advanced Filters */}
+                <AdvancedFilters
+                    isRTL={isRTL}
+                    currentFilters={advFilters}
+                    onApply={setAdvFilters}
+                />
+
+                {/* Smart Alert Save Button */}
                 {(q || brand) && (
                     <div className="mb-8 flex items-center gap-3 flex-wrap">
                         <button

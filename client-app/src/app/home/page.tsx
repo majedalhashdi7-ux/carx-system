@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Car, Wrench, Gavel, ShieldCheck, Globe, Sparkles, Star, HelpCircle, Users,
@@ -14,9 +14,49 @@ import { useSettings } from '@/lib/SettingsContext';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api-original';
 import Link from 'next/link';
-import { getBrandDisplayName, getClearbitLogoUrl, isLocalPath, formatCarTitle } from '@/lib/brandTranslations';
+import { getBrandDisplayName, getClearbitLogoUrl, formatCarTitle } from '@/lib/brandTranslations';
 
-const BRAND_SVG_LOGOS: Record<string, string> = {
+// ─── TypeScript Interfaces ───
+interface CarItem {
+    _id: string;
+    id?: string;
+    title?: string;
+    make?: string | { name: string };
+    model?: string;
+    year?: number | string;
+    price?: number;
+    priceSar?: number;
+    transmission?: string;
+    fuelType?: string;
+    fuel?: string;
+    images?: string[];
+    image?: string;
+    imageUrl?: string;
+    listingType?: string;
+    isLiveAuction?: boolean;
+    type?: string;
+    priceEstimate?: string;
+    sessionId?: string;
+    sourceUrl?: string;
+    isHidden?: boolean;
+    lotNumber?: string;
+}
+
+interface BrandItem {
+    name: string;
+    nameAr?: string;
+    logoUrl?: string;
+    logo?: string;
+    isActive?: boolean;
+    key?: string;
+}
+
+// ─── PWA Install Prompt Type ───
+interface BeforeInstallPromptEvent extends Event {
+    prompt(): Promise<void>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
     'hyundai': 'https://upload.wikimedia.org/wikipedia/commons/4/44/Hyundai_Motor_Company_logo.svg',
     'هيونداي': 'https://upload.wikimedia.org/wikipedia/commons/4/44/Hyundai_Motor_Company_logo.svg',
     'kia': 'https://upload.wikimedia.org/wikipedia/commons/4/47/Kia_logo_2021.svg',
@@ -113,12 +153,13 @@ export default function HomePage() {
     const WHATSAPP_NUMBER = (socialLinks?.whatsapp || '+821080880014').replace(/\D/g, '');
 
     // ─── State ───
-    const [brands, setBrands] = useState<any[]>([]);
-    const [showroomCars, setShowroomCars] = useState<any[]>([]);
-    const [liveAuctions, setLiveAuctions] = useState<any[]>([]);
+    const [brands, setBrands] = useState<BrandItem[]>([]);
+    const [showroomCars, setShowroomCars] = useState<CarItem[]>([]);
+    const [liveAuctions, setLiveAuctions] = useState<CarItem[]>([]);
     const [carsLoading, setCarsLoading] = useState(true);
-    const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+    const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
     const [showInstallBtn, setShowInstallBtn] = useState(false);
+    const abortRef = useRef<AbortController | null>(null);
 
     const formatCarImage = (url: string | undefined): string => {
         if (!url) return 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?q=80&w=1000&auto=format&fit=crop';
@@ -188,65 +229,54 @@ export default function HomePage() {
     };
 
     useEffect(() => {
+        // إلغاء أي طلب سابق عند إعادة التشغيل
+        if (abortRef.current) abortRef.current.abort();
+        const controller = new AbortController();
+        abortRef.current = controller;
+
         setCarsLoading(true);
 
-        const withTimeout = <T,>(promise: Promise<T>, ms = 5000): Promise<T> =>
+        const withTimeout = <T,>(promise: Promise<T>, ms = 8000): Promise<T> =>
             Promise.race([promise, new Promise<T>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))]);
 
-        // [[FIX]] جلب سريع أولاً (12 سيارة) لعرض المحتوى بسرعة
-        withTimeout(api.cars.list({ limit: 12, status: 'all' }), 2500)
-            .then((quickRes: any) => {
-                const quickCars = Array.isArray(quickRes?.data) ? quickRes.data
-                    : (quickRes?.data?.cars || quickRes?.cars || []);
-                if (quickCars.length > 0) {
-                    setShowroomCars(quickCars.map((c: any) => ({
-                        ...c, _id: c.id || c._id, type: 'showroom',
-                        price: c.price || c.priceSar || 0,
-                        year: c.year || '2024',
-                        transmission: c.transmission || (isRTL ? 'أوتوماتيك' : 'Auto'),
-                        fuel: c.fuelType || (isRTL ? 'ديزل' : 'Diesel'),
-                        images: c.images || (c.image ? [c.image] : [])
-                    })));
-                    setCarsLoading(false);
-                }
-            }).catch(() => {});
+        const normalizeCarItem = (c: CarItem, type: string): CarItem => ({
+            ...c,
+            _id: c.id || c._id,
+            type,
+            price: c.price || c.priceSar || 0,
+            year: c.year || '2024',
+            transmission: c.transmission || (isRTL ? 'أوتوماتيك' : 'Auto'),
+            fuel: c.fuelType || c.fuel || (isRTL ? 'ديزل' : 'Diesel'),
+            images: c.images || (c.image ? [c.image] : []),
+        });
 
-        // [[FIX]] جلب كامل بعد ذلك
         Promise.all([
             withTimeout(api.cars.list({ limit: 100, status: 'all' })).catch(() => ({ success: false, data: [] })),
             withTimeout(api.liveAuctions.list()).catch(() => ({ success: false, data: [] })),
             withTimeout(api.auctions.list({ status: 'running', limit: 100 })).catch(() => ({ success: false, data: [] }))
         ]).then(([carsRes, liveAuctionsRes, auctionsRes]) => {
-            const rawCars = Array.isArray((carsRes as any)?.data)
+            if (controller.signal.aborted) return;
+
+            const rawCars: CarItem[] = Array.isArray((carsRes as any)?.data)
                 ? (carsRes as any).data
                 : ((carsRes as any)?.data?.cars || (carsRes as any)?.cars || []);
 
             if (rawCars.length > 0) {
-                setShowroomCars(rawCars.map((c: any) => ({
-                    ...c,
-                    _id: c.id || c._id,
-                    type: 'showroom',
-                    price: c.price || c.priceSar || 0,
-                    year: c.year || '2024',
-                    transmission: c.transmission || (isRTL ? 'أوتوماتيك' : 'Auto'),
-                    fuel: c.fuelType || (isRTL ? 'ديزل' : 'Diesel'),
-                    images: c.images || (c.image ? [c.image] : [])
-                })));
+                setShowroomCars(rawCars.map(c => normalizeCarItem(c, 'showroom')));
             }
 
-
-            // تجميع سيارات المزادات المباشرة الحقيقية من جلسات المزاد الحي ومن فئة المزادات
-            const realAuctionCars: any[] = [];
+            // تجميع سيارات المزادات الحقيقية
+            const realAuctionCars: CarItem[] = [];
             const addedIds = new Set<string>();
 
-            // 1. جلب السيارات من جلسات المزاد المباشر (LiveAuction sessions)
-            const sessions = Array.isArray(liveAuctionsRes?.data)
-                ? liveAuctionsRes.data
-                : (liveAuctionsRes?.sessions || []);
+            // 1. من جلسات المزاد المباشر
+            const sessions: CarItem[] = Array.isArray((liveAuctionsRes as any)?.data)
+                ? (liveAuctionsRes as any).data
+                : ((liveAuctionsRes as any)?.sessions || []);
 
             sessions.forEach((session: any) => {
                 if (Array.isArray(session.cars)) {
-                    session.cars.forEach((car: any) => {
+                    session.cars.forEach((car: CarItem) => {
                         const carId = car._id || car.id || car.lotNumber;
                         if (!car.isHidden && carId && !addedIds.has(carId)) {
                             addedIds.add(carId);
@@ -256,23 +286,22 @@ export default function HomePage() {
                                 title: car.title || (isRTL ? 'سيارة مزاد حي' : 'Live Auction Car'),
                                 type: 'live-auction',
                                 price: car.price || car.priceSar || 0,
-                                priceEstimate: car.priceEstimate || '',
                                 year: car.year || '2024',
                                 transmission: car.transmission || (isRTL ? 'أوتوماتيك' : 'Auto'),
                                 fuel: car.fuelType || car.fuel || (isRTL ? 'ديزل' : 'Diesel'),
-                                images: car.images?.length > 0 ? car.images : (car.img || car.image ? [car.img || car.image] : []),
-                                sessionId: session._id || session.id,
-                                sourceUrl: car.sourceUrl || session.externalUrl
+                                images: (car.images?.length ?? 0) > 0 ? car.images : (car.image ? [car.image] : []),
+                                sessionId: (session as any)._id || (session as any).id,
+                                sourceUrl: car.sourceUrl || (session as any).externalUrl,
                             });
                         }
                     });
                 }
             });
 
-            // 2. جلب المزادات التقليدية النشطة
-            const rawAuctions = Array.isArray(auctionsRes?.data)
-                ? auctionsRes.data
-                : (auctionsRes?.auctions || auctionsRes?.data?.auctions || []);
+            // 2. المزادات التقليدية
+            const rawAuctions: any[] = Array.isArray((auctionsRes as any)?.data)
+                ? (auctionsRes as any).data
+                : ((auctionsRes as any)?.auctions || (auctionsRes as any)?.data?.auctions || []);
 
             rawAuctions.forEach((a: any) => {
                 const aucId = a._id || a.id;
@@ -292,29 +321,21 @@ export default function HomePage() {
                 }
             });
 
-            // 3. جلب السيارات من المعرض المصنفة كـ auction
-            rawCars.forEach((c: any) => {
+            // 3. سيارات المعرض المصنفة كـ auction
+            rawCars.forEach((c: CarItem) => {
                 const cId = c.id || c._id;
                 if ((c.listingType === 'auction' || c.isLiveAuction) && cId && !addedIds.has(cId)) {
                     addedIds.add(cId);
-                    realAuctionCars.push({
-                        ...c,
-                        _id: cId,
-                        type: 'auctions',
-                        price: c.price || c.priceSar || 0,
-                        year: c.year || '2024',
-                        transmission: c.transmission || (isRTL ? 'أوتوماتيك' : 'Auto'),
-                        fuel: c.fuelType || (isRTL ? 'ديزل' : 'Diesel'),
-                        images: c.images || (c.image ? [c.image] : [])
-                    });
+                    realAuctionCars.push(normalizeCarItem(c, 'auctions'));
                 }
             });
 
-            if (realAuctionCars.length > 0) {
-                setLiveAuctions(realAuctionCars);
-            }
-        }).catch(err => console.error('Error fetching homepage data:', err))
-            .finally(() => setCarsLoading(false));
+            if (realAuctionCars.length > 0) setLiveAuctions(realAuctionCars);
+        })
+        .catch(err => { if (!controller.signal.aborted) console.error('Error fetching homepage data:', err); })
+        .finally(() => { if (!controller.signal.aborted) setCarsLoading(false); });
+
+        return () => { controller.abort(); };
     }, [isRTL]);
 
     const FALLBACK_BRANDS = [
@@ -540,6 +561,8 @@ export default function HomePage() {
                                             <img
                                                 src={image}
                                                 alt={title}
+                                                loading="lazy"
+                                                decoding="async"
                                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                                                 onError={(e) => {
                                                     (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?q=80&w=1000&auto=format&fit=crop';
@@ -633,7 +656,7 @@ export default function HomePage() {
                                 return (
                                     <div key={`auction-marquee-${idx}`} className="relative aspect-square w-[220px] sm:w-[260px] rounded-3xl overflow-hidden border border-red-500/20 bg-[#120d18] group flex-shrink-0 cursor-pointer shadow-xl hover:border-red-500 transition-all duration-300">
                                         {image ? (
-                                            <img src={image} alt={title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 pointer-events-none" />
+                                            <img src={image} alt={title} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 pointer-events-none" />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center bg-white/5">
                                                 <Gavel className="w-12 h-12 text-white/10" />

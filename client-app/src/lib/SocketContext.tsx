@@ -8,6 +8,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
+import { apiCache } from './api-cache';
 
 // نستورد Socket فقط عند الحاجة لتجنب الأخطاء في بيئة Vercel
 type Socket = import('socket.io-client').Socket;
@@ -90,6 +91,30 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
                         },
                     }));
                 }
+            });
+
+            // ── Cache Invalidation via WebSocket ──
+            // عند إضافة/تعديل/حذف سيارة → مسح كاش السيارات
+            socketInstance.on('car:added', () => {
+                apiCache.invalidate('/api/v2/cars');
+                apiCache.invalidate('/api/v2/analytics');
+            });
+            socketInstance.on('car:updated', () => {
+                apiCache.invalidate('/api/v2/cars');
+            });
+            socketInstance.on('car:deleted', () => {
+                apiCache.invalidate('/api/v2/cars');
+                apiCache.invalidate('/api/v2/analytics');
+            });
+            // عند تغيير حالة طلب → مسح كاش الطلبات والإحصائيات
+            socketInstance.on('order:status_changed', () => {
+                apiCache.invalidate('/api/v2/orders');
+                apiCache.invalidate('/api/v2/analytics');
+            });
+            // عند تحديث مزاد حي
+            socketInstance.on('auction:updated', () => {
+                apiCache.invalidate('/api/v2/auctions');
+                apiCache.invalidate('/api/v2/live-auctions');
             });
 
             setSocket(socketInstance);

@@ -97,11 +97,24 @@ export async function fetchAPI(endpoint: string, options: RequestInit & { useCac
             throw errorObj;
         }
 
-        // حفظ الاستجابة الناجحة لطلبات GET ومسح الكاش عند الإضافة أو التعديل
+        // حفظ الاستجابة الناجحة لطلبات GET ومسح الكاش الذكي عند الكتابة
         if (isGet) {
             apiCache.set(endpoint, data);
         } else {
-            apiCache.clear();
+            // مسح ذكي بناءً على المسار المتأثر بدلاً من مسح الكاش بالكامل
+            apiCache.invalidate(endpoint.split('?')[0]);
+            // مسح المسارات المرتبطة (analytics, dashboard, etc)
+            const resourceMap: Record<string, string[]> = {
+                '/api/v2/cars': ['/api/v2/cars', '/api/v2/analytics', '/api/v2/settings/home-brands'],
+                '/api/v2/parts': ['/api/v2/parts', '/api/v2/analytics'],
+                '/api/v2/orders': ['/api/v2/orders', '/api/v2/analytics', '/api/v2/dashboard'],
+                '/api/v2/auctions': ['/api/v2/auctions', '/api/v2/live-auctions', '/api/v2/analytics'],
+                '/api/v2/users': ['/api/v2/users', '/api/v2/analytics'],
+                '/api/v2/brands': ['/api/v2/brands', '/api/v2/settings/home-brands'],
+                '/api/v2/settings': ['/api/v2/settings'],
+            };
+            const base = Object.keys(resourceMap).find(k => endpoint.startsWith(k));
+            if (base) resourceMap[base].forEach(p => apiCache.invalidate(p));
         }
 
         return data;
