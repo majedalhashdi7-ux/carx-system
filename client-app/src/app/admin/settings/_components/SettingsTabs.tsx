@@ -12,6 +12,7 @@
  * 6. FeaturesTab  - قسم "لماذا تختارنا"
  */
 
+import React from 'react';
 import { motion } from 'framer-motion';
 import {
     Save, Globe, MessageCircle, Instagram, Youtube, Facebook, Camera,
