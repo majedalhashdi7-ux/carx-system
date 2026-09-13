@@ -481,7 +481,7 @@ function SearchContent() {
                                         >
                                             <Link href={`/cars/${car.id || car._id}`}>
                                                 <div className="relative h-72 overflow-hidden rounded-t-[2.5rem] bg-black">
-                                                    <NextImage src={car.images?.[0] || 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?q=80&w=1000'} alt={car.title} fill className="object-cover grayscale transition-all duration-[1.5s] group-hover:grayscale-0 group-hover:scale-110 opacity-70 group-hover:opacity-100" />
+                                                    <NextImage src={car.images?.[0] || 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?q=80&w=1000'} alt={car.title || 'Car'} fill className="object-cover grayscale transition-all duration-[1.5s] group-hover:grayscale-0 group-hover:scale-110 opacity-70 group-hover:opacity-100" />
                                                     <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-90" />
                                                     <div className="absolute bottom-6 left-6 px-4 py-2 bg-black/60 backdrop-blur-xl rounded-full border border-white/10 flex items-center gap-2">
                                                         <span className="w-1.5 h-1.5 rounded-full bg-luxury-gold" />
@@ -532,7 +532,7 @@ function SearchContent() {
                                         >
                                             <Link href={`/parts/${part.id}`}>
                                                 <div className="aspect-square bg-white/[0.02] rounded-[2rem] overflow-hidden mb-6 border border-white/5 relative">
-                                                    <NextImage src={part.img} alt={part.name} fill className="object-contain grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700 p-8" />
+                                                    <NextImage src={part.img || 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?q=80&w=1000'} alt={part.name || 'Part'} fill className="object-contain grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700 p-8" />
                                                     <div className="absolute top-4 right-4 text-[9px] font-black uppercase tracking-widest text-white/20 border border-white/10 px-3 py-1 rounded-full">{part.brand}</div>
                                                 </div>
                                                 <div className="space-y-4">

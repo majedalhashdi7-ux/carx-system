@@ -44,7 +44,7 @@ export default function ShowroomPage() {
     const fetchCars = async () => {
       setLoading(true);
       try {
-        const res = await api.cars.getAll({ limit: '200' }) as any;
+        const res = await api.cars.getAll({ limit: '200', listingType: 'showroom' }) as any;
         if (res.data) {
           const result = res.data;
           const fetchedCars = Array.isArray(result.data)
@@ -113,7 +113,7 @@ export default function ShowroomPage() {
       });
     }
     result = result.filter(c => {
-      const price = c.price || 0;
+      const price = c.priceSar || c.price || 0;
       return price >= priceRange[0] && price <= priceRange[1];
     });
     result = result.filter(c => {
@@ -123,8 +123,8 @@ export default function ShowroomPage() {
 
     // Sort
     switch (sortBy) {
-      case 'price-asc': result.sort((a, b) => (a.price || 0) - (b.price || 0)); break;
-      case 'price-desc': result.sort((a, b) => (b.price || 0) - (a.price || 0)); break;
+      case 'price-asc': result.sort((a, b) => (a.priceSar || a.price || 0) - (b.priceSar || b.price || 0)); break;
+      case 'price-desc': result.sort((a, b) => (b.priceSar || b.price || 0) - (a.priceSar || a.price || 0)); break;
       case 'year-desc': result.sort((a, b) => (b.year || 0) - (a.year || 0)); break;
       default: result.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     }

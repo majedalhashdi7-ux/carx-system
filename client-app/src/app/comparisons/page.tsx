@@ -12,6 +12,7 @@ import { api } from '@/lib/api-original';
 import { useLocale } from '@/hooks/useLocale';
 import ClientPageHeader from '@/components/ClientPageHeader';
 import { useSettings } from '@/lib/SettingsContext';
+import { cn } from '@/lib/utils';
 
 const rawText = (value: string) => value;
 

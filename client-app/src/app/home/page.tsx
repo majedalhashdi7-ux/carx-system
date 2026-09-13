@@ -57,6 +57,7 @@ interface BeforeInstallPromptEvent extends Event {
     userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+const BRAND_SVG_LOGOS: Record<string, string> = {
     'hyundai': 'https://upload.wikimedia.org/wikipedia/commons/4/44/Hyundai_Motor_Company_logo.svg',
     'هيونداي': 'https://upload.wikimedia.org/wikipedia/commons/4/44/Hyundai_Motor_Company_logo.svg',
     'kia': 'https://upload.wikimedia.org/wikipedia/commons/4/47/Kia_logo_2021.svg',
@@ -192,9 +193,9 @@ export default function HomePage() {
     }, []);
 
     useEffect(() => {
-        const handleBeforeInstallPrompt = (e: Event) => {
+        const handleBeforeInstallPrompt = (e: any) => {
             e.preventDefault();
-            setDeferredPrompt(e);
+            setDeferredPrompt(e as BeforeInstallPromptEvent);
             setShowInstallBtn(true);
         };
         window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -651,7 +652,8 @@ export default function HomePage() {
                                 const rawMake = typeof car.make === 'object' ? car.make?.name : car.make;
                                 const title = formatCarTitle(car.title || `${rawMake || ''} ${car.model || ''} ${car.year || ''}`, rawMake || '', isRTL);
                                 const image = formatCarImage(Array.isArray(car.images) && car.images.length > 0 ? car.images[0] : (car.imageUrl || car.image));
-                                const priceStr = car.priceEstimate || (car.price > 0 ? formatPriceFromUsd(car.price) : (isRTL ? 'مزاد مباشر' : 'Live Auction'));
+                                const rawPrice = typeof car.price === 'number' ? car.price : 0;
+                                const priceStr = car.priceEstimate || (rawPrice > 0 ? formatPriceFromUsd(rawPrice) : (isRTL ? 'مزاد مباشر' : 'Live Auction'));
 
                                 return (
                                     <div key={`auction-marquee-${idx}`} className="relative aspect-square w-[220px] sm:w-[260px] rounded-3xl overflow-hidden border border-red-500/20 bg-[#120d18] group flex-shrink-0 cursor-pointer shadow-xl hover:border-red-500 transition-all duration-300">

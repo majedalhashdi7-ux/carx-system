@@ -29,10 +29,7 @@ async function setupTestDB() {
         const mongoUri = mongoServer.getUri();
 
         // Connect mongoose
-        await mongoose.connect(mongoUri, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        });
+        await mongoose.connect(mongoUri);
 
         isConnected = true;
 
