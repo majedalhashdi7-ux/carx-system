@@ -1,17 +1,35 @@
 /**
  * نظام ذاكرة التخزين المؤقت للعميل (Client-side API Cache)
- * يدعم التخزين المؤقت، إبطال المسارات بناءً على الأنماط، وتحديث البيانات
+ * يدعم TTL ذكي حسب نوع البيانات، stale-while-revalidate، وإبطال الأنماط
  */
 
 type CacheEntry = { data: unknown; timestamp: number; tags: string[] };
 
 const memoryCache = new Map<string, CacheEntry>();
-const DEFAULT_TTL = 60000;
+
+/** مستويات TTL حسب نوع البيانات */
+export const CACHE_TTL = {
+    STATIC:   60 * 60 * 1000,  // 1 ساعة  — brands, settings, public
+    MEDIUM:    5 * 60 * 1000,  // 5 دقائق — cars, parts, catalog
+    SHORT:     1 * 60 * 1000,  // 1 دقيقة — orders, comparisons
+    REALTIME:     15 * 1000,   // 15 ثانية — live auctions, bids
+} as const;
+
+const DEFAULT_TTL = CACHE_TTL.MEDIUM;
+
+/** يختار TTL تلقائياً بناءً على المسار */
+export function getTTLForEndpoint(endpoint: string): number {
+    if (/\/live-auctions|\/live\/|\/bids/.test(endpoint)) return CACHE_TTL.REALTIME;
+    if (/\/orders|\/comparisons|\/notifications|\/messages/.test(endpoint)) return CACHE_TTL.SHORT;
+    if (/\/settings|\/brands|\/public/.test(endpoint)) return CACHE_TTL.STATIC;
+    return CACHE_TTL.MEDIUM;
+}
 
 export const apiCache = {
-    set: (key: string, data: unknown, { ttl = DEFAULT_TTL, tags = [] as string[] } = {}) => {
-        const expiresAt = Date.now() + ttl;
-        const entry = { data, timestamp: expiresAt, tags };
+    set: (key: string, data: unknown, { ttl, tags = [] as string[] }: { ttl?: number; tags?: string[] } = {}) => {
+        const resolvedTTL = ttl ?? getTTLForEndpoint(key);
+        const expiresAt = Date.now() + resolvedTTL;
+        const entry: CacheEntry = { data, timestamp: expiresAt, tags };
         memoryCache.set(key, entry);
 
         if (typeof window !== 'undefined') {
@@ -83,5 +101,8 @@ export const apiCache = {
                 });
             } catch {}
         }
-    }
+    },
+
+    /** حجم الكاش الحالي */
+    size: () => memoryCache.size,
 };

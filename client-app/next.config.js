@@ -1,10 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Multi-Tenant Configuration
-  // Supports HM CAR and CAR X tenants with dynamic domain detection
-
   experimental: {
-    optimizePackageImports: ['lucide-react', 'framer-motion'],
+    optimizePackageImports: ['lucide-react', 'framer-motion', 'date-fns'],
+    // تخزين مؤقت ذكي في Router Cache لتسريع التنقل بين الصفحات
+    staleTimes: {
+      dynamic: 30,   // 30ث للصفحات الديناميكية
+      static: 180,   // 3دق للصفحات الثابتة
+    },
   },
 
   // [[FIX]] تجاهل تحذيرات ESLint أثناء البناء (warnings لا تؤثر على الوظائف)
@@ -52,6 +54,25 @@ const nextConfig = {
         source: '/images/(.*)',
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' },
+        ],
+      },
+      // تسريع بيانات API عبر الـ CDN
+      {
+        source: '/api/v2/settings/(.*)',
+        headers: [
+          { key: 'Cache-Control', value: 'public, s-maxage=3600, stale-while-revalidate=86400' },
+        ],
+      },
+      {
+        source: '/api/v2/brands',
+        headers: [
+          { key: 'Cache-Control', value: 'public, s-maxage=3600, stale-while-revalidate=86400' },
+        ],
+      },
+      {
+        source: '/api/v2/cars',
+        headers: [
+          { key: 'Cache-Control', value: 'public, s-maxage=300, stale-while-revalidate=600' },
         ],
       },
     ];

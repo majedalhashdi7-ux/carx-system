@@ -257,8 +257,22 @@ function FilterSection({ title, expanded, onToggle, children }: { title: string;
 export default function CarsBrowserPage() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen bg-[#08080f] text-white flex items-center justify-center">
-                <div className="w-10 h-10 border-2 border-[#C9A96E]/30 border-t-[#C9A96E] rounded-full animate-spin" />
+            <div className="min-h-screen bg-[#08080f] text-white pt-28 px-6">
+                <div className="max-w-7xl mx-auto">
+                    <div className="h-12 w-64 bg-white/5 rounded-2xl animate-pulse mb-8" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {Array.from({ length: 8 }).map((_, i) => (
+                            <div key={i} className="bg-white/[0.02] border border-white/5 rounded-3xl overflow-hidden animate-pulse">
+                                <div className="w-full h-48 bg-white/5" />
+                                <div className="p-4 space-y-3">
+                                    <div className="h-4 bg-white/5 rounded-xl w-3/4" />
+                                    <div className="h-3 bg-white/5 rounded-xl w-1/2" />
+                                    <div className="h-10 bg-white/5 rounded-xl w-full mt-2" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
         }>
             <CarsContent />

@@ -60,7 +60,7 @@ export async function fetchAPI(endpoint: string, options: RequestInit & { useCac
     }
 
     const controller = new AbortController();
-    const customTimeout = options.timeout || 60000;
+    const customTimeout = options.timeout || 12000; // 12s بدل 60s لتجربة أسرع
     const timeoutId = setTimeout(() => controller.abort(), customTimeout);
 
     const defaultOptions: RequestInit = {
