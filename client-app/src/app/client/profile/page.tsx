@@ -10,7 +10,12 @@ import {
     Save,
     Edit3,
     Shield,
-    LogOut
+    LogOut,
+    ShieldCheck,
+    ShieldOff,
+    Key,
+    Copy,
+    CheckCircle2
 } from "lucide-react";
 import { useLanguage } from "@/lib/LanguageContext";
 import { useAuth } from "@/lib/AuthContext";
@@ -35,9 +40,17 @@ export default function ClientProfilePage() {
         newPassword: '',
         confirmPassword: ''
     });
+    // ─── 2FA State ───
+    const [twoFaEnabled, setTwoFaEnabled] = useState(false);
+    const [twoFaStep, setTwoFaStep] = useState<'idle' | 'setup' | 'verify' | 'done'>('idle');
+    const [twoFaQR, setTwoFaQR] = useState('');
+    const [twoFaSecret, setTwoFaSecret] = useState('');
+    const [twoFaBackupCodes, setTwoFaBackupCodes] = useState<string[]>([]);
+    const [twoFaCode, setTwoFaCode] = useState('');
+    const [twoFaLoading, setTwoFaLoading] = useState(false);
+    const [twoFaMsg, setTwoFaMsg] = useState('');
 
     useEffect(() => {
-        // [[ARABIC_COMMENT]] جلب بيانات المستخدم من localStorage
         if (typeof window !== 'undefined') {
             const user = localStorage.getItem('hm_user');
             if (user) {
@@ -49,6 +62,7 @@ export default function ClientProfilePage() {
                         phone: data.phone || '',
                         role: data.role || 'buyer'
                     });
+                    setTwoFaEnabled(!!data.twoFactorEnabled);
                 } catch (e) {
                     console.error('Error parsing user data', e);
                 }
@@ -108,8 +122,68 @@ export default function ClientProfilePage() {
         }
     };
 
-    const handleLogout = () => {
-        logout();
+    const handleLogout = () => { logout(); };
+
+    // ─── 2FA Handlers ───
+    const handleSetup2FA = async () => {
+        setTwoFaLoading(true);
+        setTwoFaMsg('');
+        try {
+            const res = await (api as any).auth.setup2FA?.() ??
+                await fetch('/api/v2/auth/2fa/setup', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('hm_token')}`, 'Content-Type': 'application/json' }
+                }).then(r => r.json());
+            if (res.success) {
+                setTwoFaQR(res.qrCode || res.qrDataURL || '');
+                setTwoFaSecret(res.secret || '');
+                setTwoFaStep('setup');
+            } else {
+                setTwoFaMsg(res.message || (isRTL ? 'فشل إعداد 2FA' : '2FA setup failed'));
+            }
+        } catch { setTwoFaMsg(isRTL ? 'خطأ في الاتصال' : 'Connection error'); }
+        finally { setTwoFaLoading(false); }
+    };
+
+    const handleConfirm2FA = async () => {
+        if (twoFaCode.length < 6) return;
+        setTwoFaLoading(true);
+        try {
+            const res = await fetch('/api/v2/auth/2fa/enable', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('hm_token')}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: twoFaCode, secret: twoFaSecret })
+            }).then(r => r.json());
+            if (res.success) {
+                setTwoFaEnabled(true);
+                setTwoFaBackupCodes(res.backupCodes || []);
+                setTwoFaStep('done');
+                const u = JSON.parse(localStorage.getItem('hm_user') || '{}');
+                localStorage.setItem('hm_user', JSON.stringify({ ...u, twoFactorEnabled: true }));
+                setTwoFaMsg(isRTL ? '✅ تم تفعيل التحقق بخطوتين' : '✅ 2FA enabled successfully');
+            } else {
+                setTwoFaMsg(res.message || (isRTL ? 'رمز خاطئ' : 'Invalid code'));
+            }
+        } catch { setTwoFaMsg(isRTL ? 'خطأ' : 'Error'); }
+        finally { setTwoFaLoading(false); }
+    };
+
+    const handleDisable2FA = async () => {
+        setTwoFaLoading(true);
+        try {
+            const res = await fetch('/api/v2/auth/2fa/disable', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('hm_token')}`, 'Content-Type': 'application/json' }
+            }).then(r => r.json());
+            if (res.success) {
+                setTwoFaEnabled(false);
+                setTwoFaStep('idle');
+                const u = JSON.parse(localStorage.getItem('hm_user') || '{}');
+                localStorage.setItem('hm_user', JSON.stringify({ ...u, twoFactorEnabled: false }));
+                setTwoFaMsg(isRTL ? '✅ تم إلغاء التحقق بخطوتين' : '✅ 2FA disabled');
+            } else { setTwoFaMsg(res.message || (isRTL ? 'فشل' : 'Failed')); }
+        } catch { setTwoFaMsg(isRTL ? 'خطأ' : 'Error'); }
+        finally { setTwoFaLoading(false); }
     };
 
     return (
@@ -292,6 +366,101 @@ export default function ClientProfilePage() {
                                 </button>
                             </form>
                         </section>
+
+                        {/* ─── 2FA Section ─── */}
+                        <section className="bg-white/[0.02] border border-white/5 rounded-3xl p-6 sm:p-10 space-y-6">
+                            <div className="flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-3">
+                                    <div className={`p-2.5 rounded-xl ${twoFaEnabled ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/5 text-white/30'}`}>
+                                        {twoFaEnabled ? <ShieldCheck className="w-5 h-5" /> : <ShieldOff className="w-5 h-5" />}
+                                    </div>
+                                    <div>
+                                        <h2 className="text-[11px] font-black text-white uppercase tracking-[0.4em]">
+                                            {isRTL ? 'التحقق بخطوتين (2FA)' : 'TWO-FACTOR AUTH'}
+                                        </h2>
+                                        <p className="text-[10px] text-white/30 mt-0.5">
+                                            {twoFaEnabled
+                                                ? (isRTL ? '✅ مُفعَّل — حسابك محمي' : '✅ Enabled — Account Protected')
+                                                : (isRTL ? 'غير مُفعَّل — انقر لتفعيله' : 'Disabled — Click to enable')}
+                                        </p>
+                                    </div>
+                                </div>
+                                {twoFaEnabled ? (
+                                    <button onClick={handleDisable2FA} disabled={twoFaLoading}
+                                        className="px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/20 transition-all disabled:opacity-50">
+                                        {twoFaLoading ? '...' : (isRTL ? 'إلغاء' : 'DISABLE')}
+                                    </button>
+                                ) : (
+                                    twoFaStep === 'idle' && (
+                                        <button onClick={handleSetup2FA} disabled={twoFaLoading}
+                                            className="px-4 py-2 rounded-xl bg-[#C9A96E]/10 border border-[#C9A96E]/20 text-[#C9A96E] text-[10px] font-black uppercase tracking-widest hover:bg-[#C9A96E]/20 transition-all disabled:opacity-50">
+                                            {twoFaLoading ? '...' : (isRTL ? 'تفعيل' : 'ENABLE')}
+                                        </button>
+                                    )
+                                )}
+                            </div>
+
+                            {twoFaMsg && (
+                                <div className={`p-3 rounded-xl text-xs text-center ${twoFaMsg.startsWith('✅') ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                                    {twoFaMsg}
+                                </div>
+                            )}
+
+                            {/* QR Code Setup Step */}
+                            {twoFaStep === 'setup' && (
+                                <div className="space-y-4 border-t border-white/5 pt-6">
+                                    <p className="text-xs text-white/50 text-center">
+                                        {isRTL ? 'امسح هذا الرمز بتطبيق Google Authenticator أو Authy' : 'Scan with Google Authenticator or Authy'}
+                                    </p>
+                                    {twoFaQR && (
+                                        <div className="flex justify-center">
+                                            <img src={twoFaQR} alt="2FA QR" className="w-40 h-40 rounded-2xl border border-white/10 p-2 bg-white" />
+                                        </div>
+                                    )}
+                                    {twoFaSecret && (
+                                        <div className="flex items-center gap-2 p-3 bg-white/5 rounded-xl border border-white/10">
+                                            <Key className="w-3.5 h-3.5 text-white/30 shrink-0" />
+                                            <code className="text-[10px] text-white/50 font-mono flex-1 break-all">{twoFaSecret}</code>
+                                            <button onClick={() => navigator.clipboard.writeText(twoFaSecret)}
+                                                className="p-1 hover:text-[#C9A96E] text-white/30 transition-colors">
+                                                <Copy className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    )}
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text" inputMode="numeric" maxLength={6}
+                                            value={twoFaCode}
+                                            onChange={e => setTwoFaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                            placeholder="000000"
+                                            className="flex-1 text-center text-xl font-black tracking-[0.4em] bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-[#C9A96E]/40 transition-all"
+                                        />
+                                        <button onClick={handleConfirm2FA} disabled={twoFaLoading || twoFaCode.length < 6}
+                                            className="px-6 py-3 rounded-xl bg-[#C9A96E] text-black font-black text-sm disabled:opacity-40 hover:bg-[#b8955b] transition-all">
+                                            {twoFaLoading ? '...' : (isRTL ? 'تحقق' : 'VERIFY')}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Backup Codes after enabling */}
+                            {twoFaStep === 'done' && twoFaBackupCodes.length > 0 && (
+                                <div className="space-y-3 border-t border-white/5 pt-6">
+                                    <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest">
+                                        {isRTL ? '⚠️ احفظ رموز الاحتياط هذه في مكان آمن' : '⚠️ Save these backup codes safely'}
+                                    </p>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {twoFaBackupCodes.map((code, i) => (
+                                            <div key={i} className="flex items-center gap-2 p-2 bg-white/5 rounded-lg border border-white/10">
+                                                <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                                                <code className="text-[10px] font-mono text-white/60">{code}</code>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </section>
+
                     </div>
                 </div>
             </div>

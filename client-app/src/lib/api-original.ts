@@ -186,6 +186,8 @@ export const api = {
                 method: 'POST',
                 body: JSON.stringify(data),
             }),
+        setup2FA: () =>
+            fetchAPI('/api/v2/auth/2fa/setup', { method: 'POST' }),
     },
     // --- خدمات التحليلات والإحصائيات (Analytics) ---
     analytics: {

@@ -1657,7 +1657,85 @@ router.post('/2fa/verify', async (req, res) => {
   }
 });
 
+// ─── POST /api/v2/auth/2fa/setup — توليد Secret + QR Code ──────────────────
+router.post('/2fa/setup', requireAuthAPI, async (req, res) => {
+  try {
+    const User = getModel(req, 'User');
+    const user = await User.findById(req.user.userId || req.user.id);
+    if (!user) return res.status(404).json({ success: false, message: 'المستخدم غير موجود' });
+
+    const twoFAService = require('../../../services/TwoFactorAuthService');
+    const { secret, otpauthUrl } = twoFAService.generateSecret(user);
+    const qrCode = await twoFAService.generateQRCode(otpauthUrl);
+
+    // حفظ السر مؤقتاً (غير مُفعَّل حتى التأكيد)
+    user.twoFactorSecret = secret;
+    await user.save();
+
+    return res.json({ success: true, secret, qrCode });
+  } catch (err) {
+    console.error('2FA setup error:', err.message);
+    return res.status(500).json({ success: false, message: 'خطأ في إعداد 2FA' });
+  }
+});
+
+// ─── POST /api/v2/auth/2fa/enable — تأكيد الرمز وتفعيل 2FA ─────────────────
+router.post('/2fa/enable', requireAuthAPI, async (req, res) => {
+  try {
+    const { code, secret } = req.body;
+    if (!code) return res.status(400).json({ success: false, message: 'الرمز مطلوب' });
+
+    const User = getModel(req, 'User');
+    const user = await User.findById(req.user.userId || req.user.id);
+    if (!user) return res.status(404).json({ success: false, message: 'المستخدم غير موجود' });
+
+    const twoFAService = require('../../../services/TwoFactorAuthService');
+    const secretToVerify = secret || user.twoFactorSecret;
+    const isValid = twoFAService.verifyToken(secretToVerify, code.toString());
+
+    if (!isValid) {
+      return res.status(401).json({ success: false, message: 'رمز التحقق غير صحيح' });
+    }
+
+    // توليد رموز احتياط وتشفيرها
+    const backupCodes = twoFAService.generateBackupCodes(8);
+    const hashedBackupCodes = backupCodes.map(c => twoFAService.hashBackupCode(c));
+
+    user.twoFactorEnabled = true;
+    user.twoFactorSecret = secretToVerify;
+    user.twoFactorBackupCodes = hashedBackupCodes;
+    user.twoFactorEnabledAt = new Date();
+    await user.save();
+
+    return res.json({ success: true, backupCodes });
+  } catch (err) {
+    console.error('2FA enable error:', err.message);
+    return res.status(500).json({ success: false, message: 'خطأ في تفعيل 2FA' });
+  }
+});
+
+// ─── POST /api/v2/auth/2fa/disable — إلغاء تفعيل 2FA ───────────────────────
+router.post('/2fa/disable', requireAuthAPI, async (req, res) => {
+  try {
+    const User = getModel(req, 'User');
+    const user = await User.findById(req.user.userId || req.user.id);
+    if (!user) return res.status(404).json({ success: false, message: 'المستخدم غير موجود' });
+
+    user.twoFactorEnabled = false;
+    user.twoFactorSecret = '';
+    user.twoFactorBackupCodes = [];
+    user.twoFactorEnabledAt = null;
+    await user.save();
+
+    return res.json({ success: true, message: 'تم إلغاء التحقق بخطوتين' });
+  } catch (err) {
+    console.error('2FA disable error:', err.message);
+    return res.status(500).json({ success: false, message: 'خطأ في إلغاء 2FA' });
+  }
+});
+
 module.exports = router;
+
 
 
 

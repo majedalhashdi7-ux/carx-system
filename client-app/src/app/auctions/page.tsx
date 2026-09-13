@@ -6,7 +6,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
-    Gavel, Car, ShieldCheck, X, MessageCircle, Clock, Flame, Timer
+    Gavel, Car, ShieldCheck, X, MessageCircle, Clock, Flame, Timer, Wifi
 } from "lucide-react";
 
 /* ── Countdown Hook ── */
@@ -152,6 +152,7 @@ export default function AuctionsPage() {
     const [globalWhatsapp, setGlobalWhatsapp] = useState('+821080880014');
     const [mounted, setMounted] = useState(false);
     const [activeTab, setActiveTab] = useState<'all' | 'live' | 'upcoming'>('all');
+    const [liveCount, setLiveCount] = useState(0); // عدد المزادات الحية الآن
 
     useEffect(() => {
         setMounted(true);
@@ -247,6 +248,27 @@ export default function AuctionsPage() {
 
     useEffect(() => {
         loadData();
+        // polling كل 30 ثانية للحالات العامة للمزادات
+        const iv = setInterval(loadData, 30000);
+        return () => clearInterval(iv);
+    }, [loadData]);
+
+    // WebSocket: استقبال إشعار تغيير حالة مزاد بدون reload كامل
+    useEffect(() => {
+        let socket: any = null;
+        const connectSocket = async () => {
+            try {
+                const { io } = await import('socket.io-client');
+                const serverUrl = process.env.NEXT_PUBLIC_API_URL ||
+                    window.location.origin.replace(':3000', ':4001');
+                socket = io(serverUrl, { transports: ['websocket', 'polling'], reconnection: true });
+                socket.on('auction:status_changed', () => loadData());
+                socket.on('auction:new', () => loadData());
+                setLiveCount(prev => prev); // trigger re-render
+            } catch { /* socket optional */ }
+        };
+        connectSocket();
+        return () => { socket?.disconnect(); };
     }, [loadData]);
 
     const handleBuyRequest = async (car: any) => {
