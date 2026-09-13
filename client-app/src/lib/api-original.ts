@@ -181,6 +181,11 @@ export const api = {
             method: 'POST',
             body: JSON.stringify(data),
         }),
+        verifyTwoFactor: (data: { code: string; tempToken?: string }) =>
+            fetchAPI('/api/v2/auth/2fa/verify', {
+                method: 'POST',
+                body: JSON.stringify(data),
+            }),
     },
     // --- خدمات التحليلات والإحصائيات (Analytics) ---
     analytics: {

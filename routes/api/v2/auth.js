@@ -1593,6 +1593,71 @@ router.post('/change-password', requireAuthAPI, async (req, res) => {
   }
 });
 
+// ─── POST /api/v2/auth/2fa/verify — التحقق من رمز TOTP ─────────────────────
+router.post('/2fa/verify', async (req, res) => {
+  try {
+    const { code, tempToken } = req.body;
+
+    if (!code || code.toString().length < 6) {
+      return res.status(400).json({ success: false, message: 'رمز التحقق مطلوب ومكون من 6 خانات' });
+    }
+
+    // فك تشفير التوكن المؤقت
+    let payload;
+    try {
+      payload = jwt.verify(tempToken, JWT_SECRET);
+    } catch {
+      return res.status(401).json({ success: false, message: 'جلسة التحقق منتهية — أعد تسجيل الدخول' });
+    }
+
+    if (!payload.requiresTwoFactor) {
+      return res.status(400).json({ success: false, message: 'هذا التوكن لا يتطلب التحقق بخطوتين' });
+    }
+
+    const User = getModel(req, 'User');
+    const user = await User.findById(payload.userId).select('-password');
+    if (!user) return res.status(404).json({ success: false, message: 'المستخدم غير موجود' });
+
+    // التحقق من الرمز باستخدام TwoFactorAuthService
+    const twoFAService = require('../../../services/TwoFactorAuthService');
+    const isValid = twoFAService.verifyToken(user.twoFactorSecret, code.toString());
+
+    if (!isValid) {
+      // تحقق من رموز الاحتياط
+      const backupValid = user.twoFactorBackupCodes?.length &&
+        twoFAService.verifyBackupCode(code.toString(), user.twoFactorBackupCodes);
+
+      if (!backupValid) {
+        return res.status(401).json({ success: false, message: 'رمز التحقق غير صحيح أو منتهي الصلاحية' });
+      }
+
+      // استهلك رمز الاحتياط
+      user.twoFactorBackupCodes = user.twoFactorBackupCodes.filter(
+        c => c !== twoFAService.hashBackupCode(code.toString())
+      );
+      await user.save();
+    }
+
+    // إصدار توكن نهائي
+    const finalToken = jwt.sign(
+      { userId: user._id, id: user._id, email: user.email, role: user.role, tenantId: user.tenantId },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    return res.json({
+      success: true,
+      token: finalToken,
+      user: { id: user._id, _id: user._id, name: user.name, email: user.email, role: user.role }
+    });
+
+  } catch (error) {
+    console.error('2FA verify error:', error.message);
+    return res.status(500).json({ success: false, message: 'خطأ في التحقق بخطوتين' });
+  }
+});
+
 module.exports = router;
+
 
 

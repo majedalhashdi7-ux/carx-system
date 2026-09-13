@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -55,38 +55,67 @@ function ComparisonsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const fetchComparisons = async () => {
+    // ─── LocalStorage helpers ───
+    const LS_KEY = 'hm_comparisons';
+
+    const saveToLS = (data: CarData[]) => {
+        try { localStorage.setItem(LS_KEY, JSON.stringify(data.map(c => c._id))); } catch {}
+    };
+
+    const loadFromLS = (): string[] => {
+        try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch { return []; }
+    };
+
+    const fetchComparisons = useCallback(async () => {
         try {
             setLoading(true);
 
             // Check if there are car IDs in URL params
-            const carIds = searchParams.get('ids')?.split(',');
+            const carIds = searchParams.get('ids')?.split(',') || loadFromLS();
 
             if (carIds && carIds.length > 0) {
                 const response = await api.comparisons.compare(carIds);
-                if (response.success) {
+                if (response.success && Array.isArray(response.data) && response.data.length > 0) {
                     setCars(response.data);
-                }
-            } else {
-                // Get saved comparisons
-                const response = await api.comparisons.get();
-                if (response.success) {
-                    setCars(response.data);
+                    saveToLS(response.data);
+                    return;
                 }
             }
+
+            // Fallback: جلب المقارنات المحفوظة في الـ API
+            const response = await api.comparisons.get();
+            if (response.success && Array.isArray(response.data)) {
+                setCars(response.data);
+                saveToLS(response.data);
+            }
         } catch (err) {
+            // Fallback أخير: localStorage المحلي
+            const cachedIds = loadFromLS();
+            if (cachedIds.length > 0) {
+                try {
+                    const res = await api.comparisons.compare(cachedIds);
+                    if (res.success) setCars(res.data);
+                } catch { /* silent */ }
+            }
             console.error('Failed to fetch comparisons:', err);
         } finally {
             setLoading(false);
         }
-    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchParams]);
 
     const removeCar = async (carId: string) => {
         try {
             await api.comparisons.remove(carId);
-            setCars(cars.filter(car => car._id !== carId));
+            const updated = cars.filter(car => car._id !== carId);
+            setCars(updated);
+            saveToLS(updated);
         } catch (err) {
-            console.error('Failed to remove car:', err);
+            // Optimistic update even if API fails
+            const updated = cars.filter(car => car._id !== carId);
+            setCars(updated);
+            saveToLS(updated);
+            console.error('Failed to remove car (local updated):', err);
         }
     };
 
@@ -94,8 +123,12 @@ function ComparisonsPage() {
         try {
             await api.comparisons.clear();
             setCars([]);
+            saveToLS([]);
         } catch (err) {
-            console.error('Failed to clear comparisons:', err);
+            // Optimistic clear
+            setCars([]);
+            saveToLS([]);
+            console.error('Failed to clear comparisons (local cleared):', err);
         }
     };
 

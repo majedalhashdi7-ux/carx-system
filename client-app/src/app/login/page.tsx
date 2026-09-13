@@ -47,9 +47,14 @@ function HMCarLogin() {
     const [successMessage, setSuccessMessage] = useState(''); // رسائل النجاح
     const [showPassword, setShowPassword] = useState(false); // إظهار أو إخفاء كلمة المرور
     const [banInfo, setBanInfo] = useState<{ banned: boolean, banCode: string, message: string } | null>(null); // معلومات الحظر في حال تم حظر الجهاز
-    const [isRegister, setIsRegister] = useState(false); // هل نحن في وضع إنشاء حساب؟
-    const [confirmPassword, setConfirmPassword] = useState(''); // تأكيد كلمة المرور لإنشاء الحساب
-    const [showRoleSwitcher, setShowRoleSwitcher] = useState(false); // إظهار محول الأدوار (عميل/مدير)
+    const [isRegister, setIsRegister] = useState(false);
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
+    // ─── 2FA ───
+    const [twoFaRequired, setTwoFaRequired] = useState(false);
+    const [twoFaCode, setTwoFaCode] = useState('');
+    const [twoFaToken, setTwoFaToken] = useState(''); // temp token from server
+    const [twoFaLoading, setTwoFaLoading] = useState(false); // إظهار محول الأدوار (عميل/مدير)
 
     const { socket, isConnected } = useSocket();
     const { user, login: authLogin } = useAuth();
@@ -146,6 +151,14 @@ function HMCarLogin() {
             }
 
             if (response.success) {
+                // ─── تحقق من 2FA ───
+                if (response.requiresTwoFactor || response.twoFactorRequired) {
+                    setTwoFaRequired(true);
+                    setTwoFaToken(response.tempToken || '');
+                    setLoading(false);
+                    return;
+                }
+
                 // استخدام AuthContext.login لتحديث الحالة فوراً عبر التطبيق + حفظ في localStorage
                 authLogin(response.token, response.user);
 
@@ -159,25 +172,20 @@ function HMCarLogin() {
                         }));
                     } catch (e) { }
                 } else {
-                    try {
-                        localStorage.removeItem('hm_remember');
-                    } catch (e) { }
+                    try { localStorage.removeItem('hm_remember'); } catch (e) { }
                 }
 
-                // تمديد الكوكيز دائماً لـ 30 يوم لعدم الحاجة لإعادة تسجيل الدخول
-                {
-                    const maxAge = 2592000; // 30 يوماً
-                    document.cookie = `hm_token=${response.token}; path=/; max-age=${maxAge}; SameSite=Lax`;
-                    document.cookie = `hm_user_role=${response.user?.role || 'buyer'}; path=/; max-age=${maxAge}; SameSite=Lax`;
-                }
-                
+                // تمديد الكوكيز دائماً لـ 30 يوم
+                const maxAge = 2592000;
+                document.cookie = `hm_token=${response.token}; path=/; max-age=${maxAge}; SameSite=Lax`;
+                document.cookie = `hm_user_role=${response.user?.role || 'buyer'}; path=/; max-age=${maxAge}; SameSite=Lax`;
+
                 if (isRegister && role === 'buyer') {
                     setSuccessMessage(isRTL ? 'تم إنشاء حسابك بنجاح! جاري الدخول...' : 'Account created! Logging in...');
                 } else {
                     setSuccessMessage(isRTL ? 'تم تسجيل الدخول بنجاح ✓' : 'Login successful ✓');
                 }
 
-                // التوجيه التلقائي بناءً على دور المستخدم أو المعلمة 'redirect'
                 setTimeout(() => {
                     const userRole = response.user.role || 'buyer';
                     const params = new URLSearchParams(window.location.search);
@@ -208,6 +216,42 @@ function HMCarLogin() {
             setLoading(false);
         }
     };
+
+    /** التحقق من رمز 2FA بعد تسجيل الدخول الأولي */
+    const handleVerify2FA = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!twoFaCode.trim() || twoFaCode.length < 6) {
+            setError(isRTL ? 'الرجاء إدخال رمز التحقق المكون من 6 خانات' : 'Please enter the 6-digit verification code');
+            return;
+        }
+        setTwoFaLoading(true);
+        setError('');
+        try {
+            const res = await api.auth.verifyTwoFactor?.({
+                code: twoFaCode.trim(),
+                tempToken: twoFaToken,
+            }) ?? { success: false, message: '2FA endpoint not configured' };
+
+            if (res.success) {
+                authLogin(res.token, res.user);
+                const maxAge = 2592000;
+                document.cookie = `hm_token=${res.token}; path=/; max-age=${maxAge}; SameSite=Lax`;
+                document.cookie = `hm_user_role=${res.user?.role || 'buyer'}; path=/; max-age=${maxAge}; SameSite=Lax`;
+                setSuccessMessage(isRTL ? 'تم التحقق بنجاح ✓' : 'Verified successfully ✓');
+                setTimeout(() => {
+                    const userRole = res.user?.role || 'buyer';
+                    window.location.href = (userRole === 'admin' || userRole === 'super_admin') ? '/admin/dashboard' : '/cars';
+                }, 400);
+            } else {
+                setError(res.message || (isRTL ? 'رمز التحقق غير صحيح' : 'Invalid verification code'));
+            }
+        } catch (err: any) {
+            setError(err.message || (isRTL ? 'فشل التحقق' : 'Verification failed'));
+        } finally {
+            setTwoFaLoading(false);
+        }
+    };
+
 
     useEffect(() => {
         try {
@@ -262,7 +306,65 @@ function HMCarLogin() {
                 transition={{ duration: 0.4, ease: "easeOut" }}
                 className="relative z-10 w-full max-w-md px-2"
             >
-                {banInfo ? (
+                {/* ─── 2FA Verification Card ─── */}
+                {twoFaRequired ? (
+                    <div className="relative glass-card p-6 sm:p-10 rounded-3xl border border-[#C9A96E]/20 bg-black/60 backdrop-blur-3xl shadow-2xl overflow-hidden">
+                        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-[#C9A96E] to-transparent" />
+                        <div className="text-center mb-8">
+                            <div className="mx-auto w-16 h-16 bg-[#C9A96E]/10 rounded-full flex items-center justify-center border border-[#C9A96E]/20 mb-4">
+                                <ShieldCheck className="w-8 h-8 text-[#C9A96E]" />
+                            </div>
+                            <h2 className="text-xl font-black text-white mb-1">
+                                {isRTL ? 'التحقق بخطوتين' : 'Two-Factor Authentication'}
+                            </h2>
+                            <p className="text-xs text-white/40">
+                                {isRTL ? 'أدخل الرمز المكون من 6 أرقام من تطبيق المصادقة' : 'Enter the 6-digit code from your authenticator app'}
+                            </p>
+                        </div>
+
+                        {error && (
+                            <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs text-center">
+                                {error}
+                            </div>
+                        )}
+                        {successMessage && (
+                            <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs text-center">
+                                {successMessage}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleVerify2FA} className="space-y-4">
+                            <input
+                                id="twofa-code"
+                                type="text"
+                                inputMode="numeric"
+                                maxLength={6}
+                                value={twoFaCode}
+                                onChange={e => setTwoFaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                placeholder="000000"
+                                className="w-full text-center text-3xl font-black tracking-[0.5em] bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-white placeholder-white/20 focus:outline-none focus:border-[#C9A96E]/50 transition-all"
+                                autoFocus
+                                autoComplete="one-time-code"
+                            />
+                            <button
+                                type="submit"
+                                disabled={twoFaLoading || twoFaCode.length < 6}
+                                className="w-full py-3.5 rounded-2xl bg-[#C9A96E] text-black font-black uppercase tracking-widest text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#b8955b] transition-all"
+                            >
+                                {twoFaLoading
+                                    ? (isRTL ? 'جاري التحقق...' : 'Verifying...')
+                                    : (isRTL ? 'تحقق' : 'VERIFY')}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => { setTwoFaRequired(false); setTwoFaCode(''); setError(''); }}
+                                className="w-full py-2 text-xs text-white/40 hover:text-white transition-colors"
+                            >
+                                {isRTL ? '← العودة لتسجيل الدخول' : '← Back to Login'}
+                            </button>
+                        </form>
+                    </div>
+                ) : banInfo ? (
                     <div className="relative glass-card p-6 sm:p-10 md:p-12 rounded-3xl border border-red-500/20 bg-red-950/20 backdrop-blur-3xl shadow-2xl overflow-hidden">
                         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent shadow-[0_0_20px_rgba(239,68,68,0.5)]"></div>
                         <div className="text-center space-y-6">

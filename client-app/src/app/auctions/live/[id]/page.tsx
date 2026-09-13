@@ -4,19 +4,20 @@
 // تعرض: جميع الصور + تقرير الفحص + المواصفات + toggle العملة + طلب واتساب
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
     ChevronLeft, ChevronRight, MessageCircle, X, ExternalLink,
     ShieldCheck, ZapIcon, Globe, Gauge, Fuel, Settings,
     FileText, ClipboardList, ListChecks, Car, Radio,
-    ArrowLeft, Eye, BadgeCheck, Info
+    ArrowLeft, Eye, BadgeCheck, Info, Wifi, WifiOff
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 import Image from 'next/image';
 import { api } from '@/lib/api-original';
+import { useAuctionSocket } from '@/hooks/useAuctionSocket';
 
 type Currency = 'SAR' | 'USD' | 'KRW';
 type InspectionTab = 'report' | 'guide' | 'specs';
@@ -68,6 +69,8 @@ export default function LiveAuctionDetails() {
     const [lightboxOpen, setLightboxOpen] = useState(false);
     const [lightboxImg, setLightboxImg] = useState('');
     const [globalWhatsapp, setGlobalWhatsapp] = useState('+967781007805');
+    const [wsConnected, setWsConnected] = useState(false);
+    const [lastBid, setLastBid] = useState<{ carId: string; amount: number } | null>(null);
 
     useEffect(() => {
         api.settings.getPublic().then((res: any) => {
@@ -77,18 +80,53 @@ export default function LiveAuctionDetails() {
         }).catch(() => {});
     }, []);
 
-    useEffect(() => {
-        const load = async () => {
-            try {
-                const res = await api.liveAuctions.getById(id as string);
-                if (res.success) setSession(res.data);
-            } catch { }
-            finally { setLoading(false); }
-        };
-        load();
-        const iv = setInterval(load, 15000);
-        return () => clearInterval(iv);
+    // ─── جلب بيانات الجلسة ───
+    const loadSession = useCallback(async () => {
+        try {
+            const res = await api.liveAuctions.getById(id as string);
+            if (res.success) setSession(res.data);
+        } catch { }
+        finally { setLoading(false); }
     }, [id]);
+
+    useEffect(() => {
+        loadSession();
+        // polling كـ fallback إذا انقطع الـ WebSocket (كل 20 ثانية بدل 15)
+        const iv = setInterval(loadSession, 20000);
+        return () => clearInterval(iv);
+    }, [loadSession]);
+
+    // ─── WebSocket: استقبال تحديثات المزاد الحية ───
+    useAuctionSocket({
+        auctionId: id as string,
+        onConnect: () => setWsConnected(true),
+        onDisconnect: () => setWsConnected(false),
+        onBidNew: (data) => {
+            // تحديث السعر فوراً بدون انتظار الـ polling
+            setLastBid({ carId: data.carId || data.auctionId, amount: data.amount || data.currentBid });
+            setSession((prev: any) => {
+                if (!prev) return prev;
+                const updatedCars = (prev.cars || []).map((car: any) => {
+                    const match = car._id === data.carId || car.id === data.carId;
+                    if (!match) return car;
+                    return {
+                        ...car,
+                        priceSar: data.amount || data.currentBid || car.priceSar,
+                        priceEstimate: data.amount || data.currentBid || car.priceEstimate,
+                    };
+                });
+                return { ...prev, cars: updatedCars };
+            });
+        },
+        onAuctionUpdate: (data) => {
+            // تحديث حالة الجلسة (live/ended)
+            if (data.status) {
+                setSession((prev: any) => prev ? { ...prev, status: data.status } : prev);
+            }
+            // إعادة جلب كاملة عند تحديث كبير
+            if (data.refresh) loadSession();
+        },
+    });
 
     const handleWhatsApp = useCallback((car: any) => {
         const phone = (session?.whatsappNumber || globalWhatsapp).replace(/\D/g, '');
@@ -169,19 +207,32 @@ Please contact me for details.`;
                         </div>
                     </div>
 
-                    {/* Currency Toggle */}
-                    <div className="flex items-center gap-1 p-1 bg-white/5 rounded-xl border border-white/10 shrink-0">
-                        {(['SAR', 'USD', 'KRW'] as Currency[]).map(c => (
-                            <button key={c} onClick={() => setCurrency(c)}
-                                className={cn(
-                                    'px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all',
-                                    currency === c
-                                        ? 'bg-[#C9A96E] text-black'
-                                        : 'text-white/40 hover:text-white'
-                                )}>
-                                {c === 'SAR' ? '🇸🇦 SAR' : c === 'USD' ? '🇺🇸 USD' : '🇰🇷 KRW'}
-                            </button>
-                        ))}
+                    <div className="flex items-center gap-2 shrink-0">
+                        {/* WebSocket Status */}
+                        <div className={cn(
+                            'hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider border',
+                            wsConnected
+                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                : 'bg-white/5 border-white/10 text-white/30'
+                        )}>
+                            {wsConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+                            {wsConnected ? (isRTL ? 'مباشر' : 'LIVE') : (isRTL ? 'استطلاع' : 'POLL')}
+                        </div>
+
+                        {/* Currency Toggle */}
+                        <div className="flex items-center gap-1 p-1 bg-white/5 rounded-xl border border-white/10">
+                            {(['SAR', 'USD', 'KRW'] as Currency[]).map(c => (
+                                <button key={c} onClick={() => setCurrency(c)}
+                                    className={cn(
+                                        'px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all',
+                                        currency === c
+                                            ? 'bg-[#C9A96E] text-black'
+                                            : 'text-white/40 hover:text-white'
+                                    )}>
+                                    {c === 'SAR' ? '🇸🇦 SAR' : c === 'USD' ? '🇺🇸 USD' : '🇰🇷 KRW'}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
