@@ -1,20 +1,30 @@
 /**
  * Unit Tests for api-cache.ts
  * اختبارات وحدة لنظام الكاش الذكي
+ * Runner: Mocha + tsx
  */
 
-// Mock sessionStorage
-const sessionStorageMock = (() => {
-    let store: Record<string, string> = {};
-    return {
-        getItem: (key: string) => store[key] || null,
-        setItem: (key: string, val: string) => { store[key] = val; },
-        removeItem: (key: string) => { delete store[key]; },
-        clear: () => { store = {}; },
-        get length() { return Object.keys(store).length; },
-        key: (i: number) => Object.keys(store)[i] || null,
-    };
-})();
+import assert from 'assert';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+
+// Mock sessionStorage — supports Object.keys() via Proxy
+let _store: Record<string, string> = {};
+
+const sessionStorageMock = new Proxy(
+    {
+        getItem:    (key: string) => _store[key] ?? null,
+        setItem:    (key: string, val: string) => { _store[key] = val; },
+        removeItem: (key: string) => { delete _store[key]; },
+        clear:      () => { _store = {}; },
+        get length() { return Object.keys(_store).length; },
+        key:        (i: number) => Object.keys(_store)[i] ?? null,
+    },
+    {
+        ownKeys: () => Object.keys(_store),
+        getOwnPropertyDescriptor: (_, key) => ({ value: _store[key as string], writable: true, enumerable: true, configurable: true }),
+    }
+);
 
 Object.defineProperty(global, 'sessionStorage', { value: sessionStorageMock });
 Object.defineProperty(global, 'window', { value: global });
@@ -27,21 +37,21 @@ describe('apiCache — set & get', () => {
         apiCache.clear();
     });
 
-    test('تخزين واسترجاع القيمة قبل انتهاء TTL', () => {
+    it('تخزين واسترجاع القيمة قبل انتهاء TTL', () => {
         apiCache.set('/api/v2/cars', { cars: [{ id: '1' }] }, { ttl: 60000 });
         const result = apiCache.get('/api/v2/cars');
-        expect(result).toEqual({ cars: [{ id: '1' }] });
+        assert.deepStrictEqual(result, { cars: [{ id: '1' }] });
     });
 
-    test('إرجاع null بعد انتهاء TTL', () => {
+    it('إرجاع null بعد انتهاء TTL', () => {
         apiCache.set('/api/v2/cars', { cars: [] }, { ttl: -1 }); // انتهى فوراً
         const result = apiCache.get('/api/v2/cars');
-        expect(result).toBeNull();
+        assert.strictEqual(result, null);
     });
 
-    test('إرجاع null إذا لم يوجد مفتاح', () => {
+    it('إرجاع null إذا لم يوجد مفتاح', () => {
         const result = apiCache.get('/api/v2/nonexistent');
-        expect(result).toBeNull();
+        assert.strictEqual(result, null);
     });
 });
 
@@ -53,18 +63,18 @@ describe('apiCache — invalidate', () => {
         apiCache.set('/api/v2/parts', { parts: [] }, { ttl: 60000 });
     });
 
-    test('invalidate بنمط يمسح المفاتيح المطابقة فقط', () => {
+    it('invalidate بنمط يمسح المفاتيح المطابقة فقط', () => {
         apiCache.invalidate('/api/v2/cars');
-        expect(apiCache.get('/api/v2/cars')).toBeNull();
-        expect(apiCache.get('/api/v2/cars/123')).toBeNull();
+        assert.strictEqual(apiCache.get('/api/v2/cars'), null);
+        assert.strictEqual(apiCache.get('/api/v2/cars/123'), null);
         // لا يمسح المسارات غير المطابقة
-        expect(apiCache.get('/api/v2/parts')).not.toBeNull();
+        assert.notStrictEqual(apiCache.get('/api/v2/parts'), null);
     });
 
-    test('invalidate بـ RegExp', () => {
+    it('invalidate بـ RegExp', () => {
         apiCache.invalidate(/\/api\/v2\/cars/);
-        expect(apiCache.get('/api/v2/cars')).toBeNull();
-        expect(apiCache.get('/api/v2/parts')).not.toBeNull();
+        assert.strictEqual(apiCache.get('/api/v2/cars'), null);
+        assert.notStrictEqual(apiCache.get('/api/v2/parts'), null);
     });
 });
 
@@ -75,19 +85,19 @@ describe('apiCache — invalidateByTag', () => {
         apiCache.set('/api/v2/parts', { parts: [] }, { ttl: 60000, tags: ['parts'] });
     });
 
-    test('يمسح المدخلات ذات التاغ المحدد فقط', () => {
+    it('يمسح المدخلات ذات التاغ المحدد فقط', () => {
         apiCache.invalidateByTag('cars');
-        expect(apiCache.get('/api/v2/cars')).toBeNull();
-        expect(apiCache.get('/api/v2/parts')).not.toBeNull();
+        assert.strictEqual(apiCache.get('/api/v2/cars'), null);
+        assert.notStrictEqual(apiCache.get('/api/v2/parts'), null);
     });
 });
 
 describe('apiCache — clear', () => {
-    test('يمسح جميع المدخلات', () => {
+    it('يمسح جميع المدخلات', () => {
         apiCache.set('/api/v2/cars', { cars: [] }, { ttl: 60000 });
         apiCache.set('/api/v2/parts', { parts: [] }, { ttl: 60000 });
         apiCache.clear();
-        expect(apiCache.get('/api/v2/cars')).toBeNull();
-        expect(apiCache.get('/api/v2/parts')).toBeNull();
+        assert.strictEqual(apiCache.get('/api/v2/cars'), null);
+        assert.strictEqual(apiCache.get('/api/v2/parts'), null);
     });
 });

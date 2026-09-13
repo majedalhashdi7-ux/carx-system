@@ -24,10 +24,12 @@
     "seed:auctions": "node seed_auctions_bids.js",
     "test": "mocha --timeout 10000 --recursive test --exit",
     "test:unit": "mocha --timeout 10000 test/unit/**/*.test.js --exit",
+    "test:unit:ts": "mocha --timeout 10000 --require tsx/cjs test/unit/**/*.test.ts --exit",
     "test:unit:models": "mocha --timeout 10000 test/unit/models/**/*.test.js --exit",
     "test:unit:services": "mocha --timeout 10000 test/unit/services/**/*.test.js --exit",
     "test:unit:middleware": "mocha --timeout 10000 test/unit/middleware/**/*.test.js --exit",
     "test:unit:utils": "mocha --timeout 10000 test/unit/utils/**/*.test.js --exit",
+    "test:unit:utils:ts": "mocha --timeout 10000 --require tsx/cjs test/unit/utils/**/*.test.ts --exit",
     "test:integration": "mocha --timeout 15000 test/integration/**/*.test.js --exit",
     "test:integration:api": "mocha --timeout 15000 test/integration/api/**/*.test.js --exit",
     "test:integration:database": "mocha --timeout 15000 test/integration/database/**/*.test.js --exit",
@@ -122,7 +124,10 @@
     "nodemon": "^3.1.11",
     "nyc": "^15.1.0",
     "sinon": "^21.0.3",
-    "supertest": "^6.3.3"
+    "supertest": "^6.3.3",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
   },
   "engines": {
     "node": ">=22.x"
