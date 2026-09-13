@@ -294,8 +294,8 @@ router.post('/save', requireAuthAPI, requireAdmin, invalidateCache(['/api/v2/car
                 }
             }
 
-            // تحقق من التكرار
-            if (data.sourceUrl || data.externalId) {
+            // ─── تحقق من التكرار (3 مستويات) ───────────────────────────────
+            if (data.sourceUrl || data.externalId || data.make) {
                 const searchConditions = [];
                 if (data.sourceUrl) {
                     searchConditions.push({ externalUrl: data.sourceUrl });
@@ -304,37 +304,65 @@ router.post('/save', requireAuthAPI, requireAdmin, invalidateCache(['/api/v2/car
                 if (data.externalId) {
                     searchConditions.push({ externalId: data.externalId });
                 }
-                const existingCar = await Car.findOne({ $or: searchConditions });
-                if (existingCar) {
-                    const updatedCar = await Car.findByIdAndUpdate(
-                        existingCar._id,
-                        {
-                            $set: {
-                                title: data.title || existingCar.title,
-                                images: processedImages.length > 0 ? processedImages : existingCar.images,
-                                description: data.description || existingCar.description,
-                                make: data.make || existingCar.make,
-                                model: data.model || existingCar.model,
-                                year: data.year || existingCar.year,
-                                agency: agencyId || existingCar.agency,
-                                source: isShowroom ? 'encar_korea' : (data.source || existingCar.source || 'hm_local'),
-                                listingType: isShowroom ? 'showroom' : (data.listingType || existingCar.listingType || 'store'),
-                                isActive: true,
-                                isSold: false,
-                                externalRef: data.sourceUrl || existingCar.externalRef,
-                                externalId: data.externalId || existingCar.externalId,
-                                ...pricing,
-                                updatedAt: new Date()
-                            }
-                        },
-                        { new: true }
-                    );
-                    return res.json({
-                        success: true,
-                        message: '✅ تم تحديث بيانات السيارة بنجاح (كشف عن وجودها مسبقاً)',
-                        data: updatedCar,
-                        isDuplicate: true
+                // [[FIX]] فحص تكرار بـ make+model+year+tenantId عند غياب المعرّفات الخارجية
+                // هذا يمنع إعادة استيراد نفس السيارة بـ externalId مختلف
+                if (!data.sourceUrl && !data.externalId && data.make && data.model && data.year) {
+                    const makeLower = String(data.make || '').toLowerCase().trim();
+                    const modelLower = String(data.model || '').toLowerCase().trim();
+                    if (makeLower && modelLower && makeLower !== 'غير محدد' && modelLower !== 'غير محدد') {
+                        searchConditions.push({
+                            $and: [
+                                { make: { $regex: `^${makeLower}$`, $options: 'i' } },
+                                { model: { $regex: `^${modelLower}$`, $options: 'i' } },
+                                { year: Number(data.year) },
+                                { tenantId: getTenantId(req) }
+                            ]
+                        });
+                    }
+                }
+                // فحص التكرار بالعنوان العربي أيضاً
+                if (data.titleAr && !data.sourceUrl) {
+                    searchConditions.push({
+                        $and: [
+                            { titleAr: data.titleAr.trim() },
+                            { tenantId: getTenantId(req) }
+                        ]
                     });
+                }
+
+                if (searchConditions.length > 0) {
+                    const existingCar = await Car.findOne({ $or: searchConditions });
+                    if (existingCar) {
+                        const updatedCar = await Car.findByIdAndUpdate(
+                            existingCar._id,
+                            {
+                                $set: {
+                                    title: data.title || existingCar.title,
+                                    images: processedImages.length > 0 ? processedImages : existingCar.images,
+                                    description: data.description || existingCar.description,
+                                    make: data.make || existingCar.make,
+                                    model: data.model || existingCar.model,
+                                    year: data.year || existingCar.year,
+                                    agency: agencyId || existingCar.agency,
+                                    source: isShowroom ? 'encar_korea' : (data.source || existingCar.source || 'hm_local'),
+                                    listingType: isShowroom ? 'showroom' : (data.listingType || existingCar.listingType || 'store'),
+                                    isActive: true,
+                                    isSold: false,
+                                    externalRef: data.sourceUrl || existingCar.externalRef,
+                                    externalId: data.externalId || existingCar.externalId,
+                                    ...pricing,
+                                    updatedAt: new Date()
+                                }
+                            },
+                            { new: true }
+                        );
+                        return res.json({
+                            success: true,
+                            message: '✅ تم تحديث بيانات السيارة بنجاح (كشف عن وجودها مسبقاً)',
+                            data: updatedCar,
+                            isDuplicate: true
+                        });
+                    }
                 }
             }
 

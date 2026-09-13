@@ -101,17 +101,30 @@ export async function fetchAPI(endpoint: string, options: RequestInit & { useCac
         if (isGet) {
             apiCache.set(endpoint, data);
         } else {
-            // مسح ذكي بناءً على المسار المتأثر بدلاً من مسح الكاش بالكامل
-            apiCache.invalidate(endpoint.split('?')[0]);
+            // [[FIX]] مسح المسار الدقيق + المسار الأب (القائمة) معاً
+            // المشكلة السابقة: PUT /api/v2/cars/:id كان يُبطل /api/v2/cars/:id فقط
+            // لكن القائمة مُخزَّنة تحت /api/v2/cars?page=1... ولا تتطابق مع startsWith(:id)
+            const exactPath = endpoint.split('?')[0];
+            apiCache.invalidate(exactPath);  // المسار الدقيق
+
+            // استخرج المسار الأب (مثل /api/v2/cars من /api/v2/cars/66abc)
+            const segments = exactPath.split('/').filter(Boolean); // ['api','v2','cars','66abc']
+            if (segments.length > 3) {
+                // المسار الأب هو أول 3 segments: /api/v2/cars
+                const parentPath = '/' + segments.slice(0, 3).join('/');
+                apiCache.invalidate(parentPath); // يُبطل كل مفاتيح تبدأ بـ /api/v2/cars
+            }
+
             // مسح المسارات المرتبطة (analytics, dashboard, etc)
             const resourceMap: Record<string, string[]> = {
-                '/api/v2/cars': ['/api/v2/cars', '/api/v2/analytics', '/api/v2/settings/home-brands'],
+                '/api/v2/cars': ['/api/v2/cars', '/api/v2/analytics', '/api/v2/settings/home-brands', '/api/v2/live-auctions'],
                 '/api/v2/parts': ['/api/v2/parts', '/api/v2/analytics'],
                 '/api/v2/orders': ['/api/v2/orders', '/api/v2/analytics', '/api/v2/dashboard'],
                 '/api/v2/auctions': ['/api/v2/auctions', '/api/v2/live-auctions', '/api/v2/analytics'],
                 '/api/v2/users': ['/api/v2/users', '/api/v2/analytics'],
                 '/api/v2/brands': ['/api/v2/brands', '/api/v2/settings/home-brands'],
                 '/api/v2/settings': ['/api/v2/settings'],
+                '/api/v2/import': ['/api/v2/cars', '/api/v2/parts', '/api/v2/live-auctions'],
             };
             const base = Object.keys(resourceMap).find(k => endpoint.startsWith(k));
             if (base) resourceMap[base].forEach(p => apiCache.invalidate(p));

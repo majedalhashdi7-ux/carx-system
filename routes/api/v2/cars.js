@@ -320,14 +320,38 @@ router.get('/', cacheResponse(300), async (req, res, next) => {
             tenantId: car.tenantId
         }));
 
+        // [[FIX]] إزالة التكرار من النتائج قبل الإرسال
+        // السبب: بعض السيارات استُوردت مرتين بـ externalId مختلف
+        const seenKeys = new Set();
+        const dedupedCars = mappedCars.filter(car => {
+            // مفتاح التكرار: externalId له الأولوية، ثم (make+model+year+price)
+            let key;
+            const extId = car.externalId || car.externalRef || car.externalUrl;
+            if (extId && extId.trim() && !extId.startsWith('imp-')) {
+                // استخدم externalId كمفتاح إذا كان حقيقياً (وليس imp-timestamp)
+                key = `ext:${extId.trim()}`;
+            } else {
+                // المفتاح الاحتياطي: make+model+year+priceSar
+                const make = String(car.make || '').toLowerCase().trim();
+                const model = String(car.model || '').toLowerCase().trim();
+                const year = car.year || 0;
+                const price = Math.round((car.priceSar || car.price || 0) / 100) * 100; // round to 100
+                key = `${make}|${model}|${year}|${price}`;
+            }
+            if (!key || key === 'ext:' || key === '||0|0') return true; // لا يمكن التحقق → احتفظ به
+            if (seenKeys.has(key)) return false; // مكرر → احذفه
+            seenKeys.add(key);
+            return true;
+        });
+
         res.json({
             success: true,
-            data: mappedCars,
-            cars: mappedCars,
+            data: dedupedCars,
+            cars: dedupedCars,
             pagination: {
                 current: parseInt(page),
                 pages: Math.ceil(total / limit),
-                total,
+                total: dedupedCars.length < mappedCars.length ? total - (mappedCars.length - dedupedCars.length) : total,
                 limit: parseInt(limit)
             }
         });
@@ -374,6 +398,66 @@ router.get('/makes', cacheResponse(1800), async (req, res, next) => {
             .sort((a, b) => String(a).localeCompare(String(b), 'ar'));
 
         res.json({ success: true, data: cleaned });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/v2/cars/deduplicate — حذف السيارات المكررة من قاعدة البيانات (أدمن)
+// ─────────────────────────────────────────────────────────────────────────────
+router.post('/deduplicate', requireAuthAPI, async (req, res, next) => {
+    try {
+        if (!req.user.role || !['admin', 'super_admin'].includes(req.user.role)) {
+            return res.status(403).json({ success: false, message: 'Admin access required' });
+        }
+        const Car = getModel(req, 'Car');
+        const tenantId = getTenantId(req);
+
+        // جلب جميع سيارات المعرض
+        const allCars = await Car.find({ tenantId }).sort({ createdAt: 1 }).lean();
+
+        const seenKeys = new Map(); // key → _id (الأقدم يُحفظ)
+        const toDelete = [];
+
+        for (const car of allCars) {
+            const extId = car.externalId || car.externalRef;
+            let key;
+
+            if (extId && extId.trim() && !extId.startsWith('imp-')) {
+                key = `ext:${extId.trim()}`;
+            } else {
+                const make = String(car.make || '').toLowerCase().trim();
+                const model = String(car.model || '').toLowerCase().trim();
+                const year = car.year || 0;
+                const price = Math.round((car.priceSar || car.price || 0) / 100) * 100;
+                if (make && model && year) {
+                    key = `${make}|${model}|${year}|${price}`;
+                }
+            }
+
+            if (!key) continue; // لا يمكن تحديد التكرار → تجاهل
+
+            if (seenKeys.has(key)) {
+                toDelete.push(car._id); // مكرر → احذفه (الأحدث)
+            } else {
+                seenKeys.set(key, car._id);
+            }
+        }
+
+        let deletedCount = 0;
+        if (toDelete.length > 0) {
+            const result = await Car.deleteMany({ _id: { $in: toDelete } });
+            deletedCount = result.deletedCount;
+        }
+
+        return res.json({
+            success: true,
+            message: `✅ تم حذف ${deletedCount} سيارة مكررة من أصل ${allCars.length}`,
+            deletedCount,
+            totalBefore: allCars.length,
+            totalAfter: allCars.length - deletedCount
+        });
     } catch (error) {
         next(error);
     }

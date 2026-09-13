@@ -409,6 +409,39 @@ function CarsContent() {
         }
     };
 
+    // [[FIX]] تنظيف السيارات المكررة من قاعدة البيانات نهائياً
+    const handleDeduplicateDB = async () => {
+        if (!confirm(isRTL
+            ? 'هل تريد حذف السيارات المكررة من قاعدة البيانات؟ سيتم الاحتفاظ بنسخة واحدة من كل سيارة.'
+            : 'Remove duplicate cars from database? One copy of each car will be kept.')) return;
+        try {
+            showToast(isRTL ? '⏳ جاري تنظيف المكررات...' : '⏳ Removing duplicates...', 'info');
+            const token = typeof window !== 'undefined' ? localStorage.getItem('hm_token') : null;
+            const res = await fetch('/api/v2/cars/deduplicate', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'X-Tenant-ID': process.env.NEXT_PUBLIC_TENANT_ID || 'hmcar'
+                }
+            }).then(r => r.json());
+            if (res.success) {
+                showToast(
+                    isRTL
+                        ? `✅ تم حذف ${res.deletedCount} سيارة مكررة — المتبقي: ${res.totalAfter}`
+                        : `✅ Removed ${res.deletedCount} duplicates — Remaining: ${res.totalAfter}`,
+                    'success'
+                );
+                await loadData();
+            } else {
+                showToast(res.message || (isRTL ? 'فشل التنظيف' : 'Dedup failed'), 'error');
+            }
+        } catch (err: any) {
+            showToast(err.message || (isRTL ? 'خطأ' : 'Error'), 'error');
+        }
+    };
+
+
 
     // فلترة السيارات بالبحث
     const filteredCars = searchQuery.trim()
@@ -554,6 +587,15 @@ function CarsContent() {
                                         {isRTL ? 'حذف كافة السيارات بالمعرض' : 'Delete All Showroom Cars'}
                                     </button>
                                 )}
+                                {/* [[FIX]] زر تنظيف المكررات */}
+                                <button
+                                    onClick={handleDeduplicateDB}
+                                    className="px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold hover:bg-amber-500/20 transition-all flex items-center gap-2"
+                                    title={isRTL ? 'يحذف السيارات المكررة ويبقي نسخة واحدة من كل سيارة' : 'Removes duplicate cars keeping one copy each'}
+                                >
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h10M4 18h6" /></svg>
+                                    {isRTL ? 'تنظيف المكررات' : 'Remove Duplicates'}
+                                </button>
                             </div>
                         </div>
 
