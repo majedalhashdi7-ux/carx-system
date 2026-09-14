@@ -51,9 +51,10 @@ const database = {
   type: 'mongodb',
 
   // معلومات الاتصال
+  // [[FIX]] ترتيب الأولوية: MONGO_URI → MONGODB_URI → MONGO_URI_PRODUCTION (Atlas) → local fallback
   uri: forceMemoryDb
     ? defaultMongoUri
-    : (process.env.MONGO_URI || process.env.MONGODB_URI || defaultMongoUri),
+    : (process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGO_URI_PRODUCTION || process.env.MONGO_URI_HMCAR || defaultMongoUri),
 
   // خيارات الاتصال
   options: {

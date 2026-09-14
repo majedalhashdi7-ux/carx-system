@@ -85,7 +85,7 @@ const nextConfig = {
   },
 
   async rewrites() {
-    // ✅ في بيئة التطوير: إعادة توجيه للـ backend المحلي
+    // في بيئة التطوير: توجيه لـ Backend المحلي
     if (process.env.NODE_ENV === 'development') {
       return [
         {
@@ -94,7 +94,23 @@ const nextConfig = {
         },
       ];
     }
-    // في الـ production: يتولى vercel.json التوجيه للـ vercel-server.js
+    // [[FIX]] في الإنتاج: إذا وُجد NEXT_PUBLIC_API_URL → استخدمه كـ proxy للـ Backend
+    // (للنشر المستقل بدون monorepo vercel.json)
+    // إذا لم يوجد → طلبات /api/* تذهب للـ vercel-server.js في نفس المشروع (monorepo)
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL
+      ? process.env.NEXT_PUBLIC_API_URL.replace(/\/api\/v2\/?$/, '').replace(/\/api\/?$/, '')
+      : null;
+
+    if (backendUrl && !backendUrl.startsWith('http://localhost')) {
+      return [
+        {
+          source: '/api/:path*',
+          destination: `${backendUrl}/api/:path*`,
+        },
+      ];
+    }
+
+    // monorepo deployment: root vercel.json يتولى التوجيه لـ vercel-server.js
     return [];
   },
 

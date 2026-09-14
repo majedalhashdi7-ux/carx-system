@@ -144,7 +144,7 @@ function constructFallbackUri(baseUri, dbName) {
 async function getConnection(tenantId, mongoUri) {
   // 1. إعادة استخدام الاتصال الرئيسي لـ hmcar و carx و default (لتسريع الاستجابة والـ Serverless)
   const PRIMARY_TENANTS = ['hmcar', 'carx', 'default'];
-  const mainUri = process.env.MONGO_URI || process.env.MONGODB_URI || '';
+  const mainUri = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGO_URI_PRODUCTION || process.env.MONGO_URI_HMCAR || '';
   if (
     PRIMARY_TENANTS.includes(tenantId) &&
     mongoose.connection &&
@@ -197,7 +197,7 @@ async function getConnection(tenantId, mongoUri) {
     console.error(`⚠️ [CONN FAILED] Failed connecting to ${tenantId} using primary URI:`, error.message);
     
     // التحقق من وجود URI بديل (MONGO_URI الرئيسي للمنصة) ومحاولة استخدامه مع تعديل اسم قاعدة البيانات
-    const baseUri = process.env.MONGO_URI || process.env.MONGODB_URI;
+    const baseUri = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGO_URI_PRODUCTION || process.env.MONGO_URI_HMCAR;
     if (baseUri && baseUri !== mongoUri) {
       console.log(`🔄 [FALLBACK] Attempting connection to ${tenantId} using fallback parsed from main MONGO_URI`);
       try {

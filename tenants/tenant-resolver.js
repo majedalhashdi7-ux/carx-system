@@ -176,7 +176,7 @@ function resolveTenant(req) {
 
   // إذا لم يتم حل متغير الـ ENV المحدد للمعرض، نحاول بناء URI افتراضي من MONGO_URI العام
   if (!mongoUri) {
-    const baseUri = process.env.MONGO_URI || process.env.MONGODB_URI || null;
+    const baseUri = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGO_URI_PRODUCTION || process.env.MONGO_URI_HMCAR || null;
     if (baseUri) {
       try {
         console.warn(`⚠️ [TenantResolver] tenant "${tenantId}" has no specific mongoUri, using fallback from main MONGO_URI`);
