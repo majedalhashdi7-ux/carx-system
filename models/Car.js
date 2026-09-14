@@ -198,7 +198,7 @@ carSchema.post('save', function (doc) {
 });
 
 // تخزين حالة isNew قبل الحفظ
-carSchema.pre('save', function (next) {
+carSchema.pre('save', async function () {
   // [[ARABIC_COMMENT]] محاولة ذكية لتحديد المصدر بناءً على البيانات المتوفرة
   const isKorean = this.source === 'korean_import' || 
                    this.listingType === 'showroom' || 
@@ -208,7 +208,7 @@ carSchema.pre('save', function (next) {
   if (!this.source) {
     this.source = isKorean ? 'korean_import' : 'hm_local';
   }
-  
+
   if (!this.listingType) {
     this.listingType = this.source === 'korean_import' ? 'showroom' : 'store';
   }
@@ -224,7 +224,6 @@ carSchema.pre('save', function (next) {
   }
 
   this.wasNew = this.isNew;
-  next();
 });
 
 module.exports = mongoose.model('Car', carSchema);

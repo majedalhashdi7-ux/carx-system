@@ -244,7 +244,8 @@ describe('Auth Middleware - Unit Tests', () => {
         });
 
         it('should reject user without required permission', () => {
-            req.user = { role: 'admin', permissions: ['view_analytics'] };
+            // Admin always has all permissions — use a non-admin role to test rejection
+            req.user = { role: 'seller', permissions: ['view_analytics'] };
             const middleware = requirePermissionAPI('manage_users');
 
             middleware(req, res, next);

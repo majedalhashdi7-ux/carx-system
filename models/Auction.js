@@ -12,7 +12,7 @@ const auctionSchema = new mongoose.Schema({
     index: true
   },
   // السيارة المرتبطة بالمزاد
-  car: { type: mongoose.Schema.Types.ObjectId, ref: 'Car' },
+  car: { type: mongoose.Schema.Types.ObjectId, ref: 'Car', required: true },
   carId: { type: mongoose.Schema.Types.ObjectId, ref: 'Car' },
   externalId: { type: String, default: '', index: true },
   externalUrl: { type: String, default: '' },

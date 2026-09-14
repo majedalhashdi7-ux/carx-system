@@ -5,7 +5,10 @@ const jwt = require('jsonwebtoken');
 
 // ── JWT Helpers ──
 
-const JWT_SECRET = process.env.JWT_SECRET || 'hmcar_jwt_secret_key_2026_production_shared';
+// NOTE: Read JWT_SECRET dynamically so tests can override via process.env
+function getJwtSecret() {
+  return process.env.JWT_SECRET || 'hmcar_jwt_secret_key_2026_production_shared';
+}
 
 function generateToken(user, tenantId = 'default') {
   const payload = {
@@ -17,14 +20,14 @@ function generateToken(user, tenantId = 'default') {
     role: user.role,
     permissions: user.permissions || []
   };
-  return jwt.sign(payload, JWT_SECRET, {
+  return jwt.sign(payload, getJwtSecret(), {
     expiresIn: process.env.JWT_EXPIRES_IN || '365d'
   });
 }
 
 function verifyToken(token) {
   try {
-    return jwt.verify(token, JWT_SECRET);
+    return jwt.verify(token, getJwtSecret());
   } catch {
     return null;
   }
@@ -70,7 +73,7 @@ const requireAuthAPI = (req, res, next) => {
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];
     try {
-      const jwtSecret = process.env.JWT_SECRET || JWT_SECRET;
+      const jwtSecret = getJwtSecret();
       const decoded = jwt.verify(token, jwtSecret);
       req.user = decoded;
       
