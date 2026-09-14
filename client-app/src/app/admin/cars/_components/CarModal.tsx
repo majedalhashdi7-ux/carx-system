@@ -62,25 +62,25 @@ export default function CarModal({
     const update = (field: keyof FormData, value: unknown) =>
         onFormChange({ ...formData, [field]: value });
 
-    // دالة رفع الصورة إلى الخادم
+    // دالة رفع الصورة إلى الخادم — [[FIX]] إصلاح stale closure عند رفع صور متعددة
     const handleImageUpload = async (files: FileList | null) => {
         if (!files || files.length === 0) return;
+        // نبدأ بالصور الحالية ونضيف إليها كل صورة جديدة
+        const accumulated = [...formData.images.filter(img => img)];
         for (const file of Array.from(files)) {
             const data = new FormData();
             data.append('image', file);
             try {
                 const res = await api.upload.image(data);
-                if (res.success) {
-                    // إضافة الرابط الجديد إلى قائمة الصور
-                    onFormChange({
-                        ...formData,
-                        images: [...formData.images.filter(img => img), res.url]
-                    });
+                if (res.success && res.url) {
+                    accumulated.push(res.url); // نضيف للمصفوفة المحلية لا للـ state المتأخر
                 }
             } catch (err) {
                 console.error('فشل رفع الصورة:', err);
             }
         }
+        // تحديث واحد فقط بعد رفع كل الصور
+        onFormChange({ ...formData, images: accumulated });
     };
 
     // دالة حذف صورة من القائمة

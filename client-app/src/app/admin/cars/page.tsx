@@ -246,11 +246,12 @@ function CarsContent() {
         if (submitting) return;
         setSubmitting(true);
         try {
-            // [[FIX]] تنقية الصور الفارغة قبل الإرسال لمنع محو الصور الأصلية عند التعديل
-            const cleanImages = (formData.images || []).filter(img => img.trim() !== '');
+            // [[FIX]] تنقية الصور الفارغة — نرسل الصور المحدّثة دائماً بغض النظر عن عددها
+            // السبب: إذا حذف الأدمن كل الصور كان النظام يرجع للصور القديمة (خطأ) — ثم صُحِّح
+            const cleanImages = (formData.images || []).filter(img => img && img.trim() !== '');
             const submitData = { 
                 ...formData,
-                images: cleanImages.length > 0 ? cleanImages : (editingCar as any)?.images || [],
+                images: cleanImages,   // ← دائماً نرسل ما اختاره الأدمن (حتى لو فارغ)
                 source: formData.source || 'hm_local',
                 listingType: formData.listingType || (formData.source === 'korean_import' ? 'showroom' : 'store'),
                 priceUsd: formData.usdPrice,
