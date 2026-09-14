@@ -697,7 +697,7 @@ router.put('/:id', requireAuthAPI, requirePermissionAPI('manage_cars'), invalida
 
         const car = await Car.findOneAndUpdate(
             addTenantFilter(req, idFilter),
-            normalizedPayload,
+            { $set: normalizedPayload },   // [[FIX]] Mongoose 9 لا يُغلف تلقائياً — يجب $set صريح
             { new: true, runValidators: false }
         );
 

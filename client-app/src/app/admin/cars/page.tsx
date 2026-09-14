@@ -259,13 +259,16 @@ function CarsContent() {
             };
 
             if (editingCar) {
-                // [[FIX]] استخدام _id أو id بالترتيب الصحيح مع تحقق
-                const targetId = (editingCar as any)._id || editingCar.id;
-                if (!targetId) {
-                    throw new Error(isRTL ? 'لم يتم العثور على معرّف السيارة — أعد تحميل الصفحة' : 'Car ID not found — please refresh');
+                // [[FIX]] استخراج ID بشكل آمن من editingCar
+                const rawId = (editingCar as any)._id || (editingCar as any).id;
+                const targetId = rawId ? String(rawId).trim() : '';
+                if (!targetId || targetId === 'undefined' || targetId === 'null') {
+                    console.error('[handleSubmit] editingCar._id / id is falsy:', editingCar);
+                    throw new Error(isRTL ? '❌ لم يتم العثور على معرّف السيارة — أعد تحميل الصفحة' : '❌ Car ID not found — please refresh');
                 }
                 const res = await api.cars.update(targetId, submitData);
-                if (!res || res.success === false) throw new Error((res as any)?.message || 'Update failed');
+                // [[FIX]] fetchAPI يُعيد البيانات مباشرة — res.success يُشير للحالة
+                if (!res || res.success === false) throw new Error((res as any)?.message || (isRTL ? '❌ فشل التعديل' : '❌ Update failed'));
             } else {
                 const res = await api.cars.create(submitData);
                 if (!res || res.success === false) throw new Error((res as any)?.message || 'Create failed');

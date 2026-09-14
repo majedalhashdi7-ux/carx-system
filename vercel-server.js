@@ -144,7 +144,8 @@ function createCorsMiddleware() {
  * التحقق من وجود MONGO_URI للمعرض الافتراضي وتصحيح التنسيق العشوائي
  */
 function hasValidMongoUri() {
-  let mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
+  // [[FIX]] ترتيب الأولوية: MONGO_URI → MONGODB_URI → MONGO_URI_PRODUCTION
+  let mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGO_URI_PRODUCTION || process.env.MONGO_URI_HMCAR;
 
   // If a global MONGO_URI is present, normalize and use it
   if (mongoUri) {
@@ -290,7 +291,8 @@ module.exports = async (req, res) => {
 
     // تهيئة اتصال MongoDB العام السريع لبيئة Serverless
     const mongoose = require('mongoose');
-    const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
+    // [[FIX]] نفس ترتيب الأولوية: MONGO_URI → MONGO_URI_PRODUCTION
+    const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGO_URI_PRODUCTION || process.env.MONGO_URI_HMCAR;
     if (mongoUri && (!mongoose.connection || mongoose.connection.readyState < 1)) {
       try {
         await mongoose.connect(mongoUri, {
