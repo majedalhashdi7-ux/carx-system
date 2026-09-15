@@ -136,7 +136,7 @@ export const api = {
     }),
   },
   auth: {
-    // استخدام /auth/login الموحَّد لكل الأدوار - يقبل admin و buyer
+    // /auth/login الموحَّد لكل الأدوار — يدعم admin و buyer
     login: (identifier: string, password: string, role = 'buyer') => {
       return fetchAPI('/auth/login', {
         method: 'POST',

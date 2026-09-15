@@ -8,16 +8,20 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import { api } from '../../lib/api';
 
-// Luxury brand fallbacks with known colors
+// Luxury brand fallbacks with logo URLs
 const LUXURY_BRANDS = [
-  { name: 'مرسيدس بنز', en: 'Mercedes-Benz', color: '#C0C0C0' },
-  { name: 'بي ام دبليو', en: 'BMW', color: '#1C69D4' },
-  { name: 'رولز رويس', en: 'Rolls-Royce', color: '#9B8B5C' },
-  { name: 'بنتلي', en: 'Bentley', color: '#3D5A3E' },
-  { name: 'لامبورجيني', en: 'Lamborghini', color: '#C9A84C' },
-  { name: 'فيراري', en: 'Ferrari', color: '#CC0000' },
-  { name: 'بوغاتي', en: 'Bugatti', color: '#1A2B6D' },
-  { name: 'بورش', en: 'Porsche', color: '#B5A642' },
+  { name: 'مرسيدس بنز', en: 'Mercedes-Benz', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Mercedes-Logo.svg/120px-Mercedes-Logo.svg.png', color: '#C0C0C0' },
+  { name: 'بي إم دبليو', en: 'BMW', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/120px-BMW.svg.png', color: '#1C69D4' },
+  { name: 'رولز رويس', en: 'Rolls-Royce', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Rolls-Royce_Motor_Cars_logo.svg/120px-Rolls-Royce_Motor_Cars_logo.svg.png', color: '#9B8B5C' },
+  { name: 'بنتلي', en: 'Bentley', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/Bentley_logo.svg/120px-Bentley_logo.svg.png', color: '#3D5A3E' },
+  { name: 'لامبورجيني', en: 'Lamborghini', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Lamborghini_Logo.svg/120px-Lamborghini_Logo.svg.png', color: '#C9A84C' },
+  { name: 'فيراري', en: 'Ferrari', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Ferrari-Logo.svg/120px-Ferrari-Logo.svg.png', color: '#CC0000' },
+  { name: 'بوغاتي', en: 'Bugatti', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Bugatti_logo.svg/120px-Bugatti_logo.svg.png', color: '#1A2B6D' },
+  { name: 'بورش', en: 'Porsche', logoUrl: 'https://upload.wikimedia.org/wikipedia/de/thumb/5/5f/Porsche_Logo.svg/120px-Porsche_Logo.svg.png', color: '#B5A642' },
+  { name: 'أستون مارتن', en: 'Aston Martin', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Aston_Martin_logo.svg/120px-Aston_Martin_logo.svg.png', color: '#004D2A' },
+  { name: 'مازيراتي', en: 'Maserati', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Maserati_logo.svg/120px-Maserati_logo.svg.png', color: '#1A3C6E' },
+  { name: 'لكزس', en: 'Lexus', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Lexus_Division_emblem.svg/120px-Lexus_Division_emblem.svg.png', color: '#1A1A1A' },
+  { name: 'لاند روفر', en: 'Land Rover', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Lard_Rover_logo.svg/120px-Lard_Rover_logo.svg.png', color: '#005A2B' },
 ];
 
 export default function BrandsPage() {
@@ -103,7 +107,7 @@ export default function BrandsPage() {
             >
               {displayBrands.map((brand, idx) => {
                 const brandName = brand.name || brand.en || '';
-                const brandLogo = brand.logo;
+                const brandLogo = brand.logoUrl || brand.logo || null;
                 const carCount = brand.carCount || brand.carsCount || null;
                 const href = brand._id
                   ? `/brands/${brand._id}`

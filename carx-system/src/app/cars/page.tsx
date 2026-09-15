@@ -8,11 +8,25 @@ import CarCard3D from '../../components/CarCard3D';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 
+// سيارات فاخرة افتراضية — تظهر عندما تكون قاعدة البيانات فارغة
+const DEMO_CARS = [
+  { _id: 'demo-1', title: 'مرسيدس بنز G63 AMG', make: 'Mercedes-Benz', model: 'G63 AMG', year: 2024, price: 950000, mileage: 0, fuelType: 'Petrol', transmission: 'Automatic', condition: 'excellent', mainImage: 'https://images.unsplash.com/photo-1520031441872-265e4ff70366?auto=format&fit=crop&q=80&w=800', isActive: true, tenantId: 'carx', isDemo: true },
+  { _id: 'demo-2', title: 'بورش 911 تيربو S', make: 'Porsche', model: '911 Turbo S', year: 2024, price: 1100000, mileage: 0, fuelType: 'Petrol', transmission: 'Automatic', condition: 'excellent', mainImage: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800', isActive: true, tenantId: 'carx', isDemo: true },
+  { _id: 'demo-3', title: 'بي إم دبليو M8 Competition', make: 'BMW', model: 'M8', year: 2023, price: 680000, mileage: 5000, fuelType: 'Petrol', transmission: 'Automatic', condition: 'excellent', mainImage: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=800', isActive: true, tenantId: 'carx', isDemo: true },
+  { _id: 'demo-4', title: 'لامبورجيني أوروس', make: 'Lamborghini', model: 'Urus', year: 2024, price: 1800000, mileage: 0, fuelType: 'Petrol', transmission: 'Automatic', condition: 'excellent', mainImage: 'https://images.unsplash.com/photo-1621135802920-133df287f89c?auto=format&fit=crop&q=80&w=800', isActive: true, tenantId: 'carx', isDemo: true },
+  { _id: 'demo-5', title: 'بنتلي كونتيننتال GT', make: 'Bentley', model: 'Continental GT', year: 2023, price: 1500000, mileage: 2000, fuelType: 'Petrol', transmission: 'Automatic', condition: 'excellent', mainImage: 'https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&q=80&w=800', isActive: true, tenantId: 'carx', isDemo: true },
+  { _id: 'demo-6', title: 'رولز رويس كولينان', make: 'Rolls-Royce', model: 'Cullinan', year: 2024, price: 3200000, mileage: 0, fuelType: 'Petrol', transmission: 'Automatic', condition: 'excellent', mainImage: 'https://images.unsplash.com/photo-1617814076229-4a0aefde5861?auto=format&fit=crop&q=80&w=800', isActive: true, tenantId: 'carx', isDemo: true },
+  { _id: 'demo-7', title: 'فيراري SF90 ستراداليه', make: 'Ferrari', model: 'SF90 Stradale', year: 2024, price: 2800000, mileage: 0, fuelType: 'Hybrid', transmission: 'Automatic', condition: 'excellent', mainImage: 'https://images.unsplash.com/photo-1592198084033-aade902d1aae?auto=format&fit=crop&q=80&w=800', isActive: true, tenantId: 'carx', isDemo: true },
+  { _id: 'demo-8', title: 'أستون مارتن DBX 707', make: 'Aston Martin', model: 'DBX 707', year: 2023, price: 1350000, mileage: 1000, fuelType: 'Petrol', transmission: 'Automatic', condition: 'excellent', mainImage: 'https://images.unsplash.com/photo-1547245324-d777c6f05e80?auto=format&fit=crop&q=80&w=800', isActive: true, tenantId: 'carx', isDemo: true },
+  { _id: 'demo-9', title: 'لكزس LX 600 VIP', make: 'Lexus', model: 'LX 600', year: 2024, price: 550000, mileage: 0, fuelType: 'Petrol', transmission: 'Automatic', condition: 'excellent', mainImage: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&q=80&w=800', isActive: true, tenantId: 'carx', isDemo: true },
+];
+
 export default function CarsGallery() {
   const [cars, setCars] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
     const fetchCars = async () => {
@@ -20,6 +34,9 @@ export default function CarsGallery() {
       const res = await api.cars.getAll({ limit: '100' }) as any;
       if (res.error) {
         setError(res.error);
+        // عند الخطأ — أعرض السيارات الافتراضية
+        setCars(DEMO_CARS);
+        setIsDemo(true);
       } else if (res.data) {
         const result = res.data;
         const fetchedCars = Array.isArray(result.data)
@@ -27,7 +44,14 @@ export default function CarsGallery() {
           : Array.isArray(result)
             ? result
             : (result.data?.cars || result.cars || []);
-        setCars(fetchedCars);
+        if (fetchedCars.length > 0) {
+          setCars(fetchedCars);
+          setIsDemo(false);
+        } else {
+          // لا توجد سيارات في قاعدة البيانات — أعرض الافتراضية
+          setCars(DEMO_CARS);
+          setIsDemo(true);
+        }
       }
       setLoading(false);
     };
@@ -37,6 +61,7 @@ export default function CarsGallery() {
 
   const filteredCars = cars.filter(car => 
     car.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    car.make?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     car.brand?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 

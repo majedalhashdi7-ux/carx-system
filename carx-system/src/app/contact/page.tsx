@@ -18,9 +18,9 @@ export default function ContactPage() {
   const [error, setError] = useState<string | null>(null);
   
   const [contactInfo, setContactInfo] = useState({
-    phone: '+966 50 000 0000',
-    email: 'vip@carx.com',
-    address: 'طريق الملك فهد، الرياض'
+    phone: '+966 55 000 1111',
+    email: 'vip@carx.sa',
+    address: 'طريق الملك فهد، الرياض، المملكة العربية السعودية'
   });
 
   useEffect(() => {
