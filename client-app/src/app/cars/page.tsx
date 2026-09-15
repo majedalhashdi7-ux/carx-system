@@ -400,7 +400,15 @@ function CarsContent() {
 
 
     /* ── Derived filter options ── */
-    const allBrands = [...new Set(allCars.map(c => c.makeAr || c.make).filter(Boolean))].sort();
+    // [FIX] توحيد أسماء الماركات بـ trim() لمنع التكرار الناتج عن مسافات زائدة أو اختلاف في التشكيل
+    const brandNormMap = new Map<string, string>(); // normalized → original
+    allCars.forEach(c => {
+        const raw = c.makeAr || c.make;
+        if (!raw) return;
+        const key = raw.trim().toLowerCase();
+        if (!brandNormMap.has(key)) brandNormMap.set(key, raw.trim());
+    });
+    const allBrands = [...brandNormMap.values()].sort();
     const allFuels = [...new Set(allCars.map(c => c.fuelAr || c.fuelType).filter(Boolean))].sort() as string[];
     const allTrans = [...new Set(allCars.map(c => c.transmissionAr || c.transmission).filter(Boolean))].sort() as string[];
     const years = [...new Set(allCars.map(c => c.year).filter(Boolean))].sort((a, b) => b - a);
@@ -409,7 +417,8 @@ function CarsContent() {
     const filtered = allCars.filter(c => {
         const q = search.toLowerCase();
         if (q && !c.title.toLowerCase().includes(q) && !(c.makeAr || c.make).toLowerCase().includes(q) && !c.model.toLowerCase().includes(q)) return false;
-        if (brandFilters.length && !brandFilters.includes(c.makeAr || c.make)) return false;
+        // [FIX] مقارنة الماركة بعد normalize لتوافق مع القائمة المدمجة
+        if (brandFilters.length && !brandFilters.some(bf => bf.trim().toLowerCase() === (c.makeAr || c.make || '').trim().toLowerCase())) return false;
         if (yearFrom && c.year < Number(yearFrom)) return false;
         if (yearTo && c.year > Number(yearTo)) return false;
         if (fuelFilters.length && !fuelFilters.includes(c.fuelAr || c.fuelType || '')) return false;

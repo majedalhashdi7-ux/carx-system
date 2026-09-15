@@ -46,7 +46,8 @@ export default function ContactPage() {
     const [contactData, setContactData] = useState({
         phone: '+967781007805',
         email: 'info@hmcar.com',
-        address: isRTL ? 'الرياض، المملكة العربية السعودية' : 'Riyadh, Saudi Arabia',
+        // [FIX] العنوان الافتراضي يتوافق مع رقم الهاتف اليمني +967
+        address: isRTL ? 'صنعاء، الجمهورية اليمنية' : 'Sanaa, Yemen',
         whatsapp: '+967781007805'
     });
 
@@ -56,7 +57,7 @@ export default function ContactPage() {
                 setContactData({
                     phone: res.data.contactInfo?.phone || '+967781007805',
                     email: res.data.contactInfo?.email || 'info@hmcar.com',
-                    address: res.data.contactInfo?.address || (isRTL ? 'الرياض، المملكة العربية السعودية' : 'Riyadh, Saudi Arabia'),
+                    address: res.data.contactInfo?.address || (isRTL ? 'صنعاء، الجمهورية اليمنية' : 'Sanaa, Yemen'),
                     whatsapp: res.data.socialLinks?.whatsapp || '+967781007805'
                 });
             }

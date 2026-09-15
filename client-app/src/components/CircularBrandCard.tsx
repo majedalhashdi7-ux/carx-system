@@ -90,7 +90,7 @@ export default function CircularBrandCard({ brand, index, onClick: _onClick }: C
             onMouseEnter={handleMouseEnter}
             className="group relative perspective-1000"
         >
-            <Link href={`/brands/${brand.key}`}>
+            <Link href={`/brands/${encodeURIComponent(brand.key || brand.name || '')}`}>
                 <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-gray-900/80 via-black to-gray-900/80 border border-white/10 hover:border-amber-500/40 transition-all duration-700 cursor-pointer shadow-2xl hover:shadow-amber-500/20 p-8">
                     
                     {/* خلفية هولوجرافية متحركة */}
