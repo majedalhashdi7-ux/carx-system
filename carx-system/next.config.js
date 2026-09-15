@@ -20,10 +20,6 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // تجنب أخطاء lambda في Vercel build
-  experimental: {
-    missingSuspenseWithCSRBailout: false,
-  },
   // تجنب خطأ "Unable to find lambda for route"
   trailingSlash: false,
   poweredByHeader: false,
