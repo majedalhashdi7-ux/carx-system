@@ -3,12 +3,18 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "installCommand": "npm install",
-  "regions": ["cdg1"],
+  "regions": ["iad1"],
+  "env": {
+    "NEXT_PUBLIC_API_URL": "https://hmcar-system-two.vercel.app/api/v2",
+    "NEXT_PUBLIC_TENANT_ID": "carx"
+  },
   "headers": [
     {
-      "source": "/api/:path*",
+      "source": "/(.*)",
       "headers": [
-        { "key": "X-Tenant-ID", "value": "carx" }
+        { "key": "X-Tenant-ID", "value": "carx" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
       ]
     }
   ],
