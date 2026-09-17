@@ -8,24 +8,11 @@ import Footer from '../../components/Footer';
 import LuxuryPartCard from '../../components/LuxuryPartCard';
 import { api } from '../../lib/api';
 
-// ─── قطع غيار تجريبية ───────────────────────────────────────────────────────
-const DEMO_PARTS = [
-  { _id: 'dp-1', name: 'فلتر زيت مرسيدس AMG', partNumber: 'MB-OIL-001', category: 'فلاتر', brand: 'Mercedes-Benz', price: 285, images: ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&q=80&w=800'], condition: 'new', isOriginal: true, isFeatured: true },
-  { _id: 'dp-2', name: 'طقم فرامل BMW M Series', partNumber: 'BW-BRK-550', category: 'فرامل', brand: 'BMW', price: 1850, images: ['https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&q=80&w=800'], condition: 'new', isOriginal: true },
-  { _id: 'dp-3', name: 'بطارية بورش هجين', partNumber: 'PC-BAT-911', category: 'كهرباء', brand: 'Porsche', price: 4500, images: ['https://images.unsplash.com/photo-1609521263047-f8f205293f24?auto=format&fit=crop&q=80&w=800'], condition: 'new', isOriginal: true },
-  { _id: 'dp-4', name: 'مجموعة تعليق لكزس LX', partNumber: 'LX-SUS-600', category: 'تعليق', brand: 'Lexus', price: 3200, images: ['https://images.unsplash.com/photo-1591293835940-934a7c4f2d9b?auto=format&fit=crop&q=80&w=800'], condition: 'new', isOriginal: true },
-  { _id: 'dp-5', name: 'فلتر هواء رولز رويس', partNumber: 'RR-AIR-002', category: 'فلاتر', brand: 'Rolls-Royce', price: 620, images: ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&q=80&w=800'], condition: 'new', isOriginal: true },
-  { _id: 'dp-6', name: 'مضخة زيت لامبورجيني', partNumber: 'LB-OMP-V10', category: 'محرك', brand: 'Lamborghini', price: 7800, images: ['https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&q=80&w=800'], condition: 'new', isOriginal: true, isFeatured: true },
-  { _id: 'dp-7', name: 'طقم إضاءة LED بنتلي', partNumber: 'BN-LED-GT3', category: 'إضاءة', brand: 'Bentley', price: 2400, images: ['https://images.unsplash.com/photo-1609521263047-f8f205293f24?auto=format&fit=crop&q=80&w=800'], condition: 'new', isOriginal: true },
-  { _id: 'dp-8', name: 'ناقل حركة فيراري', partNumber: 'FR-TRN-458', category: 'ناقل حركة', brand: 'Ferrari', price: 18500, images: ['https://images.unsplash.com/photo-1591293835940-934a7c4f2d9b?auto=format&fit=crop&q=80&w=800'], condition: 'new', isOriginal: true },
-];
-
 const CATEGORIES = ['فلاتر', 'فرامل', 'محرك', 'تعليق', 'كهرباء', 'إضاءة', 'ناقل حركة'];
 
 export default function PartsPage() {
   const [parts, setParts]         = useState<any[]>([]);
   const [loading, setLoading]     = useState(true);
-  const [isDemo, setIsDemo]       = useState(false);
   const [searchTerm, setSearchTerm]           = useState('');
   const [showFilters, setShowFilters]         = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -44,20 +31,12 @@ export default function PartsPage() {
             : Array.isArray(d)
               ? d
               : (d?.data?.parts || d?.parts || []);
-          if (list.length > 0) {
-            setParts(list);
-            setIsDemo(false);
-          } else {
-            setParts(DEMO_PARTS);
-            setIsDemo(true);
-          }
+          setParts(list);
         } else {
-          setParts(DEMO_PARTS);
-          setIsDemo(true);
+          setParts([]);
         }
       } catch {
-        setParts(DEMO_PARTS);
-        setIsDemo(true);
+        setParts([]);
       } finally {
         setLoading(false);
       }
@@ -104,25 +83,7 @@ export default function PartsPage() {
 
       <div className="relative z-10 pt-32 pb-24 px-4 md:px-8 max-w-[1700px] mx-auto">
 
-        {/* ── Demo Banner ───────────────────────────────────────── */}
-        <AnimatePresence>
-          {isDemo && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="mb-8 flex items-center gap-3 bg-luxury-gold/5 border border-luxury-gold/20 rounded-2xl px-6 py-4"
-            >
-              <Info className="w-5 h-5 text-luxury-gold shrink-0" />
-              <p className="text-sm text-white/60">
-                <span className="text-luxury-gold font-bold">عرض تجريبي</span>
-                {' '}— قطع غيار افتراضية، سيتم عرض قطعك الفعلية بمجرد الاتصال بقاعدة البيانات.
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
-        {/* ── Page Header ───────────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -265,27 +226,22 @@ export default function PartsPage() {
               <div key={i} className="h-80 bg-white/5 border border-white/10 rounded-[2rem] animate-pulse" />
             ))}
           </div>
-        ) : filteredParts.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-40 space-y-6"
-          >
-            <div className="w-32 h-32 rounded-full bg-white/5 flex items-center justify-center mx-auto">
-              <Wrench className="w-16 h-16 text-white/10" />
+        ) : filteredParts.length === 0 && parts.length === 0 ? (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            className="text-center py-40 space-y-6">
+            <div className="w-32 h-32 rounded-full bg-luxury-gold/5 border border-luxury-gold/10 flex items-center justify-center mx-auto">
+              <Wrench className="w-16 h-16 text-luxury-gold/20" />
             </div>
             <div className="space-y-2">
-              <h3 className="text-3xl font-black">لا توجد قطع مطابقة</h3>
+              <h3 className="text-3xl font-black">لا توجد قطع غيار بعد</h3>
               <p className="text-white/40 max-w-sm mx-auto text-lg">
-                حاول البحث بكلمات مختلفة أو عدّل الفلاتر.
+                لم يتم إضافة أي قطع غيار حتى الآن. يمكن للأدمن إضافتها من لوحة التحكم.
               </p>
             </div>
-            <button
-              onClick={clearFilters}
-              className="bg-luxury-gold text-black px-10 py-4 rounded-2xl font-black hover:bg-white transition-colors"
-            >
-              إعادة ضبط الفلاتر
-            </button>
+            <a href="/admin/parts/new"
+              className="inline-flex items-center gap-3 bg-luxury-gold text-black px-10 py-4 rounded-2xl font-black text-sm hover:bg-white transition-colors">
+              إضافة قطع غيار
+            </a>
           </motion.div>
         ) : (
           <motion.div

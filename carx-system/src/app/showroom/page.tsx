@@ -15,43 +15,29 @@ import Footer from '../../components/Footer';
 import ComparisonSystem from '../../components/ComparisonSystem';
 
 const SORT_OPTIONS = [
-  { value: 'newest', label: 'الأحدث أولاً' },
-  { value: 'price-asc', label: 'السعر: من الأقل' },
+  { value: 'newest',     label: 'الأحدث أولاً' },
+  { value: 'price-asc',  label: 'السعر: من الأقل' },
   { value: 'price-desc', label: 'السعر: من الأعلى' },
-  { value: 'year-desc', label: 'الموديل: الأحدث' },
+  { value: 'year-desc',  label: 'الموديل: الأحدث' },
 ];
 
-const FUEL_TYPES = ['بنزين', 'ديزل', 'كهرباء', 'هايبرد'];
+const FUEL_TYPES    = ['بنزين', 'ديزل', 'كهرباء', 'هايبرد'];
 const TRANSMISSIONS = ['أوتوماتيك', 'مانيوال'];
 
-// سيارات افتراضية فاخرة — تُعرض عند فراغ قاعدة البيانات
-const DEMO_CARS = [
-  { _id: 'demo-1', title: 'مرسيدس بنز G63 AMG', make: 'Mercedes-Benz', model: 'G63 AMG', year: 2024, price: 950000, mileage: 0, fuelType: 'Petrol', transmission: 'Automatic', condition: 'excellent', mainImage: 'https://images.unsplash.com/photo-1520031441872-265e4ff70366?auto=format&fit=crop&q=80&w=800', isActive: true, listingType: 'showroom' },
-  { _id: 'demo-2', title: 'بورش 911 تيربو S', make: 'Porsche', model: '911 Turbo S', year: 2024, price: 1100000, mileage: 0, fuelType: 'Petrol', transmission: 'Automatic', condition: 'excellent', mainImage: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800', isActive: true, listingType: 'showroom' },
-  { _id: 'demo-3', title: 'بي إم دبليو M8 Competition', make: 'BMW', model: 'M8', year: 2023, price: 680000, mileage: 5000, fuelType: 'Petrol', transmission: 'Automatic', condition: 'excellent', mainImage: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=800', isActive: true, listingType: 'showroom' },
-  { _id: 'demo-4', title: 'لامبورجيني أوروس', make: 'Lamborghini', model: 'Urus', year: 2024, price: 1800000, mileage: 0, fuelType: 'Petrol', transmission: 'Automatic', condition: 'excellent', mainImage: 'https://images.unsplash.com/photo-1621135802920-133df287f89c?auto=format&fit=crop&q=80&w=800', isActive: true, listingType: 'showroom' },
-  { _id: 'demo-5', title: 'بنتلي كونتيننتال GT', make: 'Bentley', model: 'Continental GT', year: 2023, price: 1500000, mileage: 2000, fuelType: 'Petrol', transmission: 'Automatic', condition: 'excellent', mainImage: 'https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&q=80&w=800', isActive: true, listingType: 'showroom' },
-  { _id: 'demo-6', title: 'رولز رويس كولينان', make: 'Rolls-Royce', model: 'Cullinan', year: 2024, price: 3200000, mileage: 0, fuelType: 'Petrol', transmission: 'Automatic', condition: 'excellent', mainImage: 'https://images.unsplash.com/photo-1617814076229-4a0aefde5861?auto=format&fit=crop&q=80&w=800', isActive: true, listingType: 'showroom' },
-  { _id: 'demo-7', title: 'فيراري SF90 ستراداليه', make: 'Ferrari', model: 'SF90 Stradale', year: 2024, price: 2800000, mileage: 0, fuelType: 'Hybrid', transmission: 'Automatic', condition: 'excellent', mainImage: 'https://images.unsplash.com/photo-1592198084033-aade902d1aae?auto=format&fit=crop&q=80&w=800', isActive: true, listingType: 'showroom' },
-  { _id: 'demo-8', title: 'أستون مارتن DBX 707', make: 'Aston Martin', model: 'DBX 707', year: 2023, price: 1350000, mileage: 1000, fuelType: 'Petrol', transmission: 'Automatic', condition: 'excellent', mainImage: 'https://images.unsplash.com/photo-1547245324-d777c6f05e80?auto=format&fit=crop&q=80&w=800', isActive: true, listingType: 'showroom' },
-  { _id: 'demo-9', title: 'لكزس LX 600 VIP', make: 'Lexus', model: 'LX 600', year: 2024, price: 550000, mileage: 0, fuelType: 'Petrol', transmission: 'Automatic', condition: 'excellent', mainImage: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&q=80&w=800', isActive: true, listingType: 'showroom' },
-];
-
 export default function ShowroomPage() {
-  const [cars, setCars] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [cars, setCars]           = useState<any[]>([]);
+  const [loading, setLoading]     = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [sortBy, setSortBy] = useState('newest');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  
-  // Filters
-  const [selectedBrand, setSelectedBrand] = useState('');
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000000]);
-  const [selectedFuel, setSelectedFuel] = useState('');
-  const [selectedTransmission, setSelectedTransmission] = useState('');
-  const [yearRange, setYearRange] = useState<[number, number]>([2015, 2026]);
+  const [sortBy, setSortBy]       = useState('newest');
+  const [viewMode, setViewMode]   = useState<'grid' | 'list'>('grid');
   const [showComparison, setShowComparison] = useState(false);
+
+  const [selectedBrand, setSelectedBrand]               = useState('');
+  const [priceRange, setPriceRange]                     = useState<[number, number]>([0, 5000000]);
+  const [selectedFuel, setSelectedFuel]                 = useState('');
+  const [selectedTransmission, setSelectedTransmission] = useState('');
+  const [yearRange, setYearRange]                       = useState<[number, number]>([2015, 2026]);
 
   useEffect(() => {
     const fetchCars = async () => {
@@ -60,18 +46,18 @@ export default function ShowroomPage() {
         const res = await api.cars.getAll({ limit: '200', listingType: 'showroom' }) as any;
         if (res.data) {
           const result = res.data;
-          const fetchedCars = Array.isArray(result.data)
+          const fetched = Array.isArray(result.data)
             ? result.data
             : Array.isArray(result)
               ? result
               : (result.data?.cars || result.cars || []);
-          setCars(fetchedCars.length > 0 ? fetchedCars : DEMO_CARS);
+          setCars(fetched);
         } else {
-          setCars(DEMO_CARS);
+          setCars([]);
         }
       } catch (err) {
         console.error('Failed to load showroom cars:', err);
-        setCars(DEMO_CARS);
+        setCars([]);
       } finally {
         setLoading(false);
       }
@@ -80,51 +66,43 @@ export default function ShowroomPage() {
 
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      const brandParam = params.get('make') || params.get('brand');
+      const brandParam  = params.get('make') || params.get('brand');
       const searchParam = params.get('search');
-      if (brandParam) {
-        setSelectedBrand(brandParam);
-        setShowFilters(true);
-      }
-      if (searchParam) {
-        setSearchQuery(searchParam);
-      }
+      if (brandParam)  { setSelectedBrand(brandParam); setShowFilters(true); }
+      if (searchParam) setSearchQuery(searchParam);
     }
   }, []);
 
-  // Extract unique brands from data
   const brands = useMemo(() => {
-    const brandSet = new Set(cars.map(c => c.brand || c.make).filter(Boolean));
-    return Array.from(brandSet);
+    const set = new Set(cars.map(c => c.brand || c.make).filter(Boolean));
+    return Array.from(set) as string[];
   }, [cars]);
 
-  // Filter & Sort
   const filteredCars = useMemo(() => {
     let result = [...cars];
-    
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      result = result.filter(c => 
-        c.title?.toLowerCase().includes(q) || 
+      result = result.filter(c =>
+        c.title?.toLowerCase().includes(q) ||
         (c.brand || c.make || '').toLowerCase().includes(q)
       );
     }
     if (selectedBrand) result = result.filter(c => (c.brand || c.make) === selectedBrand);
     if (selectedFuel) {
       result = result.filter(c => {
-        const fuel = c.fuelType?.toLowerCase();
-        if (selectedFuel === 'بنزين') return fuel === 'petrol' || fuel === 'gasoline' || fuel === 'بنزين';
-        if (selectedFuel === 'ديزل') return fuel === 'diesel' || fuel === 'ديزل';
-        if (selectedFuel === 'كهرباء') return fuel === 'electric' || fuel === 'كهرباء';
-        if (selectedFuel === 'هايبرد') return fuel === 'hybrid' || fuel === 'هايبرد';
+        const f = c.fuelType?.toLowerCase();
+        if (selectedFuel === 'بنزين') return f === 'petrol' || f === 'gasoline' || f === 'بنزين';
+        if (selectedFuel === 'ديزل')  return f === 'diesel'  || f === 'ديزل';
+        if (selectedFuel === 'كهرباء') return f === 'electric' || f === 'كهرباء';
+        if (selectedFuel === 'هايبرد') return f === 'hybrid'  || f === 'هايبرد';
         return true;
       });
     }
     if (selectedTransmission) {
       result = result.filter(c => {
-        const trans = c.transmission?.toLowerCase();
-        if (selectedTransmission === 'أوتوماتيك') return trans === 'automatic' || trans === 'أوتوماتيك';
-        if (selectedTransmission === 'مانيوال') return trans === 'manual' || trans === 'مانيوال';
+        const t = c.transmission?.toLowerCase();
+        if (selectedTransmission === 'أوتوماتيك') return t === 'automatic' || t === 'أوتوماتيك';
+        if (selectedTransmission === 'مانيوال')   return t === 'manual'    || t === 'مانيوال';
         return true;
       });
     }
@@ -136,26 +114,19 @@ export default function ShowroomPage() {
       const year = c.year || 2024;
       return year >= yearRange[0] && year <= yearRange[1];
     });
-
-    // Sort
     switch (sortBy) {
-      case 'price-asc': result.sort((a, b) => (a.priceSar || a.price || 0) - (b.priceSar || b.price || 0)); break;
+      case 'price-asc':  result.sort((a, b) => (a.priceSar || a.price || 0) - (b.priceSar || b.price || 0)); break;
       case 'price-desc': result.sort((a, b) => (b.priceSar || b.price || 0) - (a.priceSar || a.price || 0)); break;
-      case 'year-desc': result.sort((a, b) => (b.year || 0) - (a.year || 0)); break;
-      default: result.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      case 'year-desc':  result.sort((a, b) => (b.year || 0) - (a.year || 0)); break;
+      default:           result.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     }
     return result;
   }, [cars, searchQuery, selectedBrand, selectedFuel, selectedTransmission, priceRange, yearRange, sortBy]);
 
   const activeFilterCount = [selectedBrand, selectedFuel, selectedTransmission].filter(Boolean).length;
-
   const clearFilters = () => {
-    setSelectedBrand('');
-    setSelectedFuel('');
-    setSelectedTransmission('');
-    setPriceRange([0, 5000000]);
-    setYearRange([2015, 2026]);
-    setSearchQuery('');
+    setSelectedBrand(''); setSelectedFuel(''); setSelectedTransmission('');
+    setPriceRange([0, 5000000]); setYearRange([2015, 2026]); setSearchQuery('');
   };
 
   return (
@@ -166,7 +137,7 @@ export default function ShowroomPage() {
       <section className="relative pt-28 md:pt-36 pb-10 md:pb-16 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-luxury-gold/5 via-transparent to-transparent pointer-events-none" />
         <div className="absolute top-20 left-1/4 w-[600px] h-[600px] bg-luxury-gold/5 rounded-full blur-[150px] pointer-events-none" />
-        
+
         <div className="container mx-auto px-6 relative z-10">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-4 md:space-y-6 mb-10 md:mb-16">
             <div className="inline-flex items-center gap-2 bg-luxury-gold/10 border border-luxury-gold/20 px-5 py-2 rounded-full">
@@ -184,33 +155,27 @@ export default function ShowroomPage() {
           {/* Search & Controls Bar */}
           <div className="glass-panel p-4 rounded-3xl md:rounded-[2.5rem]">
             <div className="flex flex-col lg:flex-row items-center gap-4">
-              {/* Search */}
               <div className="relative flex-1 w-full">
                 <Search className="absolute right-6 top-1/2 -translate-y-1/2 w-5 h-5 text-luxury-gold" />
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder="ابحث عن سيارة أحلامك... (مثال: مرسيدس G-Class 2024)"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={e => setSearchQuery(e.target.value)}
                   className="w-full bg-white/5 border border-white/5 rounded-xl md:rounded-2xl py-3.5 md:py-5 pr-14 pl-6 text-sm md:text-lg text-white focus:outline-none focus:border-luxury-gold/30 focus:bg-white/10 transition-all placeholder:text-white/15"
                   dir="rtl"
                 />
               </div>
 
-              {/* Controls */}
               <div className="flex items-center gap-3 w-full lg:w-auto">
-                <button 
+                <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className={`flex-1 lg:flex-none flex items-center justify-center gap-3 px-4 md:px-8 py-3.5 md:py-5 rounded-xl md:rounded-2xl border font-bold transition-all text-xs md:text-sm ${
-                    showFilters ? 'bg-luxury-gold text-black border-luxury-gold' : 'bg-white/5 border-white/5 hover:border-luxury-gold/30'
-                  }`}
+                  className={`flex-1 lg:flex-none flex items-center justify-center gap-3 px-4 md:px-8 py-3.5 md:py-5 rounded-xl md:rounded-2xl border font-bold transition-all text-xs md:text-sm ${showFilters ? 'bg-luxury-gold text-black border-luxury-gold' : 'bg-white/5 border-white/5 hover:border-luxury-gold/30'}`}
                 >
                   <SlidersHorizontal className="w-5 h-5" />
                   فلترة
                   {activeFilterCount > 0 && (
-                    <span className="w-6 h-6 rounded-full bg-black text-luxury-gold text-xs font-black flex items-center justify-center">
-                      {activeFilterCount}
-                    </span>
+                    <span className="w-6 h-6 rounded-full bg-black text-luxury-gold text-xs font-black flex items-center justify-center">{activeFilterCount}</span>
                   )}
                 </button>
 
@@ -223,13 +188,8 @@ export default function ShowroomPage() {
                   </button>
                   <div className="absolute top-full mt-2 left-0 right-0 min-w-[200px] glass-panel rounded-2xl p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                     {SORT_OPTIONS.map(opt => (
-                      <button 
-                        key={opt.value}
-                        onClick={() => setSortBy(opt.value)}
-                        className={`w-full text-right px-4 py-3 rounded-xl text-sm transition-colors ${
-                          sortBy === opt.value ? 'bg-luxury-gold text-black font-bold' : 'text-white/60 hover:bg-white/5'
-                        }`}
-                      >
+                      <button key={opt.value} onClick={() => setSortBy(opt.value)}
+                        className={`w-full text-right px-4 py-3 rounded-xl text-sm transition-colors ${sortBy === opt.value ? 'bg-luxury-gold text-black font-bold' : 'text-white/60 hover:bg-white/5'}`}>
                         {opt.label}
                       </button>
                     ))}
@@ -238,21 +198,14 @@ export default function ShowroomPage() {
 
                 {/* View Toggle */}
                 <div className="hidden md:flex items-center gap-1 bg-white/5 p-1.5 rounded-2xl border border-white/5">
-                  <button 
-                    onClick={() => setViewMode('grid')}
-                    className={`p-3 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-luxury-gold text-black' : 'text-white/40 hover:text-white'}`}
-                  >
+                  <button onClick={() => setViewMode('grid')} className={`p-3 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-luxury-gold text-black' : 'text-white/40 hover:text-white'}`}>
                     <LayoutGrid className="w-4 h-4" />
                   </button>
-                  <button 
-                    onClick={() => setViewMode('list')}
-                    className={`p-3 rounded-xl transition-all ${viewMode === 'list' ? 'bg-luxury-gold text-black' : 'text-white/40 hover:text-white'}`}
-                  >
+                  <button onClick={() => setViewMode('list')} className={`p-3 rounded-xl transition-all ${viewMode === 'list' ? 'bg-luxury-gold text-black' : 'text-white/40 hover:text-white'}`}>
                     <List className="w-4 h-4" />
                   </button>
                 </div>
 
-                {/* Results Count */}
                 <div className="hidden lg:flex items-center gap-2 px-6 text-white/30 text-sm font-bold whitespace-nowrap">
                   <span className="text-luxury-gold text-lg">{filteredCars.length}</span> سيارة
                 </div>
@@ -265,75 +218,43 @@ export default function ShowroomPage() {
       {/* Filters Panel */}
       <AnimatePresence>
         {showFilters && (
-          <motion.section 
-            initial={{ height: 0, opacity: 0 }} 
-            animate={{ height: 'auto', opacity: 1 }} 
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden"
-          >
+          <motion.section initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
             <div className="container mx-auto px-6 pb-8">
               <div className="glass-panel p-8 rounded-[2rem] grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                {/* Brand Filter */}
                 <div className="space-y-3">
                   <label className="text-xs font-black text-white/40 uppercase tracking-widest">العلامة التجارية</label>
-                  <select 
-                    value={selectedBrand} 
-                    onChange={(e) => setSelectedBrand(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-luxury-gold/40 appearance-none cursor-pointer"
-                  >
+                  <select value={selectedBrand} onChange={e => setSelectedBrand(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-luxury-gold/40 appearance-none cursor-pointer">
                     <option value="" className="bg-black">الكل</option>
                     {brands.map(b => <option key={b} value={b} className="bg-black">{b}</option>)}
                   </select>
                 </div>
-
-                {/* Fuel Type */}
                 <div className="space-y-3">
                   <label className="text-xs font-black text-white/40 uppercase tracking-widest">نوع الوقود</label>
                   <div className="flex flex-wrap gap-2">
                     {FUEL_TYPES.map(fuel => (
-                      <button 
-                        key={fuel} 
-                        onClick={() => setSelectedFuel(selectedFuel === fuel ? '' : fuel)}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
-                          selectedFuel === fuel 
-                            ? 'bg-luxury-gold text-black border-luxury-gold' 
-                            : 'bg-white/5 border-white/10 text-white/50 hover:border-luxury-gold/30'
-                        }`}
-                      >
+                      <button key={fuel} onClick={() => setSelectedFuel(selectedFuel === fuel ? '' : fuel)}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${selectedFuel === fuel ? 'bg-luxury-gold text-black border-luxury-gold' : 'bg-white/5 border-white/10 text-white/50 hover:border-luxury-gold/30'}`}>
                         {fuel}
                       </button>
                     ))}
                   </div>
                 </div>
-
-                {/* Transmission */}
                 <div className="space-y-3">
                   <label className="text-xs font-black text-white/40 uppercase tracking-widest">ناقل الحركة</label>
                   <div className="flex gap-2">
                     {TRANSMISSIONS.map(t => (
-                      <button 
-                        key={t}
-                        onClick={() => setSelectedTransmission(selectedTransmission === t ? '' : t)}
-                        className={`flex-1 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
-                          selectedTransmission === t 
-                            ? 'bg-luxury-gold text-black border-luxury-gold' 
-                            : 'bg-white/5 border-white/10 text-white/50 hover:border-luxury-gold/30'
-                        }`}
-                      >
+                      <button key={t} onClick={() => setSelectedTransmission(selectedTransmission === t ? '' : t)}
+                        className={`flex-1 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${selectedTransmission === t ? 'bg-luxury-gold text-black border-luxury-gold' : 'bg-white/5 border-white/10 text-white/50 hover:border-luxury-gold/30'}`}>
                         {t}
                       </button>
                     ))}
                   </div>
                 </div>
-
-                {/* Clear */}
                 <div className="flex items-end">
-                  <button 
-                    onClick={clearFilters}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-red-500/20 text-red-400 text-sm font-bold hover:bg-red-500/10 transition-all"
-                  >
-                    <X className="w-4 h-4" />
-                    مسح الفلاتر
+                  <button onClick={clearFilters}
+                    className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-red-500/20 text-red-400 text-sm font-bold hover:bg-red-500/10 transition-all">
+                    <X className="w-4 h-4" /> مسح الفلاتر
                   </button>
                 </div>
               </div>
@@ -347,9 +268,24 @@ export default function ShowroomPage() {
         <div className="container mx-auto px-6">
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-              {[1, 2, 3, 4, 5, 6].map(i => (
-                <CarCardSkeleton key={i} />
-              ))}
+              {[1,2,3,4,5,6].map(i => <CarCardSkeleton key={i} />)}
+            </div>
+          ) : cars.length === 0 ? (
+            <div className="py-40 flex flex-col items-center justify-center text-center space-y-8">
+              <div className="w-40 h-40 rounded-full bg-luxury-gold/5 border border-luxury-gold/10 flex items-center justify-center">
+                <Car className="w-20 h-20 text-luxury-gold/20" />
+              </div>
+              <div className="space-y-3">
+                <h3 className="text-4xl font-black">لا توجد سيارات بعد</h3>
+                <p className="text-white/40 max-w-md mx-auto text-lg leading-relaxed">
+                  لم يتم إضافة أي سيارات حتى الآن. يمكن للأدمن استيراد السيارات من لوحة التحكم.
+                </p>
+              </div>
+              <a href="/admin/import/cars"
+                className="inline-flex items-center gap-3 bg-luxury-gold text-black px-10 py-4 rounded-2xl font-black text-sm hover:bg-white transition-colors">
+                <Sparkles className="w-5 h-5" />
+                استيراد سيارات الآن
+              </a>
             </div>
           ) : filteredCars.length === 0 ? (
             <div className="py-32 flex flex-col items-center justify-center text-center space-y-6">
@@ -363,30 +299,17 @@ export default function ShowroomPage() {
               </button>
             </div>
           ) : (
-            <motion.div 
-              layout
-              className={viewMode === 'grid' 
-                ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10' 
-                : 'flex flex-col gap-6'
-              }
-            >
+            <motion.div layout className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10' : 'flex flex-col gap-6'}>
               {filteredCars.map((car, idx) =>
                 viewMode === 'list' ? (
                   <LuxuryCarCard key={car._id || idx} car={{
-                    _id: car._id || car.id || '',
-                    title: car.title || '',
-                    make: car.brand || car.make || '',
-                    model: car.model || '',
-                    year: car.year || 2024,
-                    price: car.price || 0,
-                    priceSar: car.priceSar,
-                    images: car.images?.length ? car.images : [car.mainImage || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80'],
-                    mileage: car.mileage,
-                    fuelType: car.fuelType,
-                    transmission: car.transmission,
-                    color: car.color,
-                    condition: car.condition,
-                    featured: car.isFeatured,
+                    _id: car._id || car.id || '', title: car.title || '',
+                    make: car.brand || car.make || '', model: car.model || '',
+                    year: car.year || 2024, price: car.price || 0, priceSar: car.priceSar,
+                    images: car.images?.length ? car.images : [car.mainImage].filter(Boolean),
+                    mileage: car.mileage, fuelType: car.fuelType,
+                    transmission: car.transmission, color: car.color,
+                    condition: car.condition, featured: car.isFeatured,
                   }} index={idx} />
                 ) : (
                   <CarCard3D key={car._id || idx} car={car} index={idx} />
@@ -397,54 +320,37 @@ export default function ShowroomPage() {
         </div>
       </section>
 
-      {/* Comparison Panel */}
-      <section className="pb-16">
-        <div className="container mx-auto px-6">
-          <div className="flex items-center justify-between mb-6">
-            <button
-              onClick={() => setShowComparison(!showComparison)}
-              className={`flex items-center gap-3 px-6 py-3 rounded-2xl border font-bold transition-all ${
-                showComparison
-                  ? 'bg-luxury-gold text-black border-luxury-gold'
-                  : 'bg-white/5 border-white/10 text-white/60 hover:border-luxury-gold/30'
-              }`}
-            >
-              <GitCompare className="w-5 h-5" />
-              مقارنة السيارات
-            </button>
+      {/* Comparison Section */}
+      {filteredCars.length > 1 && (
+        <section className="pb-16">
+          <div className="container mx-auto px-6">
+            <div className="flex items-center justify-between mb-6">
+              <button onClick={() => setShowComparison(!showComparison)}
+                className={`flex items-center gap-3 px-6 py-3 rounded-2xl border font-bold transition-all ${showComparison ? 'bg-luxury-gold text-black border-luxury-gold' : 'bg-white/5 border-white/10 text-white/60 hover:border-luxury-gold/30'}`}>
+                <GitCompare className="w-5 h-5" />
+                مقارنة السيارات
+              </button>
+            </div>
+            <AnimatePresence>
+              {showComparison && (
+                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                  <ComparisonSystem
+                    cars={filteredCars.map(c => ({
+                      _id: c._id || c.id || '', title: c.title || '',
+                      make: c.brand || c.make || '', model: c.model || '',
+                      year: c.year || 2024, price: c.price || 0, priceSar: c.priceSar,
+                      images: c.images?.length ? c.images : [c.mainImage].filter(Boolean),
+                      mileage: c.mileage, fuelType: c.fuelType,
+                      transmission: c.transmission, color: c.color, condition: c.condition,
+                    }))}
+                    maxCompare={3}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-
-          <AnimatePresence>
-            {showComparison && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden"
-              >
-                <ComparisonSystem
-                  cars={filteredCars.map(c => ({
-                    _id: c._id || c.id || '',
-                    title: c.title || '',
-                    make: c.brand || c.make || '',
-                    model: c.model || '',
-                    year: c.year || 2024,
-                    price: c.price || 0,
-                    priceSar: c.priceSar,
-                    images: c.images?.length ? c.images : [c.mainImage || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80'],
-                    mileage: c.mileage,
-                    fuelType: c.fuelType,
-                    transmission: c.transmission,
-                    color: c.color,
-                    condition: c.condition,
-                  }))}
-                  maxCompare={3}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </section>
+        </section>
+      )}
 
       <Footer />
     </main>
