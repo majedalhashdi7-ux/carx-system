@@ -55,14 +55,19 @@ function LoginForm() {
 
       if (!response.error && response.data) {
         const data = response.data as any;
-        // استخدام AuthContext.login لتحديث الحالة عبر التطبيق
-        login(data.token, data.user);
+        // Backend returns: { success, token, user: {...} } OR { success, token, data: { user: {...} } }
+        const token = data.token;
+        const userData = data.user || data.data?.user;
 
-        const userData = data.user;
-        if (userData && (userData.role === 'admin' || userData.role === 'super_admin' || userData.role === 'manager')) {
-          window.location.href = '/admin';
+        if (token && userData) {
+          login(token, userData);
+          if (userData.role === 'admin' || userData.role === 'super_admin' || userData.role === 'manager') {
+            window.location.href = '/admin';
+          } else {
+            window.location.href = redirectTo;
+          }
         } else {
-          window.location.href = redirectTo;
+          setError('فشل تسجيل الدخول: بيانات غير مكتملة');
         }
       } else {
         setError(response.error || 'فشل تسجيل الدخول');

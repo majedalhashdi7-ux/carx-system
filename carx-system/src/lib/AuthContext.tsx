@@ -62,12 +62,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     try {
       const res = await api.auth.verify();
-      if (res.data && (res.data as any).user) {
-        const freshUser = (res.data as any).user;
-        setUser(freshUser);
-        localStorage.setItem('carx_user', JSON.stringify(freshUser));
+      if (res.data) {
+        const d = res.data as any;
+        // Backend returns: { success, data: { user: {...} } } OR { success, user: {...} }
+        const freshUser = d?.data?.user || d?.user || null;
+        if (freshUser && (freshUser.id || freshUser._id)) {
+          setUser(freshUser);
+          localStorage.setItem('carx_user', JSON.stringify(freshUser));
+        } else {
+          // التوكن غير صالح — ننظّف
+          logout();
+        }
       } else {
-        // التوكن غير صالح — ننظّف
         logout();
       }
     } catch {
