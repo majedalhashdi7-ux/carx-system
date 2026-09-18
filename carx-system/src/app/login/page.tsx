@@ -18,7 +18,9 @@ function LoginForm() {
   const { login } = useAuth();
 
   const redirectTo = searchParams.get('redirect') || '/';
-  const isRequestingAdmin = redirectTo.startsWith('/admin') || redirectTo === '/admin';
+  // [[FIX]] قراءة role من ?role=admin أو من redirect path
+  const roleParam = searchParams.get('role') || '';
+  const isRequestingAdmin = roleParam === 'admin' || redirectTo.startsWith('/admin');
   const role = isRequestingAdmin ? 'admin' : 'buyer';
 
   const containerVariants = {
@@ -61,11 +63,12 @@ function LoginForm() {
 
         if (token && userData) {
           login(token, userData);
-          if (userData.role === 'admin' || userData.role === 'super_admin' || userData.role === 'manager') {
-            window.location.href = '/admin';
-          } else {
-            window.location.href = redirectTo;
-          }
+          // [[FIX]] استخدام replace بدل href لتجنب حلقة التاريخ، وانتظار 100ms لضمان تسجيل الكوكيز
+          await new Promise(r => setTimeout(r, 150));
+          const dest = (userData.role === 'admin' || userData.role === 'super_admin' || userData.role === 'manager')
+            ? '/admin'
+            : (redirectTo.startsWith('/admin') ? '/' : redirectTo);
+          window.location.replace(dest);
         } else {
           setError('فشل تسجيل الدخول: بيانات غير مكتملة');
         }
