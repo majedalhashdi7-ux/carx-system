@@ -39,16 +39,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('carx_token');
       localStorage.removeItem('carx_user');
-      document.cookie = 'carx_token=; path=/; max-age=0';
+      // [[FIX]] مسح كل الكوكيز المستخدمة (carx_token + hm_token الذي يقرأه middleware)
+      document.cookie = 'carx_token=; path=/; max-age=0; SameSite=Strict';
+      document.cookie = 'hm_token=; path=/; max-age=0; SameSite=Strict';
+      document.cookie = 'hm_user_role=; path=/; max-age=0; SameSite=Strict';
     }
     setUser(null);
   }, []);
 
   const login = useCallback((token: string, userData: User) => {
     if (typeof window !== 'undefined') {
+      // [[FIX]] حفظ التوكن في localStorage وكلا الكوكيين:
+      // - carx_token: للاستخدام في API calls
+      // - hm_token: للـ middleware.ts الذي يحمي /admin و /client
+      const THIRTY_DAYS = 60 * 60 * 24 * 30;
       localStorage.setItem('carx_token', token);
       localStorage.setItem('carx_user', JSON.stringify(userData));
-      document.cookie = `carx_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict`;
+      document.cookie = `carx_token=${token}; path=/; max-age=${THIRTY_DAYS}; SameSite=Strict`;
+      document.cookie = `hm_token=${token}; path=/; max-age=${THIRTY_DAYS}; SameSite=Strict`;
+      // [[FIX]] حفظ الدور للـ middleware (يستخدمه للتحقق من صلاحية الأدمن)
+      if (userData.role) {
+        document.cookie = `hm_user_role=${userData.role}; path=/; max-age=${THIRTY_DAYS}; SameSite=Strict`;
+      }
     }
     setUser(userData);
   }, []);
@@ -92,7 +104,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (token && cached) {
       try {
-        setUser(JSON.parse(cached));
+        const parsedUser = JSON.parse(cached);
+        setUser(parsedUser);
+        // [[FIX]] إعادة تعيين الكوكيز عند التحميل الأولي لضمان استمرارية الجلسة
+        // في حال انتهت صلاحية الكوكي بينما localStorage لا يزال صالحاً
+        const THIRTY_DAYS = 60 * 60 * 24 * 30;
+        document.cookie = `hm_token=${token}; path=/; max-age=${THIRTY_DAYS}; SameSite=Strict`;
+        document.cookie = `carx_token=${token}; path=/; max-age=${THIRTY_DAYS}; SameSite=Strict`;
+        if (parsedUser.role) {
+          document.cookie = `hm_user_role=${parsedUser.role}; path=/; max-age=${THIRTY_DAYS}; SameSite=Strict`;
+        }
       } catch {
         /* ignored */
       }
