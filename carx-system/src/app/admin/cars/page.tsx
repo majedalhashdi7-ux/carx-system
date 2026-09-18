@@ -78,11 +78,13 @@ function KoreanImportButton({ onImported }: { onImported: () => void }) {
     return () => clearInterval(t);
   }, [cooldown]);
 
+  const ENCAR_TARGET_URL = 'https://car.encar.com/list/car?page=1&search=%7B%22type%22%3A%22car%22%2C%22action%22%3A%22(And.Hidden.N._.CarType.A._.(Or.ServiceMark.EncarDiagnosisP0._.ServiceMark.EncarDiagnosisP1._.ServiceMark.EncarDiagnosisP2.))%22%2C%22title%22%3A%22%22%2C%22toggle%22%3A%7B%7D%2C%22layer%22%3A%22%22%2C%22sort%22%3A%22MobileModifiedDate%22%7D';
+
   const handleImport = useCallback(async () => {
     if (cooldown > 0 || status === 'loading') return;
     setStatus('loading'); setMsg('');
     try {
-      const res = await api.import.showroom(IMPORT_BATCH) as any;
+      const res = await api.import.showroom(IMPORT_BATCH, ENCAR_TARGET_URL) as any;
       const d = res.data || res;
       if (res.error) { setStatus('error'); setMsg(res.error); return; }
       const imported = d?.totalImported ?? d?.data?.totalImported ?? 0;

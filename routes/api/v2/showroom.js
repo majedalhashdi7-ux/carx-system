@@ -407,7 +407,7 @@ router.post('/scrape', requireAuthAPI, requireAdmin, async (req, res) => {
         const Brand = getModel(req, 'Brand');
         const { downloadAndOptimize } = require('../../../services/externalImageService');
         const settings = await SiteSettings.getSettings();
-        const defaultEncarUrl = 'https://car.encar.com/dc/dc_cardetailview.do?method=kcarList&wtClick_korList=015';
+        const defaultEncarUrl = 'https://car.encar.com/list/car?page=1&search=%7B%22type%22%3A%22car%22%2C%22action%22%3A%22(And.Hidden.N._.CarType.A._.(Or.ServiceMark.EncarDiagnosisP0._.ServiceMark.EncarDiagnosisP1._.ServiceMark.EncarDiagnosisP2.))%22%2C%22title%22%3A%22%22%2C%22toggle%22%3A%7B%7D%2C%22layer%22%3A%22%22%2C%22sort%22%3A%22MobileModifiedDate%22%7D';
         const showroomUrl = settings?.showroomSettings?.encarUrl || defaultEncarUrl;
 
         const usdToSar = Number(settings?.currencySettings?.usdToSar || 3.75);
