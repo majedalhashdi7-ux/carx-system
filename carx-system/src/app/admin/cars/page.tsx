@@ -13,7 +13,7 @@ import { api } from '../../../lib/api';
 // ─── ثوابت ──────────────────────────────────────────────────────────────────
 const IMPORT_BATCH = 20;           // عدد السيارات لكل دفعة (تحدده النظام)
 const COOLDOWN_MS  = 45_000;      // 45 ثانية بين كل استيراد والتالي
-const STORAGE_KEY  = 'hmcar_last_encar_import';
+const STORAGE_KEY  = 'carx_last_encar_import';
 
 const KOREAN_MAP: Record<string, string> = {
   '현대': 'هيونداي', '기아': 'كيا', '제네시스': 'جينيسيس', '쌍용': 'سانغ يونغ',

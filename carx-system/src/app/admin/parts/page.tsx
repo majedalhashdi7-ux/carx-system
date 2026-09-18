@@ -11,7 +11,7 @@ import {
 import { api } from '../../../lib/api';
 
 const PARTS_COOLDOWN_MS = 120_000; // دقيقتان — استيراد الوكالات يستغرق وقتاً أطول
-const PARTS_STORAGE_KEY = 'hmcar_last_autospare_import';
+const PARTS_STORAGE_KEY = 'carx_last_autospare_import';
 
 // مكون صورة آمن لقطع الغيار مع proxy وfallback
 function SafePartImage({ src, alt, className }: { src?: string; alt?: string; className?: string }) {
