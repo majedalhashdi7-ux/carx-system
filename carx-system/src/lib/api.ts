@@ -96,6 +96,10 @@ export const api = {
     getById: (id: string) => fetchAPI(`/cars/${id}`),
     getFeatured: () => fetchAPI('/cars?isFeatured=true&limit=6'),
     search: (query: string) => fetchAPI(`/cars?search=${encodeURIComponent(query)}`),
+    create: (data: any) => fetchAPI('/cars', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
     delete: (id: string) => fetchAPI(`/cars/${id}`, { method: 'DELETE' }),
     update: (id: string, data: any) => fetchAPI(`/cars/${id}`, {
       method: 'PUT',

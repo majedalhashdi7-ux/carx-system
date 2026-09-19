@@ -53,8 +53,6 @@ export default function AdminNewPartPage() {
     setLoading(true);
     setError('');
     
-    const finalImages = images;
-
     const partData = {
       name,
       nameAr: name,
@@ -70,7 +68,7 @@ export default function AdminNewPartPage() {
       stockQty: parseInt(stockQty) || 999,
       inStock,
       description,
-      images: finalImages.length > 0 ? finalImages : ['https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&q=80&w=800'], // Fallback elegant image
+      images,
     };
 
     try {
