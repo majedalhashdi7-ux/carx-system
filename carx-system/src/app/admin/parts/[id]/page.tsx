@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Wrench, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Save, Wrench, AlertCircle, Trash2 } from 'lucide-react';
 import { api } from '../../../../lib/api';
 import MultiImageUploader from '../../../../components/admin/MultiImageUploader';
 
@@ -33,6 +33,24 @@ export default function AdminEditPartPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const handleDelete = async () => {
+    if (!window.confirm('هل أنت متأكد من حذف هذه القطعة؟ لا يمكن التراجع عن هذا الإجراء.')) return;
+    setDeleteLoading(true);
+    try {
+      const res = await api.parts.delete(partId);
+      if (!res.error) {
+        router.push('/admin/parts');
+      } else {
+        setError(res.error || 'فشل الحذف');
+      }
+    } catch {
+      setError('حدث خطأ أثناء الحذف');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   useEffect(() => {
     // Fetch brands and part details
@@ -352,21 +370,37 @@ export default function AdminEditPartPage() {
             />
           </div>
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-5 bg-luxury-gold text-black font-black text-lg rounded-2xl flex items-center justify-center gap-2 hover:bg-white transition-all shadow-xl shadow-luxury-gold/10 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <div className="w-6 h-6 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-            ) : (
-              <>
-                <Save className="w-5 h-5" />
-                حفظ التعديلات
-              </>
-            )}
-          </button>
+          {/* Submit + Delete Buttons */}
+          <div className="flex items-center justify-between gap-4">
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleteLoading}
+              className="flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all font-bold text-sm disabled:opacity-50"
+            >
+              {deleteLoading ? (
+                <div className="w-4 h-4 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+              حذف القطعة
+            </button>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 py-5 bg-luxury-gold text-black font-black text-lg rounded-2xl flex items-center justify-center gap-2 hover:bg-white transition-all shadow-xl shadow-luxury-gold/10 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <div className="w-6 h-6 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+              ) : (
+                <>
+                  <Save className="w-5 h-5" />
+                  حفظ التعديلات
+                </>
+              )}
+            </button>
+          </div>
         </form>
       )}
     </div>

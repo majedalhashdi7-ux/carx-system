@@ -13,32 +13,30 @@ import { api } from '../../../lib/api';
 const PARTS_COOLDOWN_MS = 120_000; // دقيقتان — استيراد الوكالات يستغرق وقتاً أطول
 const PARTS_STORAGE_KEY = 'carx_last_autospare_import';
 
-// مكون صورة آمن لقطع الغيار مع proxy وfallback
+// مكون صورة آمن لقطع الغيار مع proxy وfallback (بدون Unsplash)
 function SafePartImage({ src, alt, className }: { src?: string; alt?: string; className?: string }) {
-  const fallback = 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=800&auto=format&fit=crop';
-  const [imgSrc, setImgSrc] = React.useState(src || fallback);
-  const [hasFallback, setHasFallback] = React.useState(false);
+  const [failed, setFailed] = React.useState(false);
 
-  React.useEffect(() => {
-    setImgSrc(src || fallback);
-    setHasFallback(false);
-  }, [src]);
+  React.useEffect(() => { setFailed(false); }, [src]);
 
-  const resolved = imgSrc && imgSrc.startsWith('http') && !imgSrc.includes('cloudinary') && !imgSrc.includes('unsplash')
-    ? `/api/v2/image-proxy?url=${encodeURIComponent(imgSrc)}`
-    : (imgSrc || fallback);
+  if (failed || !src) {
+    return (
+      <div className={`flex items-center justify-center bg-white/5 ${className}`}>
+        <Wrench className="w-5 h-5 text-white/20" />
+      </div>
+    );
+  }
+
+  const resolved = src.startsWith('http') && !src.includes('cloudinary') && !src.includes('unsplash')
+    ? `/api/v2/image-proxy?url=${encodeURIComponent(src)}`
+    : src;
 
   return (
     <img
-      src={hasFallback ? fallback : resolved}
+      src={resolved}
       alt={alt || ''}
       className={className}
-      onError={() => {
-        if (!hasFallback) {
-          setHasFallback(true);
-          setImgSrc(fallback);
-        }
-      }}
+      onError={() => setFailed(true)}
     />
   );
 }
@@ -470,7 +468,7 @@ export default function AdminPartsPage() {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-3">
                               <Link
-                                href={`/parts`}
+                                href={`/parts/${part._id}`}
                                 target="_blank"
                                 className="p-2 bg-white/5 border border-white/10 rounded-lg text-white/60 hover:text-white transition-colors"
                                 title="عرض في المتجر"

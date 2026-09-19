@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Search, Shield, User, UserPlus, Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { Search, Shield, User, UserPlus, Wifi, WifiOff, RefreshCw, Trash2, ShieldOff } from 'lucide-react';
 import { api } from '../../../lib/api';
 
 export default function AdminUsersPage() {
@@ -44,6 +44,36 @@ export default function AdminUsersPage() {
   const clients = filtered.filter(u => !['admin', 'super_admin', 'manager'].includes(u.role));
   const admins = filtered.filter(u => ['admin', 'super_admin', 'manager'].includes(u.role));
   const onlineCount = clients.filter(u => isOnline(u)).length;
+
+  const handleDelete = async (userId: string, userName: string) => {
+    if (!window.confirm(`هل أنت متأكد من حذف المستخدم "${userName}"؟`)) return;
+    try {
+      const res = await api.users.delete(userId);
+      if (!res.error) {
+        fetchUsers();
+      } else {
+        alert(res.error || 'فشل الحذف');
+      }
+    } catch {
+      alert('حدث خطأ أثناء الحذف');
+    }
+  };
+
+  const handleRoleToggle = async (userId: string, currentRole: string) => {
+    const newRole = currentRole === 'buyer' ? 'admin' : 'buyer';
+    const label = newRole === 'admin' ? 'مدير' : 'عميل';
+    if (!window.confirm(`تغيير دور المستخدم إلى "${label}"؟`)) return;
+    try {
+      const res = await api.users.updateRole(userId, newRole);
+      if (!res.error) {
+        fetchUsers();
+      } else {
+        alert(res.error || 'فشل تغيير الدور');
+      }
+    } catch {
+      alert('حدث خطأ');
+    }
+  };
 
   function isOnline(user: any): boolean {
     if (!user.lastActiveAt) return false;
@@ -129,6 +159,7 @@ export default function AdminUsersPage() {
                 <th className="px-6 py-4 text-xs font-bold text-white/40 uppercase tracking-widest">حالة الاتصال</th>
                 <th className="px-6 py-4 text-xs font-bold text-white/40 uppercase tracking-widest">آخر نشاط</th>
                 <th className="px-6 py-4 text-xs font-bold text-white/40 uppercase tracking-widest">تاريخ التسجيل</th>
+                <th className="px-6 py-4 text-xs font-bold text-white/40 uppercase tracking-widest">إجراءات</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -197,6 +228,26 @@ export default function AdminUsersPage() {
                       {/* Registration Date */}
                       <td className="px-6 py-4 text-xs text-white/40">
                         {user.createdAt ? new Date(user.createdAt).toLocaleDateString('ar-SA') : '—'}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleRoleToggle(user._id, user.role)}
+                            title={user.role === 'buyer' ? 'جعله مدير' : 'جعله عميلاً'}
+                            className="p-2 rounded-lg bg-white/5 border border-white/10 hover:border-purple-500/40 hover:text-purple-400 text-white/40 transition-all"
+                          >
+                            {user.role === 'buyer' ? <Shield className="w-3.5 h-3.5" /> : <ShieldOff className="w-3.5 h-3.5" />}
+                          </button>
+                          <button
+                            onClick={() => handleDelete(user._id, user.name)}
+                            title="حذف المستخدم"
+                            className="p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition-all"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

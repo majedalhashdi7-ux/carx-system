@@ -222,6 +222,11 @@ export const api = {
 
   users: {
     getAll: () => fetchAPI('/users'),
+    delete: (id: string) => fetchAPI(`/users/${id}`, { method: 'DELETE' }),
+    updateRole: (id: string, role: string) => fetchAPI(`/users/${id}/role`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role })
+    }),
   },
   orders: {
     getAll: () => fetchAPI('/orders'),
