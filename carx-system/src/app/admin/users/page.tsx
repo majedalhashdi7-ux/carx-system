@@ -166,12 +166,12 @@ export default function AdminUsersPage() {
               {loading ? (
                 [1, 2, 3].map(i => (
                   <tr key={i} className="animate-pulse">
-                    <td colSpan={5} className="px-6 py-8 h-20 bg-white/[0.01]" />
+                    <td colSpan={6} className="px-6 py-8 h-20 bg-white/[0.01]" />
                   </tr>
                 ))
               ) : clients.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-20 text-center text-white/20">
+                  <td colSpan={6} className="px-6 py-20 text-center text-white/20">
                     لا يوجد عملاء متاحين حالياً
                   </td>
                 </tr>

@@ -202,13 +202,30 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Mobile Toggle */}
-            <button 
-              className="lg:hidden w-12 h-12 flex items-center justify-center rounded-2xl bg-white/5 text-white"
-              onClick={() => setIsOpen(!isOpen)}
-            >
-              {isOpen ? <X /> : <Menu />}
-            </button>
+            {/* Mobile Actions */}
+            <div className="flex lg:hidden items-center gap-2">
+              <button 
+                onClick={() => setShowSearchModal(true)}
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-white/70 hover:text-white"
+                aria-label="بحث"
+              >
+                <Search className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setShowCart(true)}
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-white/70 hover:text-white relative"
+                aria-label="سلة المشتريات"
+              >
+                <ShoppingCart className="w-4 h-4" />
+              </button>
+              <button 
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-white"
+                onClick={() => setIsOpen(!isOpen)}
+                aria-label="القائمة"
+              >
+                {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
         </div>
 

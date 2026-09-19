@@ -515,3 +515,177 @@ html {
   }
 }
 
+/* ===== Safe Area for notched phones (iOS/Android) ===== */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* ===== Responsive Tables — scroll on small screens ===== */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 1.5rem;
+  max-width: 100%;
+}
+
+.table-responsive table {
+  min-width: 600px;
+}
+
+/* ===== Admin grid helpers ===== */
+.admin-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .admin-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .admin-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .admin-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ===== Fluid Typography ===== */
+.fluid-title {
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.fluid-subtitle {
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
+}
+
+/* ===== Card — consistent on all screens ===== */
+.admin-card {
+  @apply bg-white/[0.02] border border-white/[0.06] rounded-2xl sm:rounded-3xl p-4 sm:p-6;
+  transition: border-color 0.2s ease;
+}
+
+.admin-card:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ===== Stat Card ===== */
+.stat-card {
+  @apply admin-card flex flex-col gap-2;
+}
+
+/* ===== Page header pattern ===== */
+.page-header {
+  @apply flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8;
+}
+
+.page-header h1 {
+  @apply text-2xl sm:text-3xl md:text-4xl font-black;
+}
+
+/* ===== Button sizes ===== */
+.btn-primary {
+  @apply flex items-center gap-2 bg-luxury-gold text-black font-black rounded-xl px-4 sm:px-6 py-2.5 sm:py-3 text-sm hover:bg-white transition-all;
+}
+
+.btn-secondary {
+  @apply flex items-center gap-2 bg-white/5 border border-white/10 text-white/60 font-bold rounded-xl px-4 py-2.5 text-sm hover:bg-white/10 hover:text-white transition-all;
+}
+
+/* ===== Form inputs — consistent on all screens ===== */
+.form-input {
+  @apply w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white 
+         focus:outline-none focus:border-luxury-gold/50 transition-colors;
+}
+
+.form-label {
+  @apply block text-xs font-bold text-white/50 mb-1.5;
+}
+
+.form-group {
+  @apply space-y-1.5;
+}
+
+/* ===== Fix horizontal scroll caused by large elements ===== */
+.overflow-fix {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* ===== Action row (header with buttons) ===== */
+.action-row {
+  @apply flex flex-wrap items-center gap-2 sm:gap-3;
+}
+
+/* ===== Truncate long text gracefully ===== */
+.truncate-cell {
+  max-width: 160px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 768px) {
+  .truncate-cell {
+    max-width: 260px;
+  }
+}
+
+/* ===== Badge — scales on small screens ===== */
+.badge {
+  @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border;
+}
+
+/* ===== Hide on small screens ===== */
+.hide-mobile {
+  @apply hidden sm:table-cell;
+}
+
+/* ===== Responsive modal ===== */
+.modal-overlay {
+  @apply fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-xl;
+}
+
+.modal-panel {
+  @apply w-full sm:max-w-2xl bg-[#0a0a0a] border border-white/10 rounded-t-3xl sm:rounded-3xl 
+         max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col;
+}
+
+/* ===== Scrollbar styling ===== */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 175, 55, 0.3);
+}
+
+/* ===== Better tap targets — override only for icons in tables ===== */
+@media (max-width: 640px) {
+  table button,
+  table a {
+    min-height: unset;
+    min-width: unset;
+  }
+}
