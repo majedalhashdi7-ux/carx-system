@@ -49,9 +49,13 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
             if (isCancelled) return;
 
             socketInstance = io(socketUrl, {
-                // ✅ إرسال hm_token — يطابق مفتاح AuthContext
+                // ✅ إرسال hm_token و tenantId لدعم عزل الغرف
                 auth: {
                     token: typeof window !== 'undefined' ? localStorage.getItem('hm_token') : null,
+                    tenantId: process.env.NEXT_PUBLIC_TENANT_ID || 'hmcar',
+                },
+                query: {
+                    tenantId: process.env.NEXT_PUBLIC_TENANT_ID || 'hmcar',
                 },
                 transports: ['polling', 'websocket'],
                 reconnection: true,

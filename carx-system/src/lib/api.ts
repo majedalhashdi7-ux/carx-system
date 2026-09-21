@@ -16,7 +16,8 @@ export async function fetchAPI<T>(endpoint: string, options: FetchOptions = {}):
     
     // Add query parameters if any
     if (options.params) {
-      const urlObj = new URL(url);
+      const base = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+      const urlObj = new URL(url, base);
       Object.keys(options.params).forEach(key => urlObj.searchParams.append(key, options.params![key]));
       url = urlObj.toString();
     }
