@@ -48,17 +48,29 @@ class WebSocketService {
 
     this.io.use(async (socket, next) => {
       try {
-        const token = socket.handshake.auth.token;
-        if (!token) return next(new Error('Authentication token required'));
+        const token = socket.handshake.auth?.token;
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.id).select('-password');
-        if (!user) return next(new Error('User not found'));
+        // ✅ بدون توكن = ضيف (Guest) — مسموح بالاتصال بصلاحيات محدودة
+        if (!token) {
+          socket.user = null;
+          return next();
+        }
 
-        socket.user = user;
-        next();
+        // محاولة التحقق من التوكن فقط إذا كان موجوداً
+        try {
+          const decoded = jwt.verify(token, process.env.JWT_SECRET);
+          const user = await User.findById(decoded.id).select('-password');
+          socket.user = user || null;
+        } catch {
+          // توكن غير صالح أو منتهي — نعامله كضيف بدلاً من رفض الاتصال
+          socket.user = null;
+        }
+
+        return next();
       } catch (error) {
-        return next(new Error('Invalid authentication token'));
+        // خطأ غير متوقع — نسمح بالاتصال كضيف
+        socket.user = null;
+        return next();
       }
     });
 
@@ -70,26 +82,37 @@ class WebSocketService {
   }
 
   handleConnection(socket) {
-    console.log(`User ${socket.user.name} connected (${socket.id})`);
-    this.connectedUsers.set(socket.user._id.toString(), socket.id);
+    const userName = socket.user?.name || 'Guest';
+    const userId = socket.user?._id?.toString();
 
-    socket.join(`user_${socket.user._id}`);
-    if (socket.user.role === 'admin' || socket.user.role === 'super_admin') {
-      socket.join('admin_room');
+    console.log(`User ${userName} connected (${socket.id})`);
+
+    // تسجيل المستخدمين المسجلين فقط في خريطة الاتصالات
+    if (userId) {
+      this.connectedUsers.set(userId, socket.id);
+      socket.join(`user_${userId}`);
+
+      // إضافة المدراء لغرفة الإدارة
+      if (socket.user.role === 'admin' || socket.user.role === 'super_admin') {
+        socket.join('admin_room');
+      }
     }
 
+    // الانضمام/مغادرة الغرف — متاح للجميع (ضيوف + مسجلون)
     socket.on('join_room', (room) => socket.join(room));
     socket.on('leave_room', (room) => socket.leave(room));
 
     socket.on('disconnect', () => {
-      console.log(`User ${socket.user.name} disconnected`);
-      this.connectedUsers.delete(socket.user._id.toString());
+      console.log(`User ${userName} disconnected`);
+      if (userId) {
+        this.connectedUsers.delete(userId);
+      }
     });
     
     // Example of a more generic event
     socket.on('client_event', (data) => {
         // Process generic client events if needed
-        console.log(`Received event '${data.type}' from ${socket.user.name}`);
+        console.log(`Received event '${data.type}' from ${userName}`);
     });
   }
 

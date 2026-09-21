@@ -61,7 +61,16 @@ export async function fetchAPI<T>(endpoint: string, options: FetchOptions = {}):
       }
     }
 
-    const response = await fetch(url, { ...options, headers });
+    // ✅ AbortController للـ Timeout — يمنع الطلبات المعلقة إلى الأبد (12 ثانية)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+    const response = await fetch(url, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
     
     // Handle text response or JSON
     const contentType = response.headers.get('content-type');
@@ -85,6 +94,10 @@ export async function fetchAPI<T>(endpoint: string, options: FetchOptions = {}):
 
     return { data };
   } catch (error: any) {
+    // تمييز خطأ الـ Timeout عن أخطاء الشبكة الأخرى
+    if (error?.name === 'AbortError') {
+      return { error: 'انتهت مهلة الطلب — يرجى التحقق من اتصالك بالإنترنت.' };
+    }
     console.error(`API Error on ${endpoint}:`, error);
     return { error: error.message || 'فشل الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت.' };
   }

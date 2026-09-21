@@ -67,27 +67,51 @@ class SocketModule {
      * @param {Object} server - خادم HTTP الذي سيعمل عليه السوكيت
      */
     init(server) {
+        // ✅ قائمة الـ Origins المسموح بها — تشمل كلا النظامين (HM CAR + CAR X)
+        const STATIC_ORIGINS = [
+            // HM CAR
+            'https://hmcar.okigo.net',
+            'https://www.hmcar.okigo.net',
+            'https://hmcar-system-two.vercel.app',
+            'https://hmcar-system.vercel.app',
+            'https://hmcar.vercel.app',
+            'https://hmcar.xyz',
+            'https://www.hmcar.xyz',
+            // CAR X ✅ مضاف
+            'https://carx-system-five.vercel.app',
+            'https://carx-system.vercel.app',
+            'https://carx.vercel.app',
+            // Legacy
+            'https://client-app-iota-eight.vercel.app',
+        ];
+
         this.io = new Server(server, {
             cors: {
                 origin: process.env.NODE_ENV === 'production'
                     ? (origin, callback) => {
-                        const allowed = [
-                            'https://hmcar.okigo.net',
-                            'https://www.hmcar.okigo.net',
-                            'https://hmcar-system-two.vercel.app',
-                            'https://client-app-iota-eight.vercel.app',
-                            ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [])
-                        ];
-                        if (!origin || allowed.includes(origin) || origin.endsWith('.okigo.net')) {
+                        // قراءة Origins الإضافية من المتغيرات البيئية
+                        const envOrigins = process.env.ALLOWED_ORIGINS
+                            ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
+                            : [];
+                        const allowed = [...STATIC_ORIGINS, ...envOrigins];
+
+                        // السماح: بدون origin (Postman/Mobile) أو في القائمة أو .okigo.net أو .vercel.app
+                        if (
+                            !origin ||
+                            allowed.includes(origin) ||
+                            origin.endsWith('.okigo.net') ||
+                            origin.endsWith('.vercel.app')
+                        ) {
                             callback(null, true);
                         } else {
+                            console.warn(`[Socket] Blocked origin: ${origin}`);
                             callback(new Error('Not allowed by CORS'));
                         }
                     }
-                    : '*',
-                methods: ["GET", "POST"],
-                credentials: true
-            }
+                    : '*', // في التطوير: السماح بكل شيء
+                methods: ['GET', 'POST'],
+                credentials: true,
+            },
         });
 
         // معالجة اتصال بروتوكول Socket

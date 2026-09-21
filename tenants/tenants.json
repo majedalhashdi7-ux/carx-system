@@ -19,8 +19,7 @@
         "www.hmcar.xyz",
         "*.hmcar.xyz"
       ],
-
-      "mongoUri": "ENV:MONGO_URI",
+      "mongoUri": "ENV:MONGO_URI_HMCAR",
       "logo": "/uploads/tenants/hmcar/logo.png",
       "favicon": "/uploads/tenants/hmcar/favicon.ico",
       "theme": {
@@ -51,9 +50,10 @@
       "domains": [
         "localhost:3001",
         "carx.localhost",
-        "carx-system-five.vercel.app"
+        "carx-system-five.vercel.app",
+        "carx-system.vercel.app"
       ],
-      "mongoUri": "ENV:MONGO_URI",
+      "mongoUri": "ENV:MONGO_URI_CARX",
       "logo": "/uploads/tenants/carx/logo.png",
       "favicon": "/uploads/tenants/carx/favicon.ico",
       "theme": {
@@ -76,4 +76,4 @@
       "enabled": true
     }
   }
-}
+}

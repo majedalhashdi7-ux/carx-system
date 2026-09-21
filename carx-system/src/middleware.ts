@@ -1,19 +1,31 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// المسارات التي تتطلب تسجيل دخول
-const PROTECTED_PATHS = ['/admin'];
+/**
+ * @file middleware.ts — CarX System
+ * @description حماية مسارات الإدارة والعميل بتوكن carx_token
+ * يضيف Security Headers لكل الاستجابات
+ */
 
-// المسارات العامة (لا تحتاج توكن)
-const PUBLIC_PATHS = ['/login', '/register', '/', '/showroom', '/parts', '/brands', '/about', '/contact', '/faq', '/terms', '/privacy', '/shipping'];
+// المسارات التي تتطلب تسجيل دخول بصلاحيات إدارية
+const ADMIN_PATHS = ['/admin'];
+// مسارات العميل المحمية
+const CLIENT_PATHS = ['/profile', '/my-orders'];
+// مسارات التوثيق — يُعاد توجيه المستخدم المسجل منها
+const AUTH_ROUTES = ['/login', '/register'];
+
+function withSecurityHeaders(response: NextResponse): NextResponse {
+  response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  return response;
+}
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // هل المسار محمي؟
-  const isProtected = PROTECTED_PATHS.some(path => pathname.startsWith(path));
-
-  if (!isProtected) {
+  // تجاهل الملفات الثابتة والـ API
+  if (pathname.startsWith('/_next') || pathname.startsWith('/api') || pathname.includes('.')) {
     return NextResponse.next();
   }
 
@@ -21,20 +33,41 @@ export function middleware(request: NextRequest) {
   const tokenFromCookie = request.cookies.get('carx_token')?.value;
   const tokenFromHeader = request.headers.get('authorization')?.replace('Bearer ', '');
   const token = tokenFromCookie || tokenFromHeader;
+  const isAuthenticated = !!token;
 
-  if (!token) {
-    // لا يوجد توكن → أعد التوجيه لصفحة تسجيل الدخول
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname); // حفظ المسار المطلوب للعودة إليه
-    return NextResponse.redirect(loginUrl);
+  // ── 1. منع المستخدم المسجل من الدخول لصفحات التوثيق ──
+  if (AUTH_ROUTES.some(r => pathname === r) && isAuthenticated) {
+    return withSecurityHeaders(NextResponse.redirect(new URL('/admin', request.url)));
   }
 
-  // التوكن موجود → اسمح بالمرور
-  return NextResponse.next();
+  // ── 2. حماية مسارات /admin ──
+  if (ADMIN_PATHS.some(p => pathname.startsWith(p))) {
+    if (!isAuthenticated) {
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return withSecurityHeaders(NextResponse.redirect(loginUrl));
+    }
+    return withSecurityHeaders(NextResponse.next());
+  }
+
+  // ── 3. حماية مسارات العميل (/profile, /my-orders) ──
+  if (CLIENT_PATHS.some(p => pathname.startsWith(p))) {
+    if (!isAuthenticated) {
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return withSecurityHeaders(NextResponse.redirect(loginUrl));
+    }
+  }
+
+  return withSecurityHeaders(NextResponse.next());
 }
 
 export const config = {
   matcher: [
     '/admin/:path*',
+    '/profile/:path*',
+    '/my-orders/:path*',
+    '/login',
+    '/register',
   ],
 };

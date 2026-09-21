@@ -41,9 +41,18 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
             return;
         }
 
+        let socketInstance: Socket | null = null;
+        let isCancelled = false;
+
         // استيراد socket.io-client ديناميكياً فقط عند الحاجة
         import('socket.io-client').then(({ io }) => {
-            const socketInstance = io(socketUrl, {
+            if (isCancelled) return;
+
+            socketInstance = io(socketUrl, {
+                // ✅ إرسال hm_token — يطابق مفتاح AuthContext
+                auth: {
+                    token: typeof window !== 'undefined' ? localStorage.getItem('hm_token') : null,
+                },
                 transports: ['polling', 'websocket'],
                 reconnection: true,
                 reconnectionAttempts: 3,
@@ -57,7 +66,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
                 setIsConnected(true);
 
                 if (user?.role === 'admin') {
-                    socketInstance.emit('join_room', 'admin_room');
+                    socketInstance?.emit('join_room', 'admin_room');
                 }
             });
 
@@ -118,13 +127,18 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
             });
 
             setSocket(socketInstance);
-
-            return () => {
-                socketInstance.disconnect();
-            };
         }).catch((err) => {
             console.warn('[Socket] Failed to load socket.io-client:', err);
         });
+
+        return () => {
+            isCancelled = true;
+            if (socketInstance) {
+                socketInstance.disconnect();
+            }
+            setSocket(null);
+            setIsConnected(false);
+        };
     }, [user?.role]);
 
     // إرسال حدث User Login عند استقرار الاتصال
