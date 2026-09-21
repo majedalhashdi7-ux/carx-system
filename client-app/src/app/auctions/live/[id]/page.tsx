@@ -91,8 +91,8 @@ export default function LiveAuctionDetails() {
 
     useEffect(() => {
         loadSession();
-        // polling كـ fallback إذا انقطع الـ WebSocket (كل 20 ثانية بدل 15)
-        const iv = setInterval(loadSession, 20000);
+        // Smart polling: تحديث دوري ذكي كل 6 ثوانٍ لضمان مزامنة الأسعار والمزايدات فوراً
+        const iv = setInterval(loadSession, 6000);
         return () => clearInterval(iv);
     }, [loadSession]);
 
