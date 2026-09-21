@@ -205,10 +205,16 @@ export default function HomeClient({ latestCars: initialLatestCars }: HomeClient
 
   useEffect(() => {
     const handler = (e: Event) => { e.preventDefault(); setDeferredInstall(e); };
+    const installedHandler = () => { setIsInstalled(true); localStorage.setItem('pwa_installed', '1'); };
     window.addEventListener('beforeinstallprompt', handler);
-    window.addEventListener('appinstalled', () => { setIsInstalled(true); localStorage.setItem('pwa_installed', '1'); });
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    window.addEventListener('appinstalled', installedHandler);
+    // ✅ cleanup — يمنع memory leak عند إلغاء تحميل المكون
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+      window.removeEventListener('appinstalled', installedHandler);
+    };
   }, []);
+
 
 
   const handleInstallPWA = async () => {

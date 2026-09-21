@@ -5,8 +5,7 @@ import { motion } from 'framer-motion';
 import {
     Download, type LucideIcon, ArrowLeft, DollarSign, ShoppingCart, Car, Gavel, Users, BarChart3, TrendingUp, ArrowUpRight, ArrowDownRight, FileText
 } from 'lucide-react';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+// ✅ Dynamic import — يُحمَّل فقط عند تصدير PDF لتقليل حجم الصفحة
 import Link from 'next/link';
 import { useLanguage } from '@/lib/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -267,7 +266,11 @@ export default function AdminReportsPage() {
         URL.revokeObjectURL(url);
     };
 
-    const exportToPDF = () => {
+    const exportToPDF = async () => {
+        // ✅ Dynamic Import — يُحمَّل فقط عند الطلب لتقليل حجم الصفحة
+        const { default: jsPDF } = await import('jspdf');
+        await import('jspdf-autotable');
+
         const doc = new jsPDF() as any;
         const timestamp = new Date().toLocaleString();
         
@@ -316,6 +319,7 @@ export default function AdminReportsPage() {
         
         doc.save(`hm-report-${period}-${new Date().toISOString().split('T')[0]}.pdf`);
     };
+
 
     return (
         <div className="min-h-screen text-white" dir={isRTL ? 'rtl' : 'ltr'}>

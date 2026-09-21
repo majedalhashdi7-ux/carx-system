@@ -31,13 +31,18 @@ export default function NotificationsPage() {
     const router = useRouter();
 
     const [notifications, setNotifications] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        api.notifications?.list?.().then(res => {
-            if (res?.success && Array.isArray(res.data)) {
-                setNotifications(res.data);
-            }
-        }).catch(err => console.error("Failed to load notifications", err));
+        setLoading(true);
+        api.notifications?.list?.()
+            .then(res => {
+                if (res?.success && Array.isArray(res.data)) {
+                    setNotifications(res.data);
+                }
+            })
+            .catch(err => console.error('Failed to load notifications', err))
+            .finally(() => setLoading(false));
     }, []);
     const [filter, setFilter] = useState<string>('all');
     const [soundEnabled, setSoundEnabled] = useState(true);
@@ -66,7 +71,25 @@ export default function NotificationsPage() {
         })),
     ];
 
+    // ✅ Loading Skeleton
+    if (loading) {
+        return (
+            <div className={cn("min-h-screen bg-black text-white font-sans", isRTL && "rtl")}>
+                <Navbar />
+                <div className="max-w-6xl mx-auto px-4 pt-24 pb-16">
+                    <div className="h-8 w-48 bg-white/5 rounded-xl animate-pulse mb-8" />
+                    <div className="space-y-4">
+                        {[...Array(6)].map((_, i) => (
+                            <div key={i} className="h-20 bg-white/5 rounded-2xl animate-pulse" style={{ opacity: 1 - i * 0.12 }} />
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
+
         <div className={cn("min-h-screen bg-black text-white font-sans overflow-x-hidden", isRTL && "rtl")}>
             <Navbar />
 

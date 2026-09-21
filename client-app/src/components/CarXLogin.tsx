@@ -104,15 +104,12 @@ export default function CarXLogin() {
             } : {};
 
             if (mode === "login") {
-                console.log("[Login] Attempting login for:", email);
                 const res = await api.auth.login({
                     identifier: email,
                     password,
                     deviceId,
                     deviceInfo,
                 });
-                
-                console.log("[Login] Response received:", res.success ? "Success" : "Failed");
 
                 if (res.success) {
                     // [[ARABIC_COMMENT]] تخزين التوكن وبيانات المستخدم
@@ -127,7 +124,6 @@ export default function CarXLogin() {
                     }
 
                     const role = res.user?.role;
-                    console.log("[Login] User role:", role);
 
                     if (role === "admin" || role === "super_admin" || role === "manager") {
                         router.replace("/admin/dashboard");
