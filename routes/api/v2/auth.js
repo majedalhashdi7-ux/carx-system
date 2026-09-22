@@ -4,10 +4,9 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-// [[FIX]] مفتاح JWT الموحد لجميع طلبات النظام والتصاريح
-const JWT_SECRET = process.env.JWT_SECRET || 'hmcar_jwt_secret_key_2026_production_shared';
+// [[FIX]] استخدام getJwtSecret الموحد من middleware لمنع التكرار وضمان الأمان
+const { requireAuthAPI, getJwtSecret, generateToken } = require('../../../middleware/auth');
 const { getModel, addTenantFilter, getTenantId } = require('../../../tenants/tenant-model-helper');
-const { requireAuthAPI } = require('../../../middleware/auth');
 const { authRateLimiter, fullSecurityMiddleware } = require('../../../middleware/securityEnhanced');
 const { authLimiter } = require('../../../middleware/rateLimiter');
 const { 
@@ -24,6 +23,18 @@ const {
 
 // تطبيق ميدلوير الأمان العام على جميع مسارات المصادقة
 router.use(fullSecurityMiddleware);
+
+function sendTwoFactorChallenge(user, req, res) {
+  if (user.status !== 'active') {
+    res.status(403).json({ success: false, message: 'Account inactive' });
+    return true;
+  }
+  if (!user.twoFactorEnabled || req.user?.twoFactorVerified) return false;
+  const tempToken = jwt.sign({ userId: user._id, tenantId: req.tenant?.id || 'hmcar', tokenVersion: user.tokenVersion || 0, requiresTwoFactor: true }, getJwtSecret(), { expiresIn: '5m', algorithm: 'HS256' });
+  res.json({ success: true, requiresTwoFactor: true, tempToken });
+  return true;
+}
+
 
 // GET /api/v2/auth/verify & GET /api/v2/auth/me — للتحقق من صلاحية التوكن واسترجاع بيانات الجلسة
 router.get(['/verify', '/me'], requireAuthAPI, async (req, res) => {
@@ -400,21 +411,8 @@ router.post('/register', authLimiter, async (req, res) => {
     await user.save();
 
     // Generate JWT token - 30 يوم لعدم الحاجة لإعادة التسجيل
-    const token = jwt.sign(
-      {
-        userId: user._id,
-        tenantId: req.tenant?.id || 'default',
-        email: user.email,
-        role: user.role,
-        permissions: user.permissions
-      },
-      JWT_SECRET,
-      {
-        expiresIn: '30d',
-        issuer: 'hm-car-auction',
-        audience: 'api-users'
-      }
-    );
+    if (sendTwoFactorChallenge(user, req, res)) return;
+    const token = generateToken(user, req.tenant?.id || 'hmcar', Boolean(req.user?.twoFactorVerified));
 
     // Log registration
     await AuditLog.logUserAction(
@@ -475,7 +473,7 @@ router.post('/client-login', authLimiter, async (req, res) => {
     
     // السماح بالبحث في الـ tenant الحالي أو الـ default لضمان الدخول للحسابات المشتركة
     const tenantFilter = req.tenant?.id 
-      ? { tenantId: { $in: [req.tenant.id, 'default'] } } 
+      ? { tenantId: req.tenant.id === 'hmcar' ? { $in: ['hmcar', 'default'] } : req.tenant.id } 
       : {};
 
     // البحث عن المستخدم بالبريد الإلكتروني، الهاتف، اسم المستخدم، أو الاسم الكامل
@@ -513,16 +511,8 @@ router.post('/client-login', authLimiter, async (req, res) => {
     }
 
     // توليد التوكن - مدة 30 يوماً بشكل افتراضي (تذكرني دائماً)
-    const token = jwt.sign(
-      {
-        userId: user._id,
-        tenantId: req.tenant?.id || 'default',
-        email: user.email,
-        role: user.role,
-      },
-      JWT_SECRET,
-      { expiresIn: '30d' }
-    );
+    if (sendTwoFactorChallenge(user, req, res)) return;
+    const token = generateToken(user, req.tenant?.id || 'hmcar', Boolean(req.user?.twoFactorVerified));
 
     // تحديث وقت الدخول
     user.lastLoginAt = new Date();
@@ -608,20 +598,11 @@ router.post('/client-register', authLimiter, async (req, res) => {
 
     await newUser.save();
 
-    const jwtSecret = process.env.JWT_SECRET || 'hmcar_jwt_secret_key_2026_fallback';
+    
 
     // توليد التوكن - مدة 30 يوماً لعدم الحاجة للتسجيل مجدداً
-    const token = jwt.sign(
-      {
-        userId: newUser._id,
-        tenantId: req.tenant?.id || 'default',
-        email: newUser.email,
-        role: newUser.role,
-        permissions: newUser.permissions || []
-      },
-      jwtSecret,
-      { expiresIn: '30d' }
-    );
+    if (sendTwoFactorChallenge(newUser, req, res)) return;
+    const token = generateToken(newUser, req.tenant?.id || 'hmcar', Boolean(req.user?.twoFactorVerified));
 
     // تسجيل في AuditLog
     try {
@@ -748,11 +729,8 @@ router.post('/auto-login', authLimiter, async (req, res) => {
       await userToLogin.save();
 
       // Generate token - 30 يوماً للتذكر الدائم
-      const token = jwt.sign(
-        { userId: userToLogin._id, tenantId: req.tenant?.id || 'default', role: userToLogin.role },
-        process.env.JWT_SECRET,
-        { expiresIn: '30d' }
-      );
+      if (sendTwoFactorChallenge(userToLogin, req, res)) return;
+    const token = generateToken(userToLogin, req.tenant?.id || 'hmcar', Boolean(req.user?.twoFactorVerified));
 
       // تحديث البصمة لتشمل الاسم الأخير المستخدم (للمستقبل)
       await DeviceFingerprint.findOneAndUpdate(
@@ -794,11 +772,8 @@ router.post('/auto-login', authLimiter, async (req, res) => {
     await newUser.save();
 
     // Generate token - 30 يوماً للتذكر الدائم
-    const token = jwt.sign(
-      { userId: newUser._id, tenantId: req.tenant?.id || 'default', role: newUser.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '30d' }
-    );
+    if (sendTwoFactorChallenge(newUser, req, res)) return;
+    const token = generateToken(newUser, req.tenant?.id || 'hmcar', Boolean(req.user?.twoFactorVerified));
 
     // ربط الجهاز بحساب العميل الجديد (upsert - لا تكرار)
     await DeviceFingerprint.findOneAndUpdate(
@@ -877,7 +852,7 @@ router.post('/login', authLimiter, async (req, res) => {
 
     // بناء فلتر المعرض: أدمن يمكنه الدخول من أي معرض إذا كان مرتبطاً به
     const tenantConditions = tenantId
-      ? { tenantId: { $in: [tenantId, 'default'] } }
+      ? { tenantId: tenantId === 'hmcar' ? { $in: ['hmcar', 'default'] } : tenantId }
       : {};
 
     const queryConditions = isEmail
@@ -940,17 +915,8 @@ router.post('/login', authLimiter, async (req, res) => {
 
     // [[ARABIC_COMMENT]] توليد JWT مع tenantId لضمان ربط التوكن بالمعرض الصحيح
     const userTenantId = user.tenantId || req.tenant?.id || 'default';
-    const token = jwt.sign(
-      {
-        userId: user._id,
-        tenantId: userTenantId,
-        email: user.email,
-        role: user.role,
-        permissions: user.permissions || []
-      },
-      JWT_SECRET,
-      { expiresIn: '30d', issuer: 'hm-car-auction', audience: 'api-users' }
-    );
+    if (sendTwoFactorChallenge(user, req, res)) return;
+    const token = generateToken(user, req.tenant?.id || 'hmcar', Boolean(req.user?.twoFactorVerified));
 
     // تحديث وقت الدخول + AuditLog — _id فريد عالمياً فلا يحتاج لتصفية tenantId
     User.updateOne({ _id: user._id }, { $set: { lastLoginAt: new Date() } }).catch(() => { });
@@ -1036,17 +1002,8 @@ router.put('/update-profile', requireAuthAPI, async (req, res) => {
     await user.save();
 
     // توليد توكن جديد يحمل الإيميل المحدَّث
-    const token = jwt.sign(
-      {
-        userId: user._id,
-        tenantId: req.tenant?.id || 'default',
-        email: user.email,
-        role: user.role,
-        permissions: user.permissions || []
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d', issuer: 'hm-car-auction', audience: 'api-users' }
-    );
+    if (sendTwoFactorChallenge(user, req, res)) return;
+    const token = generateToken(user, req.tenant?.id || 'hmcar', Boolean(req.user?.twoFactorVerified));
 
     return res.json({
       success: true,
@@ -1076,6 +1033,7 @@ router.post('/logout', requireAuthAPI, async (req, res) => {
 
     if (user) {
       user.activeSessionId = '';
+      user.tokenVersion = (user.tokenVersion || 0) + 1;
       await user.save();
 
       // Log logout
@@ -1114,21 +1072,8 @@ router.post('/refresh', requireAuthAPI, async (req, res) => {
     }
 
     // Generate new token
-    const token = jwt.sign(
-      {
-        userId: user._id,
-        tenantId: req.tenant?.id || 'default',
-        email: user.email,
-        role: user.role,
-        permissions: user.permissions
-      },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: '24h',
-        issuer: 'hm-car-auction',
-        audience: 'api-users'
-      }
-    );
+    if (sendTwoFactorChallenge(user, req, res)) return;
+    const token = generateToken(user, req.tenant?.id || 'hmcar', Boolean(req.user?.twoFactorVerified));
 
     res.json({
       success: true,
@@ -1201,17 +1146,8 @@ router.post('/change-password', requireAuthAPI, async (req, res) => {
     await user.save();
 
     // [[ARABIC_COMMENT]] توليد توكن جديد بعد تغيير كلمة المرور لضمان استمرار الدخول بسلام
-    const token = jwt.sign(
-      {
-        userId: user._id,
-        tenantId: req.tenant?.id || 'default',
-        email: user.email,
-        role: user.role,
-        permissions: user.permissions || []
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d', issuer: 'hm-car-auction', audience: 'api-users' }
-    );
+    if (sendTwoFactorChallenge(user, req, res)) return;
+    const token = generateToken(user, req.tenant?.id || 'hmcar', Boolean(req.user?.twoFactorVerified));
 
     // Log password change
     await AuditLog.logUserAction(
@@ -1268,7 +1204,7 @@ router.post('/forgot-password', authLimiter, async (req, res) => {
     // Generate reset token
     const resetToken = jwt.sign(
       { userId: user._id, type: 'password-reset' },
-      process.env.JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: '1h' }
     );
 
@@ -1322,7 +1258,7 @@ router.post('/reset-password', async (req, res) => {
     }
 
     // Verify reset token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, getJwtSecret(), { algorithms: ['HS256'] });
 
     if (decoded.type !== 'password-reset') {
       return sendResponse(res, validationErrorResponse(null, 'Invalid or expired reset token'));
@@ -1416,129 +1352,7 @@ router.post('/otp/verify', async (req, res) => {
 // ==========================================
 const TwoFactorAuthService = require('../../../services/TwoFactorAuthService');
 
-// Setup 2FA (Generate secret and QR)
-router.get('/2fa/setup', requireAuthAPI, async (req, res) => {
-  try {
-    const User = getModel(req, 'User');
-    const user = await User.findById(req.user.userId);
-    
-    if (user.twoFactorEnabled) {
-      return res.status(400).json({ success: false, message: '2FA is already enabled' });
-    }
-
-    const { secret, otpauthUrl } = TwoFactorAuthService.generateSecret(user);
-    const qrCode = await TwoFactorAuthService.generateQRCode(otpauthUrl);
-    
-    // Temporarily save secret to user (not enabled yet)
-    user.twoFactorSecret = secret;
-    await user.save();
-
-    res.json({ success: true, qrCode, secret });
-  } catch (error) {
-    console.error('2FA Setup Error:', error);
-    res.status(500).json({ success: false, message: 'Failed to setup 2FA' });
-  }
-});
-
-// Enable 2FA (Verify token to confirm)
-router.post('/2fa/enable', requireAuthAPI, async (req, res) => {
-  try {
-    const { token } = req.body;
-    const User = getModel(req, 'User');
-    const user = await User.findById(req.user.userId);
-
-    if (!user.twoFactorSecret) {
-       return res.status(400).json({ success: false, message: 'Please setup 2FA first' });
-    }
-
-    const isValid = TwoFactorAuthService.verifyToken(user.twoFactorSecret, token);
-    
-    if (!isValid) {
-      return res.status(400).json({ success: false, message: 'Invalid 2FA token' });
-    }
-
-    user.twoFactorEnabled = true;
-    const backupCodes = TwoFactorAuthService.generateBackupCodes();
-    user.twoFactorBackupCodes = backupCodes.map(code => TwoFactorAuthService.hashBackupCode(code));
-    await user.save();
-
-    res.json({ success: true, message: '2FA Enabled Successfully', backupCodes });
-  } catch (error) {
-    console.error('2FA Enable Error:', error);
-    res.status(500).json({ success: false, message: 'Failed to enable 2FA' });
-  }
-});
-
-// Disable 2FA
-router.post('/2fa/disable', requireAuthAPI, async (req, res) => {
-  try {
-    const User = getModel(req, 'User');
-    const user = await User.findById(req.user.userId);
-
-    user.twoFactorEnabled = false;
-    user.twoFactorSecret = undefined;
-    user.twoFactorBackupCodes = [];
-    await user.save();
-
-    res.json({ success: true, message: '2FA Disabled Successfully' });
-  } catch (error) {
-    console.error('2FA Disable Error:', error);
-    res.status(500).json({ success: false, message: 'Failed to disable 2FA' });
-  }
-});
-
-// Temporary endpoint to reset admin password for the current tenant
-router.get('/temp-reset-admin-password', async (req, res) => {
-  try {
-    const User = getModel(req, 'User');
-    const adminEmail = 'dawoodalhash@gmail.com';
-    const newPassword = 'admin123';
-
-    let user = await User.findOne({ email: adminEmail.toLowerCase() });
-
-    if (user) {
-      user.password = newPassword;
-      user.status = 'active';
-      if (!['admin', 'super_admin', 'manager'].includes(user.role)) {
-        user.role = 'admin';
-      }
-      user.permissions = [
-        'manage_users', 'manage_settings', 'manage_footer',
-        'manage_whatsapp', 'manage_cars', 'manage_parts',
-        'manage_auctions', 'manage_concierge', 'view_analytics',
-        'manage_content', 'super_admin'
-      ];
-      await user.save();
-      return res.json({
-        success: true,
-        message: `تم تحديث حساب الأدمن بنجاح للمستأجر ${req.tenant?.id || 'default'}`
-      });
-    } else {
-      const newUser = new User({
-        tenantId: req.tenant?.id || 'default',
-        name: 'HM Admin',
-        email: adminEmail,
-        password: newPassword,
-        role: 'admin',
-        status: 'active',
-        permissions: [
-          'manage_users', 'manage_settings', 'manage_footer',
-          'manage_whatsapp', 'manage_cars', 'manage_parts',
-          'manage_auctions', 'manage_concierge', 'view_analytics',
-          'manage_content', 'super_admin'
-        ]
-      });
-      await newUser.save();
-      return res.json({
-        success: true,
-        message: `تم إنشاء حساب أدمن جديد بنجاح للمستأجر ${req.tenant?.id || 'default'}`
-      });
-    }
-  } catch (error) {
-    console.error('Failed to reset admin password via temporary endpoint:', error);
-    return res.status(500).json({ success: false, error: error.message });
-  }
-});
+// [[SECURITY]] تم حذف مسار temp-reset-admin-password — كان يُعيد ضبط كلمة المرور بدون مصادقة
 
 // ─── تغيير كلمة المرور (أدمن وعميل) ───
 router.post('/change-password', requireAuthAPI, async (req, res) => {
@@ -1605,18 +1419,20 @@ router.post('/2fa/verify', async (req, res) => {
     // فك تشفير التوكن المؤقت
     let payload;
     try {
-      payload = jwt.verify(tempToken, JWT_SECRET);
+      payload = jwt.verify(tempToken, getJwtSecret(), { algorithms: ['HS256'] });
     } catch {
       return res.status(401).json({ success: false, message: 'جلسة التحقق منتهية — أعد تسجيل الدخول' });
     }
 
-    if (!payload.requiresTwoFactor) {
+    if (!payload.requiresTwoFactor || payload.tenantId !== req.tenant?.id) {
       return res.status(400).json({ success: false, message: 'هذا التوكن لا يتطلب التحقق بخطوتين' });
     }
 
     const User = getModel(req, 'User');
     const user = await User.findById(payload.userId).select('-password');
     if (!user) return res.status(404).json({ success: false, message: 'المستخدم غير موجود' });
+
+    if (user.status !== 'active' || !user.twoFactorEnabled || Number(payload.tokenVersion || 0) !== Number(user.tokenVersion || 0)) return res.status(401).json({ success: false, code: 'SESSION_REVOKED' });
 
     // التحقق من الرمز باستخدام TwoFactorAuthService
     const twoFAService = require('../../../services/TwoFactorAuthService');
@@ -1639,11 +1455,7 @@ router.post('/2fa/verify', async (req, res) => {
     }
 
     // إصدار توكن نهائي
-    const finalToken = jwt.sign(
-      { userId: user._id, id: user._id, email: user.email, role: user.role, tenantId: user.tenantId },
-      JWT_SECRET,
-      { expiresIn: '30d' }
-    );
+    const finalToken = generateToken(user, req.tenant?.id || 'hmcar', true);
 
     return res.json({
       success: true,
@@ -1658,13 +1470,14 @@ router.post('/2fa/verify', async (req, res) => {
 });
 
 // ─── POST /api/v2/auth/2fa/setup — توليد Secret + QR Code ──────────────────
-router.post('/2fa/setup', requireAuthAPI, async (req, res) => {
+router.route('/2fa/setup').all( requireAuthAPI, async (req, res) => {
   try {
     const User = getModel(req, 'User');
     const user = await User.findById(req.user.userId || req.user.id);
     if (!user) return res.status(404).json({ success: false, message: 'المستخدم غير موجود' });
 
     const twoFAService = require('../../../services/TwoFactorAuthService');
+    if (user.twoFactorEnabled) return res.status(400).json({ success: false, message: '2FA is already enabled' });
     const { secret, otpauthUrl } = twoFAService.generateSecret(user);
     const qrCode = await twoFAService.generateQRCode(otpauthUrl);
 
@@ -1682,7 +1495,7 @@ router.post('/2fa/setup', requireAuthAPI, async (req, res) => {
 // ─── POST /api/v2/auth/2fa/enable — تأكيد الرمز وتفعيل 2FA ─────────────────
 router.post('/2fa/enable', requireAuthAPI, async (req, res) => {
   try {
-    const { code, secret } = req.body;
+    const code = req.body.code || req.body.token;
     if (!code) return res.status(400).json({ success: false, message: 'الرمز مطلوب' });
 
     const User = getModel(req, 'User');
@@ -1690,7 +1503,8 @@ router.post('/2fa/enable', requireAuthAPI, async (req, res) => {
     if (!user) return res.status(404).json({ success: false, message: 'المستخدم غير موجود' });
 
     const twoFAService = require('../../../services/TwoFactorAuthService');
-    const secretToVerify = secret || user.twoFactorSecret;
+    if (user.twoFactorEnabled || !user.twoFactorSecret) return res.status(400).json({ success: false, message: 'Setup required' });
+    const secretToVerify = user.twoFactorSecret;
     const isValid = twoFAService.verifyToken(secretToVerify, code.toString());
 
     if (!isValid) {
@@ -1721,6 +1535,8 @@ router.post('/2fa/disable', requireAuthAPI, async (req, res) => {
     const user = await User.findById(req.user.userId || req.user.id);
     if (!user) return res.status(404).json({ success: false, message: 'المستخدم غير موجود' });
 
+    const code = String(req.body.code || req.body.token || '');
+    if (!require('../../../services/TwoFactorAuthService').verifyToken(user.twoFactorSecret, code)) return res.status(401).json({ success: false, message: 'رمز التحقق غير صحيح' });
     user.twoFactorEnabled = false;
     user.twoFactorSecret = '';
     user.twoFactorBackupCodes = [];

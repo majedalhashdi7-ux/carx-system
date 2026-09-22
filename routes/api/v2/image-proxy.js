@@ -73,8 +73,47 @@ async function applyWatermarkWithSharp(imageBuffer, text = WATERMARK_TEXT) {
 
 /**
  * GET /api/v2/image-proxy?url=...&watermark=true&text=...
- * يجلب الصورة من أي مصدر خارجي ويضيف عليها علامة مائية HM CAR
+ * يجلب الصورة من مصادر مُعتمدة فقط ويضيف عليها علامة مائية HM CAR
  */
+
+// [[SECURITY]] قائمة المصادر المسموح بها — يُرفض أي URL خارج هذه القائمة
+const ALLOWED_HOSTS = [
+    'ci.encar.com',
+    'img.encar.com',
+    'encar.com',
+    'autospare.com.eg',
+    'images.unsplash.com',
+    'upload.wikimedia.org',
+    'cdn.pixabay.com',
+];
+
+// [[SECURITY]] نمط العناوين الخاصة — يُرفض أي طلب لشبكة داخلية (SSRF)
+const PRIVATE_IP_PATTERN = /^(127\.|0\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|::1|localhost)/i;
+
+// [[SECURITY]] الحد الأقصى لحجم استجابة الصورة (15 ميغابايت)
+const MAX_RESPONSE_BYTES = 15 * 1024 * 1024;
+
+/**
+ * التحقق من أن URL مسموح به ولا يشير لشبكة داخلية
+ */
+function isAllowedUrl(rawUrl) {
+    try {
+        const parsed = new URL(rawUrl);
+        // يجب أن يكون https
+        if (parsed.protocol !== 'https:') return false;
+        const host = parsed.hostname.toLowerCase();
+        // رفض العناوين الخاصة
+        if (PRIVATE_IP_PATTERN.test(host)) return false;
+        // يجب أن يكون المضيف ضمن القائمة أو نطاق فرعي منها
+        const allowed = ALLOWED_HOSTS.some(h =>
+            host === h || host.endsWith('.' + h)
+        );
+        return allowed;
+    } catch {
+        return false;
+    }
+}
+
 router.get('/', async (req, res) => {
     try {
         const { url: rawImageUrl, watermark, text } = req.query;
@@ -119,7 +158,9 @@ router.get('/', async (req, res) => {
             imageUrl = `${imageUrl}001.jpg`;
         }
 
-        if (!imageUrl.startsWith('http')) {
+        // [[SECURITY]] التحقق من أن URL مسموح به قبل الجلب
+        if (!isAllowedUrl(imageUrl)) {
+            console.warn(`[ImageProxy] URL مرفوض (SSRF/allowlist): ${imageUrl}`);
             return res.redirect('https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=1000');
         }
 
@@ -150,6 +191,8 @@ router.get('/', async (req, res) => {
             responseType: 'arraybuffer',
             headers,
             timeout: 15000,
+            maxContentLength: MAX_RESPONSE_BYTES,
+            maxRedirects: 0,
         });
 
         let imageData = Buffer.from(response.data);

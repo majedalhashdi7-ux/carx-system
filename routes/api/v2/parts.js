@@ -4,7 +4,7 @@
 const express = require('express');
 const router = express.Router();
 const { getModel, addTenantFilter } = require('../../../tenants/tenant-model-helper');
-const { requireAuthAPI, requireAdmin } = require('../../../middleware/auth');
+const { requireAuthAPI, requireAdmin, requirePermissionAPI } = require('../../../middleware/auth');
 const { cacheResponse, invalidateCache } = require('../../../middleware/cache');
 
 // [[FIX]] امتدادات الصور المقبولة
@@ -378,7 +378,7 @@ router.get('/:id', cacheResponse(600), async (req, res) => {
 });
 
 // POST /api/v2/parts - Add new part
-router.post('/', requireAuthAPI, invalidateCache('/api/v2/parts*'), async (req, res) => {
+router.post('/', requireAuthAPI, requirePermissionAPI('manage_parts'), invalidateCache('/api/v2/parts*'), async (req, res) => {
     try {
         const SparePart = getModel(req, 'SparePart');
         const { name, brand, model, year, price, category, images, description, condition, stockQty } = req.body;
@@ -405,7 +405,7 @@ router.post('/', requireAuthAPI, invalidateCache('/api/v2/parts*'), async (req, 
 });
 
 // PUT /api/v2/parts/:id - Update part
-router.put('/:id', requireAuthAPI, invalidateCache('/api/v2/parts*'), async (req, res) => {
+router.put('/:id', requireAuthAPI, requirePermissionAPI('manage_parts'), invalidateCache('/api/v2/parts*'), async (req, res) => {
     try {
         const SparePart = getModel(req, 'SparePart');
         const { name, brand, model, year, price, category, images, description, condition, stockQty } = req.body;
@@ -435,7 +435,7 @@ router.put('/:id', requireAuthAPI, invalidateCache('/api/v2/parts*'), async (req
 });
 
 // DELETE /api/v2/parts/:id - Delete part
-router.delete('/:id', requireAuthAPI, invalidateCache('/api/v2/parts*'), async (req, res) => {
+router.delete('/:id', requireAuthAPI, requirePermissionAPI('manage_parts'), invalidateCache('/api/v2/parts*'), async (req, res) => {
     try {
         const SparePart = getModel(req, 'SparePart');
         await SparePart.findByIdAndDelete(req.params.id);
@@ -478,7 +478,7 @@ router.patch('/:id/toggle-stock', requireAuthAPI, invalidateCache('/api/v2/parts
 
 // [[ARABIC_COMMENT]] PATCH /api/v2/parts/:id/sold - تسجيل بيع قطعة غيار
 // [[ARABIC_COMMENT]] المنطق الجديد: زيادة عداد "المباع" (soldCount) دون إنقاص الكمية أو الإخفاء التلقائي
-router.patch('/:id/sold', requireAuthAPI, invalidateCache('/api/v2/parts*'), async (req, res) => {
+router.patch('/:id/sold', requireAuthAPI, requirePermissionAPI('manage_parts'), invalidateCache('/api/v2/parts*'), async (req, res) => {
     try {
         const SparePart = getModel(req, 'SparePart');
         const { soldQty = 1 } = req.body;

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file server.js
  * @description نقطة الدخول للخادم المستمر على Render
  * يدعم Socket.io WebSocket بشكل كامل + Multi-Tenant + Keep-Alive
@@ -8,6 +8,7 @@
 const http = require('http');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
+require('./middleware/auth').getJwtSecret();
 
 // التحقق من MongoDB URI
 const MONGO_URI =
@@ -43,9 +44,14 @@ function startKeepAlivePing() {
   const RENDER_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
   const INTERVAL   = 14 * 60 * 1000; // 14 دقيقة
 
+  // [[FIX]] اختيار http أو https تلقائياً حسب البروتوكول
+  const httpClient = RENDER_URL.startsWith('https') ? require('https') : require('http');
+
   setInterval(() => {
-    http.get(`${RENDER_URL}/api/health`, (res) => {
+    httpClient.get(`${RENDER_URL}/api/health`, (res) => {
       console.log(`[keep-alive] ${res.statusCode}`);
+      // استهلاك البيانات لمنع تسرب الذاكرة
+      res.resume();
     }).on('error', (err) => {
       console.warn(`[keep-alive] failed: ${err.message}`);
     });

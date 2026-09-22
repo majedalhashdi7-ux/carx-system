@@ -150,6 +150,11 @@ router.post('/', requireAuthAPI, async (req, res) => {
              return res.status(400).json({ success: false, error: 'تم التلاعب بالأسعار وإرسال قيم سالبة غير معتمدة' });
         }
 
+        // [[SECURITY]] رفض الطلبات التي إجماليها صفر مع وجود عناصر (منع التلاعب بالسعر)
+        if (normalizedPricing.grandTotalSar <= 0 && normalizedPricing.grandTotalUsd <= 0) {
+            return res.status(400).json({ success: false, error: 'إجمالي الطلب يجب أن يكون أكبر من صفر' });
+        }
+
         // توليد رقم طلب فريد وآمن مع التحقق من عدم التكرار في قاعدة البيانات
         let orderNumber;
         let orderExists = true;

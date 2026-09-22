@@ -2,11 +2,11 @@
 
 const express = require('express');
 const router = express.Router();
-const { requireAuthAPI } = require('../../../middleware/auth');
+const { requireAuthAPI, getJwtSecret, verifyToken } = require('../../../middleware/auth');
 const { getModel, addTenantFilter, getTenantId } = require('../../../tenants/tenant-model-helper');
 
-// [[FIX]] مفتاح JWT الموحد لجميع طلبات النظام والتصاريح
-const JWT_SECRET = process.env.JWT_SECRET || 'hmcar_jwt_secret_key_2026_production_shared';
+// [[SECURITY]] حماية sync-all: السر الخارجي (Cron) أو دور admin
+const CRON_SECRET = process.env.CRON_SECRET;
 
 // ─── GET /api/v2/live-auctions ─── جلب كل جلسات المزاد
 router.get('/', async (req, res) => {
@@ -63,7 +63,7 @@ router.get('/', async (req, res) => {
             try {
                 const jwt = require('jsonwebtoken');
                 const token = req.headers.authorization.split(' ')[1];
-                const decoded = jwt.verify(token, JWT_SECRET);
+                const decoded = verifyToken(token);
                 return ['admin', 'super_admin'].includes(decoded.role);
             } catch { return false; }
         })();
@@ -149,6 +149,27 @@ function sanitizeCarImages(car) {
 // ─── GET /api/v2/live-auctions/sync-all ─── تشغيل التزامن التلقائي لكل الجلسات (Cron/Admin)
 router.get('/sync-all', async (req, res) => {
     try {
+        // [[SECURITY]] التحقق من CRON_SECRET أو دور admin
+        const cronHeader = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : req.headers['x-cron-secret'];
+        const isValidCron = CRON_SECRET && cronHeader === CRON_SECRET;
+
+        if (!isValidCron) {
+            // محاولة بديلة: التحقق من JWT admin
+            const { getJwtSecret } = require('../../../middleware/auth');
+            const authHeader = req.headers.authorization;
+            let isAdmin = false;
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                try {
+                    const jwt = require('jsonwebtoken');
+                    await requireAuthAPI(req, res, () => { isAdmin = ['admin', 'super_admin'].includes(req.user.role); });
+                    if (res.headersSent) return;
+                } catch { /* invalid token */ }
+            }
+            if (!isAdmin) {
+                return res.status(403).json({ success: false, error: 'Forbidden: requires CRON_SECRET or admin token' });
+            }
+        }
+
         const LiveAuctionSyncService = require('../../../services/LiveAuctionSyncService');
         const result = await LiveAuctionSyncService.syncAllSessions();
         res.json({
@@ -174,7 +195,7 @@ router.get('/:id', async (req, res) => {
             try {
                 const jwt = require('jsonwebtoken');
                 const token = req.headers.authorization.split(' ')[1];
-                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                const decoded = verifyToken(token);
                 return ['admin', 'super_admin'].includes(decoded.role);
             } catch { return false; }
         })();

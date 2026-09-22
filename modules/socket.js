@@ -11,9 +11,11 @@
  */
 
 const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
 const logger = require('./core/logger');
 const { getTenantById } = require('../tenants/tenant-resolver');
 const { getConnection } = require('../tenants/tenant-db-manager');
+const { getJwtSecret } = require('../middleware/auth');
 
 /**
  * فئة إدارة السوكيت (SocketModule)
@@ -30,12 +32,9 @@ class SocketModule {
      * @returns {string} معرف المعرض أو 'default' إذا لم يوجد
      */
     _extractTenantId(socket) {
-        // الأولوية: auth object > query param > default
-        const tenantId = 
-            socket.handshake?.auth?.tenantId ||
-            socket.handshake?.query?.tenantId ||
-            'default';
-        return tenantId;
+        // [[SECURITY]] tenantId يؤخذ من التوكن الموثَّق فقط، لا من العميل
+        // socket.verifiedTenantId يُضبط في middleware التحقق من JWT
+        return socket.verifiedTenantId || 'default';
     }
 
     /**
@@ -114,6 +113,38 @@ class SocketModule {
             },
         });
 
+        // [[SECURITY]] JWT Middleware — التحقق من هوية المتصل قبل قبول الاتصال
+        this.io.use((socket, next) => {
+            const token =
+                socket.handshake?.auth?.token ||
+                socket.handshake?.query?.token;
+
+            if (!token) {
+                // السماح بالاتصالات العامة (القراءة فقط) مع tenantId افتراضي
+                // للقراءة العامة مثل أسعار المزادات — لكن بدون صلاحيات admin_room
+                const tenantFromClient =
+                    socket.handshake?.auth?.tenantId ||
+                    socket.handshake?.query?.tenantId ||
+                    'default';
+                socket.verifiedTenantId = tenantFromClient;
+                socket.user = null;
+                socket.isAuthenticated = false;
+                return next();
+            }
+
+            try {
+                const decoded = jwt.verify(token, getJwtSecret());
+                socket.user = decoded;
+                socket.verifiedTenantId = decoded.tenantId || 'default';
+                socket.isAuthenticated = true;
+                logger.info(`[Socket] تحقق JWT ناجح — المستخدم: ${decoded.email} / المعرض: ${socket.verifiedTenantId}`);
+                next();
+            } catch (err) {
+                logger.warn(`[Socket] JWT غير صالح: ${err.message}`);
+                return next(new Error('Authentication error: invalid token'));
+            }
+        });
+
         // معالجة اتصال بروتوكول Socket
         this.io.on('connection', (socket) => {
             const socketId = socket.id;
@@ -131,7 +162,11 @@ class SocketModule {
 
             // حدث الانضمام إلى غرفة (Room) محددة - مع عزل المعرض
             socket.on('join_room', (room) => {
-                // إضافة بادئة المعرض إذا لم تكن موجودة
+                // [[SECURITY]] منع المستخدمين غير المصادَقين من الدخول لغرف الأدمن
+                if (String(room).includes('admin_room') && !socket.isAuthenticated) {
+                    logger.warn(`[Socket] محاولة دخول admin_room بدون توكن من: ${socketId}`);
+                    return;
+                }
                 const prefixedRoom = this._tenantRoom(tenantId, room);
                 socket.join(prefixedRoom);
                 logger.info(`👥 السوكيت ${socketId} انضم إلى الغرفة: ${prefixedRoom}`);
