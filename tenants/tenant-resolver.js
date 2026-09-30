@@ -137,16 +137,15 @@ function resolveTenant(req) {
   if (hostTenantId) tenantId = hostTenantId;
 
   // ──────────────────────────────────────────────
-  // الطريقة 1: X-Tenant-ID header (الأولوية العليا إذا كانت قيمة صحيحة)
+  // الطريقة 1: X-Tenant-ID header (الأولوية القصوى — قبل الدومين)
   // ──────────────────────────────────────────────
-  // في الإنتاج: نقبل X-Tenant-ID إذا أرسله frontend موثوق (مثل carx-system)
-  // ويكون المعرّف موجودًا في tenants.json ومفعّلاً.
-  if (!tenantId && requestedHeaderTenant && tenants[requestedHeaderTenant] && tenants[requestedHeaderTenant].enabled) {
+  // carx-system يُرسل X-Tenant-ID: carx في كل طلب — يجب أن يكون له الأولوية
+  if (requestedHeaderTenant && tenants[requestedHeaderTenant] && tenants[requestedHeaderTenant].enabled) {
     tenantId = requestedHeaderTenant;
   }
 
   // ──────────────────────────────────────────────
-  // الطريقة 2: القيمة من الدومين (Host / x-forwarded-host)
+  // الطريقة 2: الدومين (Host) — فقط إذا لم يُحدَّد الـ header
   // ──────────────────────────────────────────────
   if (!tenantId && hostTenantId) {
     tenantId = hostTenantId;
