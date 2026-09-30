@@ -1,4 +1,4 @@
-// vercel-server.js - Vercel Serverless Entry Point with Multi-Tenant Support
+﻿// vercel-server.js - Vercel Serverless Entry Point with Multi-Tenant Support
 
 /**
  * @file vercel-server.js
@@ -292,15 +292,28 @@ module.exports = async (req, res) => {
 
     // تهيئة اتصال MongoDB العام السريع لبيئة Serverless
     const mongoose = require('mongoose');
-    // [[FIX]] نفس ترتيب الأولوية: MONGO_URI → MONGO_URI_PRODUCTION
-    const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGO_URI_PRODUCTION || process.env.MONGO_URI_HMCAR;
+    // [[FIX]] ترتيب الأولوية: MONGO_URI → MONGO_URI_PRODUCTION
+    let mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGO_URI_PRODUCTION || process.env.MONGO_URI_HMCAR;
+
+    // [[FIX CRITICAL]] تأكد أن URI يحتوي اسم DB الصحيح "car-auction" وليس "test"
+    if (mongoUri && mongoUri.includes('mongodb+srv') && !mongoUri.includes('/car-auction')) {
+      mongoUri = mongoUri.replace(/\.net\/([^?]*)/, '.net/car-auction');
+      process.env.MONGO_URI = mongoUri;
+      process.env.MONGODB_URI = mongoUri;
+    }
+
     if (mongoUri && (!mongoose.connection || mongoose.connection.readyState < 1)) {
       try {
         await mongoose.connect(mongoUri, {
-          serverSelectionTimeoutMS: 5000,
+          serverSelectionTimeoutMS: 10000,
+          socketTimeoutMS: 45000,
+          connectTimeoutMS: 10000,
           maxPoolSize: 10,
-          bufferCommands: false
+          minPoolSize: 2,
+          bufferCommands: false,
+          heartbeatFrequencyMS: 10000,
         });
+        console.log('[Vercel] MongoDB connected => DB: ' + mongoose.connection.name);
       } catch (connErr) {
         console.warn('⚠️ [Vercel] Mongoose connect warning:', connErr.message);
       }

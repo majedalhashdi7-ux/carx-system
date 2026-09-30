@@ -45,18 +45,19 @@ const generateCacheKey = (req) => {
 /**
  * Middleware to cache responses for GET requests with 0ms in-memory delivery & CDN caching.
  */
-const cacheResponse = (ttlInSeconds = 60) => {
+const cacheResponse = (ttlInSeconds = 300) => {
     return async (req, res, next) => {
         if (req.headers?.authorization || req.session?.user) {
-            res.setHeader('Cache-Control', 'private, no-store');
-            return next();
+            res.setHeader('Cache-Control', 'private, max-age=30');
+            // لا نوقف — نستخدم كاش الذاكرة المحلية (30 ثانية) لسرعة الواجهة
         }
         if (req.method !== 'GET' || req.query.nocache === 'true' || req.query.status === 'all') {
             return next();
         }
 
-        // إضافة ترويسات Vercel CDN Cache لسرعة التحميل من أقرب سيرفر للمستخدم
-        res.setHeader('Cache-Control', 'no-cache');
+        // ترويسات CDN — stale-while-revalidate يعرض البيانات فوراً بينما يجري تحديثها خلفياً
+        res.setHeader('Cache-Control', `public, max-age=60, stale-while-revalidate=${ttlInSeconds}`);
+        res.setHeader('Vercel-CDN-Cache-Control', `max-age=60, stale-while-revalidate=${ttlInSeconds}`);
 
         const key = generateCacheKey(req);
 
