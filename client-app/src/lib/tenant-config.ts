@@ -210,13 +210,16 @@ export function getTenantConfigForHostname(hostname: string): TenantData {
  * Get API base URL for the current tenant
  */
 export function getTenantApiUrl(): string {
-  // In production, use relative URL (Vercel routing handles it)
-  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
-    return '';
+  // [[FIX]] دائماً استخدم المتغير البيئي إذا كان موجوداً
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
   }
-  
-  // For local development or SSR, use the environment variable
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
+  // في بيئة التطوير المحلي
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    return 'http://localhost:4001';
+  }
+  // في الإنتاج — الـ backend الرئيسي دائماً
+  return 'https://hmcar-system-two.vercel.app';
 }
 
 /**
