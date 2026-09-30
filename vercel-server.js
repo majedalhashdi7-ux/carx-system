@@ -235,7 +235,7 @@ module.exports = async (req, res) => {
             // Ensure tenantId is set + convert dates
             const docs = documents.map(d => {
               const doc = { ...d };
-              doc.tenantId = 'hmcar';
+              doc.tenantId = doc.tenantId || 'hmcar'; // [[FIX]] احترم tenantId المُرسَل — لا تُغلِّب hmcar دائماً
               if (doc.createdAt && typeof doc.createdAt === 'string') doc.createdAt = new Date(doc.createdAt);
               if (doc.updatedAt && typeof doc.updatedAt === 'string') doc.updatedAt = new Date(doc.updatedAt);
               if (doc.startsAt && typeof doc.startsAt === 'string') doc.startsAt = new Date(doc.startsAt);
