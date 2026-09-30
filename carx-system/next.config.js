@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // [[FIX]] ضبط متغيرات البيئة الافتراضية لـ carx-system في الإنتاج
+  env: {
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://hmcar-system-two.vercel.app/api/v2',
+    NEXT_PUBLIC_TENANT_ID: 'carx',
+  },
   images: {
     remotePatterns: [
       {

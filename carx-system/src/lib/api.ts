@@ -1,8 +1,9 @@
 // CAR X API Client
 // Handles communication with the main backend and sets the correct tenant ID
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api/v2';
-const TENANT_ID = 'carx'; // Identifies this frontend as the CAR X tenant
+// [[FIX]] الرابط الإنتاجي الصحيح — يستخدم NEXT_PUBLIC_API_URL من env وإلا يتجه للـ backend الإنتاجي مباشرة
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://hmcar-system-two.vercel.app/api/v2';
+const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID || 'carx'; // يعرّف هذه الواجهة لـ backend كـ CAR X
 
 interface FetchOptions extends RequestInit {
   params?: Record<string, string>;
