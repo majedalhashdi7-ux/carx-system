@@ -10,6 +10,7 @@ const { requireAuthAPI } = require('../../../middleware/auth');
 const { uploadLimiter } = require('../../../middleware/rateLimiter');
 const config = require('../../../modules/core/config');
 const cloudinaryLib = require('cloudinary').v2;
+const { requireUploadPermission, normalizeImage } = require('../../../utils/uploadPolicy');
 
 // إعداد التخزين المؤقت في نظام الملفات المتوافق مع Serverless (Vercel)
 const storage = multer.diskStorage({
@@ -71,20 +72,19 @@ function getCloudinaryConfig() {
 // ═══════════════════════════════════════════════════════
 // دالة رفع ملف صورة واحدة إلى السحابة (Blob أو Cloudinary)
 // ═══════════════════════════════════════════════════════
-async function uploadSingleImageToCloud(filePath, originalName) {
+async function uploadSingleImageToCloud(filePath, originalName, tenantId) {
+    const fileBuffer = await normalizeImage(fs.readFileSync(filePath));
     // 1. محاولة Vercel Blob أولاً
     const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
     if (blobToken && blobToken.startsWith('vercel_blob_rw_')) {
         try {
             const { put } = require('@vercel/blob');
-            const fileBuffer = fs.readFileSync(filePath);
-            const ext = path.extname(originalName) || '.jpg';
-            const blobName = `cars/${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+            const blobName = `${tenantId}/images/${require('crypto').randomUUID()}.webp`;
 
             const blob = await put(blobName, fileBuffer, {
                 access: 'public',
                 token: blobToken,
-                contentType: `image/${ext.replace('.', '') || 'jpeg'}`,
+                contentType: 'image/webp',
                 addRandomSuffix: false,
             });
 
@@ -104,8 +104,8 @@ async function uploadSingleImageToCloud(filePath, originalName) {
             secure: true
         });
 
-        const folder = config.cloudinary?.upload?.folder || 'hm-car';
-        const result = await cloudinaryLib.uploader.upload(filePath, {
+        const folder = `${tenantId}/images`;
+        const result = await cloudinaryLib.uploader.upload(`data:image/webp;base64,${fileBuffer.toString('base64')}`, {
             folder,
             resource_type: 'image',
             overwrite: true,
@@ -126,7 +126,10 @@ async function uploadSingleImageToCloud(filePath, originalName) {
     }
 
     // 4. بيئة التطوير المحلي (Local Fallback)
-    const fileName = path.basename(filePath);
+    const fileName = `${require('crypto').randomUUID()}.webp`;
+    const uploadsDir = path.join(__dirname, '../../../uploads');
+    fs.mkdirSync(uploadsDir, { recursive: true });
+    fs.writeFileSync(path.join(uploadsDir, fileName), fileBuffer);
     return { url: `/uploads/${fileName}`, provider: 'local' };
 }
 
@@ -160,7 +163,7 @@ router.get('/status', (req, res) => {
 // ═══════════════════════════════════════════════════════
 // POST /api/v2/upload - رفع صورة واحدة
 // ═══════════════════════════════════════════════════════
-router.post('/', uploadLimiter, requireAuthAPI, upload.single('image'), async (req, res) => {
+router.post('/', uploadLimiter, requireAuthAPI, requireUploadPermission, upload.single('image'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({
@@ -170,7 +173,7 @@ router.post('/', uploadLimiter, requireAuthAPI, upload.single('image'), async (r
             });
         }
 
-        const uploadResult = await uploadSingleImageToCloud(req.file.path, req.file.originalname);
+        const uploadResult = await uploadSingleImageToCloud(req.file.path, req.file.originalname, req.tenant?.id || 'hmcar');
         
         // تنظيف الملف المؤقت
         try { fs.unlinkSync(req.file.path); } catch { }
@@ -199,7 +202,7 @@ router.post('/', uploadLimiter, requireAuthAPI, upload.single('image'), async (r
 // ═══════════════════════════════════════════════════════
 // POST /api/v2/upload/multiple - رفع عدة صور دفعة واحدة
 // ═══════════════════════════════════════════════════════
-router.post('/multiple', uploadLimiter, requireAuthAPI, upload.array('images', 10), async (req, res) => {
+router.post('/multiple', uploadLimiter, requireAuthAPI, requireUploadPermission, upload.array('images', 10), async (req, res) => {
     try {
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({
@@ -211,7 +214,7 @@ router.post('/multiple', uploadLimiter, requireAuthAPI, upload.array('images', 1
 
         const uploadPromises = req.files.map(async (file) => {
             try {
-                const result = await uploadSingleImageToCloud(file.path, file.originalname);
+                const result = await uploadSingleImageToCloud(file.path, file.originalname, req.tenant?.id || 'hmcar');
                 try { fs.unlinkSync(file.path); } catch { }
                 return { success: true, url: result.url, provider: result.provider, originalName: file.originalname };
             } catch (err) {
@@ -245,72 +248,20 @@ router.post('/multiple', uploadLimiter, requireAuthAPI, upload.array('images', 1
 // ═══════════════════════════════════════════════════════
 // POST /api/v2/upload/base64 - رفع صورة عبر Base64 data URL
 // ═══════════════════════════════════════════════════════
-router.post('/base64', uploadLimiter, requireAuthAPI, async (req, res) => {
+router.post('/base64', uploadLimiter, requireAuthAPI, requireUploadPermission, async (req, res) => {
+    let tempPath;
     try {
-        const { image, name } = req.body;
-        if (!image || typeof image !== 'string') {
-            return res.status(400).json({
-                success: false,
-                error: 'Invalid Payload',
-                message: 'يرجى توفير بيانات الصورة بصيغة Base64'
-            });
-        }
-
-        const cloudConfig = getCloudinaryConfig();
-        if (cloudConfig) {
-            cloudinaryLib.config({
-                cloud_name: cloudConfig.cloud_name,
-                api_key: cloudConfig.api_key,
-                api_secret: cloudConfig.api_secret,
-                secure: true
-            });
-
-            const folder = config.cloudinary?.upload?.folder || 'hm-car';
-            const result = await cloudinaryLib.uploader.upload(image, {
-                folder,
-                resource_type: 'image',
-                transformation: [
-                    { width: 1600, crop: "limit" },
-                    { quality: "auto", fetch_format: "auto" }
-                ]
-            });
-
-            return res.json({
-                success: true,
-                url: result.secure_url,
-                provider: 'cloudinary',
-                message: 'تم رفع صورة Base64 إلى Cloudinary بنجاح'
-            });
-        }
-
-        // تحويل Base64 إلى ملف مؤقت لـ Vercel Blob أو Local
-        const matches = image.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-        if (!matches || matches.length !== 3) {
-            return res.status(400).json({ success: false, message: 'صيغة Base64 غير صالحة' });
-        }
-
-        const ext = matches[1].split('/')[1] || 'jpg';
-        const buffer = Buffer.from(matches[2], 'base64');
-        const tempPath = path.join(os.tmpdir(), `base64-${Date.now()}.${ext}`);
+        const image = req.body.image;
+        if (typeof image !== 'string' || image.length > 21 * 1024 * 1024 || !/^data:image\/(jpeg|png|webp|gif|avif);base64,/.test(image)) return res.status(400).json({ success: false, error: 'Invalid image data' });
+        const buffer = Buffer.from(image.slice(image.indexOf(',') + 1), 'base64');
+        tempPath = path.join(os.tmpdir(), 'upload-' + require('crypto').randomUUID());
         fs.writeFileSync(tempPath, buffer);
-
-        const uploadResult = await uploadSingleImageToCloud(tempPath, name || `upload.${ext}`);
-        try { fs.unlinkSync(tempPath); } catch { }
-
-        return res.json({
-            success: true,
-            url: uploadResult.url,
-            provider: uploadResult.provider,
-            message: `تم رفع صورة Base64 بنجاح عبر (${uploadResult.provider})`
-        });
-
+        const result = await uploadSingleImageToCloud(tempPath, 'image.webp', req.tenant?.id || 'hmcar');
+        res.json({ success: true, ...result });
     } catch (error) {
-        console.error('❌ خطأ في رفع Base64:', error.message);
-        res.status(500).json({
-            success: false,
-            error: 'Base64 Upload Failed',
-            message: error.message || 'حدث خطأ أثناء رفع الصورة'
-        });
+        res.status(400).json({ success: false, error: 'Image upload failed' });
+    } finally {
+        if (tempPath) { try { fs.unlinkSync(tempPath); } catch {} }
     }
 });
 

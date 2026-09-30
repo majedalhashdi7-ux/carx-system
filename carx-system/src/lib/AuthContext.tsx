@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { api } from './api';
+import { apiCache } from './api-cache';
 
 interface User {
   id?: string;
@@ -35,7 +36,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    await api.auth.logout().catch(() => {});
+    apiCache.clear();
     if (typeof window !== 'undefined') {
       localStorage.removeItem('carx_token');
       localStorage.removeItem('carx_user');
@@ -46,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback((token: string, userData: User) => {
+    apiCache.clear();
     if (typeof window !== 'undefined') {
       // حفظ التوكن في localStorage + كوكي carx_token
       // الـ middleware في carx-system يقرأ carx_token فقط (منفصل تماماً عن HM Car)

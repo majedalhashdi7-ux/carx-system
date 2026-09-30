@@ -119,7 +119,16 @@ const carSchema = new mongoose.Schema({
   // بيانات بيع معلّق (pendingSale) يتم إنشاؤها عند ضغط العميل شراء، ويؤكدها الأدمن لاحقاً
   pendingSaleToken: { type: String, default: '' },
   pendingSaleBuyer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
-  pendingSaleAt: { type: Date, default: null }
+  pendingSaleAt: { type: Date, default: null },
+
+  // ── [v2] حقول كشف التكرار المتطور (Fingerprint) ──────────────────────────
+  // تُستخدم من CarImportDeduplicationService لمنع استيراد نفس السيارة مرتين
+  vehicleFingerprint: { type: String, default: null, index: true, sparse: true },  // hash(make+model+year+mileage)
+  fullFingerprint:    { type: String, default: null, index: true, sparse: true },  // hash(make+model+year+mileage+color)
+  imageHash:          { type: String, default: null, index: true, sparse: true },  // md5 اسم ملف الصورة الأولى
+  vin:                { type: String, default: null, index: true, sparse: true },  // رقم الهيكل (VIN)
+  priceLastUpdated:   { type: Date, default: null },  // آخر مرة تم تحديث السعر بأسعار الصرف
+  syncNote:           { type: String, default: '' },  // ملاحظة المزامنة (مثل: "تم إخفاؤها تلقائياً")
 }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } });
 
 // ======== Virtual Getters — توحيد الحقول المكررة ========
@@ -171,6 +180,15 @@ carSchema.index({ seller: 1 });
 carSchema.index({ tenantId: 1, isActive: 1, createdAt: -1 });
 carSchema.index({ tenantId: 1, isSold: 1, isActive: 1, createdAt: -1 });
 carSchema.index({ tenantId: 1, source: 1, isActive: 1 });
+carSchema.index(
+  { title: 'text', description: 'text' },
+// ── [v2] فهارس الفريمبرنت لتسريع كشف التكرار ──────────────────────────────
+carSchema.index({ tenantId: 1, vehicleFingerprint: 1 }, { sparse: true });
+carSchema.index({ tenantId: 1, fullFingerprint: 1 },    { sparse: true });
+carSchema.index({ tenantId: 1, imageHash: 1 },          { sparse: true });
+carSchema.index({ tenantId: 1, vin: 1 },                { sparse: true });
+// ── فهارس أسعار الصرف ────────────────────────────────────────────────────────
+carSchema.index({ tenantId: 1, priceKrw: 1, isActive: 1 });
 carSchema.index(
   { title: 'text', description: 'text' },
   { 

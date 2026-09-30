@@ -2,11 +2,17 @@
 
 const express = require('express');
 const router = express.Router();
-const { requireAuthAPI, getJwtSecret, verifyToken } = require('../../../middleware/auth');
+const { requireAuthAPI } = require('../../../middleware/auth');
 const { getModel, addTenantFilter, getTenantId } = require('../../../tenants/tenant-model-helper');
 
 // [[SECURITY]] حماية sync-all: السر الخارجي (Cron) أو دور admin
-const CRON_SECRET = process.env.CRON_SECRET;
+async function isAdminRequest(req) {
+    if (!req.headers.authorization) return false;
+    let allowed = false;
+    const response = { status() { return this; }, json() {} };
+    await requireAuthAPI(req, response, () => { allowed = ['admin', 'super_admin'].includes(req.user.role); });
+    return allowed;
+}
 
 // ─── GET /api/v2/live-auctions ─── جلب كل جلسات المزاد
 router.get('/', async (req, res) => {
@@ -18,55 +24,8 @@ router.get('/', async (req, res) => {
         const LiveAuction = getModel(req, 'LiveAuction');
         let sessions = await LiveAuction.find(addTenantFilter(req, query)).sort({ startTime: -1, createdAt: -1 });
 
-        const Car = getModel(req, 'Car');
-
-        // ضمان أن الجلسات تحتوي على سيارات، وإن كانت فارغة نملؤها بالسيارات الكورية المستوردة تلقائياً
-        for (const session of sessions) {
-            if (!session.cars || session.cars.length === 0) {
-                if (session.externalUrl && session.externalUrl.startsWith('http')) {
-                    const LiveAuctionSyncService = require('../../../services/LiveAuctionSyncService');
-                    await LiveAuctionSyncService.syncSession(session).catch(() => {});
-                }
-                const importedCars = await Car.find({
-                    $or: [
-                        { listingType: 'showroom' },
-                        { source: 'korean_import' },
-                        { externalUrl: { $regex: 'http', $options: 'i' } }
-                    ]
-                }).limit(40).lean().catch(() => []);
-
-                if (importedCars && importedCars.length > 0) {
-                    session.cars = importedCars.map(c => ({
-                        title: c.title || `${c.make || ''} ${c.model || ''}`,
-                        images: c.images?.length > 0 ? c.images : [c.img || c.image].filter(Boolean),
-                        condition: 'مستعملة',
-                        description: c.description || 'سيارة كورية مستوردة من المعرض المباشر',
-                        priceEstimate: c.priceSar ? `${c.priceSar.toLocaleString('ar-SA')} ر.س` : (c.price ? `${c.price.toLocaleString('ar-SA')} ر.س` : 'تواصل معنا'),
-                        lotNumber: 'LOT-' + Math.floor(100000 + Math.random() * 900000),
-                        sourceUrl: c.externalUrl || ''
-                    }));
-                    await session.save().catch(() => {});
-                }
-            }
-        }
-
-        // نضمن وجود جلسة واحدة على الأقل مسجلة برابط المزاد المستهدف https://desert-korea-auto.com/cars/?car_type=auction
-        for (const session of sessions) {
-            if (!session.externalUrl || !session.externalUrl.startsWith('http')) {
-                session.externalUrl = 'https://desert-korea-auto.com/cars/?car_type=auction';
-                await session.save().catch(() => {});
-            }
-        }
-
         // إخفاء السيارات المختفية عن العملاء (إلا في وضع الأدمن)
-        const isAdmin = req.headers.authorization && (() => {
-            try {
-                const jwt = require('jsonwebtoken');
-                const token = req.headers.authorization.split(' ')[1];
-                const decoded = verifyToken(token);
-                return ['admin', 'super_admin'].includes(decoded.role);
-            } catch { return false; }
-        })();
+        const isAdmin = await isAdminRequest(req);
 
 const MODEL_IMAGE_MAP = {
     'g70': 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=1200',
@@ -151,16 +110,14 @@ router.get('/sync-all', async (req, res) => {
     try {
         // [[SECURITY]] التحقق من CRON_SECRET أو دور admin
         const cronHeader = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : req.headers['x-cron-secret'];
-        const isValidCron = CRON_SECRET && cronHeader === CRON_SECRET;
+        const isValidCron = process.env.CRON_SECRET && cronHeader === process.env.CRON_SECRET;
 
         if (!isValidCron) {
             // محاولة بديلة: التحقق من JWT admin
-            const { getJwtSecret } = require('../../../middleware/auth');
             const authHeader = req.headers.authorization;
             let isAdmin = false;
             if (authHeader && authHeader.startsWith('Bearer ')) {
                 try {
-                    const jwt = require('jsonwebtoken');
                     await requireAuthAPI(req, res, () => { isAdmin = ['admin', 'super_admin'].includes(req.user.role); });
                     if (res.headersSent) return;
                 } catch { /* invalid token */ }
@@ -171,7 +128,7 @@ router.get('/sync-all', async (req, res) => {
         }
 
         const LiveAuctionSyncService = require('../../../services/LiveAuctionSyncService');
-        const result = await LiveAuctionSyncService.syncAllSessions();
+        const result = await LiveAuctionSyncService.syncAllSessions(isValidCron ? null : req.tenant.id);
         res.json({
             success: true,
             message: `تم تحديث عدد ${result.totalSynced} من جلسات المزاد. أخطاء: ${result.totalErrors}`,
@@ -191,14 +148,7 @@ router.get('/:id', async (req, res) => {
         const session = await LiveAuction.findOne(addTenantFilter(req, { _id: req.params.id }));
         if (!session) return res.status(404).json({ success: false, error: 'Session not found' });
 
-        const isAdmin = req.headers.authorization && (() => {
-            try {
-                const jwt = require('jsonwebtoken');
-                const token = req.headers.authorization.split(' ')[1];
-                const decoded = verifyToken(token);
-                return ['admin', 'super_admin'].includes(decoded.role);
-            } catch { return false; }
-        })();
+        const isAdmin = await isAdminRequest(req);
 
         const obj = session.toObject();
         if (!isAdmin) {

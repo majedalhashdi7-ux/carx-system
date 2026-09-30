@@ -103,7 +103,7 @@ function resolveTenant(req) {
   const tenants = config.tenants;
   let tenantId = null;
   const isProduction = String(process.env.NODE_ENV || '').toLowerCase() === 'production';
-  const rawHost = req.headers['x-forwarded-host'] || req.headers.host || '';
+  const rawHost = req.headers.host || '';
   const host = rawHost.toLowerCase();
   const requestedHeaderTenant = req.headers['x-tenant-id'];
   const requestedQueryTenant = req.query.tenant;
@@ -134,13 +134,14 @@ function resolveTenant(req) {
 
 
   const hostTenantId = findTenantByHost();
+  if (hostTenantId) tenantId = hostTenantId;
 
   // ──────────────────────────────────────────────
   // الطريقة 1: X-Tenant-ID header (الأولوية العليا إذا كانت قيمة صحيحة)
   // ──────────────────────────────────────────────
   // في الإنتاج: نقبل X-Tenant-ID إذا أرسله frontend موثوق (مثل carx-system)
   // ويكون المعرّف موجودًا في tenants.json ومفعّلاً.
-  if (requestedHeaderTenant && tenants[requestedHeaderTenant] && tenants[requestedHeaderTenant].enabled) {
+  if (!tenantId && requestedHeaderTenant && tenants[requestedHeaderTenant] && tenants[requestedHeaderTenant].enabled) {
     tenantId = requestedHeaderTenant;
   }
 

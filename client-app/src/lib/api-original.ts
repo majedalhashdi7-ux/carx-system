@@ -16,7 +16,7 @@ import { apiCache } from './api-cache';
  * الدالة الأساسية لإرسال طلبات الـ API مع دعم المهلة الزمنية وإعادة المحاولة
  */
 export async function fetchAPI(endpoint: string, options: RequestInit & { useCache?: boolean; timeout?: number } = {}, retries = 2) {
-    const isGet = !options.method || options.method.toUpperCase() === 'GET';
+    const isGet = (!options.method || options.method.toUpperCase() === 'GET') && !endpoint.includes('/auth/');
 
     // [[ARABIC_COMMENT]] 1. استرجاع فوري من الكاش لجميع طلبات GET (سرعة 0 مللي ثانية)
     if (isGet && options.useCache !== false && !endpoint.includes('nocache')) {

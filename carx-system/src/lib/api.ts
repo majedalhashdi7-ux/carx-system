@@ -22,7 +22,7 @@ export async function fetchAPI<T>(endpoint: string, options: FetchOptions = {}):
       url = urlObj.toString();
     }
 
-    const isGet = !options.method || options.method.toUpperCase() === 'GET';
+    const isGet = (!options.method || options.method.toUpperCase() === 'GET') && !endpoint.startsWith('/auth/');
     const cacheKey = `${endpoint}_${JSON.stringify(options.params || {})}`;
 
     // ── 0ms Instant Cache Retrieval for GET requests ──
@@ -154,6 +154,8 @@ export const api = {
     }),
   },
   auth: {
+    verifyTwoFactor: (tempToken: string, code: string) => fetchAPI('/auth/2fa/verify', { method: 'POST', body: JSON.stringify({ tempToken, code }) }),
+    logout: () => fetchAPI('/auth/logout', { method: 'POST' }),
     // /auth/login الموحَّد لكل الأدوار — يدعم admin و buyer
     login: (identifier: string, password: string, role = 'buyer') => {
       return fetchAPI('/auth/login', {

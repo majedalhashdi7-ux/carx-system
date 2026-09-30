@@ -1,3 +1,4 @@
+import { verifiedSession } from './lib/serverApi';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -26,7 +27,7 @@ function withSecurityHeaders(response: NextResponse): NextResponse {
     return response;
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // تجاهل الملفات الثابتة والـ API
@@ -40,8 +41,9 @@ export function middleware(request: NextRequest) {
     }
 
     const token = request.cookies.get('hm_token')?.value;
-    const userRole = request.cookies.get('hm_user_role')?.value;
-    const isAuthenticated = !!token;
+    const verifiedUser = await verifiedSession(request.nextUrl.origin, token);
+    const userRole = verifiedUser?.role;
+    const isAuthenticated = !!verifiedUser;
 
     // ── 1. منع المستخدم المسجل من الدخول لصفحات التوثيق ──
     if (AUTH_ROUTES.some(r => pathname === r) && isAuthenticated) {

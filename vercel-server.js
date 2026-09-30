@@ -14,6 +14,7 @@ const { generalLimiter, authLimiter, strictLimiter } = require('./middleware/rat
 
 // ── ثوابت ──
 const IS_VERCEL = !!(process.env.VERCEL || process.env.VERCEL_ENV);
+require('./middleware/auth').getJwtSecret();
 
 /**
  * تحميل قائمة الـ origins المسموح بها من tenants.json

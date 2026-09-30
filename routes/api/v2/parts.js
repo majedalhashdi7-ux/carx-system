@@ -482,25 +482,20 @@ router.patch('/:id/sold', requireAuthAPI, requirePermissionAPI('manage_parts'), 
     try {
         const SparePart = getModel(req, 'SparePart');
         const { soldQty = 1 } = req.body;
+        if (!Number.isSafeInteger(soldQty) || soldQty <= 0) return res.status(400).json({ success: false, error: 'soldQty must be a positive integer' });
 
-        const part = await SparePart.findById(req.params.id);
+        const part = await SparePart.findOne(addTenantFilter(req, { _id: req.params.id }));
         if (!part) {
             return res.status(404).json({ success: false, error: 'Part not found' });
         }
 
-        const currentSoldCount = part.soldCount || 0;
-        const newSoldCount = currentSoldCount + Number(soldQty);
-
-        const updatedPart = await SparePart.findByIdAndUpdate(
-            req.params.id,
-            { 
-                $set: { 
-                    soldCount: newSoldCount,
-                    inStock: true // التأكد من بقاء القطعة ظاهرة دائماً
-                } 
-            },
-            { new: true }
+        const updatedPart = await SparePart.findOneAndUpdate(
+            addTenantFilter(req, { _id: req.params.id }),
+            { $inc: { soldCount: soldQty } },
+            { returnDocument: 'after' }
         );
+        if (!updatedPart) return res.status(404).json({ success: false, error: 'Part not found' });
+        const newSoldCount = updatedPart.soldCount;
 
         // [[ARABIC_COMMENT]] تسجيل في AuditLog للتقارير التلقائية
         try {

@@ -8,6 +8,7 @@
 
 import { useEffect, useState, createContext, useContext, ReactNode, useCallback } from 'react';
 import { api } from '@/lib/api-original';
+import { apiCache } from './api-cache';
 
 /**
  * واجهة بيانات المستخدم
@@ -261,7 +262,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     /**
      * تسجيل الخروج - ذكي حسب نوع الحساب
      */
-    function logout() {
+    async function logout() {
+        await api.auth.logout().catch(() => {});
+        apiCache.clear();
         // نحفظ نوع الحساب قبل المسح لنوجّه بشكل صحيح
         const role = user?.role || (typeof window !== 'undefined' ? localStorage.getItem('hm_user_role') : null);
         const isAdminRole = role === 'admin' || role === 'super_admin' || role === 'manager';

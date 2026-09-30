@@ -30,11 +30,57 @@ const PORT = parseInt(process.env.PORT || '4001', 10);
 const App          = require('./modules/app');
 const database     = require('./modules/core/database');
 const socketModule = require('./modules/socket');
+const CurrencyService = require('./services/CurrencyService');
 
 // ── Express App ──
 const appInstance = new App({ isServerless: false, port: PORT });
 appInstance.registerErrorHandlers();
 const expressApp = appInstance.getExpressApp();
+
+// ── Auto-Sync Scheduler: تحديث أسعار الصرف كل 6 ساعات ────────────────────
+function startAutoSyncScheduler() {
+  const SIX_HOURS    = 6  * 60 * 60 * 1000;
+  const TWELVE_HOURS = 12 * 60 * 60 * 1000;
+
+  // تحديث أسعار الصرف فوراً عند الإطلاق
+  CurrencyService.getRates()
+    .then(r => {
+      console.log(`[AutoSync] Rates loaded: 1 USD = ${r.USD_TO_SAR} SAR | ${Math.round(r.USD_TO_KRW)} KRW`);
+      return CurrencyService.syncToEnv();
+    })
+    .catch(e => console.warn('[AutoSync] Initial rates failed:', e.message));
+
+  // ─── كل 6 ساعات: تحديث أسعار الصرف ──────────────────────────────────────
+  setInterval(async () => {
+    try {
+      CurrencyService.invalidateCache();
+      const rates = await CurrencyService.getRates();
+      await CurrencyService.syncToEnv();
+      console.log(`[AutoSync] Rates refreshed: 1 USD = ${rates.USD_TO_SAR} SAR | ${Math.round(rates.USD_TO_KRW)} KRW`);
+    } catch (e) {
+      console.warn('[AutoSync] Currency update failed:', e.message);
+    }
+  }, SIX_HOURS);
+
+  // ─── كل 12 ساعة: تحديث أسعار السيارات بأسعار الصرف الجديدة ───────────────
+  setInterval(async () => {
+    try {
+      const InventorySyncService = require('./services/InventorySyncService');
+      // نبني كائن req مصغّر للمزامنة (بدون طلب HTTP حقيقي)
+      const syntheticReq = {
+        tenant: { id: process.env.DEFAULT_TENANT_ID || 'hmcar' },
+        tenantModels: null, // سيُحل بـ getModel
+        tenantDb: require('mongoose').connection,
+      };
+      const result = await InventorySyncService.updateInventoryPrices(syntheticReq, { maxCars: 500 });
+      console.log(`[AutoSync] Price sync done: ${result?.stats?.updatedCount || 0} cars updated`);
+    } catch (e) {
+      console.warn('[AutoSync] Price sync failed:', e.message);
+    }
+  }, TWELVE_HOURS);
+
+  console.log('[AutoSync] Scheduler active (currency: 6h | prices: 12h)');
+}
 
 // ── HTTP Server ──
 const server = http.createServer(expressApp);
@@ -48,13 +94,14 @@ function startKeepAlivePing() {
   const httpClient = RENDER_URL.startsWith('https') ? require('https') : require('http');
 
   setInterval(() => {
-    httpClient.get(`${RENDER_URL}/api/health`, (res) => {
+    const ping = httpClient.get(`${RENDER_URL}/api/health`, (res) => {
       console.log(`[keep-alive] ${res.statusCode}`);
       // استهلاك البيانات لمنع تسرب الذاكرة
       res.resume();
     }).on('error', (err) => {
       console.warn(`[keep-alive] failed: ${err.message}`);
     });
+    ping.setTimeout(10000, () => ping.destroy(new Error('Keep-alive timeout')));
   }, INTERVAL);
 
   console.log(`[keep-alive] Active — pinging every 14 min`);
@@ -63,12 +110,18 @@ function startKeepAlivePing() {
 // ── Graceful Shutdown ──
 function gracefulShutdown(signal) {
   console.log(`[server] ${signal} — shutting down...`);
-  server.close(() => {
+  if (socketModule.io) socketModule.io.close();
+  server.close(async () => {
     const mongoose = require('mongoose');
-    mongoose.connection.close(false, () => {
+    try {
+      await require('./tenants/tenant-db-manager').closeAllConnections();
+      await mongoose.connection.close();
       console.log('[server] MongoDB closed. Bye.');
       process.exit(0);
-    });
+    } catch (error) {
+      console.error('[server] Shutdown failed:', error.message);
+      process.exit(1);
+    }
   });
   setTimeout(() => process.exit(1), 10000);
 }
@@ -99,6 +152,9 @@ async function startServer() {
     if (process.env.RENDER || process.env.NODE_ENV === 'production') {
       startKeepAlivePing();
     }
+
+    // 5. Auto-Sync: تحديث أسعار الصرف كل 6 ساعات
+    startAutoSyncScheduler();
 
   } catch (err) {
     console.error('[server] Failed to start:', err.message);

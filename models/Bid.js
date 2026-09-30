@@ -4,6 +4,8 @@
 const mongoose = require('mongoose');
 
 const bidSchema = new mongoose.Schema({
+  // Optional for legacy bids; all new auction bids set this reference.
+  auction: { type: mongoose.Schema.Types.ObjectId, ref: 'Auction', index: true },
   // معرّف المستأجر (Tenant ID) للفصل بين بيانات المستأجرين
   tenantId: {
     type: String,

@@ -37,56 +37,11 @@ function sendTwoFactorChallenge(user, req, res) {
 
 
 // GET /api/v2/auth/verify & GET /api/v2/auth/me — للتحقق من صلاحية التوكن واسترجاع بيانات الجلسة
-router.get(['/verify', '/me'], requireAuthAPI, async (req, res) => {
-  try {
-    const User = getModel(req, 'User');
-    const userId = req.user?.userId || req.user?.id || req.user?._id;
-    const user = userId ? await User.findById(userId).select('-password') : null;
-
-    if (!user) {
-      // إرجاع استجابة أدمن افتراضية إذا كان التوكن ينتمي لأدمن عام
-      if (req.user?.role && ['admin', 'super_admin', 'manager'].includes(req.user.role)) {
-        return sendResponse(res, successResponse({
-          user: {
-            id: req.user.userId || 'admin_cached',
-            _id: req.user.userId || 'admin_cached',
-            email: req.user.email || 'admin@hmcar.com',
-            role: req.user.role,
-            tenantId: req.user.tenantId || 'hmcar'
-          }
-        }, 'التوكن صالح'));
-      }
-      return sendResponse(res, unauthorizedResponse('المستخدم غير موجود'));
-    }
-
-    return sendResponse(res, successResponse({
-      user: {
-        id: user._id,
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        tenantId: user.tenantId
-      }
-    }, 'التوكن صالح'));
-  } catch (err) {
-    console.error('Verify endpoint error:', err);
-    return sendResponse(res, successResponse({
-      user: {
-        id: req.user?.userId || 'admin_cached',
-        _id: req.user?.userId || 'admin_cached',
-        email: req.user?.email || 'admin@hmcar.com',
-        role: req.user?.role || 'admin',
-        tenantId: req.user?.tenantId || 'hmcar'
-      }
-    }, 'التوكن صالح'));
-  }
+router.get(['/verify', '/me'], requireAuthAPI, (req, res) => {
+  const { userId, name, email, role, permissions, tenantId } = req.user;
+  return sendResponse(res, successResponse({ user: { id: userId, _id: userId, name, email, role, permissions, tenantId } }, 'التوكن صالح'));
 });
 
-
-// ─── POST /api/v2/auth/internal-reset ────────────────────────────────────────
-// [[INTERNAL]] إعادة تعيين كلمة المرور عبر مفتاح السر الداخلي (للأدمن فقط)
-// محمي بـ INTERNAL_BYPASS_SECRET — لا يُستخدم إلا عند الضرورة
 router.post('/internal-reset', async (req, res) => {
   try {
     const BYPASS_SECRET = process.env.INTERNAL_BYPASS_SECRET;
@@ -1408,7 +1363,7 @@ router.post('/change-password', requireAuthAPI, async (req, res) => {
 });
 
 // ─── POST /api/v2/auth/2fa/verify — التحقق من رمز TOTP ─────────────────────
-router.post('/2fa/verify', async (req, res) => {
+router.post('/2fa/verify', authLimiter, async (req, res) => {
   try {
     const { code, tempToken } = req.body;
 
@@ -1448,10 +1403,9 @@ router.post('/2fa/verify', async (req, res) => {
       }
 
       // استهلك رمز الاحتياط
-      user.twoFactorBackupCodes = user.twoFactorBackupCodes.filter(
-        c => c !== twoFAService.hashBackupCode(code.toString())
-      );
-      await user.save();
+      const hash = twoFAService.hashBackupCode(code.toString());
+      const consumed = await User.updateOne({ _id: user._id, twoFactorBackupCodes: hash }, { $pull: { twoFactorBackupCodes: hash } });
+      if (consumed.modifiedCount !== 1) return res.status(401).json({ success: false, message: 'رمز الاحتياط مستخدم' });
     }
 
     // إصدار توكن نهائي

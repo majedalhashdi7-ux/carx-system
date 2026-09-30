@@ -14,6 +14,8 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [tempToken, setTempToken] = useState('');
+  const [twoFactorCode, setTwoFactorCode] = useState('');
   const searchParams = useSearchParams();
   const { login } = useAuth();
 
@@ -53,10 +55,13 @@ function LoginForm() {
     setError('');
 
     try {
-      const response = await api.auth.login(email, password, role);
+      const response = tempToken
+        ? await api.auth.verifyTwoFactor(tempToken, twoFactorCode)
+        : await api.auth.login(email, password, role);
 
       if (!response.error && response.data) {
         const data = response.data as any;
+        if (data.requiresTwoFactor) { setTempToken(data.tempToken); return; }
         // Backend returns: { success, token, user: {...} } OR { success, token, data: { user: {...} } }
         const token = data.token;
         const userData = data.user || data.data?.user;
@@ -204,6 +209,9 @@ function LoginForm() {
 
           {/* Form */}
           <form onSubmit={handleLogin} className="space-y-5">
+            {tempToken && <label className="block text-white">رمز التحقق بخطوتين
+              <input autoComplete="one-time-code" value={twoFactorCode} onChange={e => setTwoFactorCode(e.target.value)} maxLength={8} required className="mt-2 w-full rounded-xl bg-white/10 p-3 text-white" />
+            </label>}
             {/* Email Field */}
             <motion.div variants={itemVariants} className="space-y-2">
               <label className="block text-sm font-black text-white/70 uppercase tracking-widest">

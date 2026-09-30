@@ -62,100 +62,12 @@ router.post('/', requireAuthAPI, async (req, res) => {
         const Order = getModel(req, 'Order');
         const SiteSettings = getModel(req, 'SiteSettings');
         
-        let { items, pricing, notes, channel = 'whatsapp' } = req.body;
+        const { notes, channel = 'whatsapp' } = req.body;
+        const requestedItems = req.body.items || (req.body.car ? [{ itemType: 'car', refId: req.body.car, qty: 1 }] : []);
+        const buyerId = req.user.userId || req.user.id;
+        const settings = await SiteSettings.getSettings();
+        const { items: normalizedItems, pricing: normalizedPricing } = await require('../../../services/OrderPricingService').priceOrder(req, requestedItems, settings);
 
-        // دعم حجز السيارات المباشر من صفحة تفاصيل السيارة في carx-system
-        if (!items && req.body.car) {
-            const Car = getModel(req, 'Car');
-            const carDoc = await Car.findById(req.body.car).lean().catch(() => null);
-            items = [{
-                itemType: 'car',
-                refId: req.body.car,
-                titleSnapshot: carDoc ? carDoc.title : 'حجز سيارة',
-                qty: 1,
-                unitPriceSar: req.body.totalAmount || (carDoc ? carDoc.price : 0)
-            }];
-            pricing = {
-                grandTotalSar: req.body.totalAmount || (carDoc ? carDoc.price : 0),
-                subTotalSar: req.body.totalAmount || (carDoc ? carDoc.price : 0)
-            };
-        }
-
-        const buyerId = req.user.userId || req.user._id;
-        const settings = await SiteSettings.getSettings().catch(() => null);
-
-        const usdToSar = toFiniteNumber(req.body?.currencySnapshot?.usdToSar) || toFiniteNumber(settings?.currencySettings?.usdToSar) || 3.75;
-        const usdToKrw = toFiniteNumber(req.body?.currencySnapshot?.usdToKrw) || toFiniteNumber(settings?.currencySettings?.usdToKrw) || 1350;
-        const activeCurrency = String(req.body?.currencySnapshot?.activeCurrency || settings?.currencySettings?.activeCurrency || 'SAR').toUpperCase();
-
-        const normalizedPricing = {
-            subTotalSar: toFiniteNumber(pricing?.subTotalSar),
-            subTotalUsd: toFiniteNumber(pricing?.subTotalUsd),
-            shippingSar: toFiniteNumber(pricing?.shippingSar),
-            shippingUsd: toFiniteNumber(pricing?.shippingUsd),
-            grandTotalSar: toFiniteNumber(pricing?.grandTotalSar),
-            grandTotalUsd: toFiniteNumber(pricing?.grandTotalUsd),
-        };
-
-        if (!normalizedPricing.subTotalUsd && normalizedPricing.subTotalSar > 0) {
-            normalizedPricing.subTotalUsd = Number((normalizedPricing.subTotalSar / usdToSar).toFixed(2));
-        }
-        if (!normalizedPricing.subTotalSar && normalizedPricing.subTotalUsd > 0) {
-            normalizedPricing.subTotalSar = Number((normalizedPricing.subTotalUsd * usdToSar).toFixed(2));
-        }
-
-        if (!normalizedPricing.shippingUsd && normalizedPricing.shippingSar > 0) {
-            normalizedPricing.shippingUsd = Number((normalizedPricing.shippingSar / usdToSar).toFixed(2));
-        }
-        if (!normalizedPricing.shippingSar && normalizedPricing.shippingUsd > 0) {
-            normalizedPricing.shippingSar = Number((normalizedPricing.shippingUsd * usdToSar).toFixed(2));
-        }
-
-        if (!normalizedPricing.grandTotalUsd && normalizedPricing.grandTotalSar > 0) {
-            normalizedPricing.grandTotalUsd = Number((normalizedPricing.grandTotalSar / usdToSar).toFixed(2));
-        }
-        if (!normalizedPricing.grandTotalSar && normalizedPricing.grandTotalUsd > 0) {
-            normalizedPricing.grandTotalSar = Number((normalizedPricing.grandTotalUsd * usdToSar).toFixed(2));
-        }
-
-        normalizedPricing.exchangeSnapshot = {
-            usdToSar,
-            usdToKrw,
-            activeCurrency: ['SAR', 'USD', 'KRW'].includes(activeCurrency) ? activeCurrency : 'SAR',
-            capturedAt: new Date(),
-        };
-
-        const normalizedItems = Array.isArray(items)
-            ? items.map((item) => {
-                const unitPriceSar = Math.max(0, toFiniteNumber(item?.unitPriceSar));
-                const unitPriceUsd = Math.max(0, toFiniteNumber(item?.unitPriceUsd));
-
-                const resolvedUnitPriceSar = unitPriceSar || (unitPriceUsd > 0 ? Number((unitPriceUsd * usdToSar).toFixed(2)) : 0);
-                const resolvedUnitPriceUsd = unitPriceUsd || (unitPriceSar > 0 ? Number((unitPriceSar / usdToSar).toFixed(2)) : 0);
-
-                return {
-                    ...item,
-                    unitPriceSar: resolvedUnitPriceSar,
-                    unitPriceUsd: resolvedUnitPriceUsd,
-                };
-            })
-            : [];
-
-        // التأكد العالي من الأمان (Security & Validation Checks)
-        if (!normalizedItems || normalizedItems.length === 0) {
-            return res.status(400).json({ success: false, error: 'الطلب لا يحتوي على عناصر' });
-        }
-        
-        if (normalizedPricing.grandTotalSar < 0 || normalizedPricing.subTotalSar < 0 || normalizedPricing.shippingSar < 0) {
-             return res.status(400).json({ success: false, error: 'تم التلاعب بالأسعار وإرسال قيم سالبة غير معتمدة' });
-        }
-
-        // [[SECURITY]] رفض الطلبات التي إجماليها صفر مع وجود عناصر (منع التلاعب بالسعر)
-        if (normalizedPricing.grandTotalSar <= 0 && normalizedPricing.grandTotalUsd <= 0) {
-            return res.status(400).json({ success: false, error: 'إجمالي الطلب يجب أن يكون أكبر من صفر' });
-        }
-
-        // توليد رقم طلب فريد وآمن مع التحقق من عدم التكرار في قاعدة البيانات
         let orderNumber;
         let orderExists = true;
         const crypto = require('crypto');
@@ -190,7 +102,7 @@ router.post('/', requireAuthAPI, async (req, res) => {
             const notifications = admins.map(admin => ({
                 user: admin._id,
                 title: 'طلب شراء جديد',
-                message: `وصل طلب جديد برقم ${orderNumber} لـ ${items[0]?.titleSnapshot}`,
+                message: `وصل طلب جديد برقم ${orderNumber} لـ ${normalizedItems[0]?.titleSnapshot}`,
                 type: 'info',
                 actionUrl: `/admin/orders/${newOrder._id}`,
                 tenantId: getTenantId(req)
@@ -210,7 +122,7 @@ router.post('/', requireAuthAPI, async (req, res) => {
         });
     } catch (error) {
         console.error('Create order error:', error);
-        res.status(500).json({ success: false, error: 'Internal Server Error', message: error.message });
+        res.status(error.status || 500).json({ success: false, error: error.status ? error.message : 'Internal Server Error' });
     }
 });
 

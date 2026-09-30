@@ -1,3 +1,4 @@
+import { verifiedSession } from './lib/serverApi';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -21,7 +22,7 @@ function withSecurityHeaders(response: NextResponse): NextResponse {
   return response;
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // تجاهل الملفات الثابتة والـ API
@@ -33,15 +34,17 @@ export function middleware(request: NextRequest) {
   const tokenFromCookie = request.cookies.get('carx_token')?.value;
   const tokenFromHeader = request.headers.get('authorization')?.replace('Bearer ', '');
   const token = tokenFromCookie || tokenFromHeader;
-  const isAuthenticated = !!token;
+  const verifiedUser = await verifiedSession(request.nextUrl.origin, token);
+  const isAuthenticated = !!verifiedUser;
 
   // ── 1. منع المستخدم المسجل من الدخول لصفحات التوثيق ──
   if (AUTH_ROUTES.some(r => pathname === r) && isAuthenticated) {
-    return withSecurityHeaders(NextResponse.redirect(new URL('/admin', request.url)));
+    return withSecurityHeaders(NextResponse.redirect(new URL(['admin', 'super_admin', 'manager'].includes(verifiedUser?.role) ? '/admin' : '/cars', request.url)));
   }
 
   // ── 2. حماية مسارات /admin ──
   if (ADMIN_PATHS.some(p => pathname.startsWith(p))) {
+    if (isAuthenticated && !['admin', 'super_admin', 'manager'].includes(verifiedUser?.role)) return withSecurityHeaders(NextResponse.redirect(new URL('/cars', request.url)));
     if (!isAuthenticated) {
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('redirect', pathname);

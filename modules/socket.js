@@ -11,11 +11,11 @@
  */
 
 const { Server } = require('socket.io');
-const jwt = require('jsonwebtoken');
 const logger = require('./core/logger');
 const { getTenantById } = require('../tenants/tenant-resolver');
 const { getConnection } = require('../tenants/tenant-db-manager');
-const { getJwtSecret } = require('../middleware/auth');
+const { requireAuthAPI, verifyToken } = require('../middleware/auth');
+const { canJoinRoom } = require('../utils/socketAccess');
 
 /**
  * فئة إدارة السوكيت (SocketModule)
@@ -114,7 +114,7 @@ class SocketModule {
         });
 
         // [[SECURITY]] JWT Middleware — التحقق من هوية المتصل قبل قبول الاتصال
-        this.io.use((socket, next) => {
+        this.io.use(async (socket, next) => {
             const token =
                 socket.handshake?.auth?.token ||
                 socket.handshake?.query?.token;
@@ -126,6 +126,7 @@ class SocketModule {
                     socket.handshake?.auth?.tenantId ||
                     socket.handshake?.query?.tenantId ||
                     'default';
+                if (!getTenantById(tenantFromClient)) return next(new Error('Invalid tenant'));
                 socket.verifiedTenantId = tenantFromClient;
                 socket.user = null;
                 socket.isAuthenticated = false;
@@ -133,10 +134,35 @@ class SocketModule {
             }
 
             try {
-                const decoded = jwt.verify(token, getJwtSecret());
-                socket.user = decoded;
-                socket.verifiedTenantId = decoded.tenantId || 'default';
+                const decoded = verifyToken(token);
+                const tenant = decoded && getTenantById(decoded.tenantId);
+                if (!tenant) return next(new Error('Invalid tenant or token'));
+                const { models } = await getConnection(tenant.id, tenant.mongoUri);
+                const request = { headers: { authorization: `Bearer ${token}` }, tenant, tenantModels: models };
+                let authenticated = false;
+                const response = { status() { return this; }, json() {} };
+                await requireAuthAPI(request, response, () => { authenticated = true; });
+                if (!authenticated) return next(new Error('Session revoked'));
+                socket.user = request.user;
+                socket.verifiedTenantId = tenant.id;
                 socket.isAuthenticated = true;
+                // Recheck the account on every incoming event; logout/demotion takes effect.
+                socket.use(async (_packet, done) => {
+                    let valid = false;
+                    await requireAuthAPI(request, response, () => { valid = true; });
+                    if (!valid) { socket.disconnect(true); return done(new Error('Session revoked')); }
+                    socket.user = request.user;
+                    done();
+                });
+                const sessionCheck = setInterval(async () => {
+                    let valid = false;
+                    await requireAuthAPI(request, response, () => { valid = true; });
+                    if (!valid) return socket.disconnect(true);
+                    socket.user = request.user;
+                    if (!['admin', 'super_admin'].includes(socket.user.role)) socket.leave(this._tenantRoom(tenant.id, 'admin_room'));
+                }, 30000);
+                sessionCheck.unref();
+                socket.on('disconnect', () => clearInterval(sessionCheck));
                 logger.info(`[Socket] تحقق JWT ناجح — المستخدم: ${decoded.email} / المعرض: ${socket.verifiedTenantId}`);
                 next();
             } catch (err) {
@@ -163,7 +189,7 @@ class SocketModule {
             // حدث الانضمام إلى غرفة (Room) محددة - مع عزل المعرض
             socket.on('join_room', (room) => {
                 // [[SECURITY]] منع المستخدمين غير المصادَقين من الدخول لغرف الأدمن
-                if (String(room).includes('admin_room') && !socket.isAuthenticated) {
+                if (!canJoinRoom(socket, room)) {
                     logger.warn(`[Socket] محاولة دخول admin_room بدون توكن من: ${socketId}`);
                     return;
                 }
@@ -174,6 +200,7 @@ class SocketModule {
 
             // حدث ترك غرفة محددة
             socket.on('leave_room', (room) => {
+                if (!canJoinRoom(socket, room)) return;
                 const prefixedRoom = this._tenantRoom(tenantId, room);
                 socket.leave(prefixedRoom);
                 logger.info(`🚪 السوكيت ${socketId} غادر الغرفة: ${prefixedRoom}`);
@@ -181,6 +208,8 @@ class SocketModule {
 
             // حدث تسجيل دخول المستخدم - يتم إبلاغ لوحة تحكم الإدارة فوراً
             socket.on('user_login', (userData) => {
+                if (!socket.isAuthenticated) return;
+                userData = { id: socket.user.userId, name: socket.user.name || '', role: socket.user.role };
                 logger.info(`🔑 دخول المستخدم: ${userData.name}`);
                 const adminRoom = this._tenantRoom(tenantId, 'admin_room');
                 this.io.to(adminRoom).emit('admin_notification', {
@@ -195,6 +224,8 @@ class SocketModule {
 
             // تتبع مسار تصفح العميل (Real-time Tracking) لإظهاره للأدمن
             socket.on('user_navigation', (data) => {
+                if (!socket.isAuthenticated || typeof data?.page !== 'string') return;
+                data = { page: data.page.slice(0, 500), userName: socket.user.name || '', userId: socket.user.userId };
                 const adminRoom = this._tenantRoom(tenantId, 'admin_room');
                 this.io.to(adminRoom).emit('admin_notification', {
                     type: 'USER_NAV',
@@ -208,6 +239,8 @@ class SocketModule {
 
             // تسجيل نشاط المستخدم (النبضات/التتبع)
             socket.on('user_active', async (userId) => {
+                if (!socket.isAuthenticated) return;
+                userId = socket.user.userId || socket.user.id;
                 try {
                     if (userId) {
                         socket.userId = userId;

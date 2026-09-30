@@ -9,7 +9,6 @@
 const express = require('express');
 const router = express.Router();
 const { apiRateLimiter } = require('../../../middleware/securityEnhanced');
-const { autoCacheMiddleware } = require('../../../middleware/autoCache');
 const { tenantMiddleware } = require('../../../middleware/tenantMiddleware');
 const { 
   generalLimiter, 
@@ -55,21 +54,15 @@ router.get('/health', async (req, res) => {
   try {
     const mongoose = require('mongoose');
     const dbConnection = req.tenantDb || mongoose.connection;
-    const dbStatus = dbConnection.readyState === 1 ? 'متصل' : 'غير متصل';
+    const ready = dbConnection.readyState === 1;
 
     const health = {
-      status: 'healthy',
+      status: ready ? 'healthy' : 'unhealthy',
       timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      database: {
-        status: dbStatus,
-        name: dbConnection.name
-      },
-      memory: process.memoryUsage(),
-      environment: process.env.NODE_ENV || 'development'
+      database: { status: ready ? 'connected' : 'disconnected' }
     };
 
-    res.status(200).json(health);
+    res.status(ready ? 200 : 503).json(health);
   } catch (error) {
     res.status(503).json({
       status: 'unhealthy',
@@ -83,9 +76,9 @@ router.get('/health', async (req, res) => {
 router.use('/tenant', publicLimiter, require('./tenant'));              // نظام المعارض المتعددة (Multi-Tenant)
 router.use('/auth', authLimiter, require('./auth'));                    // المصادقة - حماية مشددة
 router.use('/users', strictLimiter, require('./users'));                // المستخدمين - حماية متوسطة
-router.use('/cars', publicLimiter, autoCacheMiddleware({ ttl: 300 }), require('./cars'));    // [[ARABIC_COMMENT]] كاش للسيارات لمدة 5 دقائق
+router.use('/cars', publicLimiter, require('./cars'));
 router.use('/auctions', strictLimiter, require('./auctions'));          // المزادات - حماية متوسطة
-router.use('/parts', publicLimiter, autoCacheMiddleware({ ttl: 300 }), require('./parts'));  // [[ARABIC_COMMENT]] كاش لقطع الغيار لمدة 5 دقائق
+router.use('/parts', publicLimiter, require('./parts'));
 router.use('/dashboard', strictLimiter, require('./dashboard'));        // لوحة التحكم - حماية متوسطة
 router.use('/orders', strictLimiter, require('./orders'));              // الطلبات - حماية متوسطة
 router.use('/notifications', publicLimiter, require('./notifications')); // التنبيهات

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, SlidersHorizontal, Wrench, X, Sparkles, Info } from 'lucide-react';
@@ -238,10 +239,10 @@ export default function PartsPage() {
                 لم يتم إضافة أي قطع غيار حتى الآن. يمكن للأدمن إضافتها من لوحة التحكم.
               </p>
             </div>
-            <a href="/admin/parts/new"
+            <Link href="/admin/parts/new"
               className="inline-flex items-center gap-3 bg-luxury-gold text-black px-10 py-4 rounded-2xl font-black text-sm hover:bg-white transition-colors">
               إضافة قطع غيار
-            </a>
+            </Link>
           </motion.div>
         ) : (
           <motion.div

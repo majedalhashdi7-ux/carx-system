@@ -30,7 +30,7 @@ router.get('/my', requireAuthAPI, async (req, res) => {
         const settings = await SiteSettings.getSettings().catch(() => null);
         const auctionMultiplier = normalizeMultiplier(settings?.currencySettings?.auctionMultiplier || 1);
 
-        const bids = await Bid.find(addTenantFilter(req, { bidder: userId }))
+        const bids = await Bid.find(addTenantFilter(req, { userId }))
             .populate({
                 path: 'auction',
                 populate: { path: 'car', select: 'title make model year images' }
@@ -65,7 +65,7 @@ router.get('/auction/:auctionId', async (req, res) => {
         const auctionMultiplier = normalizeMultiplier(settings?.currencySettings?.auctionMultiplier || 1);
 
         const bids = await Bid.find(addTenantFilter(req, { auction: auctionId }))
-            .populate('bidder', 'name')
+            .populate('userId', 'name')
             .sort({ amount: -1 })
             .limit(limit);
 
@@ -75,8 +75,8 @@ router.get('/auction/:auctionId', async (req, res) => {
                 id: b._id,
                 amount: applyMultiplier(b.amount, auctionMultiplier),
                 bidder: {
-                    id: b.bidder._id,
-                    name: b.bidder.name ? b.bidder.name.charAt(0) + '***' : 'مجهول'
+                    id: b.userId?._id,
+                    name: b.userId?.name ? b.userId.name.charAt(0) + '***' : 'مجهول'
                 },
                 createdAt: b.createdAt
             }))
@@ -90,108 +90,13 @@ router.get('/auction/:auctionId', async (req, res) => {
 // إضافة مزايدة جديدة
 router.post('/', requireAuthAPI, async (req, res) => {
     try {
-        const userId = req.user.userId || req.user._id || req.user.id;
-        const { auctionId, amount } = req.body;
-
-        if (!auctionId || !amount) {
-            return res.status(400).json({ success: false, error: 'معرف المزاد والمبلغ مطلوبان' });
-        }
-
-        const Bid = getModel(req, 'Bid');
-        const Auction = getModel(req, 'Auction');
-        const SiteSettings = getModel(req, 'SiteSettings');
-
-        // التحقق من وجود المزاد
-        const auction = await Auction.findOne(addTenantFilter(req, { _id: auctionId }));
-        if (!auction) {
-            return res.status(404).json({ success: false, error: 'المزاد غير موجود' });
-        }
-
-        const settings = await SiteSettings.getSettings().catch(() => null);
-        const auctionMultiplier = normalizeMultiplier(settings?.currencySettings?.auctionMultiplier || 1);
-        const baseAmount = toBaseAmount(amount, auctionMultiplier);
-
-        // التحقق من أن المزاد نشط
-        if (auction.status !== 'active' && auction.status !== 'running') {
-            return res.status(400).json({ success: false, error: 'المزاد غير نشط' });
-        }
-
-        // التحقق من أن المزاد لم ينتهِ
-        if (new Date() > new Date(auction.endTime)) {
-            return res.status(400).json({ success: false, error: 'انتهى وقت المزاد' });
-        }
-
-        // التحقق من أن المبلغ أعلى من السعر الحالي
-        const minBid = auction.currentPrice + (auction.minBidIncrement || 100);
-        if (baseAmount < minBid) {
-            return res.status(400).json({
-                success: false,
-                error: `المبلغ يجب أن يكون أعلى من ${applyMultiplier(minBid, auctionMultiplier)}`
-            });
-        }
-
-        // إنشاء المزايدة
-        const bid = await Bid.create({
-            auction: auctionId,
-            bidder: userId,
-            amount: baseAmount,
-            tenantId: getTenantId(req)
-        });
-
-        // تمديد المزاد التلقائي (Anti-Sniping) إذا تمت المزايدة في آخر دقيقتين
-        const now = new Date();
-        const timeLeftMs = new Date(auction.endTime) - now;
-        let extended = false;
-        if (timeLeftMs > 0 && timeLeftMs < 120000) {
-            auction.endTime = new Date(new Date(auction.endTime).getTime() + 120000);
-            extended = true;
-        }
-
-        // تحديث سعر المزاد الحالي
-        auction.currentPrice = baseAmount;
-        auction.highestBidder = userId;
-        auction.bidsCount = (auction.bidsCount || 0) + 1;
-        await auction.save();
-
-        // بث الحدث الفوري عبر Socket.IO لجميع المتابعين
-        try {
-            const socketModule = require('../../../modules/socket');
-            const tenantId = getTenantId(req) || 'carx';
-            const bidPayload = {
-                auctionId: String(auctionId),
-                bidId: bid._id,
-                amount: applyMultiplier(bid.amount, auctionMultiplier),
-                newCurrentPrice: applyMultiplier(auction.currentPrice, auctionMultiplier),
-                bidderName: req.user.name ? req.user.name.charAt(0) + '***' : 'مزايد',
-                endTime: auction.endTime,
-                extended,
-                timestamp: new Date()
-            };
-
-            socketModule.emitToTenantRoom(tenantId, `auction_${auctionId}`, 'bid:placed', bidPayload);
-            socketModule.emitToTenantRoom(tenantId, 'general', 'auction:price_update', bidPayload);
-        } catch (socketErr) {
-            console.warn('[Socket Broadcast Warning]', socketErr.message);
-        }
-
-        res.status(201).json({
-            success: true,
-            message: 'تم تقديم المزايدة بنجاح',
-            data: {
-                id: bid._id,
-                amount: applyMultiplier(bid.amount, auctionMultiplier),
-                newCurrentPrice: applyMultiplier(auction.currentPrice, auctionMultiplier),
-                endTime: auction.endTime,
-                extended
-            }
-        });
+        const data = await require('../../../services/BiddingService').placeBid(req, req.body.auctionId, req.body.amount);
+        res.status(201).json({ success: true, data });
     } catch (error) {
-        console.error('خطأ في تقديم المزايدة:', error);
-        res.status(500).json({ success: false, error: 'فشل في تقديم المزايدة' });
+        res.status(error.status || 500).json({ success: false, error: error.status ? error.message : 'فشل في تقديم المزايدة' });
     }
 });
 
-// الحصول على أعلى مزايدة لمزاد
 router.get('/highest/:auctionId', async (req, res) => {
     try {
         const { auctionId } = req.params;
@@ -203,7 +108,7 @@ router.get('/highest/:auctionId', async (req, res) => {
 
         const highestBid = await Bid.findOne(addTenantFilter(req, { auction: auctionId }))
             .sort({ amount: -1 })
-            .populate('bidder', 'name');
+            .populate('userId', 'name');
 
         if (!highestBid) {
             return res.json({
@@ -218,7 +123,7 @@ router.get('/highest/:auctionId', async (req, res) => {
             data: {
                 id: highestBid._id,
                 amount: applyMultiplier(highestBid.amount, auctionMultiplier),
-                bidder: highestBid.bidder.name ? highestBid.bidder.name.charAt(0) + '***' : 'مجهول',
+                bidder: highestBid.userId?.name ? highestBid.userId.name.charAt(0) + '***' : 'مجهول',
                 createdAt: highestBid.createdAt
             }
         });

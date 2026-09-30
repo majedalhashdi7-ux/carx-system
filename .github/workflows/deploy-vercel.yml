@@ -1,8 +1,7 @@
 name: Deploy to Vercel
 
 on:
-  push:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
@@ -19,7 +18,13 @@ jobs:
       - name: Install root dependencies
         run: npm ci
 
-      - name: Build client
+      - name: Install client dependencies
+        run: npm ci --prefix client-app
+
+      - name: Verify security fixes
+        run: npm run test:security
+
+      - name: Build client application
         run: npm run build
 
       - name: Install Vercel CLI

@@ -23,6 +23,7 @@
     "seed": "node seed.js",
     "seed:auctions": "node seed_auctions_bids.js",
     "test": "mocha --timeout 10000 --recursive test --exit",
+    "test:security": "mocha --timeout 20000 test/unit/security-remediation.test.js test/integration/security-remediation.test.js --exit",
     "test:unit": "mocha --timeout 10000 test/unit/**/*.test.js --exit",
     "test:unit:ts": "mocha --timeout 10000 --require tsx/cjs test/unit/**/*.test.ts --exit",
     "test:unit:models": "mocha --timeout 10000 test/unit/models/**/*.test.js --exit",

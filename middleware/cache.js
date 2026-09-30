@@ -47,12 +47,16 @@ const generateCacheKey = (req) => {
  */
 const cacheResponse = (ttlInSeconds = 60) => {
     return async (req, res, next) => {
+        if (req.headers?.authorization || req.session?.user) {
+            res.setHeader('Cache-Control', 'private, no-store');
+            return next();
+        }
         if (req.method !== 'GET' || req.query.nocache === 'true' || req.query.status === 'all') {
             return next();
         }
 
         // إضافة ترويسات Vercel CDN Cache لسرعة التحميل من أقرب سيرفر للمستخدم
-        res.setHeader('Cache-Control', `public, s-maxage=${ttlInSeconds}, stale-while-revalidate=${ttlInSeconds * 2}`);
+        res.setHeader('Cache-Control', 'no-cache');
 
         const key = generateCacheKey(req);
 
@@ -104,7 +108,7 @@ const cacheResponse = (ttlInSeconds = 60) => {
 const invalidateCache = (patterns) => {
     return async (req, res, next) => {
         const methodsToInvalidate = ['POST', 'PUT', 'PATCH', 'DELETE'];
-        if (!methodsToInvalidate.includes(req.method) || !cacheService.isRedisEnabled) {
+        if (!methodsToInvalidate.includes(req.method)) {
             return next();
         }
 
@@ -112,6 +116,7 @@ const invalidateCache = (patterns) => {
         res.on('finish', () => {
             if (res.statusCode >= 200 && res.statusCode < 300) {
                 clearLocalCache(); // Instant local memory cache wipe
+                if (!cacheService.isRedisEnabled) return;
                 const patternsToClear = Array.isArray(patterns) ? patterns : [patterns];
                 // إضافة معرف المعرض للـ pattern لضمان حذف الكاش الخاص بهذا المعرض فقط
                 const tenantId = req.tenant?.id || 'default';

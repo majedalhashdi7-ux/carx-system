@@ -55,6 +55,7 @@ const userSchema = new mongoose.Schema({
   status: { type: String, enum: ['active', 'suspended', 'pending'], default: 'active' },
   // رقم الجلسة النشطة (استخدامه لمنع أكثر من جلسة للعميل)
   activeSessionId: { type: String, default: '' },
+  tokenVersion: { type: Number, default: 0 },
   // آخر وقت تسجيل دخول
   lastLoginAt: { type: Date, default: null },
   // محاولات الدخول الفاشلة
@@ -124,7 +125,20 @@ userSchema.index({ tenantId: 1, buyerNameKey: 1 }, { unique: true, partialFilter
 userSchema.index({ tenantId: 1, role: 1 });
 userSchema.index({ tenantId: 1, status: 1 });
 
+userSchema.pre(['findOneAndUpdate', 'updateOne', 'updateMany'], function () {
+  const update = this.getUpdate() || {};
+  const values = update.$set || update;
+  if (['password', 'role', 'permissions', 'status', 'twoFactorEnabled'].some(field => Object.prototype.hasOwnProperty.call(values, field))) {
+    update.$inc = { ...update.$inc, tokenVersion: 1 };
+    if (update.$set) delete update.$set.tokenVersion;
+    this.setUpdate(update);
+  }
+});
+
 userSchema.pre('save', async function () {
+  if (!this.isNew && ['password', 'role', 'permissions', 'status', 'twoFactorEnabled'].some(field => this.isModified(field))) {
+    this.tokenVersion = (this.tokenVersion || 0) + 1;
+  }
   // تشفير كلمة المرور عند الإنشاء/التعديل فقط (إذا كانت password تم تعديلها)
   if (!this.isModified('password') || !this.password) return;
 

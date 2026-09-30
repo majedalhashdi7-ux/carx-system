@@ -471,9 +471,7 @@ interface SyncStats {
   totalIssues?: number;
 }
 
-interface SyncToolsProps {}
-
-export function SyncToolsPanel(_: SyncToolsProps) {
+export function SyncToolsPanel() {
   const [healthData, setHealthData] = useState<HealthData | null>(null);
   const [healthLoading, setHealthLoading] = useState(false);
   const [syncLoading, setSyncLoading] = useState<string | null>(null);

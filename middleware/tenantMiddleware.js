@@ -30,11 +30,6 @@ function tenantMiddleware(options = {}) {
   const { required = true, connectDb = true } = options;
 
   return async (req, res, next) => {
-    // Skip tenant middleware in test environment
-    if (process.env.NODE_ENV === 'test' || process.env.TESTING === 'true') {
-      return next();
-    }
-
     try {
       // ── تحديد المعرض ──
       let tenant = resolveTenant(req);
@@ -101,7 +96,7 @@ function tenantMiddleware(options = {}) {
       };
 
       // ── الاتصال بقاعدة البيانات إذا مطلوب ──
-      if (connectDb && tenant.mongoUri) {
+      if (connectDb && tenant.mongoUri && process.env.NODE_ENV !== 'test') {
         const { connection, models } = await getConnection(tenant.id, tenant.mongoUri);
 
         req.tenantDb = connection;

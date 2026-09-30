@@ -94,8 +94,7 @@ class App {
   setupMiddleware() {
     // Sentry Request Handler - يجب أن يكون أول Middleware
     if (config.sentry && config.sentry.enabled) {
-      this.app.use(Sentry.Handlers.requestHandler());
-      this.app.use(Sentry.Handlers.tracingHandler());
+      // Request instrumentation is installed by Sentry.init in current SDKs.
     }
 
     // CORS - مخصص للـ serverless أو عادي
@@ -207,7 +206,7 @@ class App {
   setupErrorHandling() {
     // Sentry Error Handler - يجب أن يكون قبل أي Middleware آخر لمعالجة الأخطاء
     if (config.sentry && config.sentry.enabled) {
-      this.app.use(Sentry.Handlers.errorHandler());
+      Sentry.setupExpressErrorHandler(this.app);
     }
 
     // 404

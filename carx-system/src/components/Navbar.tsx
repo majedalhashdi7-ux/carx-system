@@ -13,7 +13,6 @@ export default function Navbar() {
   const pathname = usePathname();
 
   // إخفاء Navbar في جميع صفحات الأدمن — لوحة الأدمن لها sidebar خاص
-  if (pathname?.startsWith('/admin')) return null;
 
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -32,8 +31,10 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleLogout = () => {
-    logout();
+  if (pathname?.startsWith('/admin')) return null;
+
+  const handleLogout = async () => {
+    await logout();
     setShowUserDropdown(false);
     window.location.href = '/login';
   };

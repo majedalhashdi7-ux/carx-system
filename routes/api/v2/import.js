@@ -599,6 +599,10 @@ const showroomImportService = require('../../../services/ShowroomImportService')
 const partsImportService = require('../../../services/PartsImportService');
 const liveAuctionImportService = require('../../../services/LiveAuctionImportService');
 const ImportLog = require('../../../models/ImportLog');
+const CurrencyService = require('../../../services/CurrencyService');
+const { globalQueue } = require('../../../services/ImportQueueService');
+const KCarImportService = require('../../../services/KCarImportService');
+const InventorySyncService = require('../../../services/InventorySyncService');
 
 /**
  * POST /api/v2/import/showroom
@@ -1059,6 +1063,185 @@ router.post('/autospare', requireAuthAPI, requireAdmin, invalidateCache(['/api/v
     } catch (error) {
         console.error('[AutoSpare] Error:', error.message);
         res.status(500).json({ success: false, error: 'فشل استيراد AutoSpare: ' + error.message });
+    }
+});
+
+// ─── GET /api/v2/import/currency-rates ────────────────────────────────
+/**
+ * جلب أسعار الصرف الحالية من CurrencyService
+ * مع إمكانية إعادة التحديث الفوري
+ */
+router.get('/currency-rates', requireAuthAPI, requireAdmin, async (req, res) => {
+    try {
+        const rates = await CurrencyService.getRates();
+        res.json({ success: true, rates });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+router.post('/currency-rates/refresh', requireAuthAPI, requireAdmin, async (req, res) => {
+    try {
+        CurrencyService.invalidateCache();
+        const rates = await CurrencyService.getRates();
+        await CurrencyService.syncToEnv();
+        res.json({ success: true, message: 'تم تحديث أسعار الصرف بنجاح', rates });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ─── POST /api/v2/import/bulk-showroom ─────────────────────────────
+/**
+ * استيراد جماعي ضخم باستخدام Queue (100-500 سيارة)
+ * يعمل بالتوازي مع 3 سيارات في الوقت نفسه
+ * body: { limit: 100, targetUrl: '', pages: 5 }
+ */
+router.post('/bulk-showroom', requireAuthAPI, requireAdmin, async (req, res) => {
+    try {
+        const { limit = 50, targetUrl = '', pages = 3 } = req.body;
+        const adminUser = req.user?.name || req.user?.email || 'Admin';
+        const totalRequested = Math.min(parseInt(limit) || 50, 500);
+
+        // ريسبونس فوري بدء العملية
+        res.json({
+            success: true,
+            message: `تم إطلاق عملية استيراد ${totalRequested} سيارة في الخلفية`,
+            hint: 'استخدم GET /api/v2/import/queue-status لمتابعة التقدم',
+            requested: totalRequested,
+        });
+
+        // تشغيل العملية في الخلفية بدون انتظار
+        setImmediate(async () => {
+            try {
+                globalQueue.reset();
+                const result = await showroomImportService.importShowroomCars(req, {
+                    limit: totalRequested,
+                    targetUrl,
+                    adminUser,
+                });
+                console.log(`✅ [BulkShowroom] Done: ${JSON.stringify(result.stats)}`);
+                invalidateCache('/api/v2/cars');
+            } catch (e) {
+                console.error('❌ [BulkShowroom]', e.message);
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ─── GET /api/v2/import/queue-status ───────────────────────────────
+/**
+ * متابعة حالة قائمة الاستيراد الجماعي
+ */
+router.get('/queue-status', requireAuthAPI, requireAdmin, (req, res) => {
+    const status = globalQueue.getStatus();
+    res.json({ success: true, queue: status });
+});
+
+// ─── POST /api/v2/import/queue-control ────────────────────────────
+/**
+ * تحكم في Queue: pause / resume / reset
+ */
+router.post('/queue-control', requireAuthAPI, requireAdmin, (req, res) => {
+    const { action } = req.body;
+    if (action === 'pause')        { globalQueue.pause(); }
+    else if (action === 'resume')  { globalQueue.resume(); }
+    else if (action === 'reset')   { globalQueue.reset(); }
+    else {
+        return res.status(400).json({ success: false, error: 'action غير صالح. استخدم: pause | resume | reset' });
+    }
+    res.json({ success: true, action, queue: globalQueue.getStatus() });
+});
+
+// ─── POST /api/v2/import/kcar ───────────────────────────────────────────
+/**
+ * استيراد سيارات K-Car الكورية مع تقييم KB Pricing
+ * body: { limit: 20 }
+ */
+router.post('/kcar', requireAuthAPI, requireAdmin, async (req, res) => {
+    try {
+        const { limit = 20 } = req.body;
+        const adminUser = req.user?.name || req.user?.email || 'Admin';
+
+        const result = await KCarImportService.importKCarVehicles(req, {
+            limit: Math.min(parseInt(limit) || 20, 200),
+            adminUser,
+        });
+
+        invalidateCache('/api/v2/cars');
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ─── POST /api/v2/import/sync-inventory ─────────────────────────────────
+/**
+ * مزامنة المخزون: إخفاء السيارات المباعة في Encar
+ * body: { maxCars: 50, dryRun: false }
+ */
+router.post('/sync-inventory', requireAuthAPI, requireAdmin, async (req, res) => {
+    try {
+        const { maxCars = 50, dryRun = false } = req.body;
+        const result = await InventorySyncService.syncEncarInventory(req, {
+            maxCars: Math.min(parseInt(maxCars) || 50, 200),
+            dryRun: Boolean(dryRun),
+        });
+        invalidateCache('/api/v2/cars');
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ─── POST /api/v2/import/sync-prices ─────────────────────────────────────
+/**
+ * تحديث أسعار السيارات بأسعار الصرف الحالية
+ * body: { maxCars: 300 }
+ */
+router.post('/sync-prices', requireAuthAPI, requireAdmin, async (req, res) => {
+    try {
+        const { maxCars = 300 } = req.body;
+        const result = await InventorySyncService.updateInventoryPrices(req, {
+            maxCars: Math.min(parseInt(maxCars) || 300, 1000),
+        });
+        invalidateCache('/api/v2/cars');
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ─── POST /api/v2/import/full-inventory-sync ───────────────────────────
+/**
+ * مزامنة شاملة: عملة + أسعار + فحص المباع (اختياري)
+ */
+router.post('/full-inventory-sync', requireAuthAPI, requireAdmin, async (req, res) => {
+    try {
+        const { checkSoldCars = false, dryRun = false } = req.body;
+        const result = await InventorySyncService.runFullSync(req, {
+            checkSoldCars, dryRun,
+        });
+        invalidateCache(['/api/v2/cars*', '/api/v2/auctions*']);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ─── GET /api/v2/import/inventory-health ───────────────────────────────
+/**
+ * إحصائيات صحة المخزون (Dashboard Card)
+ */
+router.get('/inventory-health', requireAuthAPI, requireAdmin, async (req, res) => {
+    try {
+        const result = await InventorySyncService.getInventoryHealth(req);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 

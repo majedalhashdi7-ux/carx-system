@@ -31,7 +31,7 @@ async function applyWatermarkWithSharp(imageBuffer, text = WATERMARK_TEXT) {
         // حساب أبعاد شارة العلامة المائية بناءً على حجم الصورة
         const fontSize = Math.max(12, Math.floor(Math.min(w, h) * 0.028));
         const badgeHeight = Math.max(26, fontSize * 2.1);
-        const displayText = (text && text.trim()) ? text.trim() : 'HM CAR';
+        const displayText = ((text && text.trim()) ? text.trim() : 'HM CAR').slice(0, 80).replace(/[<>&"']/g, '');
         const badgeWidth = Math.max(105, displayText.length * (fontSize * 0.62) + 38);
         const posX = Math.max(16, w - badgeWidth - 18);
         const posY = Math.max(16, h - badgeHeight - 18);
@@ -188,6 +188,8 @@ router.get('/', async (req, res) => {
         }
 
         const response = await axios.get(imageUrl, {
+            httpsAgent: require('../../../utils/publicImageAgent').agent,
+            proxy: false,
             responseType: 'arraybuffer',
             headers,
             timeout: 15000,
@@ -196,7 +198,12 @@ router.get('/', async (req, res) => {
         });
 
         let imageData = Buffer.from(response.data);
-        const contentType = response.headers['content-type'] || 'image/jpeg';
+        if (!sharp) return res.status(503).json({ error: 'Image processing unavailable' });
+        // Decode and re-encode to reject HTML/SVG masquerading as an image.
+        const metadata = await sharp(imageData, { limitInputPixels: 40000000 }).metadata();
+        if (!['jpeg', 'png', 'webp', 'gif', 'avif'].includes(metadata.format)) return res.status(415).json({ error: 'Unsupported image' });
+        imageData = await sharp(imageData, { limitInputPixels: 40000000 }).rotate().jpeg({ quality: 85 }).toBuffer();
+        const contentType = 'image/jpeg';
 
         // تطبيق العلامة المائية إذا طُلب أو دائماً للصور الخارجية عند توفر Sharp
         const shouldWatermark = (watermark === 'true' || isEncar) && !!sharp;

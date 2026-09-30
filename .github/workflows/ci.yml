@@ -37,6 +37,9 @@ jobs:
           JWT_SECRET: test-secret
           SESSION_SECRET: test-session
 
+      - name: Security regression tests
+        run: npm run test:security
+
   # Frontend Tests & Build
   frontend-test:
     runs-on: ubuntu-latest

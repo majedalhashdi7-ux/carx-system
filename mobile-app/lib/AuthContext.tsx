@@ -1,6 +1,7 @@
 // lib/AuthContext.tsx - إدارة المصادقة
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { api } from './api';
 
 interface User {
     _id: string;
@@ -66,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     async function logout() {
+        await api.auth.logout().catch(() => {});
         await Promise.all([
             AsyncStorage.removeItem('hm_token'),
             AsyncStorage.removeItem('hm_user'),

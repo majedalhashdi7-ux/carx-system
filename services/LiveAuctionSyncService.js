@@ -361,12 +361,12 @@ async function syncDesertKoreaAuctions(models, tenantId) {
  * تحديث كل جلسات المزاد المباشر عبر جميع قواعد بيانات المعارض
  * يُشغَّل كل 24 ساعة تلقائياً (Cron Job)
  */
-async function syncAllSessions() {
+async function syncAllSessions(tenantId = null) {
     console.log(`\n============================================`);
     console.log(`[LiveSync] Starting global auto-sync...`);
     console.log(`============================================`);
 
-    const tenants = getAllTenants();
+    const tenants = getAllTenants().filter(tenant => !tenantId || tenant.id === tenantId);
     let totalSynced = 0;
     let totalErrors = 0;
 

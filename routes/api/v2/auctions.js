@@ -272,48 +272,10 @@ router.delete('/:id', requireAuthAPI, async (req, res) => {
 // POST /api/v2/auctions/:id/bid - المزايدة (Auth required)
 router.post('/:id/bid', requireAuthAPI, async (req, res) => {
     try {
-        const Auction = getModel(req, 'Auction');
-        const SiteSettings = getModel(req, 'SiteSettings');
-        const { amount } = req.body;
-        const auction = await Auction.findOne(addTenantFilter(req, { _id: req.params.id }));
-
-        if (!auction) {
-            return sendResponse(res, notFoundResponse('Auction'));
-        }
-
-        if (auction.status !== 'running') {
-            return sendResponse(res, errorResponse('Auction is not active', 'AUCTION_NOT_ACTIVE', 400));
-        }
-
-        const settings = SiteSettings ? await SiteSettings.getSettings().catch(() => null) : null;
-        const auctionMultiplier = normalizeMultiplier(settings?.currencySettings?.auctionMultiplier || 1);
-        const currentHighest = auction.currentPrice || auction.startingPrice;
-        const baseAmount = toBaseAmount(amount, auctionMultiplier);
-
-        if (baseAmount <= currentHighest) {
-            return sendResponse(res, errorResponse(
-                `Bid must be higher than ${applyMultiplier(currentHighest, auctionMultiplier)}`,
-                'BID_TOO_LOW',
-                400
-            ));
-        }
-
-        auction.currentPrice = baseAmount;
-        auction.highestBidder = req.user.userId;
-
-        await auction.save();
-
-        res.json({
-            success: true,
-            message: 'Bid placed successfully',
-            data: {
-                currentPrice: applyMultiplier(auction.currentPrice, auctionMultiplier),
-                highestBidder: req.user.userId
-            }
-        });
+        const result = await require('../../../services/BiddingService').placeBid(req, req.params.id, req.body.amount);
+        res.json({ success: true, message: 'Bid placed successfully', data: { ...result, currentPrice: result.newCurrentPrice } });
     } catch (error) {
-        console.error('API Bid error:', error);
-        return sendResponse(res, serverErrorResponse('Internal Server Error', error));
+        res.status(error.status || 500).json({ success: false, error: error.status ? error.message : 'فشل في تقديم المزايدة' });
     }
 });
 

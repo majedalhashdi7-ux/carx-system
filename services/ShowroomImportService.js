@@ -1,11 +1,14 @@
 // [[ARABIC_HEADER]] هذا الملف (services/ShowroomImportService.js) يستورد سيارات المعرض من Encar كوريا
 // مع ترجمة كاملة للنصوص الكورية، ضغط الصور، علامة مائية HM CAR
+// [v2] تم تكاملهما مع CurrencyService لأسعار الصرف التلقائية وImportQueueService للاستيراد الجماعي
 
 const https = require('https');
 const http = require('http');
 const KoreanTranslationService = require('./KoreanTranslationService');
 const WatermarkService = require('./WatermarkService');
 const { downloadAndOptimize } = require('./externalImageService');
+const CurrencyService = require('./CurrencyService');
+const DeduplicationService = require('./CarImportDeduplicationService');
 
 /**
  * حفظ سجل الاستيراد بشكل آمن دون تعليق العملية الرئيسية
@@ -180,36 +183,49 @@ async function fetchEncarCarDetail(carId) {
 }
 
 /**
- * بناء رابط صورة Encar بجودة عالية
+ * بناء رابط صورة Encar بجودة عالية جداً (1200px)
+ * [v2] تم تحسين الجودة من الحجم الافتراضي إلى 1200px
  */
 function buildEncarImageUrl(photo) {
     if (!photo) return null;
     if (typeof photo === 'string') {
         const p = photo.trim();
-        if (p.startsWith('http')) return p;
+        if (p.startsWith('http')) {
+            // تحويل روابط ci.encar.com إلى جودة أعلى (1200px بدلاً من الافتراضي)
+            return p.includes('ci.encar.com') && !p.includes('?') ? `${p}?w=1200` : p;
+        }
         const clean = p.startsWith('/') ? p : `/${p}`;
-        return `https://ci.encar.com/carpicture${clean}`;
+        return `https://ci.encar.com/carpicture${clean}?w=1200`;
     }
     const path = photo.path || photo.Path || photo.location || photo.Location || photo.url || photo.Url || '';
     if (typeof path === 'string' && path.trim()) {
         const p = path.trim();
-        if (p.startsWith('http')) return p;
+        if (p.startsWith('http')) {
+            return p.includes('ci.encar.com') && !p.includes('?') ? `${p}?w=1200` : p;
+        }
         const clean = p.startsWith('/') ? p : `/${p}`;
-        return `https://ci.encar.com/carpicture${clean}`;
+        return `https://ci.encar.com/carpicture${clean}?w=1200`;
     }
     return null;
 }
 
 /**
  * تحويل سعر Encar (وحدة: 만원 = 10,000 KRW) إلى SAR
+ * [v2] يستخدم CurrencyService للحصول على أسعار الصرف المحدّثة
  */
-function convertEncarPrice(rawPrice) {
-    const usdToSar = Number(process.env.USD_TO_SAR) || 3.75;
-    const usdToKrw = Number(process.env.USD_TO_KRW) || 1350;
-    const priceKrw = (Number(rawPrice) || 0) * 10000;
-    const priceUsd = priceKrw > 0 ? Number((priceKrw / usdToKrw).toFixed(2)) : 0;
-    const priceSar = Number((priceUsd * usdToSar).toFixed(2));
-    return { priceKrw, priceUsd, priceSar };
+async function convertEncarPrice(rawPrice) {
+    try {
+        const { priceKrw, priceUsd, priceSar } = await CurrencyService.convertEncarPrice(rawPrice);
+        return { priceKrw, priceUsd, priceSar };
+    } catch {
+        // احتياط: استخدام قيم .env إذا فشلت الخدمة
+        const usdToSar = Number(process.env.USD_TO_SAR) || 3.75;
+        const usdToKrw = Number(process.env.USD_TO_KRW) || 1350;
+        const priceKrw = (Number(rawPrice) || 0) * 10000;
+        const priceUsd = priceKrw > 0 ? Number((priceKrw / usdToKrw).toFixed(2)) : 0;
+        const priceSar = Number((priceUsd * usdToSar).toFixed(2));
+        return { priceKrw, priceUsd, priceSar };
+    }
 }
 
 function normalizeBrand(raw) {
@@ -329,10 +345,9 @@ class ShowroomImportService {
                         const carId = String(rawCar.Id || rawCar.id || rawCar.CarId || `encar-${Date.now()}`);
                         const externalId = `encar-${carId}`;
 
-                        // ── تحقق مبكر: هل السيارة موجودة فعلاً في قاعدة البيانات? ──
-                        const existing = await Car.findOne({ externalId }).lean();
-                        if (existing) {
-                            console.log(`⏩ [ShowroomImport] SKIP (already exists): ${externalId}`);
+                        // ── تحقق مبكر سريع بـ externalId (أداء عالٍ) ──
+                        if (await DeduplicationService.existsByExternalId(Car, externalId, req.tenant?.id || 'hmcar')) {
+                            console.log(`⏩ [ShowroomImport] SKIP (externalId match): ${externalId}`);
                             totalSkipped++;
                             return;
                         }
@@ -467,65 +482,86 @@ class ShowroomImportService {
                             importedAt: new Date().toISOString(),
                         };
 
+                        // ─── توليد بصمة متعددة المعايير قبل الحفظ ──────────────────
+                        const fingerprint = DeduplicationService.generateCarFingerprint({
+                            externalId,
+                            make: brand.en,
+                            model: modelEn,
+                            year,
+                            mileage,
+                            color: colorEn,
+                            vin: specs.vin,
+                            images: rawImageUrls,
+                        });
+
+                        // ── فحص التكرار المتطور (Fingerprint) ──────────────────────
+                        const dupCheck = await DeduplicationService.findDuplicate(
+                            Car, fingerprint, req.tenant?.id || 'hmcar'
+                        );
+                        if (dupCheck.found) {
+                            console.log(`⏩ [ShowroomImport] SKIP (${DeduplicationService.describeDuplicate(dupCheck)}): ${titleAr}`);
+                            totalSkipped++;
+                            return;
+                        }
+
                         // ─── حفظ السيارة في قاعدة البيانات ─────────────────────────
                         // ⚠️ لا نحفظ externalUrl كرابط قابل للنقر - نحفظه فقط للمرجعية الداخلية
+                        const carDataToSave = DeduplicationService.applyFingerprintToCarData({
+                            // ─── العناوين ثنائية اللغة
+                            title: titleAr,
+                            titleAr: titleAr,
+                            titleEn: titleEn,
+                            // ─── الماركة والموديل
+                            make: brand.ar,
+                            makeAr: brand.ar,
+                            makeEn: brand.en,
+                            model: modelAr,
+                            modelAr: modelAr,
+                            modelEn: modelEn,
+                            // ─── البيانات الأساسية
+                            year: year,
+                            price: priceSar || 15000,
+                            priceSar: priceSar || 15000,
+                            priceKrw: priceKrw,
+                            priceUsd: priceUsd,
+                            mileage: mileage,
+                            fuelType: fuel.ar,
+                            fuelTypeEn: fuel.en,
+                            transmission: 'أوتوماتيك',
+                            transmissionEn: 'Automatic',
+                            color: colorAr,
+                            colorEn: colorEn,
+                            condition: 'ممتازة (مفحوصة بالكامل)',
+                            conditionEn: 'Excellent (Fully Inspected)',
+                            // ─── الوصف
+                            description: descriptionAr,
+                            descriptionAr: descriptionAr,
+                            descriptionEn: descriptionEn,
+                            // ─── الصور (مع العلامة المائية أولاً ثم المحلية كاحتياط)
+                            images: watermarkedImages.length > 0 ? watermarkedImages : localImages,
+                            originalImages: original,
+                            image: mainImage,
+                            mainImage: mainImage,
+                            watermarkedImages: watermarkedImages,
+                            // ─── المواصفات والمميزات
+                            specs: specs,
+                            featuresAr: featuresAr,
+                            featuresEn: featuresEn,
+                            inspectionReport: insp || inspectionReport,
+                            // ─── البيانات الإدارية
+                            isActive: true,
+                            isSold: false,
+                            listingType: 'showroom',
+                            externalId: externalId,
+                            externalRef: `encar:${carId}`,
+                            source: 'encar_korea',
+                            tenantId: req.tenant?.id || 'hmcar',
+                            updatedAt: new Date()
+                        }, fingerprint);
+
                         await Car.findOneAndUpdate(
                             { externalId },
-                            {
-                                $set: {
-                                    // ─── العناوين ثنائية اللغة
-                                    title: titleAr,
-                                    titleAr: titleAr,
-                                    titleEn: titleEn,
-                                    // ─── الماركة والموديل
-                                    make: brand.ar,
-                                    makeAr: brand.ar,
-                                    makeEn: brand.en,
-                                    model: modelAr,
-                                    modelAr: modelAr,
-                                    modelEn: modelEn,
-                                    // ─── البيانات الأساسية
-                                    year: year,
-                                    price: priceSar || 15000,
-                                    priceSar: priceSar || 15000,
-                                    priceKrw: priceKrw,
-                                    priceUsd: priceUsd,
-                                    mileage: mileage,
-                                    fuelType: fuel.ar,
-                                    fuelTypeEn: fuel.en,
-                                    transmission: 'أوتوماتيك',
-                                    transmissionEn: 'Automatic',
-                                    color: colorAr,
-                                    colorEn: colorEn,
-                                    condition: 'ممتازة (مفحوصة بالكامل)',
-                                    conditionEn: 'Excellent (Fully Inspected)',
-                                    // ─── الوصف
-                                    description: descriptionAr,
-                                    descriptionAr: descriptionAr,
-                                    descriptionEn: descriptionEn,
-                                    // ─── الصور (مع العلامة المائية أولاً ثم المحلية كاحتياط)
-                                    images: watermarkedImages.length > 0 ? watermarkedImages : localImages,
-                                    originalImages: original,
-                                    image: mainImage,
-                                    mainImage: mainImage,
-                                    watermarkedImages: watermarkedImages,
-                                    // ─── المواصفات والمميزات
-                                    specs: specs,
-                                    featuresAr: featuresAr,
-                                    featuresEn: featuresEn,
-                                    inspectionReport: insp || inspectionReport,
-                                    // ─── البيانات الإدارية
-                                    isActive: true,
-                                    isSold: false,
-                                    listingType: 'showroom',
-                                    externalId: externalId,
-                                    // نحفظ المرجع فقط (غير قابل للنقر من الواجهة)
-                                    externalRef: `encar:${carId}`,
-                                    source: 'encar_korea',
-                                    tenantId: req.tenant?.id || 'hmcar',
-                                    updatedAt: new Date()
-                                }
-                            },
+                            { $set: carDataToSave },
                             { upsert: true, new: true, setDefaultsOnInsert: true }
                         );
 

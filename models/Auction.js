@@ -36,6 +36,7 @@ const auctionSchema = new mongoose.Schema({
   priceSar: { type: Number, default: 0 },
   priceUsd: { type: Number, default: 0 },
   bidsCount: { type: Number, default: 0 },
+  minBidIncrement: { type: Number, default: 100, min: 0.01 },
   // العملة الأساسية للمزاد
   currency: { type: String, enum: ['SAR', 'USD', 'KRW'], default: 'SAR' },
   // أعلى مزايد (مرجع مستخدم)

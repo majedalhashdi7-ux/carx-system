@@ -34,6 +34,7 @@ async function request<T>(
 
 export const api = {
     auth: {
+        logout: () => request<any>('/v2/auth/logout', { method: 'POST' }),
         login: (body: { identifier: string; password: string; role?: string; deviceId?: string }) =>
             request<any>('/v2/auth/login', { method: 'POST', body: JSON.stringify(body) }),
 
@@ -66,7 +67,7 @@ export const api = {
     },
 
     orders: {
-        getMyOrders: () => request<any>('/v2/orders/my'),
+        getMyOrders: () => request<any>('/v2/orders'),
     },
 
     favorites: {
@@ -95,7 +96,7 @@ export const api = {
 
     profile: {
         update: (data: any) =>
-            request<any>('/v2/user/profile', { method: 'PUT', body: JSON.stringify(data) }),
+            request<any>('/v2/auth/update-profile', { method: 'PUT', body: JSON.stringify(data) }),
         get: () => request<any>('/v2/auth/me'),
     },
 };

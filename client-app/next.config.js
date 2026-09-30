@@ -9,9 +9,9 @@ const nextConfig = {
     },
   },
 
-  // [[FIX]] تجاهل تحذيرات ESLint أثناء البناء (warnings لا تؤثر على الوظائف)
+  // Treat lint errors as build failures; warnings remain visible.
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
 
   typescript: {

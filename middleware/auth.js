@@ -53,12 +53,7 @@ function authenticateJWT(req, res, next) {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ success: false, message: 'غير مصرح - يجب تقديم Token' });
   }
-  const decoded = verifyToken(authHeader.substring(7));
-  if (!decoded) {
-    return res.status(401).json({ success: false, message: 'Token غير صالح أو منتهي الصلاحية' });
-  }
-  req.user = decoded;
-  next();
+  return requireAuthAPI(req, res, next);
 }
 
 // ── Role Middleware ──
@@ -95,7 +90,7 @@ const requireAuthAPI = async (req, res, next) => {
       }
       req.user = decoded;
       
-      // [[FIX]] السماح للأدمن وللتوكنات العامة من غير تعارض
+      // Every account, including administrators, is bound to its tenant.
       if (req.tenant && decoded.tenantId !== req.tenant.id) {
         return res.status(403).json({
           success: false,
@@ -110,7 +105,7 @@ const requireAuthAPI = async (req, res, next) => {
       if (!account || account.status !== 'active' || Number(decoded.tokenVersion || 0) !== Number(account.tokenVersion || 0) || (account.twoFactorEnabled && !decoded.twoFactorVerified)) {
         return res.status(401).json({ success: false, code: 'SESSION_REVOKED' });
       }
-      req.user = { ...decoded, userId: String(account._id), id: String(account._id), role: account.role, permissions: account.permissions || [] };
+      req.user = { ...decoded, userId: String(account._id), id: String(account._id), name: account.name, role: account.role, permissions: account.permissions || [] };
       return next();
     } catch (err) {
       console.warn('⚠️ [Auth Middleware] JWT Verify Failed:', err.message);
@@ -127,7 +122,15 @@ const requireAuthAPI = async (req, res, next) => {
   if (req.tenant && req.user.tenantId !== req.tenant.id) {
     return res.status(403).json({ success: false, code: 'TENANT_MISMATCH' });
   }
-  next();
+  try {
+    const { getModel, addTenantFilter } = require('../tenants/tenant-model-helper');
+    const account = await getModel(req, 'User').findOne(addTenantFilter(req, { _id: req.user.userId || req.user.id || req.user._id }));
+    if (!account || account.status !== 'active' || Number(req.user.tokenVersion || 0) !== Number(account.tokenVersion || 0) || (account.twoFactorEnabled && !req.user.twoFactorVerified)) return res.status(401).json({ success: false, code: 'SESSION_REVOKED' });
+    req.user = { ...req.user, userId: String(account._id), id: String(account._id), role: account.role, permissions: account.permissions || [] };
+    next();
+  } catch {
+    return res.status(401).json({ success: false, code: 'SESSION_INVALID' });
+  }
 };
 
 // Simple auth middleware (aliased to requireAuthAPI to avoid duplication)
