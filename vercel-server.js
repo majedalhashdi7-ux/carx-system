@@ -137,6 +137,33 @@ function createCorsMiddleware() {
   return (req, res, next) => {
     setCorsHeaders(req, res);
     if (req.method === 'OPTIONS') return res.status(204).end();
+  // ── Setup Admin Endpoint ──
+  if (req.url && req.url.includes('/api/v2/system/setup-admin') && req.method === 'POST') {
+    try {
+      let body2 = '';
+      await new Promise((resolve) => { req.on('data', c => body2 += c); req.on('end', resolve); });
+      const { secret, email, password, name, tenantId, role } = JSON.parse(body2 || '{}');
+      const SETUP_SECRET = process.env.SETUP_SECRET || 'carx-hmcar-setup-2024';
+      if (secret !== SETUP_SECRET) return res.status(403).json({ success: false, message: 'Forbidden' });
+      if (!email || !password || !tenantId) return res.status(400).json({ success: false, message: 'email, password, tenantId required' });
+      const mongoose = require('mongoose');
+      let mUri = process.env.MONGO_URI || process.env.MONGODB_URI;
+      if (mUri && mongoose.connection.readyState < 1) await mongoose.connect(mUri, { serverSelectionTimeoutMS: 10000 });
+      const bcrypt = require('bcryptjs');
+      const col = mongoose.connection.db.collection('users');
+      const existing = await col.findOne({ email: email.toLowerCase(), tenantId });
+      const targetRole = role || 'admin';
+      const hashed = await bcrypt.hash(password, 12);
+      if (existing) {
+        await col.updateOne({ _id: existing._id }, { $set: { role: targetRole, status: 'active', isActive: true, isVerified: true, password: hashed, updatedAt: new Date() } });
+        return res.json({ success: true, action: 'upgraded', email, tenantId, role: targetRole });
+      } else {
+        await col.insertOne({ name: name || (tenantId + ' Admin'), email: email.toLowerCase(), password: hashed, role: targetRole, tenantId, status: 'active', isActive: true, isVerified: true, twoFactorEnabled: false, tokenVersion: 0, createdAt: new Date(), updatedAt: new Date() });
+        return res.json({ success: true, action: 'created', email, tenantId, role: targetRole });
+      }
+    } catch (e) { return res.status(500).json({ success: false, message: e.message }); }
+  }
+
     next();
   };
 }
@@ -195,6 +222,33 @@ module.exports = async (req, res) => {
   // CORS على مستوى الـ handler - قبل أي شيء
   setCorsHeaders(req, res);
   if (req.method === 'OPTIONS') return res.status(204).end();
+  // ── Setup Admin Endpoint ──
+  if (req.url && req.url.includes('/api/v2/system/setup-admin') && req.method === 'POST') {
+    try {
+      let body2 = '';
+      await new Promise((resolve) => { req.on('data', c => body2 += c); req.on('end', resolve); });
+      const { secret, email, password, name, tenantId, role } = JSON.parse(body2 || '{}');
+      const SETUP_SECRET = process.env.SETUP_SECRET || 'carx-hmcar-setup-2024';
+      if (secret !== SETUP_SECRET) return res.status(403).json({ success: false, message: 'Forbidden' });
+      if (!email || !password || !tenantId) return res.status(400).json({ success: false, message: 'email, password, tenantId required' });
+      const mongoose = require('mongoose');
+      let mUri = process.env.MONGO_URI || process.env.MONGODB_URI;
+      if (mUri && mongoose.connection.readyState < 1) await mongoose.connect(mUri, { serverSelectionTimeoutMS: 10000 });
+      const bcrypt = require('bcryptjs');
+      const col = mongoose.connection.db.collection('users');
+      const existing = await col.findOne({ email: email.toLowerCase(), tenantId });
+      const targetRole = role || 'admin';
+      const hashed = await bcrypt.hash(password, 12);
+      if (existing) {
+        await col.updateOne({ _id: existing._id }, { $set: { role: targetRole, status: 'active', isActive: true, isVerified: true, password: hashed, updatedAt: new Date() } });
+        return res.json({ success: true, action: 'upgraded', email, tenantId, role: targetRole });
+      } else {
+        await col.insertOne({ name: name || (tenantId + ' Admin'), email: email.toLowerCase(), password: hashed, role: targetRole, tenantId, status: 'active', isActive: true, isVerified: true, twoFactorEnabled: false, tokenVersion: 0, createdAt: new Date(), updatedAt: new Date() });
+        return res.json({ success: true, action: 'created', email, tenantId, role: targetRole });
+      }
+    } catch (e) { return res.status(500).json({ success: false, message: e.message }); }
+  }
+
 
   // ── Import Real Batch Data Endpoint (لنقل البيانات الحقيقية كاملة إلى Atlas) ──
   if (req.url && req.url.includes('/api/v2/system/import-batch')) {
