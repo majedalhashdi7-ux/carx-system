@@ -344,7 +344,7 @@ export default function AdminPartsPage() {
                   </div>
                   <div className="flex items-center gap-1.5 text-[10px] text-white/30 font-medium">
                     <Download className="w-3 h-3 text-blue-400" />
-                    صور القطع + علامة مائية HM CAR
+                    صور القطع + علامة مائية CAR X
                   </div>
                   <div className="flex items-center gap-1.5 text-[10px] text-white/30 font-medium">
                     <RefreshCw className="w-3 h-3 text-luxury-gold" />

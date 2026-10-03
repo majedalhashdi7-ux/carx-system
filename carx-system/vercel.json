@@ -7,6 +7,7 @@
   "env": {
     "NEXT_PUBLIC_API_URL": "https://hmcar-system-two.vercel.app/api/v2",
     "NEXT_PUBLIC_TENANT_ID": "carx",
+    "NEXT_PUBLIC_SYSTEM_NAME": "CAR X",
     "TURBO_REMOTE_ONLY": "false",
     "TURBO_FORCE": "1"
   },
@@ -21,6 +22,10 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/api/v2/:path*",
+      "destination": "https://hmcar-system-two.vercel.app/api/v2/:path*"
+    },
     {
       "source": "/api/:path*",
       "destination": "https://hmcar-system-two.vercel.app/api/:path*"

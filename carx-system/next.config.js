@@ -4,6 +4,8 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://hmcar-system-two.vercel.app/api/v2',
     NEXT_PUBLIC_TENANT_ID: 'carx',
+    NEXT_PUBLIC_SYSTEM_NAME: 'CAR X',
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'https://carx-system-five.vercel.app',
   },
   images: {
     remotePatterns: [

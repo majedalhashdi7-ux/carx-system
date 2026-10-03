@@ -630,7 +630,7 @@ export function SyncToolsPanel() {
           <SyncActionCard
             icon={<ImageIcon className="w-5 h-5" />}
             title="إصلاح الصور"
-            description="تُحمّل الصور الخارجية محلياً وتُضيف علامة مائية HM CAR. تُصلح أيضاً حقول mainImage الفارغة"
+            description="تُحمّل الصور الخارجية محلياً وتُضيف علامة مائية CAR X. تُصلح أيضاً حقول mainImage الفارغة"
             color="blue"
             loading={syncLoading === 'images'}
             onClick={() => runAction('images', () => api.import.fixImages(), 'إصلاح الصور')}

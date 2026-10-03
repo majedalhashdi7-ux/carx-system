@@ -14,9 +14,18 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "CAR X | المعرض الحصري للسيارات الفاخرة في المملكة",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://carx-system-five.vercel.app'),
+  title: {
+    template: '%s | CAR X',
+    default: 'CAR X | المعرض الحصري للسيارات الفاخرة في المملكة',
+  },
   description: "اكتشف عالم الرفاهية والأداء مع CAR X. وجهتك الأولى لبيع وشراء أفخم السيارات العالمية بأفضل الأسعار وأعلى مستويات الخدمة.",
-  keywords: "سيارات فاخرة, بيع سيارات, سيارات مستعملة, مرسيدس, بي ام دبليو, فيراري, السعودية, الرياض",
+  keywords: "سيارات فاخرة, بيع سيارات, سيارات مستعملة, مرسيدس, بي ام دبليو, فيراري, السعودية, الرياض, CAR X",
+  authors: [{ name: 'CAR X Team' }],
+  creator: 'CAR X',
+  publisher: 'CAR X System',
+  robots: { index: true, follow: true },
+  alternates: { canonical: '/' },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -41,6 +50,7 @@ export const metadata: Metadata = {
     siteName: "CAR X",
   },
 };
+
 
 export default function RootLayout({
   children,
