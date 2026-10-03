@@ -20,15 +20,5 @@
         { "key": "X-Content-Type-Options", "value": "nosniff" }
       ]
     }
-  ],
-  "rewrites": [
-    {
-      "source": "/api/v2/:path*",
-      "destination": "https://hmcar-system-two.vercel.app/api/v2/:path*"
-    },
-    {
-      "source": "/api/:path*",
-      "destination": "https://hmcar-system-two.vercel.app/api/:path*"
-    }
   ]
 }
