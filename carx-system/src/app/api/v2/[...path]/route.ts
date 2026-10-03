@@ -6,18 +6,21 @@ const BACKEND_URL = 'https://hmcar-system-two.vercel.app';
  * CarX API Proxy Route
  * يُعيد توجيه جميع طلبات /api/v2/* إلى الـ backend المشترك
  * مع تمرير X-Tenant-ID: carx تلقائياً في كل طلب
+ * متوافق مع Next.js 15 (params كـ Promise)
  */
-async function handler(req: NextRequest, { params }: { params: { path: string[] } }) {
-  const path = params.path?.join('/') || '';
+type RouteContext = { params: Promise<{ path: string[] }> };
+
+async function handler(req: NextRequest, context: RouteContext) {
+  const { path: pathSegments } = await context.params;
+  const path = pathSegments?.join('/') || '';
   const url = new URL(req.url);
   const targetUrl = `${BACKEND_URL}/api/v2/${path}${url.search}`;
 
-  // نسخ headers الأصلية مع إضافة/override الـ tenant
-  const headers = new Headers(req.headers);
+  const headers = new Headers();
+  headers.set('Content-Type', req.headers.get('content-type') || 'application/json');
   headers.set('X-Tenant-ID', 'carx');
-  headers.set('X-Forwarded-For', req.headers.get('x-forwarded-for') || '');
-  // إزالة headers التي قد تسبب مشاكل
-  headers.delete('host');
+  const auth = req.headers.get('authorization');
+  if (auth) headers.set('Authorization', auth);
 
   try {
     const body = req.method !== 'GET' && req.method !== 'HEAD'
@@ -31,7 +34,6 @@ async function handler(req: NextRequest, { params }: { params: { path: string[] 
       redirect: 'follow',
     });
 
-    // نسخ الـ response مع headers CORS
     const responseHeaders = new Headers(response.headers);
     responseHeaders.set('Access-Control-Allow-Origin', '*');
     responseHeaders.set('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
@@ -44,10 +46,11 @@ async function handler(req: NextRequest, { params }: { params: { path: string[] 
       statusText: response.statusText,
       headers: responseHeaders,
     });
-  } catch (error: any) {
-    console.error('[CarX Proxy] Error:', error.message);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[CarX Proxy] Error:', msg);
     return NextResponse.json(
-      { success: false, error: 'Backend proxy error', message: error.message },
+      { success: false, error: 'Backend proxy error', message: msg },
       { status: 502 }
     );
   }
@@ -58,6 +61,7 @@ export const POST = handler;
 export const PUT = handler;
 export const PATCH = handler;
 export const DELETE = handler;
+
 export const OPTIONS = async () => {
   return new NextResponse(null, {
     status: 200,
